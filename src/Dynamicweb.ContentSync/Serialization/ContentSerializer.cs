@@ -17,15 +17,19 @@ public class ContentSerializer
     private readonly ReferenceResolver _referenceResolver;
     private readonly ContentMapper _mapper;
     private readonly ContentPredicateSet _predicateSet;
+    private readonly Action<string>? _log;
 
-    public ContentSerializer(SyncConfiguration configuration, IContentStore? store = null)
+    public ContentSerializer(SyncConfiguration configuration, IContentStore? store = null, Action<string>? log = null)
     {
         _configuration = configuration;
         _store = store ?? new FileSystemStore();
         _referenceResolver = new ReferenceResolver();
         _mapper = new ContentMapper(_referenceResolver);
         _predicateSet = new ContentPredicateSet(configuration);
+        _log = log;
     }
+
+    private void Log(string message) => _log?.Invoke(message);
 
     /// <summary>
     /// Serializes all predicates defined in the configuration to disk.
@@ -49,24 +53,34 @@ public class ContentSerializer
         var area = Services.Areas.GetArea(predicate.AreaId);
         if (area == null)
         {
-            Console.Error.WriteLine($"[ContentSync] Warning: Area with ID {predicate.AreaId} not found. Skipping predicate '{predicate.Name}'.");
+            Log($"Warning: Area with ID {predicate.AreaId} not found. Skipping predicate '{predicate.Name}'.");
             return null;
         }
+
+        Log($"Area found: ID={area.ID}, Name={area.Name}");
 
         // Get all top-level pages for this area
         var rootPages = Services.Pages.GetRootPagesForArea(predicate.AreaId)
             .OrderBy(p => p.Sort)
             .ToList();
 
+        Log($"Root pages for area {predicate.AreaId}: {rootPages.Count}");
+        foreach (var rp in rootPages)
+            Log($"  Root page: ID={rp.ID}, MenuText='{rp.MenuText}', Name='{rp.GetDisplayName()}'");
+
         var serializedPages = new List<SerializedPage>();
         foreach (var rootPage in rootPages)
         {
             var contentPath = "/" + rootPage.MenuText;
+            Log($"  Checking predicate for path: '{contentPath}'");
             var serializedPage = SerializePage(rootPage, predicate, contentPath);
             if (serializedPage != null)
                 serializedPages.Add(serializedPage);
+            else
+                Log($"  -> Skipped (predicate excluded or null)");
         }
 
+        Log($"Serialized pages: {serializedPages.Count}");
         var serializedArea = _mapper.MapArea(area, serializedPages);
         _store.WriteTree(serializedArea, _configuration.OutputDirectory);
         return serializedArea;
@@ -76,7 +90,11 @@ public class ContentSerializer
     {
         // Check predicate inclusion BEFORE loading children (short-circuit optimization)
         if (!_predicateSet.ShouldInclude(contentPath, predicate.AreaId))
+        {
+            Log($"  Predicate excluded: '{contentPath}'");
             return null;
+        }
+        Log($"  Predicate included: '{contentPath}' (page ID={page.ID})");
 
         // Fetch grid rows and paragraphs for this page
         var gridRows = Services.Grids.GetGridRowsByPageId(page.ID)

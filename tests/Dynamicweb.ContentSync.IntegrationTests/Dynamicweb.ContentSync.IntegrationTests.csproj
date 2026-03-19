@@ -27,11 +27,11 @@
          These are copied from Swift2.1 (net8.0) bin folder and are not available as NuGet packages. -->
     <Reference Include="Dynamicweb">
       <HintPath>..\..\lib\Dynamicweb.dll</HintPath>
-      <Private>false</Private>
+      <Private>true</Private>
     </Reference>
     <Reference Include="Dynamicweb.Core">
       <HintPath>..\..\lib\Dynamicweb.Core.dll</HintPath>
-      <Private>false</Private>
+      <Private>true</Private>
     </Reference>
   </ItemGroup>
 

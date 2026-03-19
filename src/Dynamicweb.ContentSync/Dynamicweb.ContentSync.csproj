@@ -9,7 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="YamlDotNet" Version="16.3.0" />
+    <PackageReference Include="YamlDotNet" Version="13.7.1" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="8.0.1" />
   </ItemGroup>
 
@@ -19,11 +19,9 @@
          These DLLs are copied from Swift2.1 (net8.0) bin folder. -->
     <Reference Include="Dynamicweb">
       <HintPath>..\..\lib\Dynamicweb.dll</HintPath>
-      <Private>false</Private>
     </Reference>
     <Reference Include="Dynamicweb.Core">
       <HintPath>..\..\lib\Dynamicweb.Core.dll</HintPath>
-      <Private>false</Private>
     </Reference>
   </ItemGroup>
 
