@@ -1,5 +1,6 @@
 using Dynamicweb.ContentSync.Models;
 using YamlDotNet.Serialization;
+using YamlDotNet.Serialization.NamingConventions;
 
 namespace Dynamicweb.ContentSync.Infrastructure;
 
@@ -8,10 +9,21 @@ public class FileSystemStore : IContentStore
     private readonly ISerializer _serializer;
     private readonly IDeserializer _deserializer;
 
+    // A separate serializer that also omits empty collections, used when writing
+    // per-item YAML files (page.yml, area.yml) so that child collections stored
+    // in subfolders don't appear as empty lists in the parent file.
+    private readonly ISerializer _fileSerializer;
+
     public FileSystemStore()
     {
         _serializer = YamlConfiguration.BuildSerializer();
         _deserializer = YamlConfiguration.BuildDeserializer();
+        _fileSerializer = new SerializerBuilder()
+            .WithNamingConvention(CamelCaseNamingConvention.Instance)
+            .WithEventEmitter(next => new ForceStringScalarEmitter(next))
+            .ConfigureDefaultValuesHandling(
+                DefaultValuesHandling.OmitNull | DefaultValuesHandling.OmitEmptyCollections)
+            .Build();
     }
 
     // -------------------------------------------------------------------------
@@ -26,7 +38,7 @@ public class FileSystemStore : IContentStore
 
         // Write area.yml — omit Pages collection
         var areaForYaml = area with { Pages = new List<SerializedPage>() };
-        WriteYamlFile(Path.Combine(areaDirectory, "area.yml"), areaForYaml);
+        WriteYamlFile(Path.Combine(areaDirectory, "area.yml"), areaForYaml, omitEmptyCollections: true);
 
         var usedPageNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var sortedPages = area.Pages.OrderBy(p => p.SortOrder).ThenBy(p => p.Name);
@@ -44,7 +56,7 @@ public class FileSystemStore : IContentStore
                 GridRows = new List<SerializedGridRow>(),
                 Fields = SortFields(page.Fields)
             };
-            WriteYamlFile(Path.Combine(pageDirectory, "page.yml"), pageForYaml);
+            WriteYamlFile(Path.Combine(pageDirectory, "page.yml"), pageForYaml, omitEmptyCollections: true);
 
             // Write grid rows
             var sortedGridRows = page.GridRows.OrderBy(gr => gr.SortOrder);
@@ -60,7 +72,7 @@ public class FileSystemStore : IContentStore
                     Paragraphs = new List<SerializedParagraph>()
                 }).ToList();
                 var gridRowForYaml = gridRow with { Columns = columnsForYaml };
-                WriteYamlFile(Path.Combine(gridRowDirectory, "grid-row.yml"), gridRowForYaml);
+                WriteYamlFile(Path.Combine(gridRowDirectory, "grid-row.yml"), gridRowForYaml, omitEmptyCollections: true);
 
                 // Write paragraphs from all columns
                 foreach (var column in gridRow.Columns)
@@ -201,7 +213,7 @@ public class FileSystemStore : IContentStore
     private static Dictionary<string, object> SortFields(Dictionary<string, object> fields)
         => new(fields.OrderBy(kv => kv.Key, StringComparer.Ordinal));
 
-    private void WriteYamlFile(string path, object value)
+    private void WriteYamlFile(string path, object value, bool omitEmptyCollections = false)
     {
         // Check full file path length
         if (path.Length > 259)
@@ -209,7 +221,8 @@ public class FileSystemStore : IContentStore
             Console.Error.WriteLine($"[ContentSync] Warning: File path exceeds 260 chars and may fail: '{path}'");
         }
 
-        var yaml = _serializer.Serialize(value);
+        var serializer = omitEmptyCollections ? _fileSerializer : _serializer;
+        var yaml = serializer.Serialize(value);
         File.WriteAllText(path, yaml, System.Text.Encoding.UTF8);
     }
 
