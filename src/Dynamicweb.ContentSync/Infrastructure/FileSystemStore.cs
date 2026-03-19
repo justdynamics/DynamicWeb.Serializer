@@ -45,48 +45,62 @@ public class FileSystemStore : IContentStore
 
         foreach (var page in sortedPages)
         {
-            var sanitizedPageName = SanitizeFolderName(page.Name);
-            var pageFolderName = GetPageFolderName(sanitizedPageName, page.PageUniqueId, usedPageNames);
-            var pageDirectory = SafeGetDirectory(areaDirectory, pageFolderName, page.PageUniqueId);
-            Directory.CreateDirectory(pageDirectory);
+            WritePage(page, areaDirectory, usedPageNames);
+        }
+    }
 
-            // Write page.yml — omit GridRows collection; sort Fields keys
-            var pageForYaml = page with
+    private void WritePage(SerializedPage page, string parentDirectory, HashSet<string> usedNames)
+    {
+        var sanitizedPageName = SanitizeFolderName(page.Name);
+        var pageFolderName = GetPageFolderName(sanitizedPageName, page.PageUniqueId, usedNames);
+        var pageDirectory = SafeGetDirectory(parentDirectory, pageFolderName, page.PageUniqueId);
+        Directory.CreateDirectory(pageDirectory);
+
+        // Write page.yml — omit GridRows and Children collections; sort Fields keys
+        var pageForYaml = page with
+        {
+            GridRows = new List<SerializedGridRow>(),
+            Children = new List<SerializedPage>(),
+            Fields = SortFields(page.Fields)
+        };
+        WriteYamlFile(Path.Combine(pageDirectory, "page.yml"), pageForYaml, omitEmptyCollections: true);
+
+        // Write grid rows
+        var sortedGridRows = page.GridRows.OrderBy(gr => gr.SortOrder);
+        foreach (var gridRow in sortedGridRows)
+        {
+            var gridRowFolderName = $"grid-row-{gridRow.SortOrder}";
+            var gridRowDirectory = Path.Combine(pageDirectory, gridRowFolderName);
+            Directory.CreateDirectory(gridRowDirectory);
+
+            // Write grid-row.yml — include column metadata inline, but without paragraphs
+            var columnsForYaml = gridRow.Columns.Select(col => col with
             {
-                GridRows = new List<SerializedGridRow>(),
-                Fields = SortFields(page.Fields)
-            };
-            WriteYamlFile(Path.Combine(pageDirectory, "page.yml"), pageForYaml, omitEmptyCollections: true);
+                Paragraphs = new List<SerializedParagraph>()
+            }).ToList();
+            var gridRowForYaml = gridRow with { Columns = columnsForYaml };
+            WriteYamlFile(Path.Combine(gridRowDirectory, "grid-row.yml"), gridRowForYaml, omitEmptyCollections: true);
 
-            // Write grid rows
-            var sortedGridRows = page.GridRows.OrderBy(gr => gr.SortOrder);
-            foreach (var gridRow in sortedGridRows)
+            // Write paragraphs from all columns
+            foreach (var column in gridRow.Columns)
             {
-                var gridRowFolderName = $"grid-row-{gridRow.SortOrder}";
-                var gridRowDirectory = Path.Combine(pageDirectory, gridRowFolderName);
-                Directory.CreateDirectory(gridRowDirectory);
-
-                // Write grid-row.yml — include column metadata inline, but without paragraphs
-                var columnsForYaml = gridRow.Columns.Select(col => col with
+                var sortedParagraphs = column.Paragraphs.OrderBy(p => p.SortOrder);
+                foreach (var paragraph in sortedParagraphs)
                 {
-                    Paragraphs = new List<SerializedParagraph>()
-                }).ToList();
-                var gridRowForYaml = gridRow with { Columns = columnsForYaml };
-                WriteYamlFile(Path.Combine(gridRowDirectory, "grid-row.yml"), gridRowForYaml, omitEmptyCollections: true);
-
-                // Write paragraphs from all columns
-                foreach (var column in gridRow.Columns)
-                {
-                    var sortedParagraphs = column.Paragraphs.OrderBy(p => p.SortOrder);
-                    foreach (var paragraph in sortedParagraphs)
-                    {
-                        var paragraphFileName = $"paragraph-{paragraph.SortOrder}.yml";
-                        var paragraphPath = Path.Combine(gridRowDirectory, paragraphFileName);
-                        var paragraphForYaml = paragraph with { Fields = SortFields(paragraph.Fields) };
-                        WriteYamlFile(paragraphPath, paragraphForYaml);
-                    }
+                    var paragraphFileName = $"paragraph-{paragraph.SortOrder}.yml";
+                    var paragraphPath = Path.Combine(gridRowDirectory, paragraphFileName);
+                    var paragraphForYaml = paragraph with { Fields = SortFields(paragraph.Fields) };
+                    WriteYamlFile(paragraphPath, paragraphForYaml);
                 }
             }
+        }
+
+        // Recursively write child pages — sibling dedup is per-level, not global
+        var usedChildNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var sortedChildren = page.Children.OrderBy(c => c.SortOrder).ThenBy(c => c.Name);
+        foreach (var child in sortedChildren)
+        {
+            WritePage(child, pageDirectory, usedChildNames);
         }
     }
 
@@ -115,18 +129,28 @@ public class FileSystemStore : IContentStore
             if (!File.Exists(pageYmlPath))
                 continue;
 
-            var page = ReadYamlFile<SerializedPage>(pageYmlPath);
+            pages.Add(ReadPage(subdir));
+        }
 
-            // Find grid row subdirectories (those containing grid-row.yml)
-            var gridRows = new List<SerializedGridRow>();
-            var pageSubdirs = Directory.GetDirectories(subdir);
+        return area with { Pages = pages };
+    }
 
-            foreach (var pageSubdir in pageSubdirs)
+    private SerializedPage ReadPage(string pageDirectory)
+    {
+        var page = ReadYamlFile<SerializedPage>(Path.Combine(pageDirectory, "page.yml"));
+
+        // Find grid row subdirectories (those containing grid-row.yml)
+        var gridRows = new List<SerializedGridRow>();
+        // Find child page subdirectories (those containing page.yml)
+        var childPages = new List<SerializedPage>();
+
+        var pageSubdirs = Directory.GetDirectories(pageDirectory);
+
+        foreach (var pageSubdir in pageSubdirs)
+        {
+            var gridRowYmlPath = Path.Combine(pageSubdir, "grid-row.yml");
+            if (File.Exists(gridRowYmlPath))
             {
-                var gridRowYmlPath = Path.Combine(pageSubdir, "grid-row.yml");
-                if (!File.Exists(gridRowYmlPath))
-                    continue;
-
                 var gridRow = ReadYamlFile<SerializedGridRow>(gridRowYmlPath);
 
                 // Find paragraph files — paragraph-{N}.yml
@@ -151,15 +175,16 @@ public class FileSystemStore : IContentStore
                     ? ReconstructColumns(gridRow.Columns, paragraphs)
                     : new List<SerializedGridColumn>();
 
-                var fullGridRow = gridRow with { Columns = reconstructedColumns };
-                gridRows.Add(fullGridRow);
+                gridRows.Add(gridRow with { Columns = reconstructedColumns });
             }
-
-            var fullPage = page with { GridRows = gridRows };
-            pages.Add(fullPage);
+            else if (File.Exists(Path.Combine(pageSubdir, "page.yml")))
+            {
+                // Child page subfolder — recurse
+                childPages.Add(ReadPage(pageSubdir));
+            }
         }
 
-        return area with { Pages = pages };
+        return page with { GridRows = gridRows, Children = childPages };
     }
 
     // -------------------------------------------------------------------------

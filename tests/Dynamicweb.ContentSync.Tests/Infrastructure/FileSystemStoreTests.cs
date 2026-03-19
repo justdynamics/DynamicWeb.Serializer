@@ -368,6 +368,93 @@ public class FileSystemStoreTests : IDisposable
     }
 
     // -------------------------------------------------------------------------
+    // Recursive child pages
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public void WriteTree_WithChildPages_CreatesNestedFolders()
+    {
+        var area = ContentTreeBuilder.BuildNestedTree();
+
+        _store.WriteTree(area, _tempRoot);
+
+        var areaPath = Path.Combine(_tempRoot, "Test Website");
+        Assert.True(File.Exists(Path.Combine(areaPath, "Parent", "Child A", "page.yml")),
+            "Parent/Child A/page.yml should exist");
+        Assert.True(File.Exists(Path.Combine(areaPath, "Parent", "Child B", "page.yml")),
+            "Parent/Child B/page.yml should exist");
+        Assert.True(File.Exists(Path.Combine(areaPath, "Parent", "Child B", "Grandchild", "page.yml")),
+            "Parent/Child B/Grandchild/page.yml should exist");
+    }
+
+    [Fact]
+    public void WriteTree_WithChildPages_PageYml_DoesNotContainChildren()
+    {
+        var area = ContentTreeBuilder.BuildNestedTree();
+
+        _store.WriteTree(area, _tempRoot);
+
+        var parentYmlPath = Path.Combine(_tempRoot, "Test Website", "Parent", "page.yml");
+        var parentYmlText = File.ReadAllText(parentYmlPath);
+        Assert.DoesNotContain("children", parentYmlText, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void ReadTree_WithChildPages_ReconstructsHierarchy()
+    {
+        var area = ContentTreeBuilder.BuildNestedTree();
+
+        _store.WriteTree(area, _tempRoot);
+        var readBack = _store.ReadTree(_tempRoot);
+
+        // Pages ordered by SortOrder: Parent (1), Sibling (2)
+        var readBackPages = readBack.Pages.OrderBy(p => p.SortOrder).ToList();
+        Assert.Equal(2, readBackPages.Count);
+
+        var parent = readBackPages[0];
+        Assert.Equal("Parent", parent.Name);
+        Assert.Equal(2, parent.Children.Count); // Child A and Child B
+
+        var children = parent.Children.OrderBy(c => c.SortOrder).ToList();
+        var childB = children[1];
+        Assert.Equal("Child B", childB.Name);
+        Assert.Single(childB.Children); // Grandchild
+        Assert.Equal("Grandchild", childB.Children[0].Name);
+    }
+
+    [Fact]
+    public void WriteTree_ReadTree_NestedRoundTrip_IsLossless()
+    {
+        var area = ContentTreeBuilder.BuildNestedTree();
+
+        _store.WriteTree(area, _tempRoot);
+        var readBack = _store.ReadTree(_tempRoot);
+
+        var readBackPages = readBack.Pages.OrderBy(p => p.SortOrder).ToList();
+        var parent = readBackPages[0];
+        Assert.Equal("Parent", parent.Name);
+        Assert.Equal("Parent Page", parent.Fields["title"].ToString());
+
+        var parentParagraphCount = parent.GridRows.SelectMany(gr => gr.Columns).SelectMany(c => c.Paragraphs).Count();
+        Assert.Equal(1, parentParagraphCount);
+
+        var children = parent.Children.OrderBy(c => c.SortOrder).ToList();
+        Assert.Equal("Child A", children[0].Name);
+        Assert.Equal("Child A Page", children[0].Fields["title"].ToString());
+
+        var childAParagraphCount = children[0].GridRows.SelectMany(gr => gr.Columns).SelectMany(c => c.Paragraphs).Count();
+        Assert.Equal(1, childAParagraphCount);
+
+        var grandchild = children[1].Children[0];
+        Assert.Equal("Grandchild", grandchild.Name);
+        Assert.Equal("Grandchild Page", grandchild.Fields["title"].ToString());
+
+        var grandchildParagraphCount = grandchild.GridRows.SelectMany(gr => gr.Columns).SelectMany(c => c.Paragraphs).Count();
+        Assert.Equal(1, grandchildParagraphCount);
+        Assert.Equal("Grandchild content", grandchild.GridRows[0].Columns[0].Paragraphs[0].Fields["text"].ToString());
+    }
+
+    // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------
 

@@ -121,4 +121,191 @@ public static class ContentTreeBuilder
             SortOrder = 1
         };
     }
+
+    /// <summary>
+    /// Builds a 3-level nested hierarchy:
+    /// Area "Test Website"
+    ///   Page "Parent" (SortOrder=1)
+    ///     Page "Child A" (SortOrder=1) — 1 grid row, 1 paragraph
+    ///     Page "Child B" (SortOrder=2)
+    ///       Page "Grandchild" (SortOrder=1)
+    ///   Page "Sibling" (SortOrder=2)
+    /// </summary>
+    public static SerializedArea BuildNestedTree()
+    {
+        var grandchild = BuildSinglePage("Grandchild") with
+        {
+            SortOrder = 1,
+            Fields = new Dictionary<string, object> { ["title"] = "Grandchild Page" },
+            GridRows = new List<SerializedGridRow>
+            {
+                new SerializedGridRow
+                {
+                    Id = Guid.NewGuid(),
+                    SortOrder = 1,
+                    Columns = new List<SerializedGridColumn>
+                    {
+                        new SerializedGridColumn
+                        {
+                            Id = 1,
+                            Width = 12,
+                            Paragraphs = new List<SerializedParagraph>
+                            {
+                                new SerializedParagraph
+                                {
+                                    ParagraphUniqueId = Guid.NewGuid(),
+                                    SortOrder = 1,
+                                    ItemType = "ContentModule",
+                                    Header = "Grandchild",
+                                    Fields = new Dictionary<string, object> { ["text"] = "Grandchild content" }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        var childA = BuildSinglePage("Child A") with
+        {
+            SortOrder = 1,
+            Fields = new Dictionary<string, object> { ["title"] = "Child A Page" },
+            GridRows = new List<SerializedGridRow>
+            {
+                new SerializedGridRow
+                {
+                    Id = Guid.NewGuid(),
+                    SortOrder = 1,
+                    Columns = new List<SerializedGridColumn>
+                    {
+                        new SerializedGridColumn
+                        {
+                            Id = 1,
+                            Width = 12,
+                            Paragraphs = new List<SerializedParagraph>
+                            {
+                                new SerializedParagraph
+                                {
+                                    ParagraphUniqueId = Guid.NewGuid(),
+                                    SortOrder = 1,
+                                    ItemType = "ContentModule",
+                                    Header = "Child A",
+                                    Fields = new Dictionary<string, object> { ["text"] = "Child A content" }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        var childB = BuildSinglePage("Child B") with
+        {
+            SortOrder = 2,
+            Fields = new Dictionary<string, object> { ["title"] = "Child B Page" },
+            GridRows = new List<SerializedGridRow>
+            {
+                new SerializedGridRow
+                {
+                    Id = Guid.NewGuid(),
+                    SortOrder = 1,
+                    Columns = new List<SerializedGridColumn>
+                    {
+                        new SerializedGridColumn
+                        {
+                            Id = 1,
+                            Width = 12,
+                            Paragraphs = new List<SerializedParagraph>
+                            {
+                                new SerializedParagraph
+                                {
+                                    ParagraphUniqueId = Guid.NewGuid(),
+                                    SortOrder = 1,
+                                    ItemType = "ContentModule",
+                                    Header = "Child B",
+                                    Fields = new Dictionary<string, object> { ["text"] = "Child B content" }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            Children = new List<SerializedPage> { grandchild }
+        };
+
+        var parent = BuildSinglePage("Parent") with
+        {
+            SortOrder = 1,
+            Fields = new Dictionary<string, object> { ["title"] = "Parent Page" },
+            GridRows = new List<SerializedGridRow>
+            {
+                new SerializedGridRow
+                {
+                    Id = Guid.NewGuid(),
+                    SortOrder = 1,
+                    Columns = new List<SerializedGridColumn>
+                    {
+                        new SerializedGridColumn
+                        {
+                            Id = 1,
+                            Width = 12,
+                            Paragraphs = new List<SerializedParagraph>
+                            {
+                                new SerializedParagraph
+                                {
+                                    ParagraphUniqueId = Guid.NewGuid(),
+                                    SortOrder = 1,
+                                    ItemType = "ContentModule",
+                                    Header = "Parent",
+                                    Fields = new Dictionary<string, object> { ["text"] = "Parent content" }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            Children = new List<SerializedPage> { childA, childB }
+        };
+
+        var sibling = BuildSinglePage("Sibling") with
+        {
+            SortOrder = 2,
+            Fields = new Dictionary<string, object> { ["title"] = "Sibling Page" },
+            GridRows = new List<SerializedGridRow>
+            {
+                new SerializedGridRow
+                {
+                    Id = Guid.NewGuid(),
+                    SortOrder = 1,
+                    Columns = new List<SerializedGridColumn>
+                    {
+                        new SerializedGridColumn
+                        {
+                            Id = 1,
+                            Width = 12,
+                            Paragraphs = new List<SerializedParagraph>
+                            {
+                                new SerializedParagraph
+                                {
+                                    ParagraphUniqueId = Guid.NewGuid(),
+                                    SortOrder = 1,
+                                    ItemType = "ContentModule",
+                                    Header = "Sibling",
+                                    Fields = new Dictionary<string, object> { ["text"] = "Sibling content" }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        return new SerializedArea
+        {
+            AreaId = Guid.NewGuid(),
+            Name = "Test Website",
+            SortOrder = 1,
+            Pages = new List<SerializedPage> { parent, sibling }
+        };
+    }
 }
