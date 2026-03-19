@@ -75,7 +75,7 @@ Plans:
   3. Deserialization never attempts to insert a child item before its parent exists in the database; the write order is always Areas first, then Pages, then GridRows, then Paragraphs
   4. If any write fails mid-run, the partially-applied state is either rolled back or clearly reported; the target database is never silently left in a broken partial state
   5. Dry-run mode reports exactly which items would be created, updated, or skipped without writing anything to the database
-**Plans:** 2 plans
+**Plans:** 1/2 plans executed
 
 Plans:
 - [ ] 04-01-PLAN.md — ContentDeserializer write pipeline with GUID identity, dependency-ordered writes, dry-run, and cascade error handling
@@ -102,5 +102,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | 1. Foundation | 2/2 | Complete    | 2026-03-19 |
 | 2. Configuration | 1/1 | Complete    | 2026-03-19 |
 | 3. Serialization | 2/3 | Complete    | 2026-03-19 |
-| 4. Deserialization | 0/2 | Planned | - |
+| 4. Deserialization | 1/2 | In Progress|  |
 | 5. Integration | 0/TBD | Not started | - |

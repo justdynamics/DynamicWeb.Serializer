@@ -16,10 +16,10 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Deserialization
 
-- [ ] **DES-01**: Deserialize YAML files back into DynamicWeb database
-- [ ] **DES-02**: GUID-based identity — match on PageUniqueId, insert with new numeric ID if no match
-- [ ] **DES-03**: Dependency-ordered writes — parent pages exist before children are inserted
-- [ ] **DES-04**: Dry-run mode — report what would change without applying
+- [x] **DES-01**: Deserialize YAML files back into DynamicWeb database
+- [x] **DES-02**: GUID-based identity — match on PageUniqueId, insert with new numeric ID if no match
+- [x] **DES-03**: Dependency-ordered writes — parent pages exist before children are inserted
+- [x] **DES-04**: Dry-run mode — report what would change without applying
 
 ### Configuration
 
@@ -76,10 +76,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SER-03 | Phase 3 | Complete |
 | INF-02 | Phase 3 | Complete |
 | INF-03 | Phase 3 | Complete |
-| DES-01 | Phase 4 | Pending |
-| DES-02 | Phase 4 | Pending |
-| DES-03 | Phase 4 | Pending |
-| DES-04 | Phase 4 | Pending |
+| DES-01 | Phase 4 | Complete |
+| DES-02 | Phase 4 | Complete |
+| DES-03 | Phase 4 | Complete |
+| DES-04 | Phase 4 | Complete |
 | OPS-01 | Phase 5 | Pending |
 | OPS-02 | Phase 5 | Pending |
 | OPS-03 | Phase 5 | Pending |

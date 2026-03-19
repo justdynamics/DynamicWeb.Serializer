@@ -2,16 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: Phase 4 planned
-last_updated: "2026-03-19T21:25:07.627Z"
-last_activity: 2026-03-19 — Phase 3 Plan 01 complete (recursive page hierarchy and INF-03 long-path tests)
+status: unknown
+stopped_at: Completed 04-deserialization/04-01-PLAN.md
+last_updated: "2026-03-19T21:34:33.434Z"
 progress:
   total_phases: 5
   completed_phases: 3
   total_plans: 8
-  completed_plans: 6
-  percent: 24
+  completed_plans: 7
 ---
 
 # Project State
@@ -21,16 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-19)
 
 **Core value:** Developers can reliably move content between DynamicWeb environments through source control, with serialized YAML files as the single source of truth.
-**Current focus:** Phase 2 — Configuration
+**Current focus:** Phase 04 — deserialization
 
 ## Current Position
 
-Phase: 3 of 5 (Serialization)
-Plan: 1 of 1 in current phase
-Status: In progress
-Last activity: 2026-03-19 — Phase 3 Plan 01 complete (recursive page hierarchy and INF-03 long-path tests)
-
-Progress: [███░░░░░░░] 24%
+Phase: 04 (deserialization) — EXECUTING
+Plan: 2 of 2
 
 ## Performance Metrics
 
@@ -58,6 +52,7 @@ Progress: [███░░░░░░░] 24%
 | Phase 02-configuration P01 | 2min | 2 tasks | 6 files |
 | Phase 03-serialization P01 | 8min | 2 tasks | 4 files |
 | Phase 03-serialization P02 | 5min | 2 tasks | 7 files |
+| Phase 04-deserialization P01 | 3min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -85,6 +80,8 @@ Recent decisions affecting current work:
 - [Phase 03-serialization]: SafeGetDirectory falls back to 8-char GUID folder name when parent path exceeds 247 chars — prevents ArgumentOutOfRangeException on extreme nesting
 - [Phase 03-serialization]: DLL reference over NuGet for Dynamicweb.Content: Dynamicweb.Core NuGet lacks Dynamicweb.Content namespace; DLLs copied from Swift2.1 bin as documented fallback
 - [Phase 03-serialization]: Services.Xxx static accessor chosen over new XxxService() — canonical DW10 pattern
+- [Phase 04-deserialization]: Entity<int>.ID has no public setter in DW10 — UPDATE paths must load existing DW object first, then mutate and re-save (not construct new Page() and set ID)
+- [Phase 04-deserialization]: Post-save re-fetch required for ItemType fields on INSERT path — page.Item is null on new Page() before SavePage() persists to DB
 
 ### Pending Todos
 
@@ -99,5 +96,5 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-19T21:25:07.622Z
-Stopped at: Phase 4 planned
+Last session: 2026-03-19T21:34:33.429Z
+Stopped at: Completed 04-deserialization/04-01-PLAN.md
