@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-stopped_at: Completed 04-deserialization/04-01-PLAN.md
-last_updated: "2026-03-19T21:34:33.434Z"
+stopped_at: Completed 04-deserialization/04-02-PLAN.md
+last_updated: "2026-03-19T21:38:17.317Z"
 progress:
   total_phases: 5
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 8
-  completed_plans: 7
+  completed_plans: 8
 ---
 
 # Project State
@@ -53,6 +53,7 @@ Plan: 2 of 2
 | Phase 03-serialization P01 | 8min | 2 tasks | 4 files |
 | Phase 03-serialization P02 | 5min | 2 tasks | 7 files |
 | Phase 04-deserialization P01 | 3min | 2 tasks | 3 files |
+| Phase 04-deserialization P02 | 2min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -82,6 +83,8 @@ Recent decisions affecting current work:
 - [Phase 03-serialization]: Services.Xxx static accessor chosen over new XxxService() — canonical DW10 pattern
 - [Phase 04-deserialization]: Entity<int>.ID has no public setter in DW10 — UPDATE paths must load existing DW object first, then mutate and re-save (not construct new Page() and set ID)
 - [Phase 04-deserialization]: Post-save re-fetch required for ItemType fields on INSERT path — page.Item is null on new Page() before SavePage() persists to DB
+- [Phase 04-deserialization]: Roundtrip integration tests: serialize first via ContentSerializer then deserialize — self-contained tests without pre-committed YAML fixtures
+- [Phase 04-deserialization]: DeserializeScheduledTask returns !result.HasErrors (false on any write failure), mirrors SerializeScheduledTask return-on-error pattern
 
 ### Pending Todos
 
@@ -96,5 +99,5 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-19T21:34:33.429Z
-Stopped at: Completed 04-deserialization/04-01-PLAN.md
+Last session: 2026-03-19T21:38:17.312Z
+Stopped at: Completed 04-deserialization/04-02-PLAN.md
