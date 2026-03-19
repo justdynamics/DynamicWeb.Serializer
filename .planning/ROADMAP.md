@@ -29,7 +29,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. A YAML file written by YamlDotNet round-trips without data loss for known-tricky strings: tilde (`~`), CRLF line endings, raw HTML, double quotes, and bang (`!`)
   3. FileSystemStore writes and reads a content tree to a mirror-tree folder layout where folder names reflect the content hierarchy and each item has exactly one `.yml` file
   4. Serializing the same content tree twice produces byte-for-byte identical YAML files (deterministic output)
-**Plans:** 2 plans
+**Plans:** 1/2 plans executed
 
 Plans:
 - [ ] 01-01-PLAN.md — DTOs, YamlConfiguration with ForceStringScalarEmitter, and round-trip fidelity tests
@@ -87,7 +87,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 0/2 | Planning complete | - |
+| 1. Foundation | 1/2 | In Progress|  |
 | 2. Configuration | 0/TBD | Not started | - |
 | 3. Serialization | 0/TBD | Not started | - |
 | 4. Deserialization | 0/TBD | Not started | - |
