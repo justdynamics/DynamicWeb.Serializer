@@ -28,8 +28,8 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Operations
 
-- [ ] **OPS-01**: Scheduled task for full serialization (DB to disk)
-- [ ] **OPS-02**: Scheduled task for full deserialization (disk to DB)
+- [x] **OPS-01**: Scheduled task for full serialization (DB to disk)
+- [x] **OPS-02**: Scheduled task for full deserialization (disk to DB)
 - [x] **OPS-03**: Structured logging — log new, updated, skipped items and errors
 
 ### Infrastructure
@@ -80,8 +80,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DES-02 | Phase 4 | Complete |
 | DES-03 | Phase 4 | Complete |
 | DES-04 | Phase 4 | Complete |
-| OPS-01 | Phase 5 | Pending |
-| OPS-02 | Phase 5 | Pending |
+| OPS-01 | Phase 5 | Complete |
+| OPS-02 | Phase 5 | Complete |
 | OPS-03 | Phase 5 | Complete |
 | INF-01 | Phase 5 | Complete |
 

@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: unknown
-stopped_at: Phase 5 planned
-last_updated: "2026-03-19T23:09:46.526Z"
+status: complete
+stopped_at: Completed 05-02-PLAN.md
+last_updated: "2026-03-20T00:00:00Z"
 progress:
   total_phases: 5
-  completed_phases: 4
+  completed_phases: 5
   total_plans: 10
-  completed_plans: 8
+  completed_plans: 10
 ---
 
 # Project State
@@ -23,8 +23,8 @@ See: .planning/PROJECT.md (updated 2026-03-19)
 
 ## Current Position
 
-Phase: 05 (integration) — EXECUTING
-Plan: 2 of 2
+Phase: 05 (integration) — COMPLETE
+Plan: 2 of 2 (COMPLETE)
 
 ## Performance Metrics
 
@@ -55,6 +55,7 @@ Plan: 2 of 2
 | Phase 04-deserialization P01 | 3min | 2 tasks | 3 files |
 | Phase 04-deserialization P02 | 2min | 2 tasks | 2 files |
 | Phase 05-integration P01 | 8min | 2 tasks | 3 files |
+| Phase 05-integration P02 | 5min | 1 task | 1 file |
 
 ## Accumulated Context
 
@@ -88,6 +89,9 @@ Recent decisions affecting current work:
 - [Phase 04-deserialization]: DeserializeScheduledTask returns !result.HasErrors (false on any write failure), mirrors SerializeScheduledTask return-on-error pattern
 - [Phase 05-integration]: Dynamicweb NuGet 10.23.9 replaces both DLL HintPaths — single reference transitively provides Dynamicweb.Core; integration test csproj needs no explicit reference (flows via ProjectReference)
 - [Phase 05-integration]: Count summary walks returned SerializedArea tree post-serialization — no signature changes to SerializePredicate or SerializePage
+- [Phase 05-integration]: [Collection("ScheduledTaskTests")] for sequential execution — both tasks append to ContentSync.log in BaseDirectory, concurrent runs would corrupt log
+- [Phase 05-integration]: Config placed at AppDomain.CurrentDomain.BaseDirectory for FindConfigFile() discovery (third candidate path, reliable across dotnet test CWD variations)
+- [Phase 05-integration]: OPS-01 uses byte-exact file comparison — catches any encoding/line-ending divergence between task and direct ContentSerializer paths
 
 ### Pending Todos
 
@@ -102,5 +106,5 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-20T00:08:00Z
-Stopped at: Completed 05-01-PLAN.md
+Last session: 2026-03-20T00:18:55Z
+Stopped at: Completed 05-02-PLAN.md — Phase 05 and all 10 plans complete

@@ -16,7 +16,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 2: Configuration** - JSON config file format and predicate include/exclude system (completed 2026-03-19)
 - [x] **Phase 3: Serialization** - DynamicWeb-to-disk pipeline with deterministic, GUID-safe output (completed 2026-03-19)
 - [x] **Phase 4: Deserialization** - Disk-to-DynamicWeb pipeline with GUID identity resolution and atomic writes (completed 2026-03-19)
-- [ ] **Phase 5: Integration** - Scheduled task wiring, SyncCoordinator, and AppStore packaging
+- [x] **Phase 5: Integration** - Scheduled task wiring, SyncCoordinator, and AppStore packaging (completed 2026-03-19)
 
 ## Phase Details
 
@@ -90,7 +90,7 @@ Plans:
   2. Executing the serialize task from the DW scheduler produces the same YAML output as running the serialization pipeline directly in a test
   3. Every sync run logs a per-item structured summary: how many items were new, updated, skipped, and how many errors occurred, with each error including item GUID and context
   4. The NuGet package builds with the `dynamicweb-app-store` tag and can be added to a DynamicWeb project as a package reference
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 
 Plans:
 - [ ] 05-01-PLAN.md — NuGet AppStore packaging (csproj metadata, DLL-to-NuGet switch) and serialization count summary logging
@@ -107,4 +107,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | 2. Configuration | 1/1 | Complete    | 2026-03-19 |
 | 3. Serialization | 2/3 | Complete    | 2026-03-19 |
 | 4. Deserialization | 2/2 | Complete   | 2026-03-19 |
-| 5. Integration | 1/2 | In Progress|  |
+| 5. Integration | 2/2 | Complete   | 2026-03-19 |
