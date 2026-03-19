@@ -90,7 +90,7 @@ Plans:
   2. Executing the serialize task from the DW scheduler produces the same YAML output as running the serialization pipeline directly in a test
   3. Every sync run logs a per-item structured summary: how many items were new, updated, skipped, and how many errors occurred, with each error including item GUID and context
   4. The NuGet package builds with the `dynamicweb-app-store` tag and can be added to a DynamicWeb project as a package reference
-**Plans:** 2 plans
+**Plans:** 1/2 plans executed
 
 Plans:
 - [ ] 05-01-PLAN.md — NuGet AppStore packaging (csproj metadata, DLL-to-NuGet switch) and serialization count summary logging
@@ -107,4 +107,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | 2. Configuration | 1/1 | Complete    | 2026-03-19 |
 | 3. Serialization | 2/3 | Complete    | 2026-03-19 |
 | 4. Deserialization | 2/2 | Complete   | 2026-03-19 |
-| 5. Integration | 0/2 | Not started | - |
+| 5. Integration | 1/2 | In Progress|  |

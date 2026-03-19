@@ -30,11 +30,11 @@ Requirements for initial release. Each maps to roadmap phases.
 
 - [ ] **OPS-01**: Scheduled task for full serialization (DB to disk)
 - [ ] **OPS-02**: Scheduled task for full deserialization (disk to DB)
-- [ ] **OPS-03**: Structured logging — log new, updated, skipped items and errors
+- [x] **OPS-03**: Structured logging — log new, updated, skipped items and errors
 
 ### Infrastructure
 
-- [ ] **INF-01**: DynamicWeb AppStore app structure (.NET 8.0+, NuGet package)
+- [x] **INF-01**: DynamicWeb AppStore app structure (.NET 8.0+, NuGet package)
 - [x] **INF-02**: YAML round-trip fidelity — handle tildes, CRLFs, HTML content without corruption
 - [x] **INF-03**: Windows long-path handling for deep content hierarchies
 
@@ -82,8 +82,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DES-04 | Phase 4 | Complete |
 | OPS-01 | Phase 5 | Pending |
 | OPS-02 | Phase 5 | Pending |
-| OPS-03 | Phase 5 | Pending |
-| INF-01 | Phase 5 | Pending |
+| OPS-03 | Phase 5 | Complete |
+| INF-01 | Phase 5 | Complete |
 
 **Coverage:**
 - v1 requirements: 16 total

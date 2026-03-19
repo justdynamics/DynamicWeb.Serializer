@@ -4,7 +4,7 @@ milestone: v1.0
 milestone_name: milestone
 status: unknown
 stopped_at: Phase 5 planned
-last_updated: "2026-03-19T22:27:47.598Z"
+last_updated: "2026-03-19T23:09:46.526Z"
 progress:
   total_phases: 5
   completed_phases: 4
@@ -19,11 +19,11 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-19)
 
 **Core value:** Developers can reliably move content between DynamicWeb environments through source control, with serialized YAML files as the single source of truth.
-**Current focus:** Phase 04 — deserialization
+**Current focus:** Phase 05 — integration
 
 ## Current Position
 
-Phase: 04 (deserialization) — EXECUTING
+Phase: 05 (integration) — EXECUTING
 Plan: 2 of 2
 
 ## Performance Metrics
@@ -54,6 +54,7 @@ Plan: 2 of 2
 | Phase 03-serialization P02 | 5min | 2 tasks | 7 files |
 | Phase 04-deserialization P01 | 3min | 2 tasks | 3 files |
 | Phase 04-deserialization P02 | 2min | 2 tasks | 2 files |
+| Phase 05-integration P01 | 8min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -85,6 +86,8 @@ Recent decisions affecting current work:
 - [Phase 04-deserialization]: Post-save re-fetch required for ItemType fields on INSERT path — page.Item is null on new Page() before SavePage() persists to DB
 - [Phase 04-deserialization]: Roundtrip integration tests: serialize first via ContentSerializer then deserialize — self-contained tests without pre-committed YAML fixtures
 - [Phase 04-deserialization]: DeserializeScheduledTask returns !result.HasErrors (false on any write failure), mirrors SerializeScheduledTask return-on-error pattern
+- [Phase 05-integration]: Dynamicweb NuGet 10.23.9 replaces both DLL HintPaths — single reference transitively provides Dynamicweb.Core; integration test csproj needs no explicit reference (flows via ProjectReference)
+- [Phase 05-integration]: Count summary walks returned SerializedArea tree post-serialization — no signature changes to SerializePredicate or SerializePage
 
 ### Pending Todos
 
@@ -99,5 +102,5 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-19T22:27:47.593Z
-Stopped at: Phase 5 planned
+Last session: 2026-03-20T00:08:00Z
+Stopped at: Completed 05-01-PLAN.md
