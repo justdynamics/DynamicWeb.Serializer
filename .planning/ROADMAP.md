@@ -47,7 +47,7 @@ Plans:
 **Plans:** 1 plan
 
 Plans:
-- [ ] 02-01-PLAN.md — Config model, JSON loader with validation, and predicate include/exclude evaluator
+- [x] 02-01-PLAN.md — Config model, JSON loader with validation, and predicate include/exclude evaluator
 
 ### Phase 3: Serialization
 **Goal**: Running the serializer against a live DynamicWeb instance produces a complete, GUID-safe, deterministic YAML file tree on disk
@@ -91,7 +91,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation | 2/2 | Complete    | 2026-03-19 |
-| 2. Configuration | 0/1 | Planning complete | - |
+| 2. Configuration | 1/1 | Complete | 2026-03-19 |
 | 3. Serialization | 0/TBD | Not started | - |
 | 4. Deserialization | 0/TBD | Not started | - |
 | 5. Integration | 0/TBD | Not started | - |

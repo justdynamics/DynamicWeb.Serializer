@@ -23,8 +23,8 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Configuration
 
-- [ ] **CFG-01**: Standalone config file defining sync scope (not DW admin UI)
-- [ ] **CFG-02**: Predicate rules — include/exclude content trees by path or page ID
+- [x] **CFG-01**: Standalone config file defining sync scope (not DW admin UI)
+- [x] **CFG-02**: Predicate rules — include/exclude content trees by path or page ID
 
 ### Operations
 
@@ -71,8 +71,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SER-01 | Phase 1 | Complete |
 | SER-02 | Phase 1 | Complete |
 | SER-04 | Phase 1 | Complete |
-| CFG-01 | Phase 2 | Pending |
-| CFG-02 | Phase 2 | Pending |
+| CFG-01 | Phase 2 | Complete |
+| CFG-02 | Phase 2 | Complete |
 | SER-03 | Phase 3 | Pending |
 | INF-02 | Phase 3 | Pending |
 | INF-03 | Phase 3 | Pending |
