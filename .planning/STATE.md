@@ -1,9 +1,9 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: MVP
-status: shipped
-stopped_at: v1.0 milestone completed and archived
+milestone: v1.1
+milestone_name: Robustness
+status: in_progress
+stopped_at: Gap closure Phase 6 created from v1.0 audit
 last_updated: "2026-03-20T12:45:39.041Z"
 progress:
   total_phases: 5
@@ -19,7 +19,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-20)
 
 **Core value:** Developers can reliably move content between DynamicWeb environments through source control, with serialized YAML files as the single source of truth.
-**Current focus:** v1.0 shipped — planning next milestone
+**Current focus:** v1.1 — Phase 06 Sync Robustness (gap closure)
 
 ## Current Position
 
