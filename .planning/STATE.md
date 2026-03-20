@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Robustness
-status: unknown
-stopped_at: Completed 06-01-PLAN.md
-last_updated: "2026-03-20T13:29:09.816Z"
+status: shipped
+stopped_at: v1.1 milestone completed and archived
+last_updated: "2026-03-20T13:34:00.588Z"
 progress:
   total_phases: 1
   completed_phases: 1
@@ -19,7 +19,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-20)
 
 **Core value:** Developers can reliably move content between DynamicWeb environments through source control, with serialized YAML files as the single source of truth.
-**Current focus:** Phase 06 — sync-robustness
+**Current focus:** v1.1 shipped — planning next milestone
 
 ## Current Position
 
