@@ -24,6 +24,9 @@ Developers can reliably move content between DynamicWeb environments through sou
 - [x] Structured as a DynamicWeb AppStore app (NuGet package with `dynamicweb-app-store` tag) — v1.0
 - [x] Comprehensive error handling and logging — v1.0
 - [x] Cross-environment visual editor fidelity (grid rows, page properties, icons, spacing) — v1.0
+- [x] Multi-column paragraph attribution preserved on round-trip — v1.1
+- [x] Dry-run mode reports PropertyFields changes (Icon, SubmenuType) — v1.1
+- [x] OutputDirectory validated at config-load and deserialize time — v1.1
 
 ### Active
 
@@ -83,4 +86,4 @@ Developers can reliably move content between DynamicWeb environments through sou
 | GridRow visual properties | TopSpacing, BottomSpacing, ContainerWidth etc. needed for visual editor | ✓ Good |
 
 ---
-*Last updated: 2026-03-20 after v1.0 milestone completion*
+*Last updated: 2026-03-20 after Phase 6 completion (v1.1 gap closure)*
