@@ -23,6 +23,8 @@ public class ConfigWriterTests : IDisposable
     {
         OutputDirectory = "/serialization",
         LogLevel = "debug",
+        DryRun = true,
+        ConflictStrategy = ConflictStrategy.SourceWins,
         Predicates = new List<PredicateDefinition>
         {
             new()
@@ -117,5 +119,31 @@ public class ConfigWriterTests : IDisposable
         Assert.Equal(2, loaded.Predicates[0].Excludes.Count);
         Assert.Equal("/Test/Archive", loaded.Predicates[0].Excludes[0]);
         Assert.Equal("/Test/Temp", loaded.Predicates[0].Excludes[1]);
+    }
+
+    [Fact]
+    public void Save_WritesNewFields_JsonContainsDryRunAndConflictStrategy()
+    {
+        var config = CreateTestConfig();
+        var filePath = Path.Combine(_tempDir, "newfields.json");
+
+        ConfigWriter.Save(config, filePath);
+        var json = File.ReadAllText(filePath);
+
+        Assert.Contains("\"dryRun\": true", json);
+        Assert.Contains("\"conflictStrategy\": \"source-wins\"", json);
+    }
+
+    [Fact]
+    public void Save_RoundTrip_PreservesNewFields()
+    {
+        var config = CreateTestConfig();
+        var filePath = Path.Combine(_tempDir, "roundtrip_new.json");
+
+        ConfigWriter.Save(config, filePath);
+        var loaded = ConfigLoader.Load(filePath);
+
+        Assert.True(loaded.DryRun);
+        Assert.Equal(ConflictStrategy.SourceWins, loaded.ConflictStrategy);
     }
 }

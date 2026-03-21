@@ -32,8 +32,10 @@ public static class ConfigPathResolver
         var defaultPath = DefaultPath;
         var defaultConfig = new SyncConfiguration
         {
-            OutputDirectory = "./ContentSync",
+            OutputDirectory = @"\System\ContentSync",
             LogLevel = "info",
+            DryRun = false,
+            ConflictStrategy = ConflictStrategy.SourceWins,
             Predicates = new List<PredicateDefinition>
             {
                 new() { Name = "Default", Path = "/", AreaId = 1 }

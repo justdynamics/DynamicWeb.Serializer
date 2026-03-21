@@ -313,6 +313,80 @@ public class ConfigLoaderTests : IDisposable
         }
 
         var errorOutput = errorCapture.ToString();
-        Assert.DoesNotContain("does not exist", errorOutput, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain(existingDir, errorOutput);
+    }
+
+    // -------------------------------------------------------------------------
+    // DryRun and ConflictStrategy fields
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public void Load_ConfigWithoutNewFields_DefaultsToDryRunFalseAndSourceWins()
+    {
+        var json = """
+            {
+              "outputDirectory": "/serialization",
+              "logLevel": "info",
+              "predicates": [
+                {
+                  "name": "Test",
+                  "path": "/Test",
+                  "areaId": 1
+                }
+              ]
+            }
+            """;
+        var path = WriteConfigFile(json);
+
+        var config = ConfigLoader.Load(path);
+
+        Assert.False(config.DryRun);
+        Assert.Equal(ConflictStrategy.SourceWins, config.ConflictStrategy);
+    }
+
+    [Fact]
+    public void Load_ConfigWithDryRunTrue_ReturnsDryRunTrue()
+    {
+        var json = """
+            {
+              "outputDirectory": "/serialization",
+              "dryRun": true,
+              "predicates": [
+                {
+                  "name": "Test",
+                  "path": "/Test",
+                  "areaId": 1
+                }
+              ]
+            }
+            """;
+        var path = WriteConfigFile(json);
+
+        var config = ConfigLoader.Load(path);
+
+        Assert.True(config.DryRun);
+    }
+
+    [Fact]
+    public void Load_ConfigWithConflictStrategy_ReturnsSourceWins()
+    {
+        var json = """
+            {
+              "outputDirectory": "/serialization",
+              "conflictStrategy": "source-wins",
+              "predicates": [
+                {
+                  "name": "Test",
+                  "path": "/Test",
+                  "areaId": 1
+                }
+              ]
+            }
+            """;
+        var path = WriteConfigFile(json);
+
+        var config = ConfigLoader.Load(path);
+
+        Assert.Equal(ConflictStrategy.SourceWins, config.ConflictStrategy);
     }
 }

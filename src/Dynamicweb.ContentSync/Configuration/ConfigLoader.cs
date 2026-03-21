@@ -34,6 +34,8 @@ public static class ConfigLoader
         {
             OutputDirectory = raw.OutputDirectory!,
             LogLevel = string.IsNullOrWhiteSpace(raw.LogLevel) ? "info" : raw.LogLevel,
+            DryRun = raw.DryRun ?? false,
+            ConflictStrategy = ParseConflictStrategy(raw.ConflictStrategy),
             Predicates = raw.Predicates!.Select(BuildPredicate).ToList()
         };
     }
@@ -58,6 +60,15 @@ public static class ConfigLoader
         }
     }
 
+    private static ConflictStrategy ParseConflictStrategy(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return ConflictStrategy.SourceWins;
+        if (string.Equals(value, "source-wins", StringComparison.OrdinalIgnoreCase))
+            return ConflictStrategy.SourceWins;
+        return ConflictStrategy.SourceWins; // Unknown values default to source-wins
+    }
+
     private static PredicateDefinition BuildPredicate(RawPredicateDefinition raw) => new()
     {
         Name = raw.Name!,
@@ -71,6 +82,8 @@ public static class ConfigLoader
     {
         public string? OutputDirectory { get; set; }
         public string? LogLevel { get; set; }
+        public bool? DryRun { get; set; }
+        public string? ConflictStrategy { get; set; }
         public List<RawPredicateDefinition>? Predicates { get; set; }
     }
 
