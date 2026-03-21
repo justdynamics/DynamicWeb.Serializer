@@ -21,7 +21,7 @@ public class SerializeScheduledTask : BaseScheduledTaskAddIn
             Log($"BaseDirectory: {AppDomain.CurrentDomain.BaseDirectory}");
             Log($"WorkingDirectory: {Directory.GetCurrentDirectory()}");
 
-            var configPath = FindConfigFile();
+            var configPath = ConfigPathResolver.FindConfigFile();
             if (configPath == null)
             {
                 Log("ERROR: ContentSync.config.json not found. Searched: application root, App_Data, working directory.");
@@ -60,26 +60,6 @@ public class SerializeScheduledTask : BaseScheduledTaskAddIn
                 Log($"Inner: {ex.InnerException.GetType().Name}: {ex.InnerException.Message}");
             return false;
         }
-    }
-
-    private string? FindConfigFile()
-    {
-        var candidates = new[]
-        {
-            Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "wwwroot", "Files", "ContentSync.config.json"),
-            Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "Files", "ContentSync.config.json"),
-            Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ContentSync.config.json"),
-            Path.Combine(Directory.GetCurrentDirectory(), "ContentSync.config.json")
-        };
-
-        foreach (var path in candidates)
-        {
-            Log($"  Checking: {path} -> {(File.Exists(path) ? "FOUND" : "not found")}");
-            if (File.Exists(path))
-                return path;
-        }
-
-        return null;
     }
 
     private void Log(string message)
