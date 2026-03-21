@@ -16,11 +16,11 @@ Requirements for admin UI milestone. Each maps to roadmap phases.
 ### Admin UI Settings
 
 - [x] **UI-01**: Sync node appears at Settings > Content > Sync in DW admin navigation tree
-- [ ] **UI-02**: User can view and edit OutputDirectory from the settings screen
-- [ ] **UI-03**: User can toggle dry-run mode from the settings screen
-- [ ] **UI-04**: User can configure logging level from the settings screen
-- [ ] **UI-05**: User can set conflict strategy from the settings screen
-- [ ] **UI-06**: Settings changes persist to ContentSync.config.json on save
+- [x] **UI-02**: User can view and edit OutputDirectory from the settings screen
+- [x] **UI-03**: User can toggle dry-run mode from the settings screen
+- [x] **UI-04**: User can configure logging level from the settings screen
+- [x] **UI-05**: User can set conflict strategy from the settings screen
+- [x] **UI-06**: Settings changes persist to ContentSync.config.json on save
 
 ### Predicate Management
 
@@ -67,11 +67,11 @@ Requirements for admin UI milestone. Each maps to roadmap phases.
 | CFG-02 | Phase 7 | Complete |
 | CFG-03 | Phase 7 | Complete |
 | UI-01 | Phase 7 | Complete |
-| UI-02 | Phase 8 | Pending |
-| UI-03 | Phase 8 | Pending |
-| UI-04 | Phase 8 | Pending |
-| UI-05 | Phase 8 | Pending |
-| UI-06 | Phase 8 | Pending |
+| UI-02 | Phase 8 | Complete |
+| UI-03 | Phase 8 | Complete |
+| UI-04 | Phase 8 | Complete |
+| UI-05 | Phase 8 | Complete |
+| UI-06 | Phase 8 | Complete |
 | PRED-01 | Phase 9 | Pending |
 | PRED-02 | Phase 9 | Pending |
 | PRED-03 | Phase 9 | Pending |

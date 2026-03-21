@@ -64,7 +64,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [ ] 08-01-PLAN.md — Config model expansion (DryRun, ConflictStrategy) + full settings screen with dropdowns and validation
+- [x] 08-01-PLAN.md — Config model expansion (DryRun, ConflictStrategy) + full settings screen with dropdowns and validation
 
 ### Phase 9: Predicate Management
 **Goal**: Users can manage content sync predicates (add, view, edit, delete) from the DW admin UI
