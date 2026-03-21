@@ -50,7 +50,7 @@
 
 Plans:
 - [x] 07-01-PLAN.md — Config infrastructure: ConfigWriter, ConfigPathResolver, and tests
-- [ ] 07-02-PLAN.md — Admin UI tree node registration and skeleton edit screen
+- [x] 07-02-PLAN.md — Admin UI tree node registration and skeleton edit screen
 
 ### Phase 8: Settings Screen
 **Goal**: Users can view and edit all ContentSync configuration options from the DW admin UI

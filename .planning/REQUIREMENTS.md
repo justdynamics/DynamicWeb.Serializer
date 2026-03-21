@@ -15,7 +15,7 @@ Requirements for admin UI milestone. Each maps to roadmap phases.
 
 ### Admin UI Settings
 
-- [ ] **UI-01**: Sync node appears at Settings > Content > Sync in DW admin navigation tree
+- [x] **UI-01**: Sync node appears at Settings > Content > Sync in DW admin navigation tree
 - [ ] **UI-02**: User can view and edit OutputDirectory from the settings screen
 - [ ] **UI-03**: User can toggle dry-run mode from the settings screen
 - [ ] **UI-04**: User can configure logging level from the settings screen
@@ -66,7 +66,7 @@ Requirements for admin UI milestone. Each maps to roadmap phases.
 | CFG-01 | Phase 7 | Complete |
 | CFG-02 | Phase 7 | Complete |
 | CFG-03 | Phase 7 | Complete |
-| UI-01 | Phase 7 | Pending |
+| UI-01 | Phase 7 | Complete |
 | UI-02 | Phase 8 | Pending |
 | UI-03 | Phase 8 | Pending |
 | UI-04 | Phase 8 | Pending |
