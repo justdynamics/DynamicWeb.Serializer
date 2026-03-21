@@ -1,203 +1,214 @@
 # Project Research Summary
 
-**Project:** Dynamicweb.ContentSync
-**Domain:** CMS Content Serialization / Cross-Environment Sync Tooling (DynamicWeb AppStore App)
-**Researched:** 2026-03-19
-**Confidence:** HIGH
+**Project:** Dynamicweb.ContentSync v1.2 Admin UI
+**Domain:** DynamicWeb 10 admin UI extension — settings screens, predicate CRUD, context menu actions, zip packaging
+**Researched:** 2026-03-21
+**Confidence:** MEDIUM (stack HIGH; architecture MEDIUM; features MEDIUM; pitfalls MEDIUM-HIGH)
 
 ## Executive Summary
 
-Dynamicweb.ContentSync is a DynamicWeb 10 AppStore app that serializes content trees (Areas, Pages, Grid Rows, Paragraphs) to YAML files on disk and deserializes them back into the database — enabling source-controlled, repeatable content deployments across environments. This problem space is well-understood: Sitecore Unicorn and TDS have solved it for the Sitecore ecosystem, and the patterns translate directly to DynamicWeb's content model. The recommended approach is to implement the same five-subsystem architecture (Predicate, TreeWalker, Serializer/Deserializer, IdentityResolver, Evaluator) orchestrated by two thin scheduled task entry points. YamlDotNet (16.3.0) on .NET 8 is the unambiguous stack choice; no meaningful alternatives exist in the .NET YAML space.
+ContentSync v1.2 adds a DW10 admin UI layer over the existing v1.1 serialization/deserialization engine. The pattern is well-established: DW10 provides a declarative C# screen framework (`EditScreenBase`, `ListScreenBase`, `CommandBase`, `DataQueryModelBase`) that integrates with the Settings tree via `NavigationNodeProvider<AreasSection>` and into existing screens via `ScreenInjector<T>`. A single NuGet package addition — `Dynamicweb.Content.UI 10.23.9` — brings the full transitive chain needed (CoreUI, Application.UI, Content.UI). No Razor SDK change, no custom views, no heavyweight meta-packages. The existing serialization engine is reused without modification; context menu actions construct temporary `SyncConfiguration` objects and pass them to the existing `ContentSerializer`/`ContentDeserializer` via constructor injection.
 
-The core insight from research is that GUID-based identity resolution is the load-bearing design decision for this entire project. DynamicWeb numeric IDs are environment-specific and must never appear as references in serialized YAML. Every other design choice flows from this: the mirror-tree file layout, the source-wins evaluator, the dependency-ordered deserialization write pass, and the predicate-scoped orphan handling. Getting the identity model right in the first implementation phase is the single most important risk mitigation.
+The recommended build order is a strict four-phase sequence driven by dependency and ascending risk. Phases 1-3 (config infrastructure, settings screen, predicate CRUD) follow proven patterns from the official ExpressDelivery sample and carry LOW implementation risk. Phase 4 (context menu serialize/deserialize) carries HIGH risk because three key DW API behaviors are unverified at runtime: the exact screen type to inject into for the content tree, how `DownloadFileAction` handles large file streaming, and whether CoreUI provides a file upload component for the deserialize flow. Phase 4 must begin with isolated spikes before connecting to serialize/deserialize logic.
 
-The primary implementation risks are all known and avoidable: YAML round-trip data loss from unconfigured scalar styles (configure `ScalarStyle.Literal` for multiline before any serialization code ships), parent-before-child ordering violations during deserialization (build the depth-first sort into the write pass architecture from the start), and partial deserialization leaving the target in a broken state (wrap the write pass in a database transaction or implement a clear rollback strategy). All three risks have explicit prevention strategies documented in PITFALLS.md and must be addressed in design, not retrofitted.
+The single most critical architectural constraint is that `ContentSync.config.json` remains the source of truth — no database tables. Every UI command follows a read-modify-write pattern on the JSON file. Config concurrency (concurrent UI saves, manual edits during a UI save) is the top pitfall and must be addressed with `ReaderWriterLockSlim` + file locking + stale-write detection in the infrastructure phase, before any screen touches the file.
 
 ## Key Findings
 
 ### Recommended Stack
 
-The stack is simple and uncontroversial. DynamicWeb 10.2+ requires .NET 8 LTS, and `Dynamicweb.Core` (10.23.9, published 2026-03-17) is the root NuGet package — it pulls in all required content APIs transitively. YamlDotNet 16.3.0 is the only viable .NET YAML library (43.5M+ downloads, actively maintained, SharpYaml is dead since 2018). The config file for predicates should be JSON (not YAML) to avoid indentation ambiguity in machine-written config.
+The existing stack (`.NET 8`, `Dynamicweb 10.23.9`, `YamlDotNet 13.7.1`, `Microsoft.Extensions.Configuration.Json 8.0.1`) is unchanged. A single line added to the project file is the complete stack change for v1.2:
+
+```
+<PackageReference Include="Dynamicweb.Content.UI" Version="10.23.9" />
+```
+
+This one package transitively delivers `Dynamicweb.CoreUI` (screen bases, commands, queries, actions), `Dynamicweb.Application.UI` (AreasSection, SettingsArea, ActionBuilder), and `Dynamicweb.Content.UI` itself (PageListScreen, PageEditScreen for context menu injection). ZIP packaging is handled by `System.IO.Compression.ZipFile` from the .NET 8 BCL — no external library needed. The Razor SDK and embedded asset infrastructure are explicitly not needed because all screens use DW's declarative C# screen builder pattern.
 
 **Core technologies:**
-- **.NET 8.0 LTS:** Target framework — required by DynamicWeb 10.2+
-- **Dynamicweb.Core 10.23.9:** DW platform APIs (AreaService, PageService, GridService, Paragraphs, BaseScheduledTaskAddIn, LogManager) — the root package for all DW functionality
-- **YamlDotNet 16.3.0:** YAML serialization — dominant .NET library, no real competition
-- **Microsoft.Extensions.Configuration.Json 8.0.x:** Config file loading — only needed if DW does not inject IConfiguration directly (verify at implementation)
-- **xunit 2.9.3 + Moq 4.x:** Test framework and mocking — xUnit is the dominant community choice for .NET libraries
+- `Dynamicweb.Content.UI 10.23.9`: admin UI screens and content tree integration — minimum sufficient package; avoids pulling all of Ring1 (20+ packages including Ecommerce, Products, Insights)
+- `System.IO.Compression` (.NET 8 BCL): zip packaging for serialize downloads and deserialize uploads — zero additional dependency
+- `Microsoft.NET.Sdk` (existing, no change): no SDK change needed since all screens are declarative C#, not custom Razor views
 
-**Critical constraint:** Do not serialize DW model objects (`Page`, `Paragraph`) directly — they carry internal state and lazy-loaded collections. Always map to plain C# DTO types (`SerializedPage`, `SerializedParagraph`) before touching YamlDotNet. The `GetParagraphsByPageId` method only returns active paragraphs by default — investigate the `bool` overload for including inactive paragraphs at implementation time.
+See `STACK.md` for the full transitive dependency chain, the complete class-to-namespace mapping, and the verified list of what NOT to add.
 
 ### Expected Features
 
-Research against Sitecore Unicorn and TDS provides a clear feature baseline. Every table-stakes feature has a direct Unicorn analogue that is well-documented.
+Research identified four feature areas with clear complexity and risk profiles.
 
 **Must have (table stakes):**
-- Serialize full content tree (Area > Page > Grid Row > Column > Paragraph) — core value, nothing works without this
-- Deserialize files back to database with GUID-based identity resolution — the other half of the core loop
-- Mirror-tree file layout (one `.yml` per item, folders reflect hierarchy) — enables readable git diffs
-- Predicate configuration via config file (include/exclude path rules) — required for safe operation on real installations
-- Source-wins conflict resolution (disk overwrites DB, no merge) — the only safe default
-- Orphan handling (delete items in scope but not in files) — prevents content accumulation on target
-- Dependency-ordered deserialization (parent before child) — non-optional; FK constraints enforce this
-- Two scheduled tasks (serialize + deserialize as separate tasks) — the primary execution mechanism
-- Structured logging (new/updated/deleted/skipped/error per item) — required for operator trust
-- Fail-loud error handling with item context — prevents silent divergence between environments
+- Settings screen (OutputDirectory, LogLevel) under Settings > Content > Sync — LOW risk, proven pattern
+- Config reads/writes JSON file directly — file is source of truth, no DB
+- Predicate list screen with add/edit/delete — LOW-MEDIUM risk, standard CRUD
+- Predicate edit form (Name, Path, AreaId, Excludes) — LOW-MEDIUM risk
+- "Serialize to ZIP" context menu on content tree pages — MEDIUM-HIGH risk (ScreenInjector target type unverified)
+- Browser ZIP download from serialize action — MEDIUM risk (DownloadFileAction pattern is proven but streaming behavior for large files is undocumented)
+- "Deserialize from ZIP" context menu with file upload — HIGH risk (upload mechanism unknown in CoreUI)
+- Confirmation dialog before destructive deserialize — LOW risk
 
-**Should have (competitive advantage over DW's built-in deployment tool):**
-- Field-level exclusions (FieldFilters) — avoid noisy diffs from system-managed fields like ModifiedDate (add when users report the noise)
-- Multiple named configuration sets — needed when multiple feature teams share one DW instance (add when a customer requires it)
-- Dry-run mode — report what would change without applying (add when users are nervous about production deserialize)
+**Should have (differentiators for v1.2 stretch):**
+- Config file path shown read-only on settings screen — LOW effort, useful debugging aid
+- Area picker dropdown (populated from DW areas) on predicate edit — MEDIUM, friendlier than typing a numeric ID
+- Serialize also saves ZIP to OutputDirectory alongside browser download — LOW effort
 
-**Defer to v2+:**
-- Real-time change detection via DynamicWeb Notifications API — high complexity; full scheduled sync is sufficient
-- Admin UI for configuration and status — out of scope per PROJECT.md; defeats the developer workflow goal
-- Incremental/delta sync — requires change tracking infrastructure; full sync is safe and predictable
-- Media/file serialization — binary files in git; separate deployment concern
+**Defer to v1.3:**
+- Import as new subtree with GUID remapping — significant new logic not in existing codebase
+- Predicate path browser (content tree picker for path field) — requires `OpenSlideOverAction` research
+- Predicate preview (show which pages match predicates) — expensive for large trees
+- Visual status indicator (last sync time) — requires new persistence mechanism
+- Dry-run preview from context menu before applying deserialize — nice-to-have, not blocking
+
+**Anti-features (never build):**
+- DB-backed settings storage — violates config-as-source-of-truth constraint
+- Lucene query expression UI for predicates — semantic mismatch; predicates are path rules, not index queries
+- Git push from admin UI — fragile and unsafe; git is a developer tool
+
+See `FEATURES.md` for full complexity tables, feature dependency graph, and MVP recommendation.
 
 ### Architecture Approach
 
-The architecture follows Unicorn's five-subsystem decomposition directly: two thin scheduled task entry points delegate to a SyncCoordinator, which orchestrates a Predicate (what to include), TreeWalker (DW API traversal), ContentSerializer/ContentDeserializer (DW objects ↔ YAML DTOs), IdentityResolver (GUID to numeric ID mapping), and Evaluator (source-wins decision). All DW service calls happen through the service layer APIs — never via direct SQL. The Models layer contains plain DTOs with no DW dependencies, keeping the YAML schema decoupled from DW API churn.
+The v1.2 architecture is a management UI layer over the existing config file with the serialization engine untouched. New components fit into three groups: (1) config infrastructure — `ConfigPathResolver` (extracted from duplicated scheduled task logic) and `ConfigWriter` (counterpart to existing `ConfigLoader`); (2) settings UI — screens, queries, commands following the ExpressDelivery CQRS-style screen pattern; (3) context menu actions — a `ScreenInjector` on the page overview screen that adds serialize/deserialize actions backed by commands that construct temporary `SyncConfiguration` objects and delegate to the existing engine.
 
 **Major components:**
-1. **Tasks/** — Thin DW entry-point wiring only; zero business logic; extends `BaseScheduledTaskAddIn`
-2. **Configuration/** — ConfigurationLoader, Predicate; no DW dependency; fully unit-testable
-3. **Serialization/** — SyncCoordinator, TreeWalker, ContentSerializer, ContentDeserializer, IdentityResolver; the core pipeline
-4. **Models/** — SerializedArea, SerializedPage, SerializedGridRow, SerializedGridColumn, SerializedParagraph; plain DTOs; ItemType custom fields as `Dictionary<string, object>`
-5. **Infrastructure/** — FileSystemStore (mirror-tree I/O), ContentSyncLogger (structured logging wrapper)
+1. `ConfigPathResolver` — shared config file discovery, extracted from the 4-path search logic currently duplicated in both scheduled tasks
+2. `ConfigWriter` — write `SyncConfiguration` back to JSON, counterpart to `ConfigLoader`
+3. `ContentSyncSettingsNodeProvider` — `NavigationNodeProvider<AreasSection>` registering "Content Sync" with "Predicates" sub-node
+4. Settings screens + queries + commands — `EditScreenBase` / `ListScreenBase` with file-backed read-modify-write commands; index-based predicate identity (`GetId() => $"{Index}"`) because predicates have no DB-assigned ID
+5. `PageOverviewInjector` — `ScreenInjector<T>` adding serialize/deserialize context menu to content tree
+6. `SerializeToZipCommand` — builds temp `SyncConfiguration`, runs `ContentSerializer`, zips output, returns `FileResult` download
+7. `DeserializeFromZipCommand` — accepts uploaded zip, extracts to temp dir, builds temp `SyncConfiguration`, runs `ContentDeserializer`, cleans up
 
-**Build order is strict:** DTOs first (no dependencies), then FileSystemStore, then ConfigurationLoader+Predicate, then TreeWalker, then Serializer, then IdentityResolver, then Deserializer, then SyncCoordinator, then Scheduled Tasks last. This ordering allows each layer to be tested independently before the next is built.
+The critical design insight: context menu actions reuse `ContentSerializer`/`ContentDeserializer` by constructing a temporary `SyncConfiguration`. No code duplication needed. The serializer/deserializer already accept config via constructor and are agnostic to how that config was created.
+
+See `ARCHITECTURE.md` for component boundaries, full data flow diagrams, implementation patterns with code samples, and the anti-patterns to avoid.
 
 ### Critical Pitfalls
 
-1. **YAML round-trip data loss from unconfigured scalar styles** — Configure `ScalarStyle.Literal` for multiline/HTML fields and `ScalarStyle.DoubleQuoted` for all other strings before writing any serialization code. Write a round-trip fidelity test (serialize known-tricky strings including `~`, CRLF, `<html>`, `"quotes"`, `!bang`, deserialize, assert byte-for-byte equality) before any other serialization work. Recovery cost is HIGH — all existing YAML files must be re-serialized if the style is wrong.
+1. **Config file concurrency — read-modify-write race** — concurrent UI saves or a UI save overlapping a manual edit silently overwrites changes. Prevent with `ReaderWriterLockSlim` + `FileShare.None` file locking + stale-write detection (compare file timestamp at save time to the timestamp when the UI loaded the config). Must be built before any screen touches the config file.
 
-2. **Inserting children before parents on deserialization** — Build a depth-first, parent-before-child insertion queue before writing anything to the database. Load all YAML files into memory, sort by tree depth (Areas=0, Pages=1, GridRows=2, Paragraphs=3), then write. Never write to the DB during file traversal. Design this into the architecture from the start — retrofitting is significantly harder.
+2. **NavigationNodeProvider chain incomplete — node visible but screen 404s** — all four artifacts (provider, screen, query, model) must exist and be discoverable by DW's assembly scanner before the first test. Build as a complete vertical slice; do not test the node in isolation.
 
-3. **Numeric ID leakage in reference fields** — Audit every DW column and field type that stores inter-item references before writing any serialization code. Serialize reference fields as GUIDs (look up GUID by numeric ID at serialize time). On deserialize, look up numeric ID by GUID in target DB. Document fields with embedded numeric IDs in HTML content as a known v1 limitation.
+3. **ScreenInjector targets wrong screen type** — silently injects nothing if the generic type parameter names the wrong DW screen class. Spike with a minimal "Test" action first; verify it appears on page nodes (not area nodes) before building the real action logic. The type name must be discovered via assembly inspection, not guessed.
 
-4. **Partial deserialization leaving broken target state** — Wrap the entire deserialization write pass in a database transaction; rollback on any exception and log clearly. If DW APIs do not support explicit transaction wrapping across all content types, implement compensating logic: detect partial runs, log every written item with GUID and numeric ID, warn operators to verify/restore before re-running.
+4. **Zip temp file leaks on exception or process recycle** — temp directories from failed serialize operations accumulate on disk. Implement cleanup-on-startup to scan for `ContentSync-*` directories older than 1 hour. Do not rely solely on `finally` blocks (process recycle bypasses them).
 
-5. **Sibling ordering non-deterministic** — Always serialize `SortOrder` (or equivalent) for every item type. Enforce deterministic query ordering on all DB reads during serialization. Validate: serialize twice without content changes, `git diff` must show zero changes.
+5. **Config validation diverges between UI and scheduled task paths** — extract validation into a shared `ConfigValidator` called by both `ConfigLoader` and UI save commands. Never write config JSON without validating through the shared validator.
+
+See `PITFALLS.md` for the full list including moderate pitfalls: zip-slip attack prevention on deserialize upload, permission guards on context menu commands, unknown JSON field preservation on UI save, and config caching in scheduled tasks.
 
 ## Implications for Roadmap
 
-Based on research, the architecture's build order and the pitfall phase mappings define a natural five-phase structure:
+Based on combined research, a four-phase structure is recommended. Phases are ordered by dependency chain and ascending risk. The highest-uncertainty work is isolated in Phase 4 where accumulated DW UI experience from earlier phases can inform implementation spikes.
 
-### Phase 1: Foundation — Data Model and YAML Serialization
+### Phase 1: Config Infrastructure + Settings Tree Node
 
-**Rationale:** The ContentModel DTOs and YamlDotNet configuration are the shared contract that everything else depends on. YAML round-trip fidelity must be proven before any other work begins — if the scalar style is wrong, all downstream YAML is suspect and must be re-generated. This phase has no DW dependencies, enabling full unit test coverage.
+**Rationale:** Zero DW UI framework risk. Config concurrency is the top pitfall and must be solved before any screen writes the file. The nav node registration is the most uncertain DW behavior in the settings UI work — surfacing it in Phase 1 allows early course correction without losing investment in the full screen stack.
 
-**Delivers:** Plain DTO types for all content node types (SerializedArea, SerializedPage, SerializedGridRow, SerializedGridColumn, SerializedParagraph) with `Dictionary<string, object>` for ItemType fields; YamlDotNet configured with `ScalarStyle.Literal` for multiline and `ScalarStyle.DoubleQuoted` for strings; FileSystemStore for mirror-tree read/write; round-trip fidelity test suite passing for known-tricky strings.
+**Delivers:** `ConfigPathResolver` (shared config file discovery), `ConfigWriter` (JSON write path with file locking), `ContentSyncSettingsNodeProvider` (nav node visible in DW admin tree), `ContentSyncNavigationNodePathProvider` (breadcrumb support), refactored scheduled tasks using shared `ConfigPathResolver`.
 
-**Addresses:** Mirror-tree file layout, YAML format selection, DTO design for custom fields
+**Addresses:** Settings tree navigation (table stakes), config-file-as-source-of-truth constraint, scheduled task `FindConfigFile()` deduplication.
 
-**Avoids:** YAML round-trip data loss (Pitfall 2), path length overflow on Windows (Pitfall 5 — implement path length check in FileSystemStore from the start), sibling ordering non-determinism (Pitfall 6 — sort order must be in the DTO schema from day one)
+**Avoids:** Pitfall 1 (concurrency — locking built before first UI write), Pitfall 2 (node visible but 404 — validate registration early), Pitfall 10 (config caching — scheduled tasks load fresh from disk on each run).
 
-### Phase 2: Configuration and Predicate System
+**Research flag:** Needs a runtime spike in a running DW instance to confirm the `AreasSection` type parameter places the node under "Settings > Content" (not a top-level Settings section). Verify placement before building the screen stack.
 
-**Rationale:** The predicate system is a prerequisite for both serialization and deserialization — it defines what scope to operate on. It has no DW dependency (operates on paths/GUIDs, not live services), so it can be built and thoroughly tested before DW integration begins. The predicate evaluation model (which rule wins, how exclusions override inclusions) must be explicitly documented as a design artifact here.
+### Phase 2: Settings Screen (OutputDirectory, LogLevel)
 
-**Delivers:** JSON config file format for ContentSyncConfiguration; ConfigurationLoader that reads and validates the config on disk; Predicate component that evaluates include/exclude rules against item paths; item-count verification tooling for validating predicate output.
+**Rationale:** Simplest screen pattern — single object, no collection management. Establishes the full screen/query/command cycle (EditScreenBase + DataQueryModelBase + CommandBase) that Phase 3 will replicate for predicates. Delivers immediate practical value: admins can edit config without touching the JSON file manually.
 
-**Addresses:** Predicate configuration (table-stakes feature), multiple named configurations (architecture extensibility)
+**Delivers:** `ContentSyncSettingsDataModel`, `ContentSyncSettingsQuery` (reads config, maps to model), `SaveContentSyncSettingsCommand` (read-modify-write with stale-write detection), `ContentSyncSettingsScreen` with OutputDirectory and LogLevel editors, shared `ConfigValidator` class.
 
-**Avoids:** Predicate silently excluding required items (Pitfall 7 — build item-count verification alongside the predicate, not after)
+**Addresses:** Settings edit (7 table stakes features from FEATURES.md), path validation on save, graceful handling of missing config file.
 
-### Phase 3: Serialization Pipeline (DW to Disk)
+**Avoids:** Pitfall 6 (validation divergence — shared `ConfigValidator` built here), Pitfall 1 (stale-write detection implemented in save command).
 
-**Rationale:** Serialize before deserialize — the YAML files are a prerequisite for deserialization, and the serializer validates the DW API integration before the more complex deserializer is built. This is also where the ID strategy design must be finalized: which fields are reference fields (serialize as GUID), which are content fields (serialize as-is).
+**Research flag:** Standard pattern from ExpressDelivery sample — skip research phase.
 
-**Delivers:** TreeWalker that traverses the DW content hierarchy using AreaService, PageService, GridService, ParagraphService in predicate-filtered depth-first order; ContentSerializer that maps DW objects to DTOs and writes YAML files; deterministic traversal ordering (ORDER BY SortOrder); reference field audit and GUID serialization for cross-item references.
+### Phase 3: Predicate Management (CRUD List)
 
-**Addresses:** Full content tree serialization (table stakes), GUID-based identity, deterministic output
+**Rationale:** Depends on Phase 2 screen pattern being validated. More complex than Phase 2 because it manages a collection with index-based identity rather than a single settings object. All patterns are proven; risk is implementation complexity, not API uncertainty.
 
-**Avoids:** Numeric ID leakage in reference fields (Pitfall 3 — the reference field audit must happen in this phase, before any YAML files are committed to source control), sibling ordering non-determinism (Pitfall 6 — ORDER BY in all DW queries), N+1 DB query performance trap (batch-load children by parent ID)
+**Delivers:** `ContentSyncPredicateDataModel` (index-based `IIdentifiable`), list and by-index queries, save/delete commands, `ContentSyncPredicateListScreen` with edit/delete context actions, `ContentSyncPredicateEditScreen` with Name, Path, AreaId, Excludes editors.
 
-### Phase 4: Deserialization Pipeline (Disk to DW)
+**Addresses:** Predicate list/add/edit/delete (7 table stakes features from FEATURES.md), AreaId dropdown from DW areas (differentiator), unknown JSON field preservation on save (Pitfall 7).
 
-**Rationale:** Deserialization is the most complex phase — it requires IdentityResolver (GUID lookup in target DB), dependency-ordered write pass, source-wins evaluation, orphan handling, and transaction wrapping for atomicity. Each of these is a distinct sub-component that must be designed together, not bolted on incrementally.
+**Avoids:** Pitfall 3 (query UI mismatch — simple text fields, not Lucene expression UI), Pitfall 7 (multi-predicate config rendered as a list, not flattened into a single-screen form).
 
-**Delivers:** IdentityResolver with GUID-to-numeric-ID lookup per content type; ContentDeserializer with depth-first, parent-before-child write ordering (Areas > Pages > GridRows > Paragraphs); Evaluator applying source-wins rule (update if GUID found, insert if not); Orphan detection and deletion within predicate scope; database transaction wrapping for atomicity; structured per-item logging (GUID + numeric ID for every write).
+**Research flag:** Standard extension of Phase 2 patterns to a collection model — skip research phase. Index-based identity is a deliberate design choice; document it in the phase plan.
 
-**Addresses:** Deserialize files back to database (table stakes), GUID-based identity resolution (table stakes), orphan handling (table stakes), dependency-ordered deserialization, source-wins conflict resolution
+### Phase 4: Context Menu Actions (Serialize + Deserialize)
 
-**Avoids:** Children before parents on deserialization (Pitfall 1 — depth-first sort is architectural, not a bolt-on), partial deserialization leaving broken state (Pitfall 4 — transaction wrapping designed in, not added later), numeric ID leakage on deserialize side (Pitfall 3 — IdentityResolver is the only component that maps GUIDs to numeric IDs)
+**Rationale:** Highest DW API uncertainty. Three behaviors require runtime discovery before implementation can proceed: (1) exact page tree screen type for ScreenInjector, (2) `DownloadFileAction` streaming behavior for large zips, (3) file upload mechanism for the deserialize flow. Built last because it has no hard dependency on Phases 2-3, and the DW UI knowledge accumulated in earlier phases reduces debugging time for the API discovery work.
 
-### Phase 5: Scheduled Task Integration and End-to-End Validation
+**Delivers:** `PageOverviewInjector` (context menu on page tree), `SerializeToZipCommand` (temp config + ContentSerializer + zip + FileResult download), `DeserializeFromZipCommand` (upload + extract + temp config + ContentDeserializer), `DeserializeUploadScreen` (modal or prompt screen for zip upload). Context menu serialize built before deserialize (cleaner output path, lower risk first).
 
-**Rationale:** The scheduled tasks are thin wiring — they add no business logic. Building them last allows the full pipeline to be tested in isolation before DW scheduler integration. End-to-end validation in this phase must include the "looks done but isn't" checklist from PITFALLS.md.
+**Addresses:** Context menu serialize (5 table stakes features), context menu deserialize (5 of 6 table stakes — subtree GUID remapping deferred to v1.3).
 
-**Delivers:** SerializeScheduledTask and DeserializeScheduledTask extending `BaseScheduledTaskAddIn` with `[AddInName]`, `[AddInLabel]`, `[AddInDescription]` attributes; SyncCoordinator wiring all subsystems; end-to-end integration tests (serialize from instance A, deserialize into empty instance B, verify completeness and cross-reference integrity); NuGet package metadata for AppStore distribution.
+**Avoids:** Pitfall 4 (temp file leaks — cleanup-on-startup), Pitfall 5 (wrong ScreenInjector target — spike first with minimal test action), Pitfall 8 (zip-slip — validate zip contents entry-by-entry before extraction), Pitfall 9 (unguarded commands — permission checks on all command handlers).
 
-**Addresses:** Scheduled task automation (differentiator feature), AppStore packaging, structured logging (full pipeline), error handling (fail loud)
-
-**Avoids:** Scheduled task file system permission issues (verify write access when invoked by DW scheduler, not just developer credentials), silent partial success (validate file count matches source item count, and target item count matches file count after deserialize)
+**Research flag:** REQUIRES phase-specific research. Three open questions must be answered via runtime inspection before implementation planning:
+- What is the exact DW class name for the content tree page list/overview screen? (inspect `Dynamicweb.Content.UI.dll` on test instance)
+- Does `DownloadFileAction` stream or buffer responses for large (>50MB) zip files? (test with large content tree)
+- Does CoreUI provide a `FileUpload` editor in a modal/prompt screen, or is a custom API endpoint needed? (inspect `PromptScreenBase` and CoreUI editor registry)
 
 ### Phase Ordering Rationale
 
-- DTOs and YAML configuration must precede all other phases because they are the shared data contract; wrong scalar styles propagate to all downstream YAML files
-- Predicate system precedes DW API integration because it can be fully unit-tested without a live DW instance, enabling early validation of the scoping logic
-- Serialization precedes deserialization because the YAML files are a prerequisite for deserialization, and serialization validates DW read APIs before the more complex write APIs are touched
-- Deserialization is kept as a single phase because its sub-components (IdentityResolver, write ordering, orphan handling, transaction wrapping) are tightly coupled — splitting them risks building a write loop that cannot be retrofitted with ordering constraints
-- Scheduled tasks and AppStore packaging are last because they add no logic — they are integration wiring around an already-validated pipeline
+- Phase 1 before all others: `ConfigPathResolver` is a shared dependency of all commands and queries; concurrency protection must precede any UI writes; nav node registration uncertainty must be resolved cheaply before screen stack investment.
+- Phase 2 before Phase 3: Settings screen establishes and validates the screen/query/command pattern that predicate screens replicate. Also validates the NuGet package and DW assembly scanning configuration.
+- Phase 3 before Phase 4: Completes the settings UI milestone. Phase 4 is architecturally independent of 2-3 but isolating the highest-risk work last means earlier phases can proceed at full speed without blocking on API uncertainty.
+- Serialize before deserialize within Phase 4: serialize has a known output path (DownloadFileAction is documented); deserialize's file upload mechanism is the single most uncertain DW behavior in the entire milestone.
 
 ### Research Flags
 
-Phases likely needing deeper research during planning:
-- **Phase 3 (Serialization):** The reference field audit (which DW fields carry numeric cross-item references) requires examination of the DW content model field types. This is not documented in official docs and will require empirical investigation of the DW API or database schema.
-- **Phase 4 (Deserialization):** DynamicWeb's support for explicit database transaction wrapping across PageService, GridService, and ParagraphService save calls is unverified. If DW does not expose this, the atomicity strategy needs a compensating design. Investigate `SavePage`/`SaveGridRow`/`SaveParagraph` return values and whether they participate in ambient transactions.
-- **Phase 4 (Deserialization):** The `GetParagraphsByPageId` forum-documented method may only return active paragraphs. Verify the `bool` overload behavior for including inactive paragraphs before designing the deserialization completeness logic.
+Needs dedicated research spike during planning:
+- **Phase 1:** Exact section type for "Settings > Content" nav placement — verify `AreasSection` vs a more specific `ContentSection` by deploying node provider to test instance and observing placement
+- **Phase 4:** Three open API questions (ScreenInjector target type, DownloadFileAction streaming, file upload in modal) — MUST be resolved before Phase 4 implementation planning begins
 
-Phases with standard patterns (skip research-phase):
-- **Phase 1 (Foundation):** YamlDotNet scalar style configuration is well-documented in the YamlDotNet GitHub issues. DTO design is straightforward. No research needed.
-- **Phase 2 (Configuration):** Unicorn's predicate model is a well-established pattern. JSON config loading via Microsoft.Extensions.Configuration.Json is standard .NET. No research needed.
-- **Phase 5 (Scheduled Tasks):** BaseScheduledTaskAddIn pattern is verified against official DW docs. AppStore packaging is documented. No research needed.
+Standard patterns, skip research phase:
+- **Phase 2:** Full ExpressDelivery sample reference available; `EditScreenBase` + `DataQueryModelBase` + `CommandBase` are well-documented
+- **Phase 3:** Extension of Phase 2 patterns to a list/collection; index-based identity is a design decision, not a research question
 
 ## Confidence Assessment
 
 | Area | Confidence | Notes |
 |------|------------|-------|
-| Stack | HIGH | DW API verified via official docs; NuGet versions verified on nuget.org; YamlDotNet choice is unambiguous |
-| Features | HIGH | Unicorn feature set directly analyzed from GitHub; DW built-in deployment tool docs verified; competitor comparison grounded in primary sources |
-| Architecture | HIGH | Unicorn architecture well-documented by maintainer; DW 10 API verified via official docs; subsystem decomposition is established prior art |
-| Pitfalls | HIGH | Critical pitfalls derived from Unicorn issue tracker, YamlDotNet GitHub issues, Windows MAX_PATH documentation, and database FK constraint literature — all multi-source verified |
+| Stack | HIGH | NuGet dependency chain verified via package pages AND assembly reflection on test instance DLLs at `swift.test.forsync`; version pinning rationale solid |
+| Features | MEDIUM | Settings and predicate features HIGH (proven patterns); context menu features LOW (no public sample for page tree injection or file upload in CoreUI modals) |
+| Architecture | MEDIUM | Screen/query/command patterns HIGH (proven from ExpressDelivery); ScreenInjector target type LOW; file upload in modals LOW; temp config pattern HIGH (constructor injection already exists) |
+| Pitfalls | MEDIUM-HIGH | Config concurrency and zip pitfalls verified via .NET docs; DW-specific ScreenInjector and DownloadFileAction streaming behaviors inferred from sparse official docs |
 
-**Overall confidence:** HIGH
+**Overall confidence:** MEDIUM
 
 ### Gaps to Address
 
-- **Reference field inventory:** Which DW content fields store numeric inter-item references (not just the primary key) is not documented. Must be discovered empirically during Phase 3 implementation. Treat all integer fields in the DW content model as suspect until audited.
-- **Paragraph active/inactive retrieval:** `GetParagraphsByPageId` behavior for inactive paragraphs is documented via forum only (MEDIUM confidence). Verify at Phase 3 implementation with a test page containing inactive paragraphs.
-- **Transaction support across DW service layer:** Whether DW's save APIs participate in ambient .NET database transactions is unverified. Verify at Phase 4 design time; design the atomicity strategy based on findings before writing the write loop.
-- **IConfiguration injection:** Whether DynamicWeb injects `IConfiguration` into the scheduled task addin context is unverified. If it does, the `Microsoft.Extensions.Configuration.Json` dependency can be removed. Check at Phase 2/5 boundary.
-- **App pool write permissions:** The DW app pool identity's write access to paths outside the web root is environment-specific. Must be verified in the target deployment environment before finalizing the output path strategy in Phase 1.
+- **ScreenInjector target type for content tree:** The DW page list/overview screen class name must be discovered by inspecting loaded assemblies on the test instance — cannot be reliably inferred from documentation. Address in Phase 4 research spike.
+- **File upload in CoreUI modals:** No public example of `PromptScreenBase` with a `FileUpload` editor has been found. If CoreUI does not support this natively, the deserialize feature may require a custom API endpoint or admin page with a file input rather than a context menu action. Investigate in Phase 4 research spike; if unsupported, plan for the simpler alternative.
+- **DownloadFileAction behavior for large responses:** Undocumented whether it streams or buffers the response. Test with a content tree of 100+ pages on the test instance. If buffering, a background task + polling pattern will be needed for large trees.
+- **AreasSection vs ContentSection nav placement:** The ExpressDelivery sample uses `AreasSection` which maps to a top-level Settings section. "Settings > Content > Sync" may require a `ContentSection` or more specific type parameter. Verify by deploying the node provider in Phase 1 and observing actual placement.
+- **Config concurrency scope:** `ReaderWriterLockSlim` guards in-process concurrency within a single DW worker process. Cross-process editing (developer editing the JSON file while DW admin is open) is an accepted v1.2 limitation. Document explicitly.
 
 ## Sources
 
 ### Primary (HIGH confidence)
-- [NuGet: Dynamicweb.Core 10.23.9](https://www.nuget.org/packages/Dynamicweb.Core/) — verified version and target framework
-- [NuGet: YamlDotNet 16.3.0](https://www.nuget.org/packages/YamlDotNet) — verified version, download count, target frameworks
-- [DynamicWeb 10 AppStore App Guide](https://doc.dynamicweb.dev/documentation/extending/guides/newappstoreapp.html) — project structure, csproj metadata
-- [DynamicWeb: AreaService Class](https://doc.dynamicweb.com/api/html/02c7da84-1d1c-506d-0054-da04eaff373f.htm) — namespace and key methods
-- [DynamicWeb: PageService Class](https://doc.dynamicweb.com/api/html/15516fc9-3e1c-ac41-9849-cc6ad67bb84d.htm) — namespace and key methods
-- [DynamicWeb: GridService Class](https://doc.dynamicweb.dev/api/Dynamicweb.Content.GridService.html) — traversal methods
-- [DynamicWeb: BaseScheduledTaskAddIn](https://doc.dynamicweb.com/api/html/75745460-c471-a370-1ddc-e4a3ae983f14.htm) — Run() override pattern
-- [Unicorn GitHub README](https://github.com/SitecoreUnicorn/Unicorn) — architecture, predicate pattern, orphan handling
-- [Unicorn Book](https://unicorn.kamsar.net/working-with-unicorn.html) — maintainer-authored architecture guide
-- [DynamicWeb Deployment Tool docs](https://doc.dynamicweb.com/documentation-9/platform/platform-tools/deployment-tool) — competitor feature comparison
-- [Windows MAX_PATH documentation](https://learn.microsoft.com/en-us/windows/win32/fileio/maximum-file-path-limitation) — path length constraints
-- [YamlDotNet GitHub Issue #846](https://github.com/aaubry/YamlDotNet/issues/846) — special character serialization issues
+- NuGet: `Dynamicweb.Content.UI`, `Dynamicweb.Application.UI`, `Dynamicweb.CoreUI` — dependency chain and class locations verified via package pages and assembly reflection
+- Assembly reflection on test instance: `C:\Projects\Solutions\swift.test.forsync\Swift2.1\Dynamicweb.Host.Suite\bin\Debug\net8.0\` — confirmed class names and namespaces
+- ExpressDelivery sample: `C:\Projects\temp\dwextensionsample\Samples-main\ExpressDelivery\` — verified NavigationNodeProvider, EditScreen, ListScreen, Commands, Queries, ScreenInjector patterns
+- [DW10 AppStore App Guide](https://doc.dynamicweb.dev/documentation/extending/guides/newappstoreapp.html) — official NavigationNodeProvider, EditScreen, Command, Query examples
+- [DW10 CoreUI Actions API](https://doc.dynamicweb.dev/api/Dynamicweb.CoreUI.Actions.Implementations.html) — DownloadFileAction, RunCommandAction, ConfirmAction confirmed
+- [.NET ZipArchive](https://learn.microsoft.com/en-us/dotnet/api/system.io.compression.ziparchive) — zip creation and entry-level validation (zip-slip prevention)
+- [.NET ReaderWriterLockSlim](https://learn.microsoft.com/en-us/dotnet/api/system.threading.readerwriterlockslim) — thread-safe file access
 
 ### Secondary (MEDIUM confidence)
-- [Sitecore Serialization comparison blog](https://the-sitecore-chronicles.cyber-solutions.at/blogs/sitecore-content-serialization-vs-unicorn-and-tds-a-deep-dive-with-examples) — feature comparison, consistent with primary sources
-- [DynamicWeb forum: Creating Pages and Paragraphs via API](https://doc.dynamicweb.com/forum/development/creating-pages-and-paragraph-with-the-api?PID=1605) — save API patterns
-- [DynamicWeb forum: Paragraphs.GetParagraphsByPageId](https://doc.dynamicweb.com/forum/) — active-only behavior (needs verification)
-- [YamlDotNet Issues #391, #361, #934](https://github.com/aaubry/YamlDotNet/issues/) — scalar style, multiline, and numeric string pitfalls
+- [DW10 Screen Types](https://doc.dynamicweb.dev/documentation/extending/administration-ui/screentypes.html) — screen type concepts; sparse on content tree specifics
+- [DW10 ScreenInjector API](https://doc.dynamicweb.dev/api/Dynamicweb.CoreUI.Screens.ScreenInjector-1.html) — existence confirmed; target type discovery not documented
+- [DW10 NavigationNode API](https://doc.dynamicweb.dev/api/Dynamicweb.CoreUI.Navigation.NavigationNode.html) — ContextActionGroups property confirmed
+- Existing ContentSync codebase — verified `ContentSerializer`/`ContentDeserializer` constructor signatures enabling temp-config reuse pattern
 
-### Tertiary (LOW confidence)
-- [Unicorn Octopus Deploy integration](https://www.sitecorenutsbolts.net/2016/03/14/Octopus-Deploy-Step-for-Unicorn-Sync/) — CI/CD integration pattern; dated 2016 but pattern is still valid
+### Tertiary (LOW confidence — needs runtime validation)
+- Context menu injection on content tree page nodes — no public sample; ScreenInjector pattern inferred from `OrderOverviewInjector` in ExpressDelivery
+- File upload mechanism in CoreUI modals — not found in API docs or samples; needs investigation in Phase 4 spike
+- `DownloadFileAction` streaming behavior for large files — undocumented; test required
 
 ---
-*Research completed: 2026-03-19*
+*Research completed: 2026-03-21*
 *Ready for roadmap: yes*

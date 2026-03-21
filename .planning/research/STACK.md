@@ -1,191 +1,225 @@
-# Stack Research
+# Technology Stack
 
-**Domain:** DynamicWeb AppStore app — content serialization/sync tooling
-**Researched:** 2026-03-19
-**Confidence:** MEDIUM-HIGH (DynamicWeb APIs verified via official docs; versions verified via NuGet.org)
+**Project:** Dynamicweb.ContentSync v1.2 Admin UI
+**Researched:** 2026-03-21 (updated from 2026-03-19 original)
+**Scope:** Stack additions for admin UI integration, query configuration, context menu actions, zip packaging
 
 ---
 
-## Recommended Stack
+## Current Stack (v1.0/v1.1 -- Validated, DO NOT CHANGE)
 
-### Core Technologies
+| Technology | Version | Purpose |
+|------------|---------|---------|
+| .NET | 8.0 | Runtime target |
+| Dynamicweb | 10.23.9 | Core DW APIs (Content, Scheduling, Extensibility) |
+| YamlDotNet | 13.7.1 | YAML serialization/deserialization |
+| Microsoft.Extensions.Configuration.Json | 8.0.1 | Config file reading |
 
-| Technology | Version | Purpose | Why Recommended |
-|------------|---------|---------|-----------------|
-| .NET 8.0 | 8.0 LTS | Target framework | Required by DynamicWeb 10.2+ per official docs. LTS release with long support window. |
-| Dynamicweb.Core | 10.23.9 | DW platform APIs (logging, DB, services) | The root package for all DynamicWeb functionality. Published 2026-03-17. Targets net8.0. Referenced by all other DW packages. |
-| YamlDotNet | 16.3.0 | YAML serialization/deserialization | The dominant .NET YAML library with 43.5M+ downloads. Latest stable release (Dec 2024). Supports net8.0, net6.0, netstandard2.0/2.1. No meaningful competition in the .NET ecosystem. |
+---
 
-### DynamicWeb Content APIs
+## Required Stack Addition for v1.2
 
-These APIs live in `Dynamicweb.dll` (included transitively through `Dynamicweb.Core`) and are the canonical way to read/write content in DynamicWeb 10.
+### Single Package Addition: Dynamicweb.Content.UI
 
-| Service/Class | Namespace | Purpose | Key Methods |
-|---------------|-----------|---------|-------------|
-| `AreaService` | `Dynamicweb.Content` | Read website areas | `GetArea(id)`, `GetAreas()`, `GetMasterAreas()` |
-| `PageService` | `Dynamicweb.Content` | Read and write pages | `GetPage(id)`, `GetPagesByAreaID(id)`, `GetPagesByParentID(id)` |
-| `GridService` | `Dynamicweb.Content` | Read grid rows | `GetGridRowsByPageId(int)`, `GetGridRowsByPageId(int, bool)`, `GetGridRowById(int)` |
-| `Paragraphs` (static) | `Dynamicweb.Content.Services` | Read paragraphs | `GetParagraphsByPageId(pageId)` — returns active paragraphs for a page |
-| `BaseScheduledTaskAddIn` | `Dynamicweb.Scheduling` | Scheduled task base class | Override `Run()` for task execution logic |
-| `LogManager` | `Dynamicweb.Logging` | DW-native logging | `System.AddLog()`, `Instance` singleton |
+| Technology | Version | Purpose | Why |
+|------------|---------|---------|-----|
+| Dynamicweb.Content.UI | 10.23.9 | Admin UI screens, content tree injection, page screen types | Provides `PageEditScreen`, `PageListScreen`, content tree `NavigationSection` for context menu injection. Transitively brings in `Dynamicweb.Application.UI` (settings area/sections, `ActionBuilder`), `Dynamicweb.CoreUI` (screen bases, commands, queries, actions), and `Dynamicweb.QueryPublisher`. |
 
-**Note on `GetParagraphsByPageId`:** Per forum documentation, this method only returns *active* paragraphs by default. For serialization, we need all paragraphs regardless of active state — investigate whether the `bool` overload of GridService's methods exposes this, and verify at implementation time.
+**Confidence:** HIGH -- verified via NuGet dependency chain AND assembly reflection on test instance DLLs at `C:\Projects\Solutions\swift.test.forsync\Swift2.1\Dynamicweb.Host.Suite\bin\Debug\net8.0\`.
 
-### Scheduled Task Addin Pattern
+### Transitive Dependency Chain
 
-```csharp
-[AddInName("ContentSync.SerializeTask")]
-[AddInLabel("ContentSync: Serialize Content Trees")]
-[AddInDescription("Serializes configured content trees to YAML files on disk")]
-public class SerializeScheduledTask : BaseScheduledTaskAddIn
-{
-    public override void Run()
-    {
-        // Serialization logic here
-    }
-}
+Adding `Dynamicweb.Content.UI` brings the full admin UI dependency chain:
+
+```
+Dynamicweb.Content.UI (10.23.9)
+  +-- Dynamicweb.Application.UI (10.23.9)     -- AreasSection, SettingsArea, ActionBuilder
+  |     +-- Dynamicweb.CoreUI (10.23.9)       -- EditScreenBase, ListScreenBase, ScreenInjector,
+  |     |                                        CommandBase, DataQueryModelBase, NavigationNodeProvider,
+  |     |                                        DownloadFileAction, RunCommandAction, FileResult
+  |     +-- Dynamicweb (10.23.9)              -- Already have this
+  |     +-- Dynamicweb.DataIntegration         -- Transitive, not directly used
+  |     +-- Dynamicweb.Forms                   -- Transitive, not directly used
+  |     +-- Dynamicweb.Marketplace             -- Transitive, not directly used
+  +-- Dynamicweb.CoreUI (10.23.9)             -- (same as above, deduplicated)
+  +-- Dynamicweb.Files.UI (10.23.9)           -- Transitive, not directly used
+  +-- Dynamicweb.QueryPublisher (10.23.9)     -- Query expression infrastructure
 ```
 
-The `Run()` method (not `Execute()`) is the override point — confirmed via DynamicWeb API docs.
+### No Other NuGet Packages Needed
 
-### Supporting Libraries
-
-| Library | Version | Purpose | When to Use |
-|---------|---------|---------|-------------|
-| `Microsoft.Extensions.Configuration.Json` | 8.0.x | Load standalone JSON/config files | Loading the ContentSync predicate config file from disk at task startup |
-| `Microsoft.Extensions.Logging.Abstractions` | 8.0.x | `ILogger<T>` abstraction | Bridge between DW's `LogManager` and standard .NET logging patterns; use for testability |
-| `xunit` | 2.9.3 (v2) or 3.2.2 (v3) | Unit testing | All unit tests. xUnit is the dominant .NET test framework. v3 is the future but v2 is stable and current. |
-| `xunit.runner.visualstudio` | 3.1.5 | Visual Studio/CLI test runner | Required to run xUnit tests in VS/dotnet test |
-| `Moq` | 4.x | Mocking for unit tests | Mock DW service interfaces in tests where DW database is unavailable |
-
-### Development Tools
-
-| Tool | Purpose | Notes |
-|------|---------|-------|
-| Visual Studio 2022 / Rider | IDE | Both work. VS has better NuGet tooling for AppStore package metadata. |
-| `dotnet pack` | Build NuGet package | Set `<GeneratePackageOnBuild>true</GeneratePackageOnBuild>` in csproj for CI |
-| DynamicWeb Visual Studio Template | Scaffold AddinName/BaseScheduledTaskAddIn boilerplate | Optional but speeds up setup; available from DW developer resources |
+| Capability | Provided By | Notes |
+|------------|-------------|-------|
+| Settings edit screen | `Dynamicweb.CoreUI` (transitive) | `EditScreenBase<T>` |
+| Predicate list screen | `Dynamicweb.CoreUI` (transitive) | `ListScreenBase<T>` |
+| Tree navigation node | `Dynamicweb.CoreUI` (transitive) | `NavigationNodeProvider<T>` |
+| Screen injection | `Dynamicweb.CoreUI` (transitive) | `ScreenInjector<T>`, `ListScreenInjector<TScreen,TModel>` |
+| Settings area sections | `Dynamicweb.Application.UI` (transitive) | `AreasSection`, `SettingsArea` |
+| ActionBuilder helper | `Dynamicweb.Application.UI` (transitive) | `ActionBuilder` for Edit/Delete actions |
+| Content tree page screens | `Dynamicweb.Content.UI` (direct) | `PageEditScreen`, `PageListScreen` to inject into |
+| Download file action | `Dynamicweb.CoreUI` (transitive) | `DownloadFileAction` for zip download |
+| Run command action | `Dynamicweb.CoreUI` (transitive) | `RunCommandAction` for serialize/deserialize |
+| Confirm action dialog | `Dynamicweb.CoreUI` (transitive) | `ConfirmAction` for destructive operations |
+| Open dialog action | `Dynamicweb.CoreUI` (transitive) | `OpenDialogAction` for upload prompts |
+| File upload editor | `Dynamicweb.CoreUI` (transitive) | `FileUpload` input editor |
+| File result for downloads | `Dynamicweb.CoreUI` (transitive) | `FileResult` return type from commands |
+| Data model base | `Dynamicweb.CoreUI` (transitive) | `DataViewModelBase` |
+| Mapping configuration | `Dynamicweb` (existing) | `MappingConfigurationBase` |
+| ZIP packaging | .NET 8.0 BCL | `System.IO.Compression.ZipFile` -- built-in |
 
 ---
 
-## Installation
+## Key Namespaces and Classes by Feature
 
-```xml
-<!-- ContentSync.csproj -->
-<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
-    <Version>1.0.0</Version>
-    <Title>Dynamicweb.ContentSync</Title>
-    <Description>Serialize and deserialize DynamicWeb content trees to YAML files for source-controlled deployments.</Description>
-    <Authors>YourName</Authors>
-    <PackageTags>dynamicweb-app-store;dw10;addin;task</PackageTags>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-  </PropertyGroup>
+### Settings Screen (Settings > Content > Sync)
 
+| Class | Namespace | Purpose |
+|-------|-----------|---------|
+| `EditScreenBase<T>` | `Dynamicweb.CoreUI.Screens` | Base class for settings edit form |
+| `DataViewModelBase` | `Dynamicweb.CoreUI.Data` | Base class for screen data models |
+| `CommandBase<T>` | `Dynamicweb.CoreUI.Data` | Base class for save command |
+| `DataQueryModelBase<T>` | `Dynamicweb.CoreUI.Data` | Base class for loading settings data |
+| `[ConfigurableProperty]` | `Dynamicweb.CoreUI.Data` | Attribute for editable model fields |
+| `IIdentifiable` | `Dynamicweb.CoreUI.Data` | Interface for models with identity |
+
+### Tree Navigation (Settings > Content > Sync node)
+
+| Class | Namespace | Purpose |
+|-------|-----------|---------|
+| `NavigationNodeProvider<T>` | `Dynamicweb.CoreUI.Navigation` | Add "Sync" node to Settings > Content section |
+| `NavigationNodePathProvider<T>` | `Dynamicweb.CoreUI.Navigation` | Breadcrumb/highlight tracking for current node |
+| `NavigationNode` | `Dynamicweb.CoreUI.Navigation` | Individual tree node definition |
+| `NavigationNodePath` | `Dynamicweb.CoreUI.Navigation` | Node path for identification |
+| `NavigateScreenAction` | `Dynamicweb.CoreUI.Actions.Implementations` | Navigate to screen on node click |
+| `AreasSection` | `Dynamicweb.Application.UI` | Parent section type parameter for `NavigationNodeProvider<AreasSection>` |
+| `SettingsArea` | `Dynamicweb.Application.UI` | Settings area reference for node path |
+
+### Content Tree Context Menu Actions (Serialize/Deserialize)
+
+| Class | Namespace | Purpose |
+|-------|-----------|---------|
+| `ScreenInjector<T>` | `Dynamicweb.CoreUI.Screens` | Inject actions into existing page screens |
+| `ListScreenInjector<TScreen,TModel>` | `Dynamicweb.CoreUI.Screens` | Inject into list screen context menus |
+| `ActionNode` | `Dynamicweb.CoreUI.Actions` | Context menu item definition |
+| `ActionGroup` | `Dynamicweb.CoreUI.Actions` | Group of context menu items |
+| `RunCommandAction` | `Dynamicweb.CoreUI.Actions.Implementations` | Execute serialize/deserialize command |
+| `ConfirmAction` | `Dynamicweb.CoreUI.Actions.Implementations` | Confirmation before destructive operations |
+| `DownloadFileAction` | `Dynamicweb.CoreUI.Actions.Implementations` | Trigger browser file download for zip |
+| `OpenDialogAction` | `Dynamicweb.CoreUI.Actions.Implementations` | Open upload dialog for deserialize zip |
+| `FileResult` | `Dynamicweb.CoreUI.Data` | Return type for file download commands |
+| `FileUpload` | `Dynamicweb.CoreUI.Editors.Inputs` | File upload widget for zip import |
+| `Icon` | `Dynamicweb.CoreUI.Icons` | Icon enum for context menu items |
+| `PageListScreen` | `Dynamicweb.Content.UI.Screens` | Content tree list screen to inject into |
+| `PageEditScreen` | `Dynamicweb.Content.UI.Screens` | Page editor screen to inject into |
+| `ActionBuilder` | `Dynamicweb.Application.UI.Helpers` | Helper for building edit/delete actions |
+
+### Data Mapping
+
+| Class | Namespace | Purpose |
+|-------|-----------|---------|
+| `MappingConfigurationBase` | `Dynamicweb.Extensibility.Mapping` | Auto-mapping between domain/view models |
+| `MappingService` | `Dynamicweb.Extensibility.Mapping` | Execute mappings at runtime |
+
+---
+
+## Project File Change
+
+### Exact Diff
+
+```diff
   <ItemGroup>
-    <!-- Core DW platform -->
-    <PackageReference Include="Dynamicweb.Core" Version="10.23.9" />
-
-    <!-- YAML serialization -->
-    <PackageReference Include="YamlDotNet" Version="16.3.0" />
-
-    <!-- Config file loading -->
+    <PackageReference Include="Dynamicweb" Version="10.23.9" />
++   <PackageReference Include="Dynamicweb.Content.UI" Version="10.23.9" />
+    <PackageReference Include="YamlDotNet" Version="13.7.1" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="8.0.1" />
   </ItemGroup>
-</Project>
 ```
 
-```xml
-<!-- ContentSync.Tests.csproj -->
-<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
-  </PropertyGroup>
+**One line added.** `Dynamicweb.Content.UI` at `10.23.9` to match the existing `Dynamicweb` version pin.
 
-  <ItemGroup>
-    <PackageReference Include="xunit" Version="2.9.3" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5" />
-    <PackageReference Include="Moq" Version="4.20.72" />
-    <ProjectReference Include="../ContentSync/ContentSync.csproj" />
-  </ItemGroup>
-</Project>
-```
+### SDK Type: Keep `Microsoft.NET.Sdk` (NOT Razor SDK)
+
+The ExpressDelivery sample uses `Microsoft.NET.Sdk.Razor` because it ships custom Razor widget views with embedded `wwwroot` resources. ContentSync admin UI uses only standard `EditScreenBase`/`ListScreenBase` screens rendered by DW's built-in CoreUI rendering pipeline. No custom Razor views needed.
+
+---
+
+## What NOT to Add
+
+| Do NOT Add | Why Not | What We Use Instead |
+|------------|---------|---------------------|
+| `Microsoft.NET.Sdk.Razor` (SDK change) | Only needed for custom widget rendering with embedded Razor views. Our screens are declarative C# | `Microsoft.NET.Sdk` (existing) |
+| `IRenderingBundle` marker class | Only needed when shipping custom Razor components with embedded wwwroot | Not needed -- no custom rendering |
+| `Microsoft.AspNetCore.Components.Web` | Blazor/Razor component library, not needed for admin screens | Standard CoreUI screen builder |
+| `Microsoft.Extensions.FileProviders.Embedded` | Only for embedded static files (CSS, JS, images) | No embedded assets needed |
+| `FrameworkReference Microsoft.AspNetCore.App` | Only for apps that host ASP.NET; we're a library loaded into DW host | Already loaded by DW host process |
+| `GenerateEmbeddedFilesManifest` / `EmbeddedResource` | Only for Razor SDK embedded content | No embedded content |
+| `Dynamicweb.Suite.Ring1` | Meta-package pulling 20+ packages (Ecommerce.UI, Products.UI, Insights.UI, etc.) -- massive overkill for a content-only tool | `Dynamicweb.Content.UI` (single targeted package) |
+| `Dynamicweb.CoreUI` (direct reference) | Missing `PageListScreen`/`PageEditScreen` for context menu injection and `AreasSection`/`SettingsArea` for settings tree | `Dynamicweb.Content.UI` brings CoreUI transitively |
+| `SharpZipLib` / `DotNetZip` | External ZIP libraries. .NET 8 BCL `System.IO.Compression.ZipFile` handles all our needs | `System.IO.Compression.ZipFile` (built-in) |
 
 ---
 
 ## Alternatives Considered
 
-| Recommended | Alternative | When to Use Alternative |
-|-------------|-------------|-------------------------|
-| YamlDotNet 16.3.0 | SharpYaml | Never — SharpYaml is unmaintained (last release 2018). YamlDotNet has active maintenance and dominates the .NET ecosystem. |
-| YamlDotNet 16.3.0 | System.Text.Json (JSON) | If the team later decides JSON is preferable. JSON is more tooling-friendly but produces worse diffs and is more verbose. YAML is the right call for human-readable content. |
-| YamlDotNet 16.3.0 | Newtonsoft.Json (JSON) | Same reasoning as System.Text.Json — JSON is an alternative format, not a YAML alternative. |
-| `Microsoft.Extensions.Configuration.Json` | Custom config parser | Only if DynamicWeb already injects `IConfiguration` into the addin context — verify at implementation. If DW provides it, don't add the dep. |
-| xunit v2 (2.9.3) | xunit v3 (3.2.2) | Use v3 if starting new today and want forward compatibility. v2 is still actively maintained for security fixes. v3 has breaking API changes. Either works. |
-| xunit v2 (2.9.3) | MSTest | MSTest is Microsoft-owned and fine, but xUnit is the dominant community choice for .NET libraries. NUnit is also acceptable. |
-| `BaseScheduledTaskAddIn` | Custom background service | Never for AppStore apps — DW's scheduled task system is the correct hook point. Background services bypass DW task management UI. |
+| Category | Recommended | Alternative | Why Not |
+|----------|-------------|-------------|---------|
+| UI package | `Dynamicweb.Content.UI` | `Dynamicweb.Suite.Ring1` | Ring1 transitively pulls 20+ packages including Ecommerce, Products, Insights, Integration etc. ContentSync only touches content -- no reason to depend on the full suite. |
+| UI package | `Dynamicweb.Content.UI` | `Dynamicweb.CoreUI` (direct) | CoreUI alone lacks `PageListScreen`/`PageEditScreen` types needed for content tree context menu injection. Also misses `AreasSection`/`SettingsArea` from Application.UI. |
+| ZIP library | `System.IO.Compression` (BCL) | SharpZipLib, DotNetZip | Built-in .NET 8 `ZipFile`/`ZipArchive` classes handle create-from-directory and extract. Zero additional dependency. |
+| SDK type | `Microsoft.NET.Sdk` | `Microsoft.NET.Sdk.Razor` | No custom Razor views. All screens use DW's declarative C# screen builder pattern. |
 
 ---
 
-## What NOT to Use
+## Version Pinning Rationale
 
-| Avoid | Why | Use Instead |
-|-------|-----|-------------|
-| SharpYaml | Last release 2018, unmaintained, not compatible with modern .NET targets | YamlDotNet 16.3.0 |
-| `Dynamicweb.Ecommerce` | Commerce-specific package, irrelevant to content sync; adds significant unnecessary dependency weight | `Dynamicweb.Core` only — it contains the content APIs |
-| `JsonSerializer` / Newtonsoft as primary format | The project decision is YAML — don't drift to JSON. YAML's readability and diff quality are the entire reason for the choice. | YamlDotNet |
-| Numeric page IDs as canonical identity | Numeric IDs are environment-specific. They will conflict across DW instances. | PageUniqueId (GUID) as the canonical cross-environment identifier — match on GUID, assign new numeric ID on insert |
-| DynamicWeb Notifications API for v1 sync | Adds significant complexity (real-time change detection). Deferred to v2 per project scope. | Scheduled tasks via `BaseScheduledTaskAddIn` |
-| Direct SQL queries against DW database | Bypasses DW's caching, lifecycle hooks, and business logic. Also couples to DB schema which can change on DW upgrades. | `AreaService`, `PageService`, `GridService`, `Paragraphs` service APIs |
+All DW packages pinned to exact `10.23.9` because:
 
----
+1. **Consistency** -- matches existing `Dynamicweb` pin; prevents diamond dependency version conflicts
+2. **Test environment match** -- Swift 2.1/2.2 test instances run `10.23.9` (verified via `deps.json`)
+3. **Reproducible builds** -- floating versions (`*`) cause "works on my machine" issues
+4. **DW coupling** -- DW packages at mismatched versions can have breaking internal API changes
 
-## Stack Patterns by Variant
-
-**For config file format (predicates/settings):**
-- Use JSON (`.json`) loaded via `Microsoft.Extensions.Configuration.Json`
-- YAML is the serialization *output* format; JSON is better for machine-written/consumed config due to stricter syntax and no indentation ambiguity
-- Config file lives in source control alongside the YAML content files
-
-**For YAML serialization of DW content objects:**
-- Do NOT serialize DW model objects directly (e.g., `Page`, `Paragraph`) — they contain internal state, lazy-loaded collections, and database references
-- Create explicit DTO/record types (`PageRecord`, `ParagraphRecord`, etc.) that contain only serializable fields
-- Use YamlDotNet's `SerializerBuilder` / `DeserializerBuilder` with explicit naming conventions
-
-**For the predicate system (which content trees to include):**
-- Model after Sitecore Unicorn's `SerializationPresetPredicate`: a list of include roots with optional exclude sub-paths
-- Store as JSON in config file; load at task startup
-- Match by Area ID or Page path, not numeric page ID (GUIDs only in YAML output)
+The ExpressDelivery sample uses `Version="*"` but that is a sample convention, not a production practice.
 
 ---
 
-## Version Compatibility
+## Installation
 
-| Package | Compatible With | Notes |
-|---------|-----------------|-------|
-| Dynamicweb.Core 10.23.9 | net8.0 | Published 2026-03-17. Minimum DW version: 10.2+. Do not use versions below 10.2 — APIs may differ. |
-| YamlDotNet 16.3.0 | net8.0, net6.0, netstandard2.0/2.1, net47 | Published Dec 2024. No known compatibility issues with Dynamicweb.Core. |
-| Microsoft.Extensions.Configuration.Json 8.0.x | net8.0 | Part of .NET 8 SDK. Version should match the target framework. |
-| xunit 2.9.3 | net8.0 | Test project only — never include xunit in the AppStore package output. |
+```bash
+cd src/Dynamicweb.ContentSync
+dotnet add package Dynamicweb.Content.UI --version 10.23.9
+```
 
 ---
 
 ## Sources
 
-- [NuGet: Dynamicweb.Core 10.23.9](https://www.nuget.org/packages/Dynamicweb.Core/) — verified version and target framework (HIGH confidence)
-- [NuGet: YamlDotNet 16.3.0](https://www.nuget.org/packages/YamlDotNet) — verified version, download count, target frameworks (HIGH confidence)
-- [DynamicWeb 10 AppStore App Guide](https://doc.dynamicweb.dev/documentation/extending/guides/newappstoreapp.html) — project structure, required NuGet tags, csproj metadata (HIGH confidence)
-- [DynamicWeb: AreaService Class](https://doc.dynamicweb.com/api/html/02c7da84-1d1c-506d-0054-da04eaff373f.htm) — namespace `Dynamicweb.Content`, key methods (HIGH confidence)
-- [DynamicWeb: PageService Class](https://doc.dynamicweb.com/api/html/15516fc9-3e1c-ac41-9849-cc6ad67bb84d.htm) — namespace `Dynamicweb.Content`, key methods (HIGH confidence)
-- [DynamicWeb: GridService Class](https://doc.dynamicweb.dev/api/Dynamicweb.Content.GridService.html) — namespace `Dynamicweb.Content`, `GetGridRowsByPageId` methods (HIGH confidence)
-- [DynamicWeb: BaseScheduledTaskAddIn Fields](https://doc.dynamicweb.com/api/html/75745460-c471-a370-1ddc-e4a3ae983f14.htm) — namespace `Dynamicweb.Scheduling`, `Run()` method (HIGH confidence)
-- [DynamicWeb: Paragraphs.GetParagraphsByPageId](https://doc.dynamicweb.com/forum/development/development/) — via forum example, `Dynamicweb.Content.Services.Paragraphs` (MEDIUM confidence — forum source, not official API docs)
-- [DynamicWeb: Logging Namespace](http://doc.dynamicweb.com/api/html/e09d5412-29c9-78fa-bfa3-e7ac54caaee2.htm) — `Dynamicweb.Logging`, `LogManager` class (MEDIUM confidence)
-- [NuGet: xunit 2.9.3](https://www.nuget.org/packages/xunit) — verified version (HIGH confidence)
-- [Sitecore Unicorn GitHub](https://github.com/SitecoreUnicorn/Unicorn) — predicate configuration pattern reference (HIGH confidence — well-established prior art)
+- [NuGet: Dynamicweb.Content.UI](https://www.nuget.org/packages/Dynamicweb.Content.UI/) -- dependency chain verified (HIGH)
+- [NuGet: Dynamicweb.Application.UI](https://www.nuget.org/packages/Dynamicweb.Application.UI/) -- AreasSection, SettingsArea, ActionBuilder confirmed (HIGH)
+- [NuGet: Dynamicweb.CoreUI](https://www.nuget.org/packages/Dynamicweb.CoreUI/) -- screen/command/query base classes (HIGH)
+- [NuGet: Dynamicweb.Suite.Ring1](https://www.nuget.org/packages/Dynamicweb.Suite.Ring1/) -- evaluated and rejected as too heavy (HIGH)
+- [NuGet: Dynamicweb.Suite](https://www.nuget.org/packages/Dynamicweb.Suite/10.23.9) -- full dependency list inspected (HIGH)
+- [DW10 AppStore App Guide](https://doc.dynamicweb.dev/documentation/extending/guides/newappstoreapp.html) -- extension patterns (HIGH)
+- [DW10 Screen Types](https://doc.dynamicweb.dev/documentation/extending/administration-ui/screentypes.html) -- UI concepts (MEDIUM)
+- Assembly reflection on `Dynamicweb.Content.UI.dll`, `Dynamicweb.CoreUI.dll`, `Dynamicweb.Application.UI.dll` from test instance at `C:\Projects\Solutions\swift.test.forsync\Swift2.1\Dynamicweb.Host.Suite\bin\Debug\net8.0\` (HIGH)
+- ExpressDelivery sample at `C:\Projects\temp\dwextensionsample\Samples-main\ExpressDelivery\` -- verified patterns for NavigationNodeProvider, EditScreenBase, ListScreenBase, ScreenInjector, Commands, Queries, MappingConfiguration (HIGH)
 
 ---
 
-*Stack research for: Dynamicweb.ContentSync — DynamicWeb AppStore content serialization tool*
-*Researched: 2026-03-19*
+## Confidence Assessment
+
+| Area | Confidence | Rationale |
+|------|------------|-----------|
+| Package dependency (Content.UI) | HIGH | Verified NuGet dependency page + assembly inspection of test instance |
+| Transitive chain | HIGH | Verified via NuGet dependency pages for each package in chain |
+| Class/namespace locations | HIGH | Verified via .NET reflection on actual DLLs from test instance |
+| No Razor SDK needed | HIGH | ExpressDelivery only uses Razor for custom widget rendering; our screens are declarative C# |
+| ZIP via BCL | HIGH | `System.IO.Compression.ZipFile` is .NET 8 built-in |
+| Version pinning at 10.23.9 | HIGH | Matches existing Dynamicweb pin and test instance versions (deps.json) |
+| ScreenInjector for context menus | MEDIUM | Pattern confirmed from ExpressDelivery `OrderOverviewInjector`; applying to `PageListScreen` uses same pattern but needs runtime verification |
+| Query expression UI reuse | LOW | `Dynamicweb.QueryPublisher` comes transitively; specific query expression editor reuse patterns need investigation during implementation |
+
+---
+
+*Stack research for: Dynamicweb.ContentSync v1.2 Admin UI milestone*
+*Updated: 2026-03-21*

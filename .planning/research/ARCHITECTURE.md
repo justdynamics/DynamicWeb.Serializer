@@ -1,297 +1,589 @@
-# Architecture Research
+# Architecture Patterns
 
-**Domain:** Content serialization/sync tooling (DynamicWeb AppStore app)
-**Researched:** 2026-03-19
-**Confidence:** HIGH (Unicorn architecture well-documented; DynamicWeb 10 API verified via official docs)
+**Domain:** DynamicWeb 10 admin UI integration for ContentSync v1.2
+**Researched:** 2026-03-21
+**Confidence:** MEDIUM (DW10 CoreUI patterns verified via ExpressDelivery sample; content tree injection points unverified)
 
-## Standard Architecture
-
-Content serialization systems like Unicorn decompose into five cooperating subsystems: a predicate that defines *what* to include, a tree walker that traverses the source, a serializer/deserializer that converts between object and file form, an identity resolver that maps items across environments, and an evaluator that decides *what to do* when comparing source to target. These subsystems are orchestrated by an entry point (scheduled task / sync coordinator).
-
-### System Overview
+## Current Architecture (v1.0/v1.1)
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                          Entry Points                               │
-│  ┌──────────────────────────┐  ┌──────────────────────────────────┐ │
-│  │  SerializeScheduledTask  │  │  DeserializeScheduledTask        │ │
-│  └────────────┬─────────────┘  └───────────────┬──────────────────┘ │
-└───────────────┼──────────────────────────────────┼───────────────────┘
-                │                                  │
-┌───────────────▼──────────────────────────────────▼───────────────────┐
-│                         Sync Coordinator                             │
-│  Reads config → invokes predicate → drives walker → calls evaluator  │
-└────────┬────────────────────────────────────────────────────────────┘
-         │
-         │  uses all of:
-         ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│                        Core Subsystems                              │
-│                                                                     │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐              │
-│  │  Predicate   │  │  Tree Walker │  │  Evaluator   │              │
-│  │  (config)    │  │  (traversal) │  │  (diff/sync) │              │
-│  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘              │
-│         │                 │                  │                      │
-│  ┌──────▼─────────────────▼──────────────────▼───────┐             │
-│  │              Identity Resolver                      │             │
-│  │   (GUID ↔ numeric ID mapping per environment)       │             │
-│  └───────────────────────────────────────────────────┘             │
-│                                                                     │
-│  ┌────────────────────────────┐  ┌──────────────────────────────┐  │
-│  │  Serializer (DW → YAML)    │  │  Deserializer (YAML → DW)    │  │
-│  └────────────────────────────┘  └──────────────────────────────┘  │
-└─────────────────────────────────────────────────────────────────────┘
-         │                                        │
-         ▼                                        ▼
-┌─────────────────────┐              ┌───────────────────────────────┐
-│   DW Content APIs   │              │   File System (YAML files)    │
-│  AreaService        │              │  /Areas/                      │
-│  PageService        │              │    {area-name}/               │
-│  GridService        │              │      {page-name}/             │
-│  ParagraphService   │              │        {paragraph-name}.yml   │
-└─────────────────────┘              └───────────────────────────────┘
+ContentSync.config.json (JSON file on disk)
+        |
+        v
+  ConfigLoader.Load()
+        |
+        v
+  SyncConfiguration { OutputDirectory, LogLevel, Predicates[] }
+        |
+        +---> ContentSerializer(config) ---> FileSystemStore.WriteTree() ---> YAML on disk
+        |
+        +---> ContentDeserializer(config) ---> FileSystemStore.ReadTree() ---> DW database
+        |
+  Entry points:
+        +---> SerializeScheduledTask.Run() ---> FindConfigFile() + ContentSerializer
+        +---> DeserializeScheduledTask.Run() ---> FindConfigFile() + ContentDeserializer
 ```
 
-### Component Responsibilities
+### Existing Component Inventory
+
+| Component | File | Responsibility |
+|-----------|------|---------------|
+| `SyncConfiguration` | Configuration/SyncConfiguration.cs | Immutable config record: OutputDirectory, LogLevel, Predicates |
+| `PredicateDefinition` | Configuration/PredicateDefinition.cs | Single predicate: Name, Path, AreaId, Excludes |
+| `ConfigLoader` | Configuration/ConfigLoader.cs | Reads JSON from disk, validates, returns SyncConfiguration |
+| `ContentPredicate` | Configuration/ContentPredicate.cs | Evaluates include/exclude logic for a content path |
+| `ContentPredicateSet` | Configuration/ContentPredicate.cs | OR-aggregation of multiple ContentPredicates |
+| `ContentSerializer` | Serialization/ContentSerializer.cs | DW-to-disk pipeline: traverse, filter, map, write |
+| `ContentDeserializer` | Serialization/ContentDeserializer.cs | Disk-to-DW pipeline: read, resolve GUIDs, write to DB |
+| `ContentMapper` | Serialization/ContentMapper.cs | Maps DW entities to serialized DTOs |
+| `ReferenceResolver` | Serialization/ReferenceResolver.cs | Resolves cross-references between entities |
+| `FileSystemStore` | Infrastructure/FileSystemStore.cs | YAML I/O with mirror-tree layout |
+| `IContentStore` | Infrastructure/IContentStore.cs | Abstraction over file I/O |
+| `SerializeScheduledTask` | ScheduledTasks/SerializeScheduledTask.cs | DW scheduled task entry point for serialization |
+| `DeserializeScheduledTask` | ScheduledTasks/DeserializeScheduledTask.cs | DW scheduled task entry point for deserialization |
+
+### Key Architectural Properties
+
+1. **Config is immutable records** -- `SyncConfiguration` and `PredicateDefinition` use `required init` properties. ConfigLoader creates them; nothing mutates them after construction.
+2. **ContentSerializer/ContentDeserializer accept config via constructor** -- they do not find/load config themselves. This is the property that enables reuse from context menu actions.
+3. **Scheduled tasks own config discovery** -- `FindConfigFile()` is duplicated in both tasks with identical 4-path search logic.
+4. **No shared config path resolution** -- each entry point finds config independently.
+
+## Recommended Architecture (v1.2)
+
+### Design Principle: Config File Stays Source of Truth
+
+The admin UI is a management layer over `ContentSync.config.json`. The UI reads and writes the same JSON file. Manual edits to the file remain valid. This means:
+
+- No database tables for configuration (unlike the ExpressDelivery sample which uses SQL tables).
+- No ORM, no UpdateProvider, no SQL migrations.
+- Commands read from disk, mutate in memory, write back to disk.
+- Queries read from disk and map to data models.
+
+### New Component Map
+
+```
+DW Admin UI (Settings > Content > Sync)
+  |
+  +--- Tree/ContentSyncSettingsNodeProvider     [NEW]
+  |      NavigationNodeProvider<AreasSection> under Settings
+  |      Root node: "Sync" -> ContentSyncSettingsScreen
+  |      Sub-node: "Predicates" -> ContentSyncPredicateListScreen
+  |
+  +--- Screens/ContentSyncSettingsScreen        [NEW]
+  |      EditScreenBase<ContentSyncSettingsDataModel>
+  |      Fields: OutputDirectory, LogLevel
+  |      Save -> SaveContentSyncSettingsCommand
+  |
+  +--- Screens/ContentSyncPredicateListScreen   [NEW]
+  |      ListScreenBase<ContentSyncPredicateDataModel>
+  |      Lists predicates from config file
+  |      Context actions: Edit, Delete
+  |      Create action -> ContentSyncPredicateEditScreen
+  |
+  +--- Screens/ContentSyncPredicateEditScreen   [NEW]
+  |      EditScreenBase<ContentSyncPredicateDataModel>
+  |      Fields: Name, Path, AreaId, Excludes
+  |      Save -> SaveContentSyncPredicateCommand
+  |
+  +--- Models/ContentSyncSettingsDataModel      [NEW]
+  |      DataViewModelBase with config fields
+  |
+  +--- Models/ContentSyncPredicateDataModel     [NEW]
+  |      DataViewModelBase, IIdentifiable with predicate fields
+  |
+  +--- Queries/ContentSyncSettingsQuery         [NEW]
+  |      DataQueryModelBase -> reads config file -> maps to settings model
+  |
+  +--- Queries/ContentSyncPredicatesQuery       [NEW]
+  |      DataQueryListBase -> reads config file -> maps to predicate model list
+  |
+  +--- Queries/ContentSyncPredicateByIndexQuery [NEW]
+  |      DataQueryModelBase -> reads config file -> returns single predicate
+  |
+  +--- Commands/SaveContentSyncSettingsCommand  [NEW]
+  |      Reads config, updates settings fields, writes back
+  |
+  +--- Commands/SaveContentSyncPredicateCommand [NEW]
+  |      Reads config, updates/adds predicate, writes back
+  |
+  +--- Commands/DeleteContentSyncPredicateCommand [NEW]
+  |      Reads config, removes predicate by index, writes back
+  |
+  +--- Configuration/ConfigWriter               [NEW]
+  |      Writes SyncConfiguration back to JSON file
+  |      Counterpart to ConfigLoader (read vs write)
+  |
+  +--- Configuration/ConfigPathResolver          [NEW]
+  |      Extracts FindConfigFile() logic from scheduled tasks
+  |      Single source of truth for config file location
+
+Content Tree Context Menus
+  |
+  +--- Injectors/PageOverviewInjector           [NEW]
+  |      ScreenInjector for page overview/edit screen
+  |      Adds "Serialize to Zip" and "Deserialize from Zip" context actions
+  |
+  +--- Commands/SerializeToZipCommand           [NEW]
+  |      Takes page ID, creates temp SyncConfiguration with single predicate,
+  |      runs ContentSerializer to temp dir, zips, returns download
+  |
+  +--- Commands/DeserializeFromZipCommand       [NEW]
+  |      Takes uploaded zip + target page ID, extracts to temp dir,
+  |      runs ContentDeserializer with temp config, cleans up
+  |
+  +--- Screens/DeserializeUploadScreen          [NEW]
+  |      Modal/dialog for zip upload + target selection
+```
+
+### Component Boundaries
 
 | Component | Responsibility | Communicates With |
-|-----------|----------------|-------------------|
-| SerializeScheduledTask | DW entry point for export; extends `BaseScheduledTaskAddIn`, implements `Run()` | SyncCoordinator |
-| DeserializeScheduledTask | DW entry point for import; extends `BaseScheduledTaskAddIn`, implements `Run()` | SyncCoordinator |
-| SyncCoordinator | Loads config, validates predicates, orchestrates tree walk, reports progress/errors | Predicate, TreeWalker, Serializer, Deserializer |
-| ConfigurationLoader | Parses standalone YAML/JSON config file; builds predicate rules | SyncCoordinator |
-| Predicate | Evaluates include/exclude rules against a content item path | ConfigurationLoader, TreeWalker |
-| TreeWalker | Recursively traverses DW content hierarchy (Area → Page → GridRow → Paragraph) using DW services | PageService, GridService, ParagraphService, Predicate |
-| Serializer | Converts DW content objects to YAML model; writes mirror-tree files to disk | TreeWalker, YamlDotNet, FileSystem |
-| Deserializer | Reads YAML files from disk; converts to DW content objects and writes via services | IdentityResolver, PageService, GridService, ParagraphService, YamlDotNet |
-| IdentityResolver | Maps GUIDs to numeric IDs in the target environment; determines insert vs update | PageService (GUID lookup), Deserializer |
-| Evaluator | Compares existing target state to incoming serialized state; applies source-wins rule | Deserializer (called during deserialize pipeline) |
-| ContentModel (DTOs) | Plain C# classes representing serialized Area, Page, GridRow, Paragraph | Serializer, Deserializer, YamlDotNet |
+|-----------|---------------|-------------------|
+| ConfigPathResolver | Finds ContentSync.config.json on disk | ConfigLoader, ConfigWriter, all commands/queries |
+| ConfigWriter | Serializes SyncConfiguration back to JSON | Commands that modify config |
+| ContentSyncSettingsNodeProvider | Registers tree node under Settings | DW navigation system |
+| Settings/Predicate Screens | UI rendering | Queries (read), Commands (save) |
+| Settings/Predicate Queries | Read config file, map to data models | ConfigPathResolver, ConfigLoader |
+| Settings/Predicate Commands | Read config, mutate, write back | ConfigPathResolver, ConfigLoader, ConfigWriter |
+| PageOverviewInjector | Adds context menu actions to page tree | DW page overview screen |
+| SerializeToZipCommand | Ad-hoc serialize + zip | ContentSerializer (existing), System.IO.Compression |
+| DeserializeFromZipCommand | Unzip + ad-hoc deserialize | ContentDeserializer (existing), System.IO.Compression |
 
-## Recommended Project Structure
+### Data Flow
+
+#### Settings Screen Save Flow
 
 ```
-Dynamicweb.ContentSync/
-├── Tasks/
-│   ├── SerializeContentTask.cs      # BaseScheduledTaskAddIn — triggers serialization
-│   └── DeserializeContentTask.cs    # BaseScheduledTaskAddIn — triggers deserialization
-│
-├── Configuration/
-│   ├── ContentSyncConfiguration.cs  # Root config model (parsed from config file)
-│   ├── ConfigurationLoader.cs       # Reads + validates config file on disk
-│   └── Predicate.cs                 # Include/exclude rule evaluation
-│
-├── Serialization/
-│   ├── SyncCoordinator.cs           # Orchestrates the full serialize or deserialize run
-│   ├── ContentSerializer.cs         # DW objects → YAML model → files
-│   ├── ContentDeserializer.cs       # Files → YAML model → DW objects via services
-│   ├── TreeWalker.cs                # Recursive DW content tree traversal
-│   └── IdentityResolver.cs          # GUID ↔ numeric ID resolution in target DB
-│
-├── Models/
-│   ├── SerializedArea.cs            # YAML DTO for Website/Area
-│   ├── SerializedPage.cs            # YAML DTO for Page + ItemType fields
-│   ├── SerializedGridRow.cs         # YAML DTO for GridRow
-│   ├── SerializedGridColumn.cs      # YAML DTO for GridColumn grouping
-│   └── SerializedParagraph.cs       # YAML DTO for Paragraph + ItemType fields
-│
-└── Infrastructure/
-    ├── FileSystemStore.cs           # Read/write YAML files; manages mirror-tree paths
-    └── ContentSyncLogger.cs         # Structured logging wrapper
+User edits settings in admin UI
+  -> SaveContentSyncSettingsCommand.Handle()
+    -> ConfigPathResolver.FindConfigFile()
+    -> ConfigLoader.Load(path)            // read current state
+    -> Merge model changes into config    // mutate in memory
+    -> ConfigWriter.Write(path, config)   // write back to disk
+    -> return CommandResult.Ok
 ```
 
-### Structure Rationale
+#### Predicate List Flow
 
-- **Tasks/:** Thin DW integration layer — only entry-point wiring. No business logic here.
-- **Configuration/:** Isolated so predicates can be tested independently of DW services.
-- **Serialization/:** The core pipeline. SyncCoordinator, TreeWalker, Serializer, and Deserializer are separate because serialize and deserialize are genuinely asymmetric operations.
-- **Models/:** Plain DTOs with no DW dependencies — owned by YamlDotNet serialization. Keeps the YAML schema decoupled from DW API churn.
-- **Infrastructure/:** I/O concerns (file paths, logging) isolated from business logic.
+```
+User navigates to Settings > Content > Sync > Predicates
+  -> ContentSyncPredicatesQuery.GetListItems()
+    -> ConfigPathResolver.FindConfigFile()
+    -> ConfigLoader.Load(path)
+    -> Map each PredicateDefinition to ContentSyncPredicateDataModel
+    -> Return list
+```
 
-## Architectural Patterns
+#### Context Menu Serialize Flow (Key Integration Answer)
 
-### Pattern 1: Source-Wins Evaluator (Disk as Truth)
+```
+User right-clicks page in content tree -> "Serialize to Zip"
+  -> SerializeToZipCommand.Handle()
+    -> Get page by ID from DW
+    -> Build page's content path (walk parent chain)
+    -> Create temp SyncConfiguration:
+         OutputDirectory = Path.GetTempPath() + guid
+         Predicates = [{ Name="Ad-hoc", Path=contentPath, AreaId=page.AreaId }]
+    -> new ContentSerializer(tempConfig).Serialize()
+    -> ZipFile.CreateFromDirectory(tempOutputDir, zipPath)
+    -> Return zip as file download
+    -> Clean up temp dir
+```
 
-**What:** During deserialization, the evaluator does not diff or merge — it unconditionally applies the serialized state to the target. The only decision is insert vs update (based on GUID presence).
-**When to use:** v1 full-sync scenarios where files are explicitly the authoritative source.
-**Trade-offs:** Simple, predictable, and safe for CI/CD pipelines. Loses any manual edits made in target environment — users must understand this contract.
+**This is the critical design insight:** context menu actions reuse ContentSerializer/ContentDeserializer by constructing a temporary SyncConfiguration. No code duplication needed. The serializer/deserializer already accept config via constructor and are agnostic to how that config was created.
+
+#### Context Menu Deserialize Flow
+
+```
+User right-clicks page in content tree -> "Deserialize from Zip"
+  -> Opens DeserializeUploadScreen (modal dialog)
+  -> User uploads zip, confirms target
+  -> DeserializeFromZipCommand.Handle()
+    -> Extract zip to temp dir
+    -> Create temp SyncConfiguration:
+         OutputDirectory = tempExtractDir
+         Predicates = [{ Name="Ad-hoc", Path="/", AreaId=targetAreaId }]
+    -> new ContentDeserializer(tempConfig).Deserialize()
+    -> Return DeserializeResult summary as toast/notification
+    -> Clean up temp dir
+```
+
+## Existing Components That Change
+
+### ConfigLoader (NO STRUCTURAL CHANGE)
+
+No structural changes needed. A separate `ConfigWriter` class handles the write path (single responsibility). The `RawSyncConfiguration` inner class stays private -- ConfigWriter can use `System.Text.Json` directly since it controls the output format.
+
+### SyncConfiguration (MINOR CHANGE)
+
+Consider whether to add fields that the settings UI manages but that are not currently in the config:
+- `DryRun` -- currently passed as constructor arg to ContentDeserializer. This is a runtime flag, NOT a config file setting. Do NOT add it to SyncConfiguration.
+- `ConflictStrategy` -- future extensibility. Not needed for v1.2 since source-wins is the only strategy.
+
+**Recommendation:** Keep SyncConfiguration unchanged for v1.2. The UI shows all editable config fields; runtime-only flags like DryRun are handled at invocation time by the scheduled tasks.
+
+### SerializeScheduledTask / DeserializeScheduledTask (MINOR CHANGE)
+
+Extract `FindConfigFile()` into shared `ConfigPathResolver`. Both tasks currently duplicate this 4-path search logic identically. The new UI queries and commands also need the same path resolution.
 
 ```csharp
-// Evaluator logic — no merge, source always wins
-if (identityResolver.TryResolveNumericId(serializedPage.Guid, out int existingId))
+// Before (duplicated in both tasks):
+private string? FindConfigFile() { ... }
+
+// After:
+var configPath = ConfigPathResolver.FindConfigFile();
+```
+
+### ContentSerializer / ContentDeserializer (NO CHANGE)
+
+These components are already designed correctly for reuse:
+- Accept `SyncConfiguration` via constructor (no hard dependency on file discovery)
+- Accept optional `Action<string>? log` callback
+- ContentDeserializer accepts `isDryRun` and `filesRoot` as constructor parameters
+
+No modifications needed. Context menu actions construct temp configs and pass them in.
+
+## New Components Detail
+
+### Must Build (Core Infrastructure)
+
+| Component | Type | Purpose | Dependencies |
+|-----------|------|---------|--------------|
+| `ConfigPathResolver` | Static class | Shared config file path discovery | None (pure file system) |
+| `ConfigWriter` | Static class | Write SyncConfiguration to JSON | System.Text.Json |
+
+### Must Build (Settings UI)
+
+| Component | Type | Purpose | Dependencies |
+|-----------|------|---------|--------------|
+| `ContentSyncSettingsNodeProvider` | NavigationNodeProvider | Tree node registration | Dynamicweb.Application.UI, Dynamicweb.CoreUI |
+| `ContentSyncNavigationNodePathProvider` | NavigationNodePathProvider | Breadcrumb path | Dynamicweb.Application.UI |
+| `ContentSyncSettingsDataModel` | DataViewModelBase | Settings form model | Dynamicweb.CoreUI.Data |
+| `ContentSyncPredicateDataModel` | DataViewModelBase, IIdentifiable | Predicate list/edit model | Dynamicweb.CoreUI.Data |
+| `ContentSyncSettingsQuery` | DataQueryModelBase | Read settings from config | ConfigPathResolver, ConfigLoader |
+| `ContentSyncPredicatesQuery` | DataQueryListBase | List predicates from config | ConfigPathResolver, ConfigLoader |
+| `ContentSyncPredicateByIndexQuery` | DataQueryModelBase | Single predicate for edit | ConfigPathResolver, ConfigLoader |
+| `ContentSyncSettingsScreen` | EditScreenBase | Settings edit form | Query + Command |
+| `ContentSyncPredicateListScreen` | ListScreenBase | Predicate list with CRUD | Query + Commands |
+| `ContentSyncPredicateEditScreen` | EditScreenBase | Predicate edit form | Query + Command |
+| `SaveContentSyncSettingsCommand` | CommandBase | Persist settings changes | ConfigPathResolver, ConfigLoader, ConfigWriter |
+| `SaveContentSyncPredicateCommand` | CommandBase | Add/update predicate | ConfigPathResolver, ConfigLoader, ConfigWriter |
+| `DeleteContentSyncPredicateCommand` | CommandBase | Remove predicate | ConfigPathResolver, ConfigLoader, ConfigWriter |
+
+### Must Build (Context Menu Actions)
+
+| Component | Type | Purpose | Dependencies |
+|-----------|------|---------|--------------|
+| `PageOverviewInjector` | ScreenInjector | Add context menu to page tree | Dynamicweb.CoreUI, DW page screen type |
+| `SerializeToZipCommand` | CommandBase | Serialize page subtree to zip | ContentSerializer, System.IO.Compression |
+| `DeserializeFromZipCommand` | CommandBase | Upload zip and deserialize | ContentDeserializer, System.IO.Compression |
+| `DeserializeUploadScreen` | Screen (modal) | Upload dialog with target picker | CoreUI Screens |
+
+### NuGet Dependencies to Add
+
+The current project references `Dynamicweb Version="10.23.9"`. The admin UI features require additional packages:
+
+| Package | Purpose | Confidence |
+|---------|---------|------------|
+| `Dynamicweb.CoreUI` | Screens, Commands, Queries, Actions | HIGH -- used by ExpressDelivery sample |
+| `Dynamicweb.Application.UI` | NavigationNodeProvider, AreasSection, section types | HIGH -- used by ExpressDelivery sample |
+
+**Alternative:** Use `Dynamicweb.Suite.Ring1 Version="*"` like the ExpressDelivery sample (meta-package including all DW10 UI packages). This avoids version mismatch issues but pulls in unnecessary dependencies.
+
+**Recommendation:** Start with `Dynamicweb.Suite.Ring1 Version="*"` for development to avoid hunting for individual packages. Narrow down to specific packages once the build works. The project SDK may need to change from `Microsoft.NET.Sdk` to `Microsoft.NET.Sdk.Razor` if any Razor views are needed for custom widgets (unlikely for pure CoreUI screens).
+
+**Confidence: MEDIUM** -- the exact set of individual packages needs runtime verification.
+
+## Patterns to Follow
+
+### Pattern 1: File-Backed Commands (Read-Modify-Write)
+
+All config-modifying commands follow the same pattern because config lives in a JSON file, not a database.
+
+**What:** Read the current config file, apply changes in memory, write back.
+**When:** Any command that modifies ContentSync settings or predicates.
+
+```csharp
+public class SaveContentSyncSettingsCommand : CommandBase<ContentSyncSettingsDataModel>
 {
-    serializedPage.NumericId = existingId;
-    pageService.SavePage(MapToPage(serializedPage)); // UPDATE
+    public override CommandResult Handle()
+    {
+        if (Model is null) return new() { Status = CommandResult.ResultType.Invalid };
+
+        var configPath = ConfigPathResolver.FindConfigFile();
+        if (configPath is null) return new()
+        {
+            Status = CommandResult.ResultType.Error,
+            Message = "ContentSync.config.json not found"
+        };
+
+        var config = ConfigLoader.Load(configPath);
+
+        var updated = config with
+        {
+            OutputDirectory = Model.OutputDirectory ?? config.OutputDirectory,
+            LogLevel = Model.LogLevel ?? config.LogLevel
+        };
+
+        ConfigWriter.Write(configPath, updated);
+
+        return new() { Status = CommandResult.ResultType.Ok, Model = Model };
+    }
 }
-else
+```
+
+### Pattern 2: Temp Config for Ad-Hoc Operations
+
+**What:** Create a throwaway SyncConfiguration to reuse ContentSerializer/ContentDeserializer for one-off operations.
+**When:** Context menu serialize/deserialize actions.
+
+```csharp
+var tempDir = Path.Combine(Path.GetTempPath(), $"ContentSync_{Guid.NewGuid():N}");
+var tempConfig = new SyncConfiguration
 {
-    var newPage = pageService.SavePage(MapToPage(serializedPage)); // INSERT
-    // numeric ID assigned by DW; GUID preserved from serialized file
+    OutputDirectory = tempDir,
+    Predicates = new List<PredicateDefinition>
+    {
+        new() { Name = "Ad-hoc", Path = contentPath, AreaId = areaId }
+    }
+};
+
+try
+{
+    var serializer = new ContentSerializer(tempConfig);
+    serializer.Serialize();
+    ZipFile.CreateFromDirectory(tempDir, zipPath);
+    // Return zip to browser...
+}
+finally
+{
+    if (Directory.Exists(tempDir)) Directory.Delete(tempDir, recursive: true);
 }
 ```
 
-### Pattern 2: Mirror-Tree File Layout
+### Pattern 3: Index-Based Predicate Identity
 
-**What:** The folder structure on disk directly mirrors the content hierarchy. Each item is one `.yml` file; its location in the folder tree encodes its parent relationships.
-**When to use:** Always — this is the core value proposition. Git diffs are readable and hierarchically navigable.
-**Trade-offs:** Path lengths can become long for deeply nested content. Renaming items shifts file paths (but GUID identity survives renames).
+Predicates in the config file have no unique ID (no database, no auto-increment). Use array index as the identifier for edit/delete operations.
 
-```
-/Areas/
-  Swift/                         ← Area GUID encoded in area.yml
-    area.yml
-    Customer-Center/             ← Page folder (slug from page name)
-      page.yml
-      grid-row-1/
-        paragraph-banner.yml
-        paragraph-text.yml
-      Sub-Page/
-        page.yml
-```
+**What:** Use the predicate's position in the `Predicates[]` array as its temporary identity.
+**When:** Predicate list/edit/delete operations.
 
-### Pattern 3: GUID-Based Identity Resolution
+```csharp
+public sealed class ContentSyncPredicateDataModel : DataViewModelBase, IIdentifiable
+{
+    public int Index { get; set; }  // Position in config array (0-based)
 
-**What:** On deserialize, the IdentityResolver queries the target database by `PageUniqueId` (GUID) before any write. Found → update existing record. Not found → insert new record with DW-assigned numeric ID.
-**When to use:** Always. This pattern is what makes the tool environment-agnostic.
-**Trade-offs:** Requires one lookup query per item during deserialization. For large trees this adds latency, but is unavoidable — it is the correctness guarantee.
+    [ConfigurableProperty("Name")]
+    public string? Name { get; set; }
 
-### Pattern 4: Predicate-Driven Inclusion
+    [ConfigurableProperty("Content Path")]
+    public string? Path { get; set; }
 
-**What:** The config file specifies root paths (by Area name, page name, or GUID) to include or exclude. The Predicate component evaluates each item during tree traversal.
-**When to use:** Configured once per project. Lets teams serialize only the content trees relevant to their work.
-**Trade-offs:** Path-based predicates are simple but can require updates when content is renamed. GUID-based predicates are stable but less human-readable.
+    [ConfigurableProperty("Area ID")]
+    public int AreaId { get; set; }
 
-## Data Flow
-
-### Serialization Flow (DW → Disk)
-
-```
-SerializeScheduledTask.Run()
-    ↓
-SyncCoordinator.Serialize()
-    ↓
-ConfigurationLoader → loads predicate rules
-    ↓
-TreeWalker.Walk(areaId)
-    ├── AreaService.GetAreas() → for each area matching predicate
-    ├── PageService.GetPagesByAreaID(areaId) → for each page
-    │     PageService.GetPagesByParentID(pageId) → recurse children
-    ├── GridService.GetGridRowsByPageId(pageId) → for each row
-    └── ParagraphService.GetParagraphsByPage(pageId) → for each paragraph
-         ↓ (item emitted to Serializer)
-ContentSerializer.Serialize(dwObject)
-    ├── Maps DW object → SerializedModel DTO
-    ├── Includes ItemType custom fields
-    └── Writes YAML via YamlDotNet
-         ↓
-FileSystemStore.Write(mirrorPath, yaml)
-    └── Creates folder hierarchy + .yml file on disk
+    public string GetId() => $"{Index}";
+}
 ```
 
-### Deserialization Flow (Disk → DW)
+### Pattern 4: NavigationNodeProvider for Settings Tree
+
+Following the ExpressDelivery sample pattern.
+
+**What:** Register a node in the Settings tree with sub-nodes.
+**When:** Building the admin UI tree node.
+
+```csharp
+public sealed class ContentSyncSettingsNodeProvider : NavigationNodeProvider<AreasSection>
+{
+    public override IEnumerable<NavigationNode> GetRootNodes()
+    {
+        yield return new()
+        {
+            Id = "ContentSync",
+            Name = "Content Sync",
+            NodeAction = NavigateScreenAction.To<ContentSyncSettingsScreen>()
+                .With(new ContentSyncSettingsQuery()),
+            HasSubNodes = true
+        };
+    }
+
+    public override IEnumerable<NavigationNode> GetSubNodes(NavigationNodePath parentNodePath)
+    {
+        if (parentNodePath.Last == "ContentSync")
+        {
+            yield return new()
+            {
+                Id = "ContentSync_Predicates",
+                Name = "Predicates",
+                NodeAction = NavigateScreenAction.To<ContentSyncPredicateListScreen>()
+                    .With(new ContentSyncPredicatesQuery())
+            };
+        }
+    }
+}
+```
+
+**Confidence: MEDIUM** -- `AreasSection` places the node under Settings. The requirement says "Settings > Content > Sync" which may need a more specific section type. The exact parent node for the Content sub-section needs runtime discovery. The ExpressDelivery sample uses `AreasSection` which maps to a top-level Settings section node.
+
+### Pattern 5: ScreenInjector for Context Menu Actions
+
+Based on the ExpressDelivery `OrderOverviewInjector` pattern.
+
+**What:** Inject context actions into an existing DW screen.
+**When:** Adding serialize/deserialize actions to the page tree.
+
+```csharp
+public sealed class PageOverviewInjector : ScreenInjector</* DW page screen type */>
+{
+    public override void OnAfter(/* screen */, UiComponentBase content)
+    {
+        if (content.Get<ScreenLayout>() is not ScreenLayout layout) return;
+        // Extract page ID from screen model
+
+        layout.ContextActionGroups.Add(new()
+        {
+            Nodes = new List<ActionNode>
+            {
+                new()
+                {
+                    Name = "Serialize to Zip",
+                    Icon = Icon.Download,
+                    NodeAction = RunCommandAction
+                        .For(new SerializeToZipCommand { PageId = pageId })
+                },
+                new()
+                {
+                    Name = "Deserialize from Zip",
+                    Icon = Icon.Upload,
+                    NodeAction = OpenDialogAction
+                        .To<DeserializeUploadScreen>()
+                        .With(new DeserializeTargetQuery { PageId = pageId })
+                }
+            }
+        });
+    }
+}
+```
+
+**Confidence: LOW** -- the DW page screen type to inject into is unknown. The exact type name needs discovery by inspecting loaded DW assemblies at runtime. The pattern is sound (proven by ExpressDelivery) but the target screen type is a guess.
+
+## Anti-Patterns to Avoid
+
+### Anti-Pattern 1: Database Tables for Config
+
+**What:** Creating SQL tables and UpdateProvider for ContentSync configuration.
+**Why bad:** Config file is explicitly the source of truth. Adding a database layer creates two sources of truth, breaks manual-edit compatibility, and complicates deployment.
+**Instead:** Read/write the JSON file directly. Commands do read-modify-write on the file.
+
+### Anti-Pattern 2: Duplicating Serialize/Deserialize Logic in Context Menu Commands
+
+**What:** Writing separate serialization code in context menu commands.
+**Why bad:** Creates divergence from scheduled task behavior. Bug fixes in one path don't apply to the other.
+**Instead:** Construct a temporary `SyncConfiguration` and pass it to the existing `ContentSerializer`/`ContentDeserializer`. They already accept config via constructor injection.
+
+### Anti-Pattern 3: Guessing DW UI Class Names Without Verification
+
+**What:** Assuming `AreasSection`, `PageOverviewScreen`, or other DW internal types exist and work as expected.
+**Why bad:** DW10 API documentation is sparse. Class names may differ from assumptions.
+**Instead:** Build the settings node provider first and verify it appears in the DW admin tree before building the full screen stack. Inspect loaded DW assemblies at runtime to discover correct types.
+
+### Anti-Pattern 4: Concurrent Config File Access Without Awareness
+
+**What:** Multiple admin users editing config simultaneously causing read-modify-write conflicts.
+**Why bad:** File-based config has no locking mechanism. Two simultaneous saves could lose changes.
+**Instead:** Accept this limitation for v1.2 (config is rarely edited concurrently). Document it. If it becomes a problem, add file locking in ConfigWriter.
+
+## Suggested Build Order
+
+Build order is driven by dependency chains and risk reduction.
+
+### Phase 1: Infrastructure + Settings Node (Lowest Risk, Unblocks Everything)
+
+**Build:**
+1. `ConfigPathResolver` -- extract from scheduled tasks, shared utility
+2. `ConfigWriter` -- counterpart to ConfigLoader
+3. `ContentSyncSettingsNodeProvider` -- verify tree node appears in DW admin
+4. `ContentSyncNavigationNodePathProvider` -- breadcrumb support
+
+**Rationale:** ConfigPathResolver and ConfigWriter are pure infrastructure with no DW UI dependencies. The node provider is the riskiest unknown (correct section type, correct parent node ID). Building it first surfaces integration issues early.
+
+**Modifies:** `SerializeScheduledTask`, `DeserializeScheduledTask` (replace inline FindConfigFile with ConfigPathResolver)
+
+**Validates:** DW admin tree registration works, correct NuGet packages identified.
+
+### Phase 2: Settings Screen (Foundation for Predicate UI)
+
+**Build:**
+1. `ContentSyncSettingsDataModel` -- data model for settings form
+2. `ContentSyncSettingsQuery` -- reads config, maps to model
+3. `SaveContentSyncSettingsCommand` -- read-modify-write pattern
+4. `ContentSyncSettingsScreen` -- edit screen with OutputDirectory and LogLevel fields
+
+**Rationale:** Settings screen is simpler than predicate list (single object, not a collection). Establishes the full screen/query/command pattern that predicate screens will follow.
+
+### Phase 3: Predicate Management (CRUD List)
+
+**Build:**
+1. `ContentSyncPredicateDataModel` -- with index-based identity
+2. `ContentSyncPredicatesQuery` -- list from config
+3. `ContentSyncPredicateByIndexQuery` -- single predicate for edit
+4. `SaveContentSyncPredicateCommand` -- add/update predicate in array
+5. `DeleteContentSyncPredicateCommand` -- remove by index
+6. `ContentSyncPredicateListScreen` -- list with context actions (edit, delete)
+7. `ContentSyncPredicateEditScreen` -- edit form for name, path, areaId, excludes
+
+**Rationale:** Depends on Phase 2 patterns being validated. More complex because it manages a collection with index-based identity rather than a single settings object.
+
+### Phase 4: Context Menu Actions (Highest Complexity, Most Risk)
+
+**Build:**
+1. `PageOverviewInjector` -- inject context menu into page tree
+2. `SerializeToZipCommand` -- temp config + ContentSerializer + zip
+3. `DeserializeFromZipCommand` -- unzip + temp config + ContentDeserializer
+4. `DeserializeUploadScreen` -- file upload modal
+
+**Rationale:** Highest DW API risk. Three open questions that can only be answered at runtime:
+- What DW screen type represents the page overview for injection?
+- How does a DW command return a file download to the browser?
+- How does a DW CoreUI modal accept file uploads?
+
+Built last because it depends on nothing from Phases 2-3 but benefits from accumulated DW UI knowledge.
+
+### Phase Dependency Graph
 
 ```
-DeserializeScheduledTask.Run()
-    ↓
-SyncCoordinator.Deserialize()
-    ↓
-FileSystemStore.Enumerate(rootPath)
-    └── Walks mirror-tree, yields .yml files in hierarchy order
-         ↓
-ContentDeserializer.Deserialize(yamlFile)
-    ├── YamlDotNet → SerializedModel DTO
-    ├── IdentityResolver.Resolve(dto.Guid)
-    │     └── PageService/GridService/ParagraphService GUID lookup
-    │           Found → numeric ID for UPDATE
-    │           Not found → null → INSERT path
-    ├── Evaluator applies source-wins rule
-    └── Maps DTO → DW object → Service.Save()
-         └── PageService.SavePage() / GridService.SaveGridRow()
-             / ParagraphService.SaveParagraph()
+Phase 1: Infrastructure + Node
+    |
+    +---> Phase 2: Settings Screen
+    |         |
+    |         +---> Phase 3: Predicate CRUD
+    |
+    +---> Phase 4: Context Menu Actions
+              (independent of 2/3 but benefits from experience)
 ```
 
-### Key Data Flows
+## Confidence Assessment
 
-1. **GUID stability across environments:** GUIDs are read from DW on serialize and written back into DW on deserialize. The GUID is the only identifier present in both environments; numeric IDs are local to each.
-2. **Parent-before-child ordering:** Tree walker emits and file system enumerates in breadth-first top-down order. Pages must exist before their GridRows; GridRows must exist before Paragraphs. The Deserializer must process items in this order.
-3. **ItemType custom fields:** DynamicWeb pages and paragraphs can carry arbitrary key-value fields via ItemType. The ContentModel DTOs must capture these as a `Dictionary<string, object>` so they round-trip through YAML without the serializer needing to know the field schema.
-
-## Component Build Order
-
-Build in this sequence — each layer depends on the previous:
-
-| Step | Component | Why This Order |
-|------|-----------|----------------|
-| 1 | ContentModel DTOs | No dependencies; defines the shared data contract |
-| 2 | FileSystemStore | Only depends on Models; enables file I/O testing in isolation |
-| 3 | ConfigurationLoader + Predicate | No DW dependency; can be unit-tested against sample configs |
-| 4 | TreeWalker | Depends on DW services; integration-testable once DW instance available |
-| 5 | Serializer (DW → YAML) | Depends on TreeWalker + FileSystemStore; validate output against expected YAML |
-| 6 | IdentityResolver | Depends on DW services; pure lookup logic |
-| 7 | Deserializer (YAML → DW) | Depends on IdentityResolver + FileSystemStore; final integration step |
-| 8 | SyncCoordinator | Wires 3-7 together; testable end-to-end |
-| 9 | Scheduled Tasks | Thin DW entry-point wiring; last to build |
-
-## Anti-Patterns
-
-### Anti-Pattern 1: Numeric IDs in YAML Files
-
-**What people do:** Serialize the DW numeric page ID or paragraph ID into the YAML file and use it to match items on deserialize.
-**Why it's wrong:** Numeric IDs are environment-specific. Deserializing into a fresh instance will create ID collisions or orphaned records. The whole point of the GUID-based identity resolver is to handle this.
-**Do this instead:** Store only the GUID (`PageUniqueId`) as the canonical identifier in YAML. Numeric IDs may be stored informatively (for debugging) but must never be used as the match key.
-
-### Anti-Pattern 2: Tight Coupling Between Serializer and DW Services
-
-**What people do:** Call `PageService` or `ParagraphService` directly inside the Serializer/Deserializer rather than going through the TreeWalker or IdentityResolver.
-**Why it's wrong:** Makes the serializer responsible for both traversal and conversion. Harder to test, harder to swap out, and leads to duplicate traversal logic.
-**Do this instead:** TreeWalker owns traversal. Serializer only receives already-fetched DW objects and converts them. Deserializer only receives already-parsed DTOs and writes to DW via services.
-
-### Anti-Pattern 3: File-Per-Run Snapshot vs. Mirror Tree
-
-**What people do:** Serialize all content into a single bundle file (ZIP or flat directory) stamped with a timestamp.
-**Why it's wrong:** Not git-friendly. Every sync creates a new file rather than updating existing ones. Diffs become unreadable. Cannot track individual item history.
-**Do this instead:** Mirror-tree layout where each item has a stable path derived from its position in the content hierarchy. Git sees clean per-item changes.
-
-### Anti-Pattern 4: Processing Children Before Parents on Deserialize
-
-**What people do:** Walk files alphabetically or by modification time, deserializing a child paragraph before its parent page exists in the target.
-**Why it's wrong:** `SaveParagraph()` requires a valid page ID. If the page doesn't exist yet, the insert fails or orphans the paragraph.
-**Do this instead:** Enumerate mirror-tree depth-first, top-down. Process Areas → Pages → GridRows → Paragraphs strictly in that order, waiting for each parent's numeric ID (from `SavePage()` return value or GUID lookup) before writing children.
-
-## Integration Points
-
-### DynamicWeb Service Layer
-
-| Service | Used For | Notes |
-|---------|----------|-------|
-| `AreaService` | Get all areas; save areas | `GetAreas()` is the tree root entry point |
-| `PageService` | Get/save pages; GUID lookup; get child pages | `GetPagesByAreaID()` and `GetPagesByParentID()` drive tree walk; `GetPage()` by GUID for identity resolution |
-| `GridService` | Get/save grid rows | `GetGridRowsByPageId()` for traversal; `SaveGridRow()` returns new ID |
-| `ParagraphService` | Get/save paragraphs; GUID lookup | `GetParagraphsByPage()` for traversal; paragraphs reference `GridRowID` and `GridRowColumn` |
-| `BaseScheduledTaskAddIn` | Entry-point wiring | Implement `Run()` method; use `[AddInName]`, `[AddInLabel]`, `[AddInDescription]` attributes |
-
-### Internal Boundaries
-
-| Boundary | Communication | Notes |
-|----------|---------------|-------|
-| SyncCoordinator ↔ TreeWalker | Direct method call; yields `IDynamicWebContentItem` | Walker should yield items lazily (IEnumerable) to avoid loading full tree into memory |
-| TreeWalker ↔ Predicate | Synchronous include/exclude check per item | Predicate is stateless; called once per item during walk |
-| Serializer ↔ FileSystemStore | Path calculation + YAML string handoff | Serializer computes mirror path from item metadata; FileSystemStore handles actual I/O |
-| Deserializer ↔ IdentityResolver | GUID-in, (numericId, exists)-out | IdentityResolver is the only component allowed to call DW services during deserialization identity phase |
-| Deserializer ↔ DW Services | Save calls after identity resolution | Parent IDs must be resolved before child saves; strict ordering required |
+| Area | Confidence | Notes |
+|------|------------|-------|
+| Config read-modify-write pattern | HIGH | Pure file I/O, no DW dependencies, well understood |
+| NavigationNodeProvider registration | MEDIUM | ExpressDelivery sample shows pattern; exact section type for Settings > Content needs runtime check |
+| Screen/Query/Command pattern | HIGH | ExpressDelivery sample provides complete working examples |
+| Context menu injection on pages | LOW | No sample code for page tree injection. ScreenInjector works for OrderOverview but page tree may differ |
+| File download from commands | LOW | No examples found. DW may require endpoint handler or custom action type |
+| File upload in modals | LOW | No examples found. May need custom Razor view or DW file picker integration |
+| Correct NuGet package set | MEDIUM | Suite.Ring1 meta-package works; individual packages need verification |
 
 ## Sources
 
-- [Unicorn GitHub README — architecture overview](https://github.com/SitecoreUnicorn/Unicorn) — HIGH confidence (official repo)
-- [Unicorn Book — Working with Unicorn](https://unicorn.kamsar.net/working-with-unicorn.html) — HIGH confidence (maintainer-authored)
-- [DynamicWeb PageService API](https://doc.dynamicweb.com/api/html/ad909b2a-ecca-81ed-757d-28030e39269f.htm) — HIGH confidence (official docs)
-- [DynamicWeb GridService API](https://doc.dynamicweb.dev/api/Dynamicweb.Content.GridService.html) — HIGH confidence (official docs)
-- [DynamicWeb BaseScheduledTaskAddIn](https://doc.dynamicweb.com/api/html/d161f262-b0dd-ab61-5264-9c88dc0295e7.htm) — HIGH confidence (official docs)
-- [DynamicWeb Paragraphs developer docs](https://doc.dynamicweb.dev/manual/dynamicweb10/content/paragraphs.html) — HIGH confidence (official docs)
-- [Creating Pages and Paragraphs via API](https://doc.dynamicweb.com/forum/development/creating-pages-and-paragraph-with-the-api?PID=1605) — MEDIUM confidence (official forum with code examples)
-- [YamlDotNet GitHub](https://github.com/aaubry/YamlDotNet) — HIGH confidence (official library)
+- ExpressDelivery sample app: `C:\Projects\temp\dwextensionsample\Samples-main\ExpressDelivery\` -- verified NavigationNodeProvider, Commands, Queries, Screens, ScreenInjector patterns
+- [DW10 Developer Documentation - App Store App Guide](https://doc.dynamicweb.dev/documentation/extending/guides/newappstoreapp.html) -- NavigationNodeProvider, EditScreen, Query, Command examples
+- [DW10 Screen Types Documentation](https://doc.dynamicweb.dev/documentation/extending/administration-ui/screentypes.html) -- screen types overview
+- [Create custom setting node in Settings section](https://doc.dynamicweb.com/Default.aspx?ID=1057&PID=1605&ThreadID=69395) -- community reference
+- Existing ContentSync codebase: `C:\VibeCode\Dynamicweb.ContentSync\src\Dynamicweb.ContentSync\` -- verified component signatures and constructor patterns
 
 ---
-*Architecture research for: Content serialization/sync system (DynamicWeb equivalent of Sitecore Unicorn)*
-*Researched: 2026-03-19*
+*Architecture research for: DynamicWeb 10 admin UI integration for ContentSync v1.2*
+*Researched: 2026-03-21*

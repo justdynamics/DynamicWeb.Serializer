@@ -1,283 +1,257 @@
-# Pitfalls Research
+# Domain Pitfalls
 
-**Domain:** CMS content serialization / cross-environment sync tooling (DynamicWeb AppStore)
-**Researched:** 2026-03-19
-**Confidence:** HIGH (critical pitfalls derived from Sitecore Unicorn/Rainbow source, YamlDotNet issues, database FK constraint literature, and filesystem limitations — all verified against multiple sources)
+**Domain:** DynamicWeb admin UI integration, query configuration, context menus, zip packaging
+**Researched:** 2026-03-21
+**Milestone:** v1.2 Admin UI
+**Confidence:** MEDIUM-HIGH (DW10 extensibility patterns verified via official docs; config file concurrency and zip pitfalls verified via .NET documentation; some DW-specific pitfalls like ScreenInjector behavior based on limited public docs — flagged where uncertain)
 
 ---
 
 ## Critical Pitfalls
 
-### Pitfall 1: Inserting Children Before Parents During Deserialization
+Mistakes that cause rewrites, data loss, or major integration failures.
 
-**What goes wrong:**
-During deserialization, if items are written to the database in file-system traversal order (e.g., alphabetical) rather than depth-first parent-first order, child items arrive before their parent rows exist. DynamicWeb's internal FK relationships (Page.ParentPageId, Paragraph.PageId, etc.) cause constraint violations or silent orphaning depending on whether FK enforcement is strict.
+### Pitfall 1: Config File Concurrency — UI Writes Corrupt Manual Edits (and Vice Versa)
 
-**Why it happens:**
-Developers iterate over YAML files using directory enumeration, which returns files in undefined or alphabetical order. Alphabetical order does not guarantee parent-before-child insertion. On deserializing a new target environment where nothing exists yet, every row is an INSERT — so the parent must precede the child unconditionally.
+**What goes wrong:** The admin UI writes to `ContentSync.config.json` at the same time a developer is editing it manually, or two admin users save settings simultaneously. One write silently overwrites the other. Worse: the UI reads a stale copy, the user edits one field, and the save overwrites all other fields with stale values — destroying changes made by another user or manual edit moments earlier.
 
-**How to avoid:**
-Build a depth-first, parent-before-child insertion queue before writing anything. When loading all YAML files into memory, sort them by tree depth (depth = 0 for Areas, 1 for Pages, 2 for Grids, etc.) before beginning the DB write pass. Never write to the database during file traversal — collect all deserialized objects first, sort, then write.
+**Why it happens:** The existing `ConfigLoader.Load()` does a simple `File.ReadAllText()` with no file locking, no ETags, no last-modified checking. Adding an admin UI that does `File.WriteAllText()` creates a classic read-modify-write race condition. JSON config files have no built-in concurrency control.
 
-**Warning signs:**
-- FK constraint exception messages during deserialization
-- Pages with `ParentPageId` pointing to a numeric ID that was not yet inserted
-- Grids/Rows/Paragraphs appearing with no associated page in the target DB
-- Silent partial success: some content appears, some is missing with no error logged
+**Consequences:**
+- Predicate definitions silently deleted when UI save overwrites manual additions
+- OutputDirectory path reverted to old value after concurrent edits
+- Config file left in a corrupted state (partial JSON) if two writes overlap at the byte level
+- Developer trust in the config file erodes — "my manual changes keep disappearing"
 
-**Phase to address:**
-Deserialization core implementation phase. Must be designed into the write-pass architecture from the start — retrofitting correct ordering is significantly harder than building it in.
+**Prevention:**
+- Use `ReaderWriterLockSlim` as an in-process guard for all config file reads and writes. Every path that touches the config file (ConfigLoader, UI save commands, scheduled tasks) must acquire the lock.
+- Implement file-level locking via `FileStream` with `FileShare.None` during writes to prevent cross-process corruption.
+- On UI save: read the file, compare a hash/timestamp against the version the UI loaded, reject the save with a clear message if the file changed ("Config file was modified externally since you loaded it. Reload and try again.").
+- Store a `lastModified` timestamp in the UI model so the save command can detect stale writes.
+- NEVER do read-then-write without holding a lock for the entire duration.
 
----
+**Detection:** Config file changes that "revert" after admin UI saves. Scheduled tasks picking up different config than what the UI shows. JSON parse errors in logs.
 
-### Pitfall 2: YAML Round-Trip Data Loss from Special Characters
-
-**What goes wrong:**
-CMS content fields routinely contain HTML markup, rich text with embedded quotes, tilde (`~`) characters, Windows-style CRLF line endings, tab characters, and exclamation marks. YamlDotNet's default serialization does not quote or escape these correctly, causing deserialization to recover a different value than what was serialized. The tilde is parsed as YAML null. CRLFs become LFs or disappear. HTML with `>` or `&` survives but other characters may not.
-
-**Why it happens:**
-YamlDotNet uses scalar style inference by default — it chooses between plain, single-quoted, double-quoted, and literal block styles based on content heuristics. These heuristics have known gaps for: tilde, tab (`\t`), carriage return (`\r`), and single-character strings containing punctuation. The library has open issues dating to 2018 that are still present.
-
-**How to avoid:**
-- Use `ScalarStyle.Literal` (pipe block `|`) for any multiline or HTML-containing string fields. Implement a custom `ChainedEventEmitter` that forces `ScalarStyle.Literal` when a string contains newlines.
-- Use `ScalarStyle.DoubleQuoted` as the default for all other string fields, or use `[YamlMember(ScalarStyle = ScalarStyle.DoubleQuoted)]` on fields known to carry rich content.
-- Write a round-trip fidelity test early: serialize a known-tricky string (with `~`, `\r\n`, `<html>`, `"quotes"`, `!bang`), deserialize it, and assert byte-for-byte equality before shipping any serialization code.
-
-**Warning signs:**
-- Content field values truncated at `~` character
-- Rich text fields losing line breaks after round-trip
-- HTML in paragraph body fields getting corrupted
-- Any test that serializes and immediately deserializes returns a different value than the original
-
-**Phase to address:**
-YAML serialization foundation phase (the very first thing implemented). Round-trip fidelity must be proven before any other serialization work begins.
+**Phase to address:** Config management layer — must be the FIRST thing built before any UI screen touches the config file.
 
 ---
 
-### Pitfall 3: Numeric ID Leakage — Serializing Environment-Specific IDs as References
+### Pitfall 2: NavigationNodeProvider Registration Renders but Actions Throw 404
 
-**What goes wrong:**
-DynamicWeb content items reference each other by numeric ID in database columns (e.g., a paragraph may reference another page by PageId). If these numeric foreign references are serialized as raw integers into YAML, they become meaningless or dangerous on the target environment — where the same content exists at a completely different numeric ID. Deserializing them creates broken internal links, or worse, links pointing to unrelated content that happens to share the numeric ID.
+**What goes wrong:** The tree node appears correctly under Settings > Content > Sync, but clicking it produces a blank screen or a 404-style error. The node was registered with `NavigateScreenAction.To<MyScreen>()` but the screen class is not discovered by DW's assembly scanner, or the query class referenced by the screen is not registered.
 
-**Why it happens:**
-The canonical identity strategy (GUID) is correctly applied to the item's own ID, but internal cross-references between items are often overlooked. Developers focus on the primary key mapping and forget that field values can also be numeric IDs (e.g., "link to page 8385" stored in a rich text field or paragraph property).
+**Why it happens:** DW10's admin UI is a decoupled frontend that calls backend endpoints. The `NavigationNodeProvider` registers the node structure, but the screen, query, and command classes must ALL be independently discoverable by DW's reflection-based add-in system. Missing any one piece (screen class, query class, model class, mapping configuration) causes the chain to break silently. Additionally, the class must be in an assembly that DW's add-in scanner loads — if the DLL is not in the right directory or the namespace does not match expectations, it is invisible.
 
-**How to avoid:**
-- Audit every column and field type that DynamicWeb uses to store inter-item references. Create an explicit list of "reference fields" vs. "content fields."
-- For reference fields: serialize as GUID (look up the referenced item's GUID by numeric ID at serialize time). On deserialize: look up numeric ID by GUID in the target DB before writing.
-- For fields that embed numeric IDs inside HTML/text content (e.g., inline links): flag these as a known limitation in v1 documentation. Do not attempt to rewrite embedded references in v1 — that is a v2 concern.
-- Test: serialize from instance A, deserialize into instance B, verify that cross-references resolve to the correct items in B (not the same numeric IDs as A).
+**Consequences:**
+- Tree node visible but clicking produces blank panel or JavaScript error in browser console
+- Screen loads but shows no data (query not found)
+- Save button does nothing (command not found)
+- Difficult to debug because errors appear in browser console, not server logs
 
-**Warning signs:**
-- Navigation or links within deserialized content pointing to wrong pages
-- Paragraph "item type" field values containing numeric IDs that differ between environments
-- Any field value in serialized YAML that looks like a raw integer and matches a DynamicWeb page/paragraph ID pattern
+**Prevention:**
+- Verify the assembly is loaded by DW's scanner: check that the NuGet package places the DLL in the correct location (typically the application's bin folder or a plugins directory).
+- Implement ALL four pieces before testing any single one: NavigationNodeProvider, Screen class (inheriting `EditScreenBase` or `ListScreenBase`), Query class (inheriting `DataQueryModelBase` or similar), and Model class.
+- If using `CommandBase` for save operations, ensure the command is also in the scanned assembly.
+- Implement a `MappingConfigurationBase` subclass if mapping between domain models and view models — DW10 requires explicit mapping registration.
+- Test the complete chain end-to-end in a running DW instance early. Unit tests cannot validate DW's assembly scanning.
 
-**Phase to address:**
-ID strategy design phase, before serialization code is written. The decision of which fields are "reference fields" must be documented as a design artifact, not discovered during testing.
+**Detection:** Node appears in tree but click does nothing. Browser DevTools network tab shows 404 or 500 on the screen endpoint.
 
----
-
-### Pitfall 4: Partial Deserialization Leaving the Target in a Broken State
-
-**What goes wrong:**
-A deserialization run fails partway through (exception, permission error, DB constraint, disk full). The target database is now in an intermediate state: some items written, some not. The next run either skips items it thinks already exist (if it checks GUID presence), or creates duplicates (if it always inserts). Either way, the target content tree is corrupted and the failure may not be obvious.
-
-**Why it happens:**
-The "source wins" conflict strategy is straightforward for a full success case. It provides no guidance for partial failure. Without wrapping the entire deserialization in a database transaction, there is no atomicity guarantee.
-
-**How to avoid:**
-- Wrap the entire deserialization write pass in a single database transaction. On any exception, roll back all writes for that run. Log the rollback clearly.
-- If DynamicWeb's APIs do not support explicit transaction wrapping across all content types, document this limitation explicitly and implement compensating logic: detect partial runs by checking a "run start" marker, and warn operators to manually verify/rollback before re-running.
-- Log every item written with its GUID and numeric ID, so that a failed run can be diagnosed.
-
-**Warning signs:**
-- Deserialization reports "X items processed" but content tree in target is incomplete
-- Second deserialization run behaves differently from first (suggests state was partially mutated)
-- Pages exist in DB without their child paragraphs after a failed run
-
-**Phase to address:**
-Deserialization error handling phase. Atomicity design must be decided before implementing the write loop — it cannot be bolted on after.
+**Phase to address:** Admin UI tree registration phase — build all four artifacts (provider, screen, query, model) together as a single vertical slice.
 
 ---
 
-### Pitfall 5: File Path Length Overflow on Windows
+### Pitfall 3: Query Expression UI Reuse — Coupling to Index-Specific Queries Instead of UI Queries
 
-**What goes wrong:**
-The mirror-tree file layout maps content hierarchy directly to directory depth. A DynamicWeb site with deeply nested pages (Area > Page > Sub-page > Sub-sub-page × N levels) combined with long page names quickly exceeds Windows MAX_PATH (260 characters including drive letter, separators, and `.yml` extension). File creation silently fails or throws a `PathTooLongException`, leaving items not serialized without obvious error.
+**What goes wrong:** The developer attempts to reuse DW's Lucene index query builder UI to define predicates, but the query expression UI is tightly coupled to index repositories. ContentSync predicates are path-based (include `/CustomerCenter`, exclude `/CustomerCenter/Archive`) — they are NOT index queries. Attempting to map the query expression UI to config-file predicates creates a semantic mismatch: the UI expects index fields, operators, and values, but predicates need path patterns and area IDs.
 
-**Why it happens:**
-Windows MAX_PATH is 260 characters by default. A realistic path like `C:\Projects\Solutions\swift.test\data\content\CustomerCenter\Products\Electronics\Televisions\Smart-Televisions\4K-OLED\Page-Name.yml` is already 130+ characters and that is a shallow example. DynamicWeb page names can be long (SEO titles, descriptive names).
+**Why it happens:** DW10 has TWO distinct query systems: (1) Index queries that search Lucene indexes with field/operator/value expressions, and (2) UI queries (`DataQueryBase` subclasses) that provide data to screens. The Lucene query builder UI is designed for index queries and expects expressions against indexed fields. ContentSync predicates are neither — they are simple path-matching rules. Trying to force predicates into the query expression model creates an impedance mismatch.
 
-**How to avoid:**
-- Enable long path support in the app: set `<LongPathAware>true</LongPathAware>` in the app manifest and target .NET 8 (which supports long paths with `EnableWindowsLongPaths` in `runtimeconfig.json`).
-- At serialization time, compute the full output path before attempting file write. If path length > 240 characters, truncate the slug and append a short hash of the full path to maintain uniqueness. Log the truncation.
-- Test with page names containing 60-80 characters at 6+ depth levels.
-- Alternatively, adopt Unicorn's approach: use a GUID-named folder as an escape hatch when path would overflow.
+**Consequences:**
+- Enormous complexity to make the query UI understand path-based predicates
+- UI shows irrelevant operators (Contains, MatchAny) that do not apply to path matching
+- Users confused by query builder UI when all they need is a simple path input with include/exclude
+- Maintenance burden of keeping the query-to-predicate translation layer working across DW updates
 
-**Warning signs:**
-- `PathTooLongException` in logs
-- Items present in source content tree but missing from serialized output with no logged error
-- File count in output directory does not match item count in source DB
+**Prevention:**
+- Do NOT reuse the Lucene query expression UI for predicate management. Build a simpler, purpose-built UI.
+- Use a custom `EditScreenBase` with a list of predicate rows, each containing: Name (text), Path (text), AreaId (dropdown from available areas), and Excludes (list of path strings).
+- If you want to offer a "browse for path" experience, use a content tree picker (if DW provides one as a UI component) rather than a query builder.
+- Keep the predicate model simple: it maps directly to the existing `PredicateDefinition` record (Name, Path, AreaId, Excludes). No translation layer needed.
 
-**Phase to address:**
-File system output design phase (initial serialization implementation). Path length handling must be in the initial `FilePathStrategy` component, not added as a fix later.
+**Detection:** Excessive code complexity in the query-to-predicate mapping. UI showing operators that make no sense for path matching.
 
----
-
-### Pitfall 6: Sibling Ordering Lost or Non-Deterministic
-
-**What goes wrong:**
-DynamicWeb pages and paragraphs have a sort order (typically a numeric `SortOrder` column). If this order is not serialized and restored correctly, deserialized content appears in a different order on the target site. Additionally, if the serializer traverses children in non-deterministic order (e.g., DB query without `ORDER BY`), serialized YAML files change on every full serialize run even when content has not changed — polluting git history with meaningless diffs.
-
-**Why it happens:**
-Two separate issues: (1) forgetting to serialize the sort order field, and (2) not enforcing deterministic ordering of items during serialization traversal. Developers often test with small content trees where DB returns items in consistent order, masking the non-determinism problem.
-
-**How to avoid:**
-- Always include `SortOrder` (or DynamicWeb's equivalent sort field) in the serialized YAML for every item type (pages, paragraphs, grid rows, columns).
-- On deserialization, apply sort order after writing all items, or write with the correct sort value from the YAML.
-- Enforce deterministic query ordering on all DB reads during serialization (always `ORDER BY SortOrder ASC` or equivalent). This ensures identical content produces identical YAML on every run.
-- Verify: serialize twice without changing content, run `git diff` — expect zero changes.
-
-**Warning signs:**
-- Content navigation menus appear in different order on target than source
-- Git diff after re-serializing with no content changes shows YAML files with reordered items
-- Page children appear in DB query order (often insertion order) rather than intended order
-
-**Phase to address:**
-Serialization implementation phase. Both the sort field inclusion and the deterministic query ordering must be addressed in the initial serialization implementation.
+**Phase to address:** Predicate management UI design — decide the UI approach BEFORE writing any screen code.
 
 ---
 
-### Pitfall 7: Predicate Configuration Silently Excludes Required Items
+### Pitfall 4: Zip Packaging — Temp Files Leaked on Exception or Process Recycle
 
-**What goes wrong:**
-The predicate system (include/exclude rules defining which content trees to sync) misconfigures in ways that silently exclude items the developer intends to include. The serialization appears to succeed, the YAML files are created, but a required sub-tree was excluded by an overly broad exclusion rule. On deserialization, that content is simply absent, and the source-wins strategy does not restore it (because no YAML exists for it).
+**What goes wrong:** The serialize-to-zip context menu action creates a temp directory, serializes content into it, creates a zip file, and streams it to the browser. If any step after temp directory creation throws an exception, the temp directory and its files are never cleaned up. Over time, or after repeated failures, the server accumulates gigabytes of orphaned temp directories. Worse: if the IIS/Kestrel worker process recycles mid-operation, the temp files are orphaned permanently because the `finally` block never executes.
 
-**Why it happens:**
-Predicate matching logic has edge cases: path prefix matching that is case-sensitive when the CMS is case-insensitive, trailing slash differences, ordering of include/exclude rules (last rule wins vs. first rule wins ambiguity). Developers assume "include /CustomerCenter" also includes all descendants, but exclude rules lower in the config may silently trim sub-trees.
+**Why it happens:** Developers put cleanup in a `finally` block or `IDisposable.Dispose()`, which handles normal exceptions but not process kills or app pool recycles. Windows file locks from `ZipFile.CreateFromDirectory()` or `FileStream` also prevent cleanup if the zip creation fails partway through — the files are locked and `Directory.Delete()` throws, swallowing the original exception.
 
-**How to avoid:**
-- After any predicate configuration change, run serialization and immediately count the output files. Compare against the known item count in the source DB for that content tree.
-- Log every item that is evaluated against predicates and whether it was included or excluded. In debug mode, emit a list of excluded items.
-- Define and document the predicate evaluation model explicitly: does an exclude rule override a parent include? Does include-before-exclude or exclude-before-include win?
-- Test predicates with a content tree where you know the exact item count.
+**Consequences:**
+- Disk space exhaustion on production servers
+- Temp directory fills up, causing other system operations to fail
+- Orphaned YAML files in temp directories potentially expose content data
 
-**Warning signs:**
-- Serialized file count lower than expected but no errors in log
-- Specific sub-pages missing from output without obvious reason
-- Predicate config changes that do not change the output file count (suggests the config is being parsed incorrectly)
+**Prevention:**
+- Use `Path.GetTempPath()` combined with a unique subdirectory name (e.g., `ContentSync-{Guid}`) for temp directories.
+- Implement a cleanup-on-startup pattern: when the app initializes, scan the temp directory for any `ContentSync-*` directories older than 1 hour and delete them. This handles process-recycle orphans.
+- Use `try/finally` for the happy path, but do NOT rely on it as the sole cleanup mechanism.
+- For zip creation, use `ZipArchive` with `ZipArchiveMode.Create` on a `FileStream` or `MemoryStream` directly, rather than `ZipFile.CreateFromDirectory()` which requires all files to exist on disk first. This avoids the temp-directory-to-zip step entirely if the content tree is small enough to fit in memory.
+- Set a size limit on ad-hoc serialization (e.g., max 1000 pages) to prevent multi-GB temp directories.
+- After streaming the zip to the browser response, delete the temp directory in a background task (not in the response pipeline).
 
-**Phase to address:**
-Predicate/configuration system phase. Build item-count verification tooling alongside predicate implementation.
+**Detection:** Growing disk usage in temp directory. `ContentSync-*` directories that persist across app restarts.
 
----
-
-## Technical Debt Patterns
-
-| Shortcut | Immediate Benefit | Long-term Cost | When Acceptable |
-|----------|-------------------|----------------|-----------------|
-| Serialize numeric IDs directly for all fields | Simpler code, no GUID lookup required | Cross-environment references are broken; content links point to wrong items | Never — GUID mapping for reference fields must be in v1 |
-| Skip database transaction wrapping on deserialization | Fewer API complications | Partial failures leave DB in corrupted state with no recovery path | Never for full deserialization; acceptable for single-item debug writes |
-| Enumerate files in OS-default order | Zero effort | Non-deterministic insertion; parent-after-child FK violations on fresh target | Never — always enforce parent-first ordering |
-| Use default YamlDotNet scalar styles | Zero configuration | Round-trip data loss for HTML, tildes, CRLFs — silent corruption of content | Never — configure scalar styles before any serialization code ships |
-| Skip sort order field in YAML | Simpler schema | Content order wrong on target; re-serialization produces non-deterministic diffs | Never — sort order is fundamental to content correctness |
-| Hardcode base output path without length checks | Simpler file writing | Crashes or silent skips on deep content trees with long page names | Never for production; acceptable in initial prototype if documented |
+**Phase to address:** Context menu action implementation — design the temp file lifecycle before writing the serialize action.
 
 ---
 
-## Integration Gotchas
+### Pitfall 5: ScreenInjector Context Menu — Injecting Into Wrong Screen or Missing the Target Type
 
-| Integration | Common Mistake | Correct Approach |
-|-------------|----------------|------------------|
-| DynamicWeb Page API | Reading `PageId` and using it as the serialized identity | Use `PageUniqueId` (GUID) as canonical ID; `PageId` is environment-specific |
-| DynamicWeb Paragraph API | Assuming all paragraph types have the same fields | Paragraph field shape varies by `ParagraphType`/module; deserialize must handle missing/extra fields gracefully |
-| YamlDotNet serializer | Using default builder with no scalar style configuration | Configure `ScalarStyle.Literal` for multiline, `ScalarStyle.DoubleQuoted` for all other strings before using in production |
-| DynamicWeb Scheduled Task host | Assuming write access to arbitrary file system paths | The app pool identity running DynamicWeb may not have write access to paths outside the web root; verify permissions in both test environments before designing output path |
-| DynamicWeb database (SQL Server) | Performing raw SQL inserts without understanding which columns have defaults or triggers | Use DynamicWeb's own save APIs where available; direct SQL inserts bypass business logic and may miss required field population |
-| File system (Windows) | Creating output directories at startup without verifying available disk space | Content trees can be large; verify target directory is writable and has sufficient space before starting a full serialization run |
+**What goes wrong:** The `ScreenInjector<T>` pattern is used to inject context menu actions into the content tree's page list/edit screen, but the type parameter `T` targets the wrong screen class. The context menu action either never appears (wrong target), appears on ALL screens (overly broad target), or appears but crashes because it receives the wrong data context (e.g., expects a page ID but receives an area ID).
 
----
+**Why it happens:** DW10's `ScreenInjector<T>` uses the generic type parameter to match the target screen. The content tree has multiple screen types: area list, page list, page edit, paragraph edit. Injecting into the wrong one is silent — no error, the action simply does not appear. Getting the right type requires knowing DW's internal screen class hierarchy, which is poorly documented publicly.
 
-## Performance Traps
+**Consequences:**
+- Context menu action invisible (wrong target type) — developer wastes hours debugging
+- Context menu action appears on wrong items (area-level instead of page-level)
+- Action handler receives wrong model/ID, causing runtime exceptions or operating on wrong content
+- Action appears but is greyed out because required permissions are not configured
 
-| Trap | Symptoms | Prevention | When It Breaks |
-|------|----------|------------|----------------|
-| Loading entire content tree into memory before writing | High memory usage; potential OOM on large sites | Process in batches by subtree; stream writes where possible | Sites with 10,000+ content items or paragraphs with large HTML fields |
-| N+1 DB queries during serialization (fetching each paragraph's children one by one) | Serialization takes minutes instead of seconds | Batch-load children by parent ID; use `WHERE PageId IN (...)` rather than per-item queries | Any content tree with more than ~500 items |
-| Reading all files from disk into memory during deserialization before processing | Memory spikes proportional to total YAML file size | Stream-parse files and process them as they are loaded; only retain the current insertion queue in memory | Large serialized trees (100MB+ of YAML) |
-| No progress logging during long scheduled task runs | Task appears hung; no way to monitor progress | Log every N items processed (e.g., every 100 items) with elapsed time and item count | Any run exceeding ~1 minute |
+**Prevention:**
+- Inspect DW's built-in screen classes in the decompiled assembly (or API docs) to identify the exact screen type for the content tree page context menu. Do not guess the type name.
+- Start with a minimal injection that adds a single "Test" context menu item. Verify it appears on the correct node type (page, not area) before building the real action logic.
+- The context menu action must provide a `CommandBase` subclass that handles the action — the action is the UI trigger, the command is the backend handler.
+- Test the injection on BOTH root-level pages and nested child pages to ensure the context menu appears consistently throughout the tree.
+- Check whether `ScreenInjector` requires a specific NuGet package reference (e.g., `Dynamicweb.CoreUI` or `Dynamicweb.Apps.UI`).
 
----
+**Detection:** Context menu item not visible. Context menu item visible on wrong item types. Runtime errors when clicking the action.
 
-## Security Mistakes
-
-| Mistake | Risk | Prevention |
-|---------|------|------------|
-| Writing serialized YAML to a web-accessible path (e.g., inside wwwroot) | Content data (potentially including internal field values, metadata) exposed publicly via HTTP | Write YAML files to a path outside the web root; or add a web.config/IIS rule blocking `.yml` files from being served |
-| No input validation on config file paths | A misconfigured `OutputPath` in the config file could cause writes to arbitrary filesystem locations | Validate that the configured output path is within an allowed base directory before any file writes |
-| Logging full field values at DEBUG level | Rich text fields may contain PII or sensitive content in some DynamicWeb deployments | Log item GUIDs and counts at DEBUG, never full field content; use TRACE level only if explicitly opted in |
+**Phase to address:** Context menu integration phase — build the injection as an isolated spike before connecting it to serialize/deserialize logic. Confidence level: LOW on exact ScreenInjector API surface (limited public docs; verify against decompiled DW assemblies or DW support).
 
 ---
 
-## "Looks Done But Isn't" Checklist
+## Moderate Pitfalls
 
-- [ ] **Serialization completeness:** "It serialized the test page" — verify the entire sub-tree (grids, rows, columns, paragraphs) was included, not just the top-level page object
-- [ ] **Round-trip fidelity:** "YAML files look right" — run an automated round-trip test (serialize → deserialize → compare DB values byte-for-byte) before declaring serialization done
-- [ ] **Sort order preservation:** "Content appears on target" — verify it appears in the correct order, not just present; check navigation menus and paragraph ordering
-- [ ] **Cross-reference integrity:** "Pages deserialized successfully" — verify that any inter-page references (links, paragraph datasources) resolve to the correct items on target, not just that they are non-null
-- [ ] **Deterministic output:** "Serialization works" — serialize twice without changing content, run `git diff`, confirm zero changes
-- [ ] **Fresh-environment deserialization:** "Deserialization works on our test instance" — test on a completely empty DynamicWeb database, not just the pre-populated test instance B; the partial-population case hides ordering bugs
-- [ ] **Long-path handling:** "File output works" — test with page names containing 60+ characters at 5+ directory depth levels
-- [ ] **Scheduled task permissions:** "Task runs in DynamicWeb admin" — verify the task can write files to the configured output path when invoked by DynamicWeb's scheduler, not just when run under developer credentials
-- [ ] **Error visibility:** "Task completed" — verify that a deserialization failure mid-run produces a clear error in DynamicWeb logs, not a silent success with partial content
+### Pitfall 6: Config File Validation Diverges Between Manual and UI Paths
 
----
+**What goes wrong:** The existing `ConfigLoader.Validate()` method enforces rules (non-empty OutputDirectory, at least one predicate, areaId > 0). The UI save path bypasses this validation because it writes JSON directly without going through `ConfigLoader`. Or the UI adds its own validation that is stricter/looser than `ConfigLoader`, creating two divergent validation rulesets. A config that the UI considers valid fails when loaded by the scheduled task, or vice versa.
 
-## Recovery Strategies
-
-| Pitfall | Recovery Cost | Recovery Steps |
-|---------|---------------|----------------|
-| Children inserted before parents (FK violations) | MEDIUM | Truncate affected tables in target DB and re-run full deserialization with corrected ordering logic |
-| YAML round-trip data loss (wrong scalar style) | HIGH | All YAML files must be re-serialized with corrected configuration; if files were already committed to source control, all previously serialized content is suspect |
-| Numeric ID leakage in reference fields | HIGH | Re-serialize from scratch with correct GUID-based reference handling; manually fix any broken links in target DB; requires audit of all reference field types |
-| Partial deserialization failure | MEDIUM | Identify last successfully written item from logs; truncate target DB to known-good state (or restore DB backup); re-run full deserialization |
-| Path length overflow (items not serialized) | LOW | Enable long path support, re-run serialization, commit newly created YAML files for previously-missing deep items |
-| Sibling ordering lost | MEDIUM | Re-serialize with sort order included; re-deserialize; manually verify content ordering on target site |
-| Predicate excludes required items | LOW | Correct predicate config, re-serialize, verify file count matches expected item count |
+**Prevention:**
+- Extract validation into a standalone `ConfigValidator` class that BOTH `ConfigLoader.Load()` and the UI save command call before writing.
+- The UI save command must: (1) build the `SyncConfiguration` model, (2) validate it through the shared validator, (3) serialize to JSON, (4) write to disk.
+- Never write config JSON without validating it first.
+- Add a "test configuration" action in the UI that loads the saved file through `ConfigLoader` and reports success/failure.
 
 ---
 
-## Pitfall-to-Phase Mapping
+### Pitfall 7: Admin UI Assumes Single-Area Configuration But System Supports Multiple
 
-| Pitfall | Prevention Phase | Verification |
-|---------|------------------|--------------|
-| Children before parents (insert order) | Deserialization core implementation | Automated test: deserialize into empty DB, verify no FK errors, verify all items present |
-| YAML round-trip data loss | YAML serialization foundation (first implemented) | Automated round-trip test with known-tricky strings before any other serialization code |
-| Numeric ID leakage in reference fields | ID strategy design (before any serialization code) | Serialize from A, deserialize into B, verify cross-references resolve to correct GUIDs |
-| Partial deserialization leaving broken state | Deserialization error handling | Simulate mid-run failure (kill process), verify DB rollback, verify re-run produces correct state |
-| File path length overflow | File system output design (initial serialization) | Test with 6+ directory depth and 60+ character page names |
-| Sibling ordering non-deterministic | Serialization implementation | Serialize twice without content changes, `git diff` produces zero changes |
-| Predicate silently excluding items | Predicate/configuration system | Item count in YAML files matches item count in source DB for configured trees |
+**What goes wrong:** The admin UI is designed with a single-area mindset (one OutputDirectory, one set of settings), but the config file supports multiple predicates across different areas. The UI either flattens this into a confusing single-screen layout or fails to represent multi-predicate configs that were created manually.
+
+**Prevention:**
+- Design the UI to show predicates as a LIST, not as a single-form. Each predicate should be an editable row or sub-node.
+- Load and display ALL predicates from the config file, even if there are more than expected.
+- Handle the case where a manually-edited config has structures the UI does not expect (extra fields, nested objects) — preserve them on save, do not discard unknown fields.
+- Use `JsonSerializerOptions` with `JsonExtensionDataAttribute` or similar to round-trip unknown JSON properties through the UI save cycle.
+
+---
+
+### Pitfall 8: Zip Upload Deserialize — No Validation of Zip Contents Before Extraction
+
+**What goes wrong:** The deserialize context menu action accepts a zip file upload and extracts it directly, then attempts to deserialize whatever is inside. A malformed zip, a zip containing non-YAML files, or a zip with unexpected directory structure causes confusing errors deep in the deserialization pipeline. Worse: a zip-slip attack (entries with `../` in paths) writes files outside the intended extraction directory.
+
+**Prevention:**
+- Validate zip contents BEFORE extraction: check that all entries end in `.yml` or are directories, check for path traversal (`..` segments), check total uncompressed size against a limit.
+- Use `ZipArchive` and iterate entries manually rather than `ZipFile.ExtractToDirectory()` to inspect each entry path.
+- After extraction, verify the expected directory structure exists (area subdirectory containing `area.yml`) before passing to `ContentDeserializer`.
+- Reject zips larger than a configurable limit (e.g., 100MB compressed).
+- Return clear error messages: "Invalid zip: no area.yml found" rather than a stack trace from `FileSystemStore.ReadTree()`.
+
+---
+
+### Pitfall 9: Context Menu Actions Not Guarded by DW Permissions
+
+**What goes wrong:** The serialize/deserialize context menu actions are visible to all admin users, including those who should not have access to content sync operations. A user without appropriate permissions triggers a full deserialization, overwriting content they were not supposed to modify.
+
+**Prevention:**
+- Add DW permission checks to the command handlers. Use DW's built-in permission system (if available via `ContextActions` permissions) to restrict who can see and execute the context menu actions.
+- At minimum, restrict to administrators or a specific permission group.
+- Log WHO triggered the action and WHEN, not just that it ran.
+
+---
+
+### Pitfall 10: UI Save Command Writes Config but Scheduled Task Reads Cached Copy
+
+**What goes wrong:** The admin UI successfully writes a new config to disk, but the currently-running DW application has already loaded and cached the config in memory (e.g., in a static variable or singleton). The next scheduled task run uses the stale cached config, not the freshly saved file. The user changes settings in the UI, but the changes have no effect until the app restarts.
+
+**Prevention:**
+- The config must be loaded fresh from disk on EVERY scheduled task run. Do not cache `SyncConfiguration` in a static field or singleton.
+- The current `ConfigLoader.Load()` already reads from disk each time, which is correct. Ensure this pattern is preserved — do NOT optimize it with a cache unless the cache is explicitly invalidated when the UI saves.
+- If caching is needed for performance, implement a `FileSystemWatcher` that invalidates the cache when the config file changes.
+- In the UI, after save, display a confirmation that includes "Changes will take effect on the next scheduled task run."
+
+---
+
+## Minor Pitfalls
+
+### Pitfall 11: Tree Node Sort Order Conflicts with Other Apps
+
+**What goes wrong:** The `NavigationNodeProvider` adds nodes at a sort position that conflicts with another AppStore app's nodes, causing the tree to display in unexpected order or nodes to overlap visually.
+
+**Prevention:** Use a high sort value (e.g., 900+) for custom nodes to avoid conflicts. Check for collisions by inspecting the tree after installation alongside common DW apps.
+
+---
+
+### Pitfall 12: Zip File Name Encoding on Non-ASCII Page Names
+
+**What goes wrong:** Pages with Unicode characters in their names (e.g., accented characters, CJK) produce folder names in the zip that do not round-trip correctly across different zip tools or OS locales. The zip file created on a Windows server extracts with garbled folder names on macOS or Linux.
+
+**Prevention:** Use `ZipArchive` with `Encoding.UTF8` for entry names. Sanitize folder names to ASCII-safe characters before creating zip entries, matching the existing `SanitizeFolderName()` logic in `FileSystemStore`.
+
+---
+
+### Pitfall 13: Browser Download Timeout on Large Content Trees
+
+**What goes wrong:** Serializing a large content tree to zip takes 30+ seconds. The browser request times out before the zip is ready, showing an error to the user. The serialization continues on the server, creating an orphaned temp directory.
+
+**Prevention:** For trees exceeding a threshold (e.g., 100 pages), use a background task pattern: start the operation, return immediately with a "processing" status, and provide a download link or notification when complete. For smaller trees, set an appropriate response timeout. Show a progress indicator in the UI.
+
+---
+
+## Phase-Specific Warnings
+
+| Phase Topic | Likely Pitfall | Mitigation |
+|-------------|---------------|------------|
+| Config management layer | Concurrent read-write corruption (Pitfall 1) | Build ReaderWriterLockSlim + file locking + stale-write detection FIRST |
+| Tree node registration | Node visible but screen 404 (Pitfall 2) | Build all four artifacts as a vertical slice; test in running DW instance |
+| Predicate management UI | Query UI mismatch (Pitfall 3) | Purpose-built simple UI, not query expression reuse |
+| Serialize context menu | Temp file leaks (Pitfall 4) | Cleanup-on-startup pattern + size limits |
+| Deserialize context menu | Zip-slip and malformed input (Pitfall 8) | Validate zip contents before extraction |
+| Context menu injection | Wrong ScreenInjector target (Pitfall 5) | Spike with minimal test action first; verify target type |
+| UI save operations | Validation divergence (Pitfall 6) | Shared ConfigValidator class |
+| Permissions | Unguarded actions (Pitfall 9) | Permission checks on all command handlers |
 
 ---
 
 ## Sources
 
-- [Sitecore Unicorn GitHub — child ordering and GUID disambiguation issues](https://github.com/SitecoreUnicorn/Unicorn/issues/145)
-- [Sitecore Unicorn GitHub — same-name duplicate ID errors](https://github.com/SitecoreUnicorn/Unicorn/issues/43)
-- [Sitecore Unicorn GitHub — not syncing all fields on first run](https://github.com/SitecoreUnicorn/Unicorn/issues/283)
-- [Sitecore Content Serialization Deployment Failures — Arroact](https://www.arroact.com/blogs/sitecore-content-serialization-deployments/)
-- [YamlDotNet special character serialization issues — GitHub Issue #846](https://github.com/aaubry/YamlDotNet/issues/846)
-- [YamlDotNet multiline ScalarStyle.Literal — GitHub Issue #391](https://github.com/aaubry/YamlDotNet/issues/391)
-- [YamlDotNet deserializing strings with newlines adds extra lines — GitHub Issue #361](https://github.com/aaubry/YamlDotNet/issues/361)
-- [YamlDotNet numeric string encoding pitfall — GitHub Issue #934](https://github.com/aaubry/YamlDotNet/issues/934)
-- [Windows MAX_PATH file path limitations — Microsoft Learn](https://learn.microsoft.com/en-us/windows/win32/fileio/maximum-file-path-limitation)
-- [FK constraint: insert child before parent — Microsoft Q&A](https://learn.microsoft.com/en-us/answers/questions/706411/the-insert-statement-conflicted-with-the-foreign-k)
-- [Bloomreach: same-name sibling index cross-environment issues (ID mapping)](https://xmdocumentation.bloomreach.com/library/concepts/configuration-management/yaml-format.html)
-- [Michael West: Unicorn + Sitecore CLI YAML field compatibility issues](https://michaellwest.blogspot.com/2023/01/working-with-unicorn-and-sitecore-cli.html)
-- [Sitecore 10 content serialization best practices](https://www.aceik.com.au/insights/sitecore-10-content-serialisation-best-practices-part-1/)
+- [DW10 Extensibility & Customization](https://doc.dynamicweb.com/dw10-quickstart/frontpage/developers/extensibility-customization) -- NavigationNodeProvider, ScreenInjector, CommandBase, DataQueryBase patterns
+- [DW10 Screen Types and Elements](https://doc.dynamicweb.dev/documentation/extending/administration-ui/screentypes.html) -- Screen types, context menus, UI element patterns
+- [DW10 Getting Started with Extending](https://doc.dynamicweb.dev/documentation/extending/index.html) -- Extension categories, notification subscribers, providers
+- [DW10 AppStore App Guide](https://doc.dynamicweb.dev/documentation/extending/guides/newappstoreapp.html) -- NavigationNodeProvider for AppsSettingSection, EditScreenBase, CommandBase examples
+- [DW10 Queries Documentation](https://doc.dynamicweb.dev/manual/dynamicweb10/settings/system/repositories/queries.html) -- Index queries vs UI queries distinction, expression groups
+- [DW10 Create Custom Setting Node](https://doc.dynamicweb.com/forum/development/create-custom-setting-node-in-settings-section?PID=1605) -- Community guidance on custom settings nodes
+- [.NET ReaderWriterLockSlim](https://learn.microsoft.com/en-us/dotnet/api/system.threading.readerwriterlockslim) -- Thread-safe file access patterns
+- [.NET FileStream File Locks](https://learn.microsoft.com/en-us/dotnet/api/system.io.filestream.lock) -- Cross-process file locking
+- [C# Thread Safe File Writer](https://briancaos.wordpress.com/2022/06/16/c-thread-safe-file-writer-and-reader/) -- Practical file locking patterns
+- [ZipArchive Class](https://learn.microsoft.com/en-us/dotnet/api/system.io.compression.ziparchive) -- Zip creation without temp files, entry-level control
+- [ASP.NET Temp File Accumulation](https://techcommunity.microsoft.com/blog/iis-support-blog/asp-net-temp-file-accumulation-on-server/3951330) -- Temp file cleanup on IIS/Kestrel
 
 ---
-*Pitfalls research for: DynamicWeb content serialization / Dynamicweb.ContentSync*
-*Researched: 2026-03-19*
+*Pitfalls research for: Dynamicweb.ContentSync v1.2 Admin UI integration*
+*Researched: 2026-03-21*
