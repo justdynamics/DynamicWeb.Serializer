@@ -16,7 +16,13 @@ public sealed class SyncSettingsQuery : DataQueryModelBase<SyncSettingsModel>
         return new SyncSettingsModel
         {
             OutputDirectory = config.OutputDirectory,
-            LogLevel = config.LogLevel
+            LogLevel = config.LogLevel,
+            DryRun = config.DryRun,
+            ConflictStrategy = config.ConflictStrategy switch
+            {
+                Configuration.ConflictStrategy.SourceWins => "source-wins",
+                _ => "source-wins"
+            }
         };
     }
 }
