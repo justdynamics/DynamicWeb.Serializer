@@ -30,7 +30,7 @@ Developers can reliably move content between DynamicWeb environments through sou
 
 ### Active
 
-- [ ] Admin UI settings screen at Settings > Content > Sync (OutputDirectory, dry-run, logging, conflict strategy)
+- [x] Admin UI settings screen at Settings > Content > Sync (OutputDirectory, dry-run, logging, conflict strategy) — Phase 8
 - [ ] Query sub-node for predicate management using DW query expression UI, persisted to config file
 - [ ] Context menu serialize action: serialize page subtree to temp dir, zip, browser download + disk save
 - [ ] Context menu deserialize action: upload zip, extract, deserialize into content tree with target choice (overwrite node or import as subtree)
@@ -99,4 +99,4 @@ Developers can reliably move content between DynamicWeb environments through sou
 - Serialize/Deserialize context menu actions on content tree nodes with zip packaging
 
 ---
-*Last updated: 2026-03-21 after v1.2 milestone start*
+*Last updated: 2026-03-22 after Phase 8 completion*
