@@ -41,8 +41,9 @@ public sealed class SyncSettingsNodeProvider : NavigationNodeProvider<AreasSecti
                 Id = PredicatesNodeId,
                 Name = "Predicates",
                 Sort = 10,
-                HasSubNodes = false
-                // Phase 9 will add NodeAction here
+                HasSubNodes = false,
+                NodeAction = NavigateScreenAction.To<PredicateListScreen>()
+                    .With(new PredicateListQuery())
             };
         }
     }
