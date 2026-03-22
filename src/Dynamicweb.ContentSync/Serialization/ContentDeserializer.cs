@@ -546,6 +546,8 @@ public class ContentDeserializer
             para.GridRowColumn = columnId;
             para.Sort = dto.SortOrder;
             para.Header = dto.Header;
+            para.Template = dto.Template;
+            para.ColorSchemeId = dto.ColorSchemeId;
             para.ItemType = dto.ItemType;
             para.ModuleSystemName = dto.ModuleSystemName ?? string.Empty;
             para.ModuleSettings = dto.ModuleSettings ?? string.Empty;
@@ -575,6 +577,16 @@ public class ContentDeserializer
                 {
                     saved.ModuleSystemName = dto.ModuleSystemName;
                     saved.ModuleSettings = dto.ModuleSettings ?? string.Empty;
+                    needsResave = true;
+                }
+                if (!string.IsNullOrEmpty(dto.Template) && saved.Template != dto.Template)
+                {
+                    saved.Template = dto.Template;
+                    needsResave = true;
+                }
+                if (!string.IsNullOrEmpty(dto.ColorSchemeId) && saved.ColorSchemeId != dto.ColorSchemeId)
+                {
+                    saved.ColorSchemeId = dto.ColorSchemeId;
                     needsResave = true;
                 }
                 if (needsResave)
@@ -611,6 +623,8 @@ public class ContentDeserializer
             existingForUpdate.GridRowColumn = columnId;
             existingForUpdate.Sort = dto.SortOrder;
             existingForUpdate.Header = dto.Header;
+            existingForUpdate.Template = dto.Template;
+            existingForUpdate.ColorSchemeId = dto.ColorSchemeId;
             existingForUpdate.ItemType = dto.ItemType;
             existingForUpdate.ModuleSystemName = dto.ModuleSystemName ?? string.Empty;
             existingForUpdate.ModuleSettings = dto.ModuleSettings ?? string.Empty;

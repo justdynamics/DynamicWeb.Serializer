@@ -6,6 +6,8 @@ public record SerializedParagraph
     public required int SortOrder { get; init; }
     public string? ItemType { get; init; }
     public string? Header { get; init; }
+    public string? Template { get; init; }
+    public string? ColorSchemeId { get; init; }
     public string? ModuleSystemName { get; init; }
     public string? ModuleSettings { get; init; }
     public Dictionary<string, object> Fields { get; init; } = new();

@@ -138,6 +138,8 @@ public class ContentMapper
             SortOrder = paragraph.Sort,
             ItemType = paragraph.ItemType,
             Header = paragraph.Header,
+            Template = paragraph.Template,
+            ColorSchemeId = paragraph.ColorSchemeId,
             ModuleSystemName = paragraph.ModuleSystemName,
             ModuleSettings = paragraph.ModuleSettings,
             Fields = fields
