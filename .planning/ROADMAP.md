@@ -96,7 +96,7 @@ Plans:
 
 Plans:
 - [x] 10-01-PLAN.md — ExportDirectory config field + SerializeSubtreeCommand (zip creation, download, disk copy)
-- [ ] 10-02-PLAN.md — DeserializePromptScreen (file upload + mode select modal) + DeserializeSubtreeCommand
+- [x] 10-02-PLAN.md — DeserializePromptScreen (file upload + mode select modal) + DeserializeSubtreeCommand
 - [ ] 10-03-PLAN.md — ContentSyncPageListInjector (context menu wiring) + human verification
 
 ## Progress
@@ -114,4 +114,4 @@ Plans:
 | 7. Config Infrastructure + Settings Tree Node | v1.2 | 0/2 | Not started | - |
 | 8. Settings Screen | v1.2 | 0/1 | Not started | - |
 | 9. Predicate Management | v1.2 | 0/2 | Not started | - |
-| 10. Context Menu Actions | v1.2 | 1/3 | In Progress|  |
+| 10. Context Menu Actions | v1.2 | 2/3 | In Progress|  |
