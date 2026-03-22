@@ -26,6 +26,7 @@ public sealed class SyncSettingsQuery : DataQueryModelBase<SyncSettingsModel>
         return new SyncSettingsModel
         {
             OutputDirectory = config.OutputDirectory,
+            ExportDirectory = config.ExportDirectory ?? string.Empty,
             LogLevel = config.LogLevel,
             DryRun = config.DryRun,
             ConflictStrategy = config.ConflictStrategy switch
