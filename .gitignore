@@ -1,24 +1,51 @@
 # .NET build output
 bin/
 obj/
+out/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
 
 # User-specific files
 *.user
 *.suo
+*.userosscache
+*.sln.docstates
 .vs/
 
 # NuGet packages
 packages/
 *.nupkg
+project.lock.json
+project.fragment.lock.json
+
+# Build logs
+[Ll]og/
+[Ll]ogs/
+msbuild.log
+msbuild.wrn
+msbuild.err
 
 # Test results
 TestResults/
 *.trx
 *.coverage
+*.coveragexml
+coverage/
+
+# Rider / JetBrains
+.idea/
+*.sln.iml
+
+# ReSharper
+_ReSharper*/
+*.DotSettings.user
 
 # OS-specific
 .DS_Store
 Thumbs.db
+Desktop.ini
 
 # Claude Code settings
 .claude/
