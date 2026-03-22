@@ -43,6 +43,7 @@ public sealed class SaveSyncSettingsCommand : CommandBase<SyncSettingsModel>
             {
                 OutputDirectory = Model.OutputDirectory,
                 ExportDirectory = Model.ExportDirectory,
+                DeserializeSource = Model.DeserializeSource,
                 LogLevel = Model.LogLevel,
                 DryRun = Model.DryRun,
                 ConflictStrategy = conflictStrategy,

@@ -13,6 +13,9 @@ public sealed class SyncSettingsModel : DataViewModelBase
     [ConfigurableProperty("Export Directory", explanation: "When set, ad-hoc serialize also saves a copy of the zip to this path (relative to Files/System). Leave empty to skip.")]
     public string ExportDirectory { get; set; } = string.Empty;
 
+    [ConfigurableProperty("Deserialize Source", explanation: "Source for the deserialize scheduled task. Leave empty to use Output Directory (folder mode). Set to a .zip file path for zip mode (e.g. ContentSync/import.zip).")]
+    public string DeserializeSource { get; set; } = string.Empty;
+
     [ConfigurableProperty("Log Level", explanation: "Logging verbosity")]
     public string LogLevel { get; set; } = "info";
 

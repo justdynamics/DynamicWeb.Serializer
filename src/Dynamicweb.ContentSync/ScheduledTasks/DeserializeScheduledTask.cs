@@ -1,3 +1,4 @@
+using System.IO.Compression;
 using Dynamicweb.ContentSync.Configuration;
 using Dynamicweb.ContentSync.Serialization;
 using Dynamicweb.Extensibility.AddIns;
@@ -7,7 +8,7 @@ namespace Dynamicweb.ContentSync.ScheduledTasks;
 
 [AddInName("ContentSync.Deserialize")]
 [AddInLabel("ContentSync - Deserialize")]
-[AddInDescription("Deserializes YAML content files to DynamicWeb database based on ContentSync.config.json predicates.")]
+[AddInDescription("Deserializes YAML content files to DynamicWeb database. Supports folder mode (git-based) and zip mode (single zip file). Configure DeserializeSource in config or leave empty to use OutputDirectory.")]
 public class DeserializeScheduledTask : BaseScheduledTaskAddIn
 {
     private string? _logFile;
@@ -18,41 +19,108 @@ public class DeserializeScheduledTask : BaseScheduledTaskAddIn
         {
             _logFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ContentSync.log");
             Log("=== ContentSync Deserialize started ===");
-            Log($"BaseDirectory: {AppDomain.CurrentDomain.BaseDirectory}");
-            Log($"WorkingDirectory: {Directory.GetCurrentDirectory()}");
 
             var configPath = FindConfigFile();
             if (configPath == null)
             {
-                Log("ERROR: ContentSync.config.json not found. Searched: application root, App_Data, working directory.");
+                Log("ERROR: ContentSync.config.json not found.");
                 return false;
             }
 
             Log($"Config found: {configPath}");
             var config = ConfigLoader.Load(configPath);
 
-            Log($"OutputDirectory: {config.OutputDirectory}");
+            // Determine source: DeserializeSource if set, otherwise OutputDirectory
+            var source = !string.IsNullOrWhiteSpace(config.DeserializeSource)
+                ? config.DeserializeSource
+                : config.OutputDirectory;
+
+            Log($"DeserializeSource: {source}");
             Log($"Predicates: {config.Predicates.Count}");
             foreach (var p in config.Predicates)
                 Log($"  Predicate: name={p.Name}, path={p.Path}, areaId={p.AreaId}");
 
-            // Derive DW Files root from config path for template validation
             var filesRoot = Path.GetDirectoryName(configPath);
             Log($"FilesRoot: {filesRoot}");
 
-            var deserializer = new ContentDeserializer(config, log: Log, isDryRun: false, filesRoot: filesRoot);
-            var result = deserializer.Deserialize();
+            // Determine mode: zip file or folder
+            bool isZip = source.EndsWith(".zip", StringComparison.OrdinalIgnoreCase);
+            string deserializeDir;
+            string? tempExtractDir = null;
 
-            Log(result.Summary);
-
-            if (result.HasErrors)
+            if (isZip)
             {
-                foreach (var error in result.Errors)
-                    Log(error);
-                Log($"Total errors: {result.Errors.Count}");
+                // Zip mode: extract to temp directory, deserialize from there
+                var zipPath = Path.IsPathRooted(source)
+                    ? source
+                    : Path.GetFullPath(Path.Combine(filesRoot ?? ".", source));
+
+                if (!File.Exists(zipPath))
+                {
+                    Log($"ERROR: Zip file not found: {zipPath}");
+                    return false;
+                }
+
+                tempExtractDir = Path.Combine(Path.GetTempPath(), "ContentSync", "import_" + Guid.NewGuid().ToString("N"));
+                Directory.CreateDirectory(tempExtractDir);
+                Log($"Extracting zip to: {tempExtractDir}");
+
+                ZipFile.ExtractToDirectory(zipPath, tempExtractDir);
+
+                var yamlCount = Directory.GetFiles(tempExtractDir, "*.yml", SearchOption.AllDirectories).Length;
+                Log($"Extracted {yamlCount} YAML files from zip");
+
+                if (yamlCount == 0)
+                {
+                    Log("ERROR: Zip contains no YAML files.");
+                    try { Directory.Delete(tempExtractDir, true); } catch { }
+                    return false;
+                }
+
+                deserializeDir = tempExtractDir;
+            }
+            else
+            {
+                // Folder mode: deserialize directly from the folder (git-based flow)
+                deserializeDir = source;
+                Log($"Folder mode: deserializing from {deserializeDir}");
             }
 
-            return !result.HasErrors;
+            try
+            {
+                // Create a config with the resolved source directory
+                var effectiveConfig = config with { OutputDirectory = deserializeDir };
+
+                var deserializer = new ContentDeserializer(effectiveConfig, log: Log, isDryRun: config.DryRun, filesRoot: filesRoot);
+                var result = deserializer.Deserialize();
+
+                Log(result.Summary);
+
+                if (result.HasErrors)
+                {
+                    foreach (var error in result.Errors)
+                        Log(error);
+                    Log($"Total errors: {result.Errors.Count}");
+                }
+
+                return !result.HasErrors;
+            }
+            finally
+            {
+                // Clean up temp directory if zip mode
+                if (tempExtractDir != null)
+                {
+                    try
+                    {
+                        Directory.Delete(tempExtractDir, true);
+                        Log("Cleaned up temp extraction directory");
+                    }
+                    catch (Exception ex)
+                    {
+                        Log($"Warning: Failed to clean up temp dir: {ex.Message}");
+                    }
+                }
+            }
         }
         catch (Exception ex)
         {
@@ -91,6 +159,6 @@ public class DeserializeScheduledTask : BaseScheduledTaskAddIn
         {
             File.AppendAllText(_logFile, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] {message}\n");
         }
-        catch { /* swallow logging failures */ }
+        catch { }
     }
 }
