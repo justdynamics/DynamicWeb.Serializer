@@ -77,6 +77,29 @@ public class YamlRoundTripTests
     }
 
     [Fact]
+    public void Yaml_RoundTrips_PageWithPermissions()
+    {
+        var page = ContentTreeBuilder.BuildSinglePageWithPermissions("Secured Page");
+
+        var yaml = _serializer.Serialize(page);
+        var result = _deserializer.Deserialize<SerializedPage>(yaml);
+
+        Assert.Equal(2, result.Permissions.Count);
+
+        Assert.Equal("Anonymous", result.Permissions[0].Owner);
+        Assert.Equal("role", result.Permissions[0].OwnerType);
+        Assert.Null(result.Permissions[0].OwnerId);
+        Assert.Equal("none", result.Permissions[0].Level);
+        Assert.Equal(1, result.Permissions[0].LevelValue);
+
+        Assert.Equal("AuthenticatedFrontend", result.Permissions[1].Owner);
+        Assert.Equal("role", result.Permissions[1].OwnerType);
+        Assert.Null(result.Permissions[1].OwnerId);
+        Assert.Equal("read", result.Permissions[1].Level);
+        Assert.Equal(4, result.Permissions[1].LevelValue);
+    }
+
+    [Fact]
     public void Yaml_Serialization_IsDeterministic()
     {
         var page = ContentTreeBuilder.BuildSinglePage("Test") with

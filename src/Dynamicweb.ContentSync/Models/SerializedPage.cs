@@ -19,6 +19,7 @@ public record SerializedPage
     public string? UpdatedBy { get; init; }
     public Dictionary<string, object> Fields { get; init; } = new();
     public Dictionary<string, object> PropertyFields { get; init; } = new();
+    public List<SerializedPermission> Permissions { get; init; } = new();
     public List<SerializedGridRow> GridRows { get; init; } = new();
     public List<SerializedPage> Children { get; init; } = new();
 }

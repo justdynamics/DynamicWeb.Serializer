@@ -65,6 +65,36 @@ public class DtoTests
     }
 
     [Fact]
+    public void SerializedPage_Permissions_DefaultsToEmptyList()
+    {
+        var page = new SerializedPage
+        {
+            PageUniqueId = Guid.NewGuid(),
+            Name = "Test", MenuText = "Test",
+            UrlName = "test", SortOrder = 1
+        };
+        Assert.NotNull(page.Permissions);
+        Assert.Empty(page.Permissions);
+    }
+
+    [Fact]
+    public void SerializedPermission_CanBeConstructed()
+    {
+        var perm = new SerializedPermission
+        {
+            Owner = "Anonymous",
+            OwnerType = "role",
+            Level = "none",
+            LevelValue = 1
+        };
+        Assert.Equal("Anonymous", perm.Owner);
+        Assert.Equal("role", perm.OwnerType);
+        Assert.Null(perm.OwnerId);
+        Assert.Equal("none", perm.Level);
+        Assert.Equal(1, perm.LevelValue);
+    }
+
+    [Fact]
     public void ContentHierarchy_FullDepth_CanBeConstructed()
     {
         var tree = ContentTreeBuilder.BuildSampleTree();

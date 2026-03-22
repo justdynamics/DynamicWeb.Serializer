@@ -123,6 +123,36 @@ public static class ContentTreeBuilder
     }
 
     /// <summary>
+    /// Builds a single page with 2 sample permissions for testing permission serialization.
+    /// Anonymous with "none" level and AuthenticatedFrontend with "read" level.
+    /// </summary>
+    public static SerializedPage BuildSinglePageWithPermissions(string name, Guid? guid = null)
+    {
+        return BuildSinglePage(name, guid) with
+        {
+            Permissions = new List<SerializedPermission>
+            {
+                new SerializedPermission
+                {
+                    Owner = "Anonymous",
+                    OwnerType = "role",
+                    OwnerId = null,
+                    Level = "none",
+                    LevelValue = 1
+                },
+                new SerializedPermission
+                {
+                    Owner = "AuthenticatedFrontend",
+                    OwnerType = "role",
+                    OwnerId = null,
+                    Level = "read",
+                    LevelValue = 4
+                }
+            }
+        };
+    }
+
+    /// <summary>
     /// Builds a multi-column tree with 2 columns for testing column round-trip.
     /// Area "Test Area"
     ///   Page "Multi-Column Page" (1 grid row, 2 columns)
