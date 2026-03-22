@@ -30,7 +30,7 @@ public sealed class PredicateListScreen : ListScreenBase<PredicateListModel>
 
     protected override ActionBase GetListItemPrimaryAction(PredicateListModel model) =>
         NavigateScreenAction.To<PredicateEditScreen>()
-            .With(new PredicateByIndexQuery { Index = model.Index });
+            .With(new PredicateByIndexQuery { ModelIdentifier = (model.Index + 1).ToString() });
 
     protected override IEnumerable<ActionGroup>? GetListItemContextActions(PredicateListModel model) =>
     [
@@ -38,7 +38,7 @@ public sealed class PredicateListScreen : ListScreenBase<PredicateListModel>
         {
             Nodes =
             [
-                ActionBuilder.Edit<PredicateEditScreen>(new PredicateByIndexQuery { Index = model.Index }),
+                ActionBuilder.Edit<PredicateEditScreen>(new PredicateByIndexQuery { ModelIdentifier = (model.Index + 1).ToString() }),
                 ActionBuilder.Delete(
                     new DeletePredicateCommand { Index = model.Index },
                     "Delete predicate?",

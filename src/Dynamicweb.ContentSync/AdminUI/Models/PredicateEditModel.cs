@@ -3,9 +3,12 @@ using Dynamicweb.CoreUI.Data.Validation;
 
 namespace Dynamicweb.ContentSync.AdminUI.Models;
 
-public sealed class PredicateEditModel : DataViewModelBase
+public sealed class PredicateEditModel : DataViewModelBase, IIdentifiable
 {
     public int Index { get; set; } = -1;
+
+    // DW framework treats "0" as "no identifier" — use 1-based for round-tripping
+    public string GetId() => (Index + 1).ToString();
 
     [ConfigurableProperty("Name", explanation: "Unique name for this predicate")]
     [Required(ErrorMessage = "Name is required")]

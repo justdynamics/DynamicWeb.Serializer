@@ -4,9 +4,15 @@ using Dynamicweb.CoreUI.Data;
 
 namespace Dynamicweb.ContentSync.AdminUI.Queries;
 
-public sealed class PredicateByIndexQuery : DataQueryModelBase<PredicateEditModel>
+public sealed class PredicateByIndexQuery : DataQueryIdentifiableModelBase<PredicateEditModel, int>
 {
     public int Index { get; set; } = -1;
+
+    protected override void SetKey(int key)
+    {
+        // DW framework treats "0" as "no identifier" — identifiers are 1-based, convert back to 0-based
+        Index = key - 1;
+    }
 
     public override PredicateEditModel? GetModel()
     {
