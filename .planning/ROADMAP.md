@@ -40,7 +40,7 @@
 
 **Milestone Goal:** Serialize and deserialize page-level permissions so that access controls are preserved across environments, with a safety fallback for missing user groups.
 
-- [ ] **Phase 11: Permission Serialization** - Extend ContentMapper/SerializedPage to include explicit page permissions in YAML
+- [x] **Phase 11: Permission Serialization** - Extend ContentMapper/SerializedPage to include explicit page permissions in YAML (completed 2026-03-22)
 - [ ] **Phase 12: Permission Deserialization + Docs** - Extend ContentDeserializer to restore permissions with group-name resolution and safety fallback
 
 ## Phase Details
@@ -147,5 +147,5 @@ Plans:
 | 8. Settings Screen | v1.2 | 0/1 | Not started | - |
 | 9. Predicate Management | v1.2 | 0/2 | Not started | - |
 | 10. Context Menu Actions | v1.2 | 2/3 | Complete | 2026-03-22 |
-| 11. Permission Serialization | v1.3 | 1/1 | Complete | 2026-03-22 |
+| 11. Permission Serialization | v1.3 | 1/1 | Complete    | 2026-03-22 |
 | 12. Permission Deserialization + Docs | v1.3 | 0/0 | Not started | - |
