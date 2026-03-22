@@ -1,15 +1,15 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.2
-milestone_name: Admin UI
-status: unknown
-stopped_at: Completed 10-02-PLAN.md
-last_updated: "2026-03-22T15:41:17.307Z"
+milestone: v1.3
+milestone_name: Permissions
+status: defining-requirements
+stopped_at: Milestone v1.3 started
+last_updated: "2026-03-22T20:00:00.000Z"
 progress:
-  total_phases: 4
-  completed_phases: 3
-  total_plans: 8
-  completed_plans: 7
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
 ---
 
 # Project State
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-21)
 
 **Core value:** Developers can reliably move content between DynamicWeb environments through source control, with serialized YAML files as the single source of truth.
-**Current focus:** Phase 10 — context-menu-actions
+**Current focus:** v1.3 Permissions — defining requirements
 
 ## Current Position
 
-Phase: 10
-Plan: Not started
+Phase: Not started (defining requirements)
+Plan: —
 
 ## Performance Metrics
 

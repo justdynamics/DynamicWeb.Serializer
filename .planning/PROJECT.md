@@ -27,14 +27,19 @@ Developers can reliably move content between DynamicWeb environments through sou
 - [x] Multi-column paragraph attribution preserved on round-trip — v1.1
 - [x] Dry-run mode reports PropertyFields changes (Icon, SubmenuType) — v1.1
 - [x] OutputDirectory validated at config-load and deserialize time — v1.1
+- [x] Admin UI settings screen at Settings > Content > Sync — v1.2
+- [x] Predicate management CRUD with page picker and area selector — v1.2
+- [x] Ad-hoc serialize action on page edit screen with zip download — v1.2
+- [x] Deserialize scheduled task with folder and zip modes — v1.2
+- [x] Management API commands (ContentSyncSerialize/ContentSyncDeserialize) — v1.2
+- [x] Config file as source of truth with admin UI as management layer — v1.2
 
 ### Active
 
-- [x] Admin UI settings screen at Settings > Content > Sync (OutputDirectory, dry-run, logging, conflict strategy) — Phase 8
-- [x] Query sub-node for predicate management using DW query expression UI, persisted to config file — Phase 9
-- [x] Ad-hoc serialize action on page edit screen: zip subtree to browser download + disk save — Phase 10
-- [x] Deserialize scheduled task supports folder mode (git-based) and zip mode (upload folder) — Phase 10
-- [x] Config file remains standalone source of truth — admin UI reads/writes it, manual edits still work — Phase 8-10
+- [ ] Serialize explicit page permissions (roles and user groups) to YAML alongside page data
+- [ ] Deserialize permissions on target — roles restored directly, groups resolved by name
+- [ ] Safety fallback: deny Anonymous access when a referenced user group is missing on target
+- [ ] Document permission handling in README
 
 ### Out of Scope
 
@@ -89,14 +94,15 @@ Developers can reliably move content between DynamicWeb environments through sou
 | PropertyItem serialization | Page properties (Icon, SubmenuType) are separate from Item fields | ✓ Good |
 | GridRow visual properties | TopSpacing, BottomSpacing, ContainerWidth etc. needed for visual editor | ✓ Good |
 
-## Current Milestone: v1.2 Admin UI
+## Current Milestone: v1.3 Permissions
 
-**Goal:** Make ContentSync configurable from the DynamicWeb admin UI with query-based predicate management and ad-hoc serialize/deserialize via context menus.
+**Goal:** Serialize and deserialize page-level permissions so that access controls are preserved across environments, with a safety fallback for missing user groups.
 
 **Target features:**
-- Settings screen at Settings > Content > Sync for all config options
-- Query sub-node reusing DW Lucene query UI for predicate management
-- Serialize/Deserialize context menu actions on content tree nodes with zip packaging
+- Serialize explicit page permissions (roles and user groups) to YAML alongside page data
+- Deserialize permissions on target — restore role-based permissions directly, resolve group permissions by group name
+- Safety fallback: if a referenced user group doesn't exist on the target, deny Anonymous access to prevent accidental exposure
+- Document permission handling behavior in README
 
 ---
-*Last updated: 2026-03-22 after Phase 10 completion — v1.2 milestone complete*
+*Last updated: 2026-03-22 after v1.3 milestone start*
