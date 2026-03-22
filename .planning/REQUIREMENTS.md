@@ -49,6 +49,27 @@ Requirements for admin UI milestone. Each maps to roadmap phases.
 - **PUB-01**: App published to NuGet registry with dynamicweb-app-store tag
 - **PUB-02**: Tested across multiple content trees beyond Customer Center
 
+## v1.3 Requirements
+
+Requirements for permissions milestone. Each maps to roadmap phases.
+
+### Permission Serialization
+
+- [ ] **PERM-01**: Explicit page permissions are serialized to YAML (roles + user groups with permission levels)
+- [ ] **PERM-02**: Permission owner is stored by name for roles and by group name for user groups (not numeric IDs)
+- [ ] **PERM-03**: Pages without explicit permissions serialize no permission data (inheritance preserved by tree structure)
+
+### Permission Deserialization
+
+- [ ] **PERM-04**: Role-based permissions (Anonymous, AuthenticatedFrontend, etc.) are restored on deserialize using role name
+- [ ] **PERM-05**: User group permissions are resolved by group name on the target environment
+- [ ] **PERM-06**: If a referenced user group does not exist on the target, Anonymous is set to None (deny) as a safety fallback
+- [ ] **PERM-07**: Deserialization logs all permission actions (applied, skipped, safety fallback triggered)
+
+### Documentation
+
+- [ ] **PERM-08**: README documents permission handling behavior including the safety fallback for missing groups
+
 ## Out of Scope
 
 | Feature | Reason |
@@ -87,11 +108,21 @@ Requirements for admin UI milestone. Each maps to roadmap phases.
 | ACT-07 | Phase 10 | Complete |
 | ACT-08 | Phase 10 | Complete |
 
+| PERM-01 | TBD | Pending |
+| PERM-02 | TBD | Pending |
+| PERM-03 | TBD | Pending |
+| PERM-04 | TBD | Pending |
+| PERM-05 | TBD | Pending |
+| PERM-06 | TBD | Pending |
+| PERM-07 | TBD | Pending |
+| PERM-08 | TBD | Pending |
+
 **Coverage:**
-- v1.2 requirements: 23 total
-- Mapped to phases: 23
-- Unmapped: 0
+- v1.2 requirements: 23 total (all complete)
+- v1.3 requirements: 8 total
+- Mapped to phases: 0
+- Unmapped: 8
 
 ---
 *Requirements defined: 2026-03-21*
-*Last updated: 2026-03-21 after roadmap creation*
+*Last updated: 2026-03-22 after v1.3 requirements definition*
