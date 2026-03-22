@@ -18,18 +18,30 @@ public sealed class SaveSyncSettingsCommand : CommandBase<SyncSettingsModel>
         {
             var configPath = ConfigPathResolver.FindOrCreateConfigFile();
 
-            // Per D-05: Validate OutputDirectory exists on disk relative to Files/System
+            // Resolve OutputDirectory relative to Files/System and ensure subdirectories exist
             var filesDir = Path.GetDirectoryName(configPath)!; // wwwroot/Files/
             var systemDir = Path.Combine(filesDir, "System");
             var resolvedOutputDir = Path.GetFullPath(
                 Path.Combine(systemDir, Model.OutputDirectory.TrimStart('\\', '/')));
 
-            if (!Directory.Exists(resolvedOutputDir))
+            // Create the top-level folder and all subfolders (serializeRoot, upload, download)
+            try
+            {
+                var tempConfig = new SyncConfiguration
+                {
+                    OutputDirectory = Model.OutputDirectory,
+                    Predicates = new List<PredicateDefinition>()
+                };
+                tempConfig.EnsureDirectories(systemDir);
+            }
+            catch (Exception ex)
+            {
                 return new()
                 {
                     Status = CommandResult.ResultType.Invalid,
-                    Message = $"Output Directory does not exist: {Model.OutputDirectory} (resolved to {resolvedOutputDir})"
+                    Message = $"Cannot create Output Directory: {Model.OutputDirectory} (resolved to {resolvedOutputDir}): {ex.Message}"
                 };
+            }
 
             var existingConfig = ConfigLoader.Load(configPath);
 

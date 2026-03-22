@@ -32,23 +32,25 @@ public class SerializeScheduledTask : BaseScheduledTaskAddIn
             var config = ConfigLoader.Load(configPath);
 
             Log($"OutputDirectory: {config.OutputDirectory}");
-            Log($"SerializeRoot: {config.SerializeRoot}");
             Log($"Predicates: {config.Predicates.Count}");
             foreach (var p in config.Predicates)
                 Log($"  Predicate: name={p.Name}, path={p.Path}, areaId={p.AreaId}");
 
+            // Resolve and ensure all subdirectories exist
+            var filesDir = Path.GetDirectoryName(configPath)!;
+            var systemDir = Path.Combine(filesDir, "System");
+            var paths = config.EnsureDirectories(systemDir);
+            Log($"SerializeRoot: {paths.SerializeRoot}");
+
             // Use serializeRoot subfolder for YAML output
-            var serializeConfig = config with { OutputDirectory = config.SerializeRoot };
-            var outputDir = Path.GetFullPath(serializeConfig.OutputDirectory);
-            Log($"Resolved output path: {outputDir}");
-            Directory.CreateDirectory(outputDir);
+            var serializeConfig = config with { OutputDirectory = paths.SerializeRoot };
 
             var serializer = new ContentSerializer(serializeConfig, log: Log);
             serializer.Serialize();
 
             // Report what was written
-            var fileCount = Directory.Exists(outputDir)
-                ? Directory.GetFiles(outputDir, "*.yml", SearchOption.AllDirectories).Length
+            var fileCount = Directory.Exists(paths.SerializeRoot)
+                ? Directory.GetFiles(paths.SerializeRoot, "*.yml", SearchOption.AllDirectories).Length
                 : 0;
             Log($"Serialization complete. Files written: {fileCount}");
 

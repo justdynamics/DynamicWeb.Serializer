@@ -135,14 +135,11 @@ public sealed class SerializeSubtreeCommand : CommandBase
             var configPath = ConfigPathResolver.FindOrCreateConfigFile();
             var config = ConfigLoader.Load(configPath);
 
-            // Resolve download subfolder relative to Files/System
             var filesDir = Path.GetDirectoryName(configPath)!;
             var systemDir = Path.Combine(filesDir, "System");
-            var downloadDir = Path.GetFullPath(
-                Path.Combine(systemDir, config.DownloadDir.TrimStart('\\', '/')));
+            var paths = config.EnsureDirectories(systemDir);
 
-            Directory.CreateDirectory(downloadDir);
-            var destPath = Path.Combine(downloadDir, zipFileName);
+            var destPath = Path.Combine(paths.Download, zipFileName);
             File.Copy(zipPath, destPath, overwrite: true);
         }
         catch

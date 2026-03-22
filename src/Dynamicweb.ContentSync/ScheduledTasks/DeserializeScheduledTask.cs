@@ -40,7 +40,11 @@ public class DeserializeScheduledTask : BaseScheduledTaskAddIn
                 Log($"  Predicate: name={p.Name}, path={p.Path}, areaId={p.AreaId}");
 
             var filesRoot = Path.GetDirectoryName(configPath);
+            var systemDir = Path.Combine(filesRoot ?? ".", "System");
+            var paths = config.EnsureDirectories(systemDir);
             Log($"FilesRoot: {filesRoot}");
+            Log($"SerializeRoot: {paths.SerializeRoot}");
+            Log($"UploadDir: {paths.Upload}");
 
             bool isZipMode = !string.IsNullOrWhiteSpace(ZipFileName);
             string deserializeDir;
@@ -49,14 +53,13 @@ public class DeserializeScheduledTask : BaseScheduledTaskAddIn
             if (isZipMode)
             {
                 // Zip mode: resolve filename within the upload subfolder
-                var uploadDir = Path.GetFullPath(Path.Combine(filesRoot ?? ".", "System", config.UploadDir));
-                var zipPath = Path.Combine(uploadDir, ZipFileName);
+                var zipPath = Path.Combine(paths.Upload, ZipFileName);
 
                 Log($"Zip mode: {zipPath}");
 
                 if (!File.Exists(zipPath))
                 {
-                    Log($"ERROR: Zip file not found: {zipPath} (looked in upload folder: {uploadDir})");
+                    Log($"ERROR: Zip file not found: {zipPath} (looked in upload folder: {paths.Upload})");
                     return false;
                 }
 
@@ -81,7 +84,7 @@ public class DeserializeScheduledTask : BaseScheduledTaskAddIn
             else
             {
                 // Folder mode (default): deserialize from serializeRoot subfolder
-                deserializeDir = config.SerializeRoot;
+                deserializeDir = paths.SerializeRoot;
                 Log($"Folder mode: deserializing from {deserializeDir}");
             }
 
