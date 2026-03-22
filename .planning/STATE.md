@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Admin UI
 status: unknown
-stopped_at: Completed 08-01-PLAN.md
-last_updated: "2026-03-21T23:42:27.488Z"
+stopped_at: Completed 09-01-PLAN.md
+last_updated: "2026-03-22T00:16:45.917Z"
 progress:
   total_phases: 4
   completed_phases: 2
-  total_plans: 3
-  completed_plans: 3
+  total_plans: 5
+  completed_plans: 4
 ---
 
 # Project State
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-21)
 
 **Core value:** Developers can reliably move content between DynamicWeb environments through source control, with serialized YAML files as the single source of truth.
-**Current focus:** Phase 08 — settings-screen
+**Current focus:** Phase 09 — predicate-management
 
 ## Current Position
 
-Phase: 9
-Plan: Not started
+Phase: 09 (predicate-management) — EXECUTING
+Plan: 2 of 2
 
 ## Performance Metrics
 
@@ -53,6 +53,7 @@ Plan: Not started
 | Phase 07 P01 | 4min | 2 tasks | 5 files |
 | Phase 07 P02 | 3min | 2 tasks | 8 files |
 | Phase 08 P01 | 10min | 2 tasks | 12 files |
+| Phase 09 P01 | 4min | 1 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -72,6 +73,7 @@ Recent decisions affecting current work:
 - [Phase 08]: Custom JsonConverter for .NET 8 enum kebab-case (JsonStringEnumMemberName is .NET 9+)
 - [Phase 08]: ConflictStrategy as string on ViewModel, enum in config layer - Select editor uses string values
 - [Phase 08]: ListBase nested types (ListOption, OrderBy) are in Dynamicweb.CoreUI.Editors.Inputs namespace
+- [Phase 09]: ConfigPath override property on commands for test isolation without DW runtime
 
 ### Pending Todos
 
@@ -86,6 +88,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-21T23:39:23.914Z
-Stopped at: Completed 08-01-PLAN.md
+Last session: 2026-03-22T00:16:45.913Z
+Stopped at: Completed 09-01-PLAN.md
 Resume file: None

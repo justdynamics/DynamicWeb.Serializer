@@ -79,7 +79,7 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 09-01-PLAN.md — Predicate data layer: models, queries, commands, ConfigLoader zero-predicates fix, and tests
+- [x] 09-01-PLAN.md — Predicate data layer: models, queries, commands, ConfigLoader zero-predicates fix, and tests
 - [ ] 09-02-PLAN.md — List screen, edit screen with page/area selectors, tree node wiring, and breadcrumb
 
 ### Phase 10: Context Menu Actions

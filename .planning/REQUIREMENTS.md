@@ -25,11 +25,11 @@ Requirements for admin UI milestone. Each maps to roadmap phases.
 ### Predicate Management
 
 - [ ] **PRED-01**: Query sub-node appears under the Sync node in admin navigation
-- [ ] **PRED-02**: User can view a list of configured predicates (name, path, include/exclude)
-- [ ] **PRED-03**: User can add a new predicate with name, path, and include/exclude toggle
-- [ ] **PRED-04**: User can edit an existing predicate
-- [ ] **PRED-05**: User can delete a predicate
-- [ ] **PRED-06**: Predicate changes persist to ContentSync.config.json
+- [x] **PRED-02**: User can view a list of configured predicates (name, path, include/exclude)
+- [x] **PRED-03**: User can add a new predicate with name, path, and include/exclude toggle
+- [x] **PRED-04**: User can edit an existing predicate
+- [x] **PRED-05**: User can delete a predicate
+- [x] **PRED-06**: Predicate changes persist to ContentSync.config.json
 
 ### Context Menu Actions
 
@@ -73,11 +73,11 @@ Requirements for admin UI milestone. Each maps to roadmap phases.
 | UI-05 | Phase 8 | Complete |
 | UI-06 | Phase 8 | Complete |
 | PRED-01 | Phase 9 | Pending |
-| PRED-02 | Phase 9 | Pending |
-| PRED-03 | Phase 9 | Pending |
-| PRED-04 | Phase 9 | Pending |
-| PRED-05 | Phase 9 | Pending |
-| PRED-06 | Phase 9 | Pending |
+| PRED-02 | Phase 9 | Complete |
+| PRED-03 | Phase 9 | Complete |
+| PRED-04 | Phase 9 | Complete |
+| PRED-05 | Phase 9 | Complete |
+| PRED-06 | Phase 9 | Complete |
 | ACT-01 | Phase 10 | Pending |
 | ACT-02 | Phase 10 | Pending |
 | ACT-03 | Phase 10 | Pending |
