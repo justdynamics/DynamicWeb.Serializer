@@ -80,7 +80,7 @@ Plans:
 
 Plans:
 - [x] 09-01-PLAN.md — Predicate data layer: models, queries, commands, ConfigLoader zero-predicates fix, and tests
-- [ ] 09-02-PLAN.md — List screen, edit screen with page/area selectors, tree node wiring, and breadcrumb
+- [x] 09-02-PLAN.md — List screen, edit screen with page/area selectors, tree node wiring, and breadcrumb
 
 ### Phase 10: Context Menu Actions
 **Goal**: Users can serialize page subtrees to downloadable zips and deserialize uploaded zips into the content tree via right-click context menu

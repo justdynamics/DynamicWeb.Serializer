@@ -24,7 +24,7 @@ Requirements for admin UI milestone. Each maps to roadmap phases.
 
 ### Predicate Management
 
-- [ ] **PRED-01**: Query sub-node appears under the Sync node in admin navigation
+- [x] **PRED-01**: Query sub-node appears under the Sync node in admin navigation
 - [x] **PRED-02**: User can view a list of configured predicates (name, path, include/exclude)
 - [x] **PRED-03**: User can add a new predicate with name, path, and include/exclude toggle
 - [x] **PRED-04**: User can edit an existing predicate
@@ -72,7 +72,7 @@ Requirements for admin UI milestone. Each maps to roadmap phases.
 | UI-04 | Phase 8 | Complete |
 | UI-05 | Phase 8 | Complete |
 | UI-06 | Phase 8 | Complete |
-| PRED-01 | Phase 9 | Pending |
+| PRED-01 | Phase 9 | Complete |
 | PRED-02 | Phase 9 | Complete |
 | PRED-03 | Phase 9 | Complete |
 | PRED-04 | Phase 9 | Complete |
