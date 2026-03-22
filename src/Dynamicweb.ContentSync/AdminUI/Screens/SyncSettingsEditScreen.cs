@@ -20,6 +20,11 @@ public sealed class SyncSettingsEditScreen : EditScreenBase<SyncSettingsModel>
                 EditorFor(m => m.LogLevel),
                 EditorFor(m => m.DryRun),
                 EditorFor(m => m.ConflictStrategy)
+            ]),
+            new("Information",
+            [
+                EditorFor(m => m.ConfigFilePath),
+                EditorFor(m => m.PredicatesSummary)
             ])
         ]);
     }
