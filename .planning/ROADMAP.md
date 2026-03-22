@@ -115,7 +115,10 @@ Plans:
   1. A page with explicit permissions serializes a permissions section in its YAML file listing each role/group with its permission level
   2. Roles are stored by name (e.g., "Anonymous", "AuthenticatedFrontend") and user groups are stored by group name — no numeric IDs in the YAML
   3. A page with no explicit permissions (inheriting from parent) produces no permissions section in its YAML file
-**Plans**: TBD
+**Plans**: 1 plan
+
+Plans:
+- [ ] 11-01-PLAN.md — SerializedPermission DTO, PermissionMapper, ContentMapper/ContentSerializer wiring, and unit tests
 
 ### Phase 12: Permission Deserialization + Docs
 **Goal**: Permissions from YAML are restored on the target environment with name-based resolution and a safety fallback that prevents accidental public exposure
@@ -144,5 +147,5 @@ Plans:
 | 8. Settings Screen | v1.2 | 0/1 | Not started | - |
 | 9. Predicate Management | v1.2 | 0/2 | Not started | - |
 | 10. Context Menu Actions | v1.2 | 2/3 | Complete | 2026-03-22 |
-| 11. Permission Serialization | v1.3 | 0/0 | Not started | - |
+| 11. Permission Serialization | v1.3 | 0/1 | Not started | - |
 | 12. Permission Deserialization + Docs | v1.3 | 0/0 | Not started | - |
