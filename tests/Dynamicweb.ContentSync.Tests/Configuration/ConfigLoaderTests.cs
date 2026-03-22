@@ -147,7 +147,7 @@ public class ConfigLoaderTests : IDisposable
     }
 
     [Fact]
-    public void Load_MissingPredicates_ThrowsInvalidOperationException_WithFieldName()
+    public void Load_MissingPredicatesKey_ReturnsEmptyList()
     {
         var json = """
             {
@@ -156,13 +156,14 @@ public class ConfigLoaderTests : IDisposable
             """;
         var path = WriteConfigFile(json);
 
-        var ex = Assert.Throws<InvalidOperationException>(() => ConfigLoader.Load(path));
+        var config = ConfigLoader.Load(path);
 
-        Assert.Contains("predicates", ex.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.NotNull(config.Predicates);
+        Assert.Empty(config.Predicates);
     }
 
     [Fact]
-    public void Load_EmptyPredicates_ThrowsInvalidOperationException_WithFieldName()
+    public void Load_EmptyPredicates_ReturnsEmptyList()
     {
         var json = """
             {
@@ -172,9 +173,10 @@ public class ConfigLoaderTests : IDisposable
             """;
         var path = WriteConfigFile(json);
 
-        var ex = Assert.Throws<InvalidOperationException>(() => ConfigLoader.Load(path));
+        var config = ConfigLoader.Load(path);
 
-        Assert.Contains("predicates", ex.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.NotNull(config.Predicates);
+        Assert.Empty(config.Predicates);
     }
 
     [Fact]
