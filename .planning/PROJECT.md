@@ -34,12 +34,13 @@ Developers can reliably move content between DynamicWeb environments through sou
 - [x] Management API commands (ContentSyncSerialize/ContentSyncDeserialize) — v1.2
 - [x] Config file as source of truth with admin UI as management layer — v1.2
 
+- [x] Serialize explicit page permissions (roles and user groups) to YAML — v1.3
+- [x] Deserialize permissions with name-based group resolution and safety fallback — v1.3
+- [x] README documents permission handling including safety fallback — v1.3
+
 ### Active
 
-- [x] Serialize explicit page permissions (roles and user groups) to YAML alongside page data — v1.3
-- [x] Deserialize permissions on target — roles restored directly, groups resolved by name — v1.3
-- [x] Safety fallback: deny Anonymous access when a referenced user group is missing on target — v1.3
-- [x] Document permission handling in README — v1.3
+(None — planning next milestone)
 
 ### Out of Scope
 
@@ -52,11 +53,13 @@ Developers can reliably move content between DynamicWeb environments through sou
 
 ## Context
 
-**Current State (v1.0 shipped):**
-- 2,194 LOC C# across 85 files
-- Tech stack: .NET 8.0, DynamicWeb 10.23.9 NuGet, YamlDotNet
-- Verified on Swift 2.2 → Swift 2.1 cross-environment sync
-- 71 commits over 2 days (2026-03-19 → 2026-03-20)
+**Current State (v1.3 shipped):**
+- ~3,743 LOC C# across 100+ files
+- Tech stack: .NET 8.0, DynamicWeb 10.23.9 NuGet, YamlDotNet, System.IO.Compression
+- Verified on Swift 2.2 → Swift 2.1 cross-environment sync including permissions
+- Admin UI at Settings > Content > Sync with predicate management
+- Management API commands for CI/CD integration
+- 100+ commits over 5 days (2026-03-19 → 2026-03-23)
 
 **DynamicWeb Content Hierarchy:**
 - Website (Area) → Pages → Grid → Rows → Columns → Paragraphs
@@ -94,15 +97,12 @@ Developers can reliably move content between DynamicWeb environments through sou
 | PropertyItem serialization | Page properties (Icon, SubmenuType) are separate from Item fields | ✓ Good |
 | GridRow visual properties | TopSpacing, BottomSpacing, ContainerWidth etc. needed for visual editor | ✓ Good |
 
-## Current Milestone: v1.3 Permissions
+## Shipped Milestones
 
-**Goal:** Serialize and deserialize page-level permissions so that access controls are preserved across environments, with a safety fallback for missing user groups.
-
-**Target features:**
-- Serialize explicit page permissions (roles and user groups) to YAML alongside page data
-- Deserialize permissions on target — restore role-based permissions directly, resolve group permissions by group name
-- Safety fallback: if a referenced user group doesn't exist on the target, deny Anonymous access to prevent accidental exposure
-- Document permission handling behavior in README
+- **v1.0 MVP** — Full serialize/deserialize pipeline, predicates, scheduled tasks (2026-03-19)
+- **v1.1 Robustness** — Multi-column paragraphs, dry-run, validation (2026-03-20)
+- **v1.2 Admin UI** — Settings screen, predicate management, serialize action, API commands (2026-03-22)
+- **v1.3 Permissions** — Permission serialization/deserialization with safety fallback (2026-03-23)
 
 ---
-*Last updated: 2026-03-23 after v1.3 milestone complete*
+*Last updated: 2026-03-23 after v1.3 milestone shipped*
