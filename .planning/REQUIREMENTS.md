@@ -61,10 +61,10 @@ Requirements for permissions milestone. Each maps to roadmap phases.
 
 ### Permission Deserialization
 
-- [ ] **PERM-04**: Role-based permissions (Anonymous, AuthenticatedFrontend, etc.) are restored on deserialize using role name
-- [ ] **PERM-05**: User group permissions are resolved by group name on the target environment
-- [ ] **PERM-06**: If a referenced user group does not exist on the target, Anonymous is set to None (deny) as a safety fallback
-- [ ] **PERM-07**: Deserialization logs all permission actions (applied, skipped, safety fallback triggered)
+- [x] **PERM-04**: Role-based permissions (Anonymous, AuthenticatedFrontend, etc.) are restored on deserialize using role name
+- [x] **PERM-05**: User group permissions are resolved by group name on the target environment
+- [x] **PERM-06**: If a referenced user group does not exist on the target, Anonymous is set to None (deny) as a safety fallback
+- [x] **PERM-07**: Deserialization logs all permission actions (applied, skipped, safety fallback triggered)
 
 ### Documentation
 
@@ -110,10 +110,10 @@ Requirements for permissions milestone. Each maps to roadmap phases.
 | PERM-01 | Phase 11 | Complete |
 | PERM-02 | Phase 11 | Complete |
 | PERM-03 | Phase 11 | Complete |
-| PERM-04 | Phase 12 | Pending |
-| PERM-05 | Phase 12 | Pending |
-| PERM-06 | Phase 12 | Pending |
-| PERM-07 | Phase 12 | Pending |
+| PERM-04 | Phase 12 | Complete |
+| PERM-05 | Phase 12 | Complete |
+| PERM-06 | Phase 12 | Complete |
+| PERM-07 | Phase 12 | Complete |
 | PERM-08 | Phase 12 | Pending |
 
 **Coverage:**

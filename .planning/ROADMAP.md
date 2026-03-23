@@ -133,7 +133,7 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 12-01-PLAN.md — PermissionMapper.ApplyPermissions + ContentDeserializer wiring with safety fallback
+- [x] 12-01-PLAN.md — PermissionMapper.ApplyPermissions + ContentDeserializer wiring with safety fallback
 - [ ] 12-02-PLAN.md — README Permissions section documenting serialization, resolution, and safety fallback
 
 ## Progress
@@ -153,4 +153,4 @@ Plans:
 | 9. Predicate Management | v1.2 | 0/2 | Not started | - |
 | 10. Context Menu Actions | v1.2 | 2/3 | Complete | 2026-03-22 |
 | 11. Permission Serialization | v1.3 | 1/1 | Complete    | 2026-03-22 |
-| 12. Permission Deserialization + Docs | v1.3 | 0/2 | Not started | - |
+| 12. Permission Deserialization + Docs | v1.3 | 1/2 | In Progress|  |
