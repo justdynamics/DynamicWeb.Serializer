@@ -6,22 +6,24 @@ namespace Dynamicweb.ContentSync.Providers.SqlTable;
 /// ISerializationProvider implementation for SQL tables.
 /// Reads DataGroup XML metadata, reads SQL table rows, resolves row identity,
 /// and writes per-row YAML files to _sql/{TableName}/.
-/// Serialize is implemented here; Deserialize is deferred to Plan 03.
+/// Supports full round-trip: Serialize (DB to YAML) and Deserialize (YAML to DB via MERGE).
 /// </summary>
 public class SqlTableProvider : SerializationProviderBase
 {
     private readonly DataGroupMetadataReader _metadataReader;
     private readonly SqlTableReader _tableReader;
     private readonly FlatFileStore _fileStore;
+    private readonly SqlTableWriter _writer;
 
     public override string ProviderType => "SqlTable";
     public override string DisplayName => "SQL Table Provider";
 
-    public SqlTableProvider(DataGroupMetadataReader metadataReader, SqlTableReader tableReader, FlatFileStore fileStore)
+    public SqlTableProvider(DataGroupMetadataReader metadataReader, SqlTableReader tableReader, FlatFileStore fileStore, SqlTableWriter writer)
     {
         _metadataReader = metadataReader;
         _tableReader = tableReader;
         _fileStore = fileStore;
+        _writer = writer;
     }
 
     public override SerializeResult Serialize(ProviderPredicateDefinition predicate, string outputRoot, Action<string>? log = null)
@@ -61,7 +63,74 @@ public class SqlTableProvider : SerializationProviderBase
 
     public override ProviderDeserializeResult Deserialize(ProviderPredicateDefinition predicate, string inputRoot, Action<string>? log = null, bool isDryRun = false)
     {
-        throw new NotImplementedException("Deserialize implemented in Plan 03");
+        var validation = ValidatePredicate(predicate);
+        if (!validation.IsValid)
+        {
+            return new ProviderDeserializeResult
+            {
+                Errors = validation.Errors
+            };
+        }
+
+        var metadata = _metadataReader.GetTableMetadata(predicate.DataGroupId!);
+        var yamlRows = _fileStore.ReadAllRows(inputRoot, metadata.TableName).ToList();
+        Log($"Deserializing {yamlRows.Count} rows into {metadata.TableName} (isDryRun={isDryRun})", log);
+
+        // Build checksum lookup from existing DB rows for skip-on-unchanged detection
+        var existingChecksums = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var existingRow in _tableReader.ReadAllRows(metadata.TableName))
+        {
+            var identity = _tableReader.GenerateRowIdentity(existingRow, metadata);
+            var checksum = _tableReader.CalculateChecksum(existingRow, metadata);
+            existingChecksums[identity] = checksum;
+        }
+
+        int created = 0, updated = 0, skipped = 0, failed = 0;
+        var errors = new List<string>();
+
+        foreach (var yamlRow in yamlRows)
+        {
+            var identity = _tableReader.GenerateRowIdentity(yamlRow, metadata);
+            var incomingChecksum = _tableReader.CalculateChecksum(yamlRow, metadata);
+
+            // Skip if existing row has identical checksum (no actual change)
+            if (existingChecksums.TryGetValue(identity, out var existingChecksum)
+                && string.Equals(incomingChecksum, existingChecksum, StringComparison.OrdinalIgnoreCase))
+            {
+                skipped++;
+                Log($"  Skipped {identity} (unchanged)", log);
+                continue;
+            }
+
+            var outcome = _writer.WriteRow(yamlRow, metadata, isDryRun);
+            switch (outcome)
+            {
+                case WriteOutcome.Created:
+                    created++;
+                    break;
+                case WriteOutcome.Updated:
+                    updated++;
+                    break;
+                case WriteOutcome.Failed:
+                    failed++;
+                    errors.Add($"Failed to write row: {identity}");
+                    break;
+            }
+
+            Log($"  {outcome} {identity}", log);
+        }
+
+        Log($"Deserialization complete: {created} created, {updated} updated, {skipped} skipped, {failed} failed", log);
+
+        return new ProviderDeserializeResult
+        {
+            Created = created,
+            Updated = updated,
+            Skipped = skipped,
+            Failed = failed,
+            TableName = metadata.TableName,
+            Errors = errors
+        };
     }
 
     public override ValidationResult ValidatePredicate(ProviderPredicateDefinition predicate)

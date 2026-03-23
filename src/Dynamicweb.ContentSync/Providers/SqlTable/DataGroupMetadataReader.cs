@@ -24,7 +24,7 @@ public class DataGroupMetadataReader
     /// <summary>
     /// Get table metadata for a DataGroup by parsing the XML definition and querying schema.
     /// </summary>
-    public TableMetadata GetTableMetadata(string dataGroupId)
+    public virtual TableMetadata GetTableMetadata(string dataGroupId)
     {
         var (tableName, nameColumn, compareColumns) = FindDataGroupInXml(dataGroupId);
 

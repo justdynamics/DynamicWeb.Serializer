@@ -115,7 +115,7 @@ public class SqlTableWriter
     /// Write a single row to the target table via MERGE upsert.
     /// In dry-run mode, checks existence but does NOT execute any SQL writes.
     /// </summary>
-    public WriteOutcome WriteRow(Dictionary<string, object?> row, TableMetadata metadata, bool isDryRun)
+    public virtual WriteOutcome WriteRow(Dictionary<string, object?> row, TableMetadata metadata, bool isDryRun)
     {
         try
         {
