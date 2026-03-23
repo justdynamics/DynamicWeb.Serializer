@@ -90,6 +90,63 @@ ContentSync serializes the full DynamicWeb content hierarchy:
 
 Identity is based on **PageUniqueId (GUID)**, not numeric IDs. This means content can move between environments where numeric IDs differ.
 
+## Permissions
+
+ContentSync serializes and restores **explicit page permissions**. Pages using inherited permissions (no explicit overrides) are left unchanged during deserialization — only pages with a `permissions` section in their YAML file are affected.
+
+### What Gets Serialized
+
+Only explicit (non-inherited) page permissions are serialized. Each permission entry includes:
+
+- **Owner** — the role or group name (e.g. `Anonymous`, `Marketing Team`)
+- **Owner type** — `Role` or `Group`
+- **Permission level** — one of: `None`, `Read`, `Edit`, `Create`, `Delete`, `All`
+
+Example YAML snippet for a page with explicit permissions:
+
+```yaml
+permissions:
+  - owner: Anonymous
+    ownerType: Role
+    level: None
+    levelValue: 1
+  - owner: AuthenticatedFrontend
+    ownerType: Role
+    level: Read
+    levelValue: 4
+```
+
+### How Permissions Are Restored
+
+During deserialization, permissions are resolved and applied using a **source-wins** model:
+
+- **Roles** (`Anonymous`, `AuthenticatedFrontend`, `AuthenticatedBackend`, `Administrator`) are matched by name. Role names are identical across all DynamicWeb environments, so no resolution is needed.
+- **User groups** are matched by group name on the target environment (case-insensitive). The group's numeric ID may differ between environments — ContentSync resolves the correct ID by searching for a group with the same name.
+- **Existing explicit permissions** on the target page are cleared before applying the serialized permissions. The serialized state is the single source of truth.
+- **Pages without a `permissions` section** in their YAML file are left untouched — existing permissions (including inherited) are preserved.
+
+### Safety Fallback
+
+If a serialized group permission references a user group that **does not exist** on the target environment:
+
+1. The group permission is **skipped** (it cannot be applied without a matching group)
+2. As a safety measure, **Anonymous access is set to None** (deny) on that page to prevent accidental public exposure
+3. The fallback is **logged as a warning**
+
+This ensures that missing groups never result in a page being unintentionally accessible to anonymous users.
+
+**Recommendation:** Ensure user groups exist on all target environments before deploying content with group-based permissions.
+
+### Permission Logging
+
+All permission actions are logged:
+
+- **Applied** — each role or group permission successfully set on a page
+- **Skipped** — a group permission was skipped because the group was not found on the target
+- **Safety fallback triggered** — Anonymous was set to None due to a missing group
+
+Check the scheduled task logs or Management API response for details.
+
 ## Configuration
 
 All settings are managed from the DynamicWeb admin UI at **Settings > Content > Sync**, or by editing the config file directly at `Files/ContentSync.config.json`.
