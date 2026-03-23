@@ -107,12 +107,12 @@ Example YAML snippet for a page with explicit permissions:
 ```yaml
 permissions:
   - owner: Anonymous
-    ownerType: Role
-    level: None
+    ownerType: role
+    level: none
     levelValue: 1
   - owner: AuthenticatedFrontend
-    ownerType: Role
-    level: Read
+    ownerType: role
+    level: read
     levelValue: 4
 ```
 

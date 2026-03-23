@@ -108,12 +108,12 @@ public class PermissionMapper
                 level = (PermissionLevel)perm.LevelValue;
             }
 
-            if (perm.OwnerType == "role")
+            if (string.Equals(perm.OwnerType, "role", StringComparison.OrdinalIgnoreCase))
             {
                 permissionService.SetPermission(perm.Owner, identifier, level);
                 Log($"Applied {perm.Owner} = {perm.Level} on page {pageId}");
             }
-            else if (perm.OwnerType == "group")
+            else if (string.Equals(perm.OwnerType, "group", StringComparison.OrdinalIgnoreCase))
             {
                 if (groupCache.TryGetValue(perm.Owner, out var groupId))
                 {
