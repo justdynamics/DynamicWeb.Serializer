@@ -50,7 +50,7 @@
 
 **Milestone Goal:** Broaden from content-only sync to full database serialization with a pluggable provider architecture, starting with ecommerce settings tables, admin UX improvements, and project rename.
 
-- [ ] **Phase 13: Provider Foundation + SqlTableProvider Proof** - ISerializationProvider interface, provider registry, and SqlTableProvider proven on EcomOrderFlow round-trip
+- [x] **Phase 13: Provider Foundation + SqlTableProvider Proof** - ISerializationProvider interface, provider registry, and SqlTableProvider proven on EcomOrderFlow round-trip (completed 2026-03-23)
 - [ ] **Phase 14: Content Migration + Orchestrator** - ContentProvider adapter wraps existing serializers, orchestrator routes predicates by data type
 - [ ] **Phase 15: Ecommerce Tables at Scale** - All ~15 ecommerce settings tables with FK ordering, cache invalidation, and duplicate DataItemType handling
 - [ ] **Phase 16: Admin UX** - Log viewer, asset management deserialize action, menu relocation, scheduled task deprecation
@@ -72,7 +72,7 @@
 Plans:
 - [x] 13-01-PLAN.md — Provider interface, registry, result types, ISqlExecutor abstraction
 - [x] 13-02-PLAN.md — SqlTableProvider serialization (DataGroup metadata, SQL reading, YAML writing)
-- [ ] 13-03-PLAN.md — SqlTableProvider deserialization (MERGE upsert, source-wins, dry-run)
+- [x] 13-03-PLAN.md — SqlTableProvider deserialization (MERGE upsert, source-wins, dry-run)
 
 ### Phase 14: Content Migration + Orchestrator
 **Goal**: Existing content serialization works unchanged through the new provider architecture, and the orchestrator can dispatch to multiple providers based on predicate configuration
@@ -136,7 +136,7 @@ Plans:
 | 10. Context Menu Actions | v1.2 | 3/3 | Complete | 2026-03-22 |
 | 11. Permission Serialization | v1.3 | 1/1 | Complete | 2026-03-22 |
 | 12. Permission Deserialization + Docs | v1.3 | 2/2 | Complete | 2026-03-23 |
-| 13. Provider Foundation + SqlTableProvider Proof | v2.0 | 2/3 | In Progress|  |
+| 13. Provider Foundation + SqlTableProvider Proof | v2.0 | 3/3 | Complete   | 2026-03-23 |
 | 14. Content Migration + Orchestrator | v2.0 | 0/0 | Not started | - |
 | 15. Ecommerce Tables at Scale | v2.0 | 0/0 | Not started | - |
 | 16. Admin UX | v2.0 | 0/0 | Not started | - |

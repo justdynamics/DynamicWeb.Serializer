@@ -20,7 +20,7 @@ Requirements for the DynamicWeb.Serializer milestone. Each maps to roadmap phase
 - [x] **SQL-02**: Identity resolution matches rows by NameColumn with CompareColumns fallback for empty NameColumn tables
 - [ ] **SQL-03**: FK dependency ordering via topological sort prevents constraint violations during deserialization
 - [x] **SQL-04**: Structured result objects report rows added/updated/skipped/failed per table
-- [ ] **SQL-05**: Source-wins conflict strategy: YAML rows overwrite matched target rows
+- [x] **SQL-05**: Source-wins conflict strategy: YAML rows overwrite matched target rows
 
 ### Ecommerce Data Groups
 
@@ -91,7 +91,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SQL-02 | Phase 13 | Complete |
 | SQL-03 | Phase 15 | Pending |
 | SQL-04 | Phase 13 | Complete |
-| SQL-05 | Phase 13 | Pending |
+| SQL-05 | Phase 13 | Complete |
 | ECOM-01 | Phase 15 | Pending |
 | ECOM-02 | Phase 15 | Pending |
 | ECOM-03 | Phase 15 | Pending |
