@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Admin UI
 status: unknown
-stopped_at: Completed 12-01-PLAN.md
-last_updated: "2026-03-23T08:51:19.255Z"
+stopped_at: Completed 12-02-PLAN.md
+last_updated: "2026-03-23T08:54:08.135Z"
 progress:
   total_phases: 12
-  completed_phases: 10
+  completed_phases: 11
   total_plans: 23
-  completed_plans: 21
+  completed_plans: 22
 ---
 
 # Project State
@@ -50,6 +50,7 @@ Plan: 2 of 2
 | 10-context-menu | 2 | 4min | 2min |
 | 11-permission-serialization | 1 | 7min | 7min |
 | Phase 12 P01 | 3min | 2 tasks | 3 files |
+| Phase 12 P02 | 1min | 1 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -64,6 +65,7 @@ Recent decisions affecting current work:
 - [Phase 11-01]: PermissionMapper does I/O (PermissionService + UserManagementServices), ContentMapper stays pure
 - [Phase 11-01]: Used UserManagementServices.Users.GetUserById instead of deprecated User.GetUserByID
 - [Phase 12]: Lazy group name cache built on first ApplyPermissions call, reused across pages
+- [Phase 12]: Permissions section placed between Content Model and Configuration in README for logical flow
 
 ### Pending Todos
 
@@ -75,6 +77,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-23T08:51:19.250Z
-Stopped at: Completed 12-01-PLAN.md
+Last session: 2026-03-23T08:54:08.131Z
+Stopped at: Completed 12-02-PLAN.md
 Resume file: None

@@ -68,7 +68,7 @@ Requirements for permissions milestone. Each maps to roadmap phases.
 
 ### Documentation
 
-- [ ] **PERM-08**: README documents permission handling behavior including the safety fallback for missing groups
+- [x] **PERM-08**: README documents permission handling behavior including the safety fallback for missing groups
 
 ## Out of Scope
 
@@ -114,7 +114,7 @@ Requirements for permissions milestone. Each maps to roadmap phases.
 | PERM-05 | Phase 12 | Complete |
 | PERM-06 | Phase 12 | Complete |
 | PERM-07 | Phase 12 | Complete |
-| PERM-08 | Phase 12 | Pending |
+| PERM-08 | Phase 12 | Complete |
 
 **Coverage:**
 - v1.2 requirements: 23 total (all complete)
