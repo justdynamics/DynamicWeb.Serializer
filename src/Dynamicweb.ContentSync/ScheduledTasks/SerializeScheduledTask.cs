@@ -16,8 +16,7 @@ public class SerializeScheduledTask : BaseScheduledTaskAddIn
     {
         try
         {
-            _logFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ContentSync.log");
-            Log("=== ContentSync Serialize started ===");
+            // Log file set after config load and path resolution
             Log($"BaseDirectory: {AppDomain.CurrentDomain.BaseDirectory}");
             Log($"WorkingDirectory: {Directory.GetCurrentDirectory()}");
 
@@ -40,6 +39,8 @@ public class SerializeScheduledTask : BaseScheduledTaskAddIn
             var filesDir = Path.GetDirectoryName(configPath)!;
             var systemDir = Path.Combine(filesDir, "System");
             var paths = config.EnsureDirectories(systemDir);
+            _logFile = Path.Combine(paths.Log, "ContentSync.log");
+            Log("=== ContentSync Serialize started ===");
             Log($"SerializeRoot: {paths.SerializeRoot}");
 
             // Use serializeRoot subfolder for YAML output

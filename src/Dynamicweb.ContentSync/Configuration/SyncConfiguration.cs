@@ -21,6 +21,9 @@ public record SyncConfiguration
     /// <summary>Subfolder for zip files produced by ad-hoc serialize.</summary>
     public string DownloadDir => Path.Combine(OutputDirectory, "Download");
 
+    /// <summary>Subfolder for log files.</summary>
+    public string LogDir => Path.Combine(OutputDirectory, "Log");
+
     /// <summary>
     /// Resolves all subfolder paths relative to Files/System and ensures they exist on disk.
     /// Call once after loading config when you need physical paths.
@@ -34,13 +37,15 @@ public record SyncConfiguration
             Root = Path.GetFullPath(Path.Combine(filesSystemDir, OutputDirectory.TrimStart('\\', '/'))),
             SerializeRoot = Path.GetFullPath(Path.Combine(filesSystemDir, SerializeRoot.TrimStart('\\', '/'))),
             Upload = Path.GetFullPath(Path.Combine(filesSystemDir, UploadDir.TrimStart('\\', '/'))),
-            Download = Path.GetFullPath(Path.Combine(filesSystemDir, DownloadDir.TrimStart('\\', '/')))
+            Download = Path.GetFullPath(Path.Combine(filesSystemDir, DownloadDir.TrimStart('\\', '/'))),
+            Log = Path.GetFullPath(Path.Combine(filesSystemDir, LogDir.TrimStart('\\', '/')))
         };
 
         Directory.CreateDirectory(resolved.Root);
         Directory.CreateDirectory(resolved.SerializeRoot);
         Directory.CreateDirectory(resolved.Upload);
         Directory.CreateDirectory(resolved.Download);
+        Directory.CreateDirectory(resolved.Log);
 
         return resolved;
     }
@@ -51,5 +56,6 @@ public record SyncConfiguration
         public required string SerializeRoot { get; init; }
         public required string Upload { get; init; }
         public required string Download { get; init; }
+        public required string Log { get; init; }
     }
 }

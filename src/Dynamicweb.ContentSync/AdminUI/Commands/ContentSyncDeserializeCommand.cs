@@ -13,6 +13,14 @@ namespace Dynamicweb.ContentSync.AdminUI.Commands;
 /// </summary>
 public sealed class ContentSyncDeserializeCommand : CommandBase
 {
+    private string? _logFile;
+
+    private void Log(string message)
+    {
+        if (_logFile == null) return;
+        try { File.AppendAllText(_logFile, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] {message}\n"); } catch { }
+    }
+
     public override CommandResult Handle()
     {
         try
@@ -27,6 +35,9 @@ public sealed class ContentSyncDeserializeCommand : CommandBase
             var systemDir = Path.Combine(filesRoot, "System");
             var paths = config.EnsureDirectories(systemDir);
 
+            _logFile = Path.Combine(paths.Log, "ContentSync.log");
+            Log("=== ContentSync Deserialize (API) started ===");
+
             if (!Directory.Exists(paths.SerializeRoot))
                 return new() { Status = CommandResult.ResultType.Error, Message = $"SerializeRoot not found: {paths.SerializeRoot}" };
 
@@ -35,7 +46,7 @@ public sealed class ContentSyncDeserializeCommand : CommandBase
                 return new() { Status = CommandResult.ResultType.Error, Message = "SerializeRoot contains no YAML files" };
 
             var effectiveConfig = config with { OutputDirectory = paths.SerializeRoot };
-            var deserializer = new ContentDeserializer(effectiveConfig, isDryRun: config.DryRun, filesRoot: filesRoot);
+            var deserializer = new ContentDeserializer(effectiveConfig, log: Log, isDryRun: config.DryRun, filesRoot: filesRoot);
             var result = deserializer.Deserialize();
 
             var message = $"{result.Created} created, {result.Updated} updated, {result.Skipped} skipped, {result.Failed} failed.";

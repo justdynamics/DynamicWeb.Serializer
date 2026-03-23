@@ -21,8 +21,7 @@ public class DeserializeScheduledTask : BaseScheduledTaskAddIn
     {
         try
         {
-            _logFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ContentSync.log");
-            Log("=== ContentSync Deserialize started ===");
+            // Log file set after config load and path resolution
 
             var configPath = FindConfigFile();
             if (configPath == null)
@@ -42,6 +41,8 @@ public class DeserializeScheduledTask : BaseScheduledTaskAddIn
             var filesRoot = Path.GetDirectoryName(configPath);
             var systemDir = Path.Combine(filesRoot ?? ".", "System");
             var paths = config.EnsureDirectories(systemDir);
+            _logFile = Path.Combine(paths.Log, "ContentSync.log");
+            Log("=== ContentSync Deserialize started ===");
             Log($"FilesRoot: {filesRoot}");
             Log($"SerializeRoot: {paths.SerializeRoot}");
             Log($"UploadDir: {paths.Upload}");
