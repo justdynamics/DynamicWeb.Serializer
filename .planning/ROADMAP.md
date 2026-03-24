@@ -117,7 +117,7 @@ Plans:
 Plans:
 - [x] 16-01-PLAN.md — Full project rename: namespace, assembly, csproj, API commands, config file compat
 - [x] 16-02-PLAN.md — Log infrastructure (LogFileWriter, AdviceGenerator) + tree node relocation + per-run logging
-- [ ] 16-03-PLAN.md — Log viewer screen with file selection, summary display, and advice
+- [x] 16-03-PLAN.md — Log viewer screen with file selection, summary display, and advice
 - [ ] 16-04-PLAN.md — Asset management zip deserialize injector and command
 
 ### Phase 17: Project Rename
@@ -147,5 +147,5 @@ Plans:
 | 13. Provider Foundation + SqlTableProvider Proof | v2.0 | 3/3 | Complete    | 2026-03-23 |
 | 14. Content Migration + Orchestrator | v2.0 | 2/2 | Complete    | 2026-03-24 |
 | 15. Ecommerce Tables at Scale | v2.0 | 2/2 | Complete    | 2026-03-24 |
-| 16. Admin UX + Rename | v2.0 | 2/4 | In Progress|  |
+| 16. Admin UX + Rename | v2.0 | 3/4 | In Progress|  |
 | 17. Project Rename | v2.0 | N/A | Absorbed into P16 | - |
