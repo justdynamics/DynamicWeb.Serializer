@@ -14,14 +14,27 @@ public sealed class PredicateEditModel : DataViewModelBase, IIdentifiable
     [Required(ErrorMessage = "Name is required")]
     public string Name { get; set; } = string.Empty;
 
+    [ConfigurableProperty("Provider Type", explanation: "Content syncs DW pages; SqlTable syncs database tables")]
+    public string ProviderType { get; set; } = string.Empty;
+
     [ConfigurableProperty("Area", explanation: "DW area containing the content tree")]
-    [Required(ErrorMessage = "Area is required")]
     public int AreaId { get; set; }
 
     [ConfigurableProperty("Page", explanation: "Root page for this predicate")]
-    [Required(ErrorMessage = "Page is required")]
     public int PageId { get; set; }
 
     [ConfigurableProperty("Excludes", explanation: "One path per line. Pages under these paths will be excluded from sync.")]
     public string Excludes { get; set; } = string.Empty;
+
+    [ConfigurableProperty("Table", explanation: "SQL table name (e.g., EcomOrderFlow)")]
+    public string Table { get; set; } = string.Empty;
+
+    [ConfigurableProperty("Name Column", explanation: "Column used as natural key for row identity (leave empty for composite PK)")]
+    public string NameColumn { get; set; } = string.Empty;
+
+    [ConfigurableProperty("Compare Columns", explanation: "Comma-separated columns for change detection (leave empty for all non-identity columns)")]
+    public string CompareColumns { get; set; } = string.Empty;
+
+    [ConfigurableProperty("Service Caches", explanation: "One fully-qualified DW cache type per line. Cleared after deserialization.")]
+    public string ServiceCaches { get; set; } = string.Empty;
 }

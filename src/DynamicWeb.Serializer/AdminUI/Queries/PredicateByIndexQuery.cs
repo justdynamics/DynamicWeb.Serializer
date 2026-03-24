@@ -30,9 +30,14 @@ public sealed class PredicateByIndexQuery : DataQueryIdentifiableModelBase<Predi
         {
             Index = Index,
             Name = pred.Name,
+            ProviderType = pred.ProviderType,
             AreaId = pred.AreaId,
             PageId = pred.PageId,
-            Excludes = string.Join("\n", pred.Excludes)
+            Excludes = string.Join("\n", pred.Excludes),
+            Table = pred.Table ?? string.Empty,
+            NameColumn = pred.NameColumn ?? string.Empty,
+            CompareColumns = pred.CompareColumns ?? string.Empty,
+            ServiceCaches = string.Join("\n", pred.ServiceCaches)
         };
     }
 }
