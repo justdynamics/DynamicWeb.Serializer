@@ -56,17 +56,17 @@ Developers can reliably move DynamicWeb database state between environments thro
 
 ### Active
 
-- [ ] Rename project to DynamicWeb.Serializer
+- [x] Rename project to DynamicWeb.Serializer — v2.0 Phase 16
 - [x] Pluggable provider architecture per data group — v2.0 Phase 13
 - [x] SqlTableProvider for generic SQL table serialization — v2.0 Phase 13
 - [x] Migrate existing ContentProvider into provider architecture — v2.0 Phase 14
 - [x] Ecommerce settings serialization (~26 SQL tables) — v2.0 Phase 15
 - [ ] Settings & Schema serialization (~25 items)
 - [ ] Users, Marketing, PIM, Apps serialization (~30 tables)
-- [ ] Log viewer with guided advice
-- [ ] Move deserialize to Asset management file detail page action
-- [ ] Remove scheduled tasks (API commands replace them)
-- [ ] Move admin UI from Settings > Content > Sync to Settings > Database > Serialize
+- [x] Log viewer with guided advice — v2.0 Phase 16
+- [x] Move deserialize to Asset management file detail page action — v2.0 Phase 16
+- [x] Remove scheduled tasks (API commands replace them) — v2.0 Phase 16
+- [x] Move admin UI from Settings > Content > Sync to Settings > Database > Serialize — v2.0 Phase 16
 
 ### Out of Scope
 
@@ -163,4 +163,4 @@ This document evolves at phase transitions and milestone boundaries.
 - **v1.3 Permissions** — Permission serialization/deserialization with safety fallback (2026-03-23)
 
 ---
-*Last updated: 2026-03-24 after Phase 15 complete — FK dependency ordering, cache invalidation, 26 ecommerce table predicates*
+*Last updated: 2026-03-24 after Phase 16 complete — project renamed to DynamicWeb.Serializer, log viewer, zip deserialize, tree relocation*
