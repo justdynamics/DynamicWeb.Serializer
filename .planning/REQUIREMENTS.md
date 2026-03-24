@@ -46,6 +46,14 @@ Requirements for the DynamicWeb.Serializer milestone. Each maps to roadmap phase
 
 - [x] **REN-01**: Project renamed from Dynamicweb.ContentSync to DynamicWeb.Serializer (namespace, assembly, NuGet package)
 
+### Predicate Config Multi-Provider
+
+- [ ] **PRED-01**: PredicateEditModel carries ProviderType, Table, NameColumn, CompareColumns, ServiceCaches properties for both provider types
+- [ ] **PRED-02**: SavePredicateCommand applies provider-branched validation (Content: AreaId+PageId required; SqlTable: Table required) and preserves ProviderType on updates (D-02)
+- [ ] **PRED-03**: PredicateByIndexQuery maps all ProviderPredicateDefinition fields so SqlTable predicates round-trip without data loss
+- [ ] **PRED-04**: PredicateEditScreen shows ProviderType dropdown with WithReloadOnChange, conditionally rendering Content or SqlTable field groups
+- [ ] **PRED-05**: PredicateListScreen differentiates Content vs SqlTable predicates with Type and Target columns
+
 ## Future Requirements
 
 ### Settings & Schema Providers
@@ -104,12 +112,17 @@ Which phases cover which requirements. Updated during roadmap creation.
 | UX-03 | Phase 16 | Complete |
 | UX-04 | Phase 16 | Complete |
 | REN-01 | Phase 17 | Complete |
+| PRED-01 | Phase 18 | Planned |
+| PRED-02 | Phase 18 | Planned |
+| PRED-03 | Phase 18 | Planned |
+| PRED-04 | Phase 18 | Planned |
+| PRED-05 | Phase 18 | Planned |
 
 **Coverage:**
-- v2.0 requirements: 21 total
-- Mapped to phases: 21
+- v2.0 requirements: 26 total
+- Mapped to phases: 26
 - Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-23*
-*Last updated: 2026-03-23 after roadmap creation*
+*Last updated: 2026-03-24 after Phase 18 planning*

@@ -6,7 +6,7 @@
 - [x] **v1.1 Robustness** - Phase 6 (shipped 2026-03-20) - [Archive](milestones/v1.1-ROADMAP.md)
 - [x] **v1.2 Admin UI** - Phases 7-10 (shipped 2026-03-22)
 - [x] **v1.3 Permissions** - Phases 11-12 (shipped 2026-03-23)
-- [ ] **v2.0 DynamicWeb.Serializer** - Phases 13-17 (in progress)
+- [ ] **v2.0 DynamicWeb.Serializer** - Phases 13-18 (in progress)
 
 ## Phases
 
@@ -55,6 +55,7 @@
 - [x] **Phase 15: Ecommerce Tables at Scale** - All ~15 ecommerce settings tables with FK ordering, cache invalidation, and duplicate DataItemType handling (completed 2026-03-24)
 - [x] **Phase 16: Admin UX + Rename** - Project rename, log viewer, asset management deserialize action, menu relocation, scheduled task deprecation (completed 2026-03-24)
 - [x] **Phase 17: Project Rename** - Absorbed into Phase 16 (REN-01 pulled forward as Wave 1) (completed 2026-03-24)
+- [ ] **Phase 18: Predicate Config Multi-Provider Support** - Admin UI predicate edit/list screens support both Content and SqlTable provider types with provider-specific field groups
 
 ## Phase Details
 
@@ -126,9 +127,24 @@ Plans:
 **Requirements**: REN-01 (covered in Phase 16)
 **Plans**: 0 plans (absorbed into Phase 16)
 
+### Phase 18: Predicate Config Multi-Provider Support
+**Goal**: Admin UI predicate edit/list screens support both Content and SqlTable provider types with provider-specific field groups and ProviderType dropdown
+**Depends on**: Phase 16 (Admin UI), Phase 13-14 (provider architecture)
+**Requirements**: PRED-01, PRED-02, PRED-03, PRED-04, PRED-05
+**Success Criteria** (what must be TRUE):
+  1. PredicateEditModel carries all fields for both Content and SqlTable provider types
+  2. Edit screen shows ProviderType dropdown with conditional field groups (Content: Area/Page/Excludes; SqlTable: Table/NameColumn/CompareColumns/ServiceCaches)
+  3. ProviderType is locked after creation — editing existing predicates preserves the original provider type
+  4. SavePredicateCommand applies provider-specific validation (Content requires Area+Page; SqlTable requires Table)
+  5. List screen differentiates predicates by Type and Target columns
+**Plans**: 2 plans
+Plans:
+- [ ] 18-01-PLAN.md — Data layer: PredicateEditModel expansion + query/command multi-provider support + tests
+- [ ] 18-02-PLAN.md — UI layer: Edit screen conditional fields + list screen type-aware columns
+
 ## Progress
 
-**Execution Order:** Phases 13 -> 14 -> 15 -> 16 (Phase 17 absorbed into 16)
+**Execution Order:** Phases 13 -> 14 -> 15 -> 16 -> 18 (Phase 17 absorbed into 16)
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
@@ -149,3 +165,4 @@ Plans:
 | 15. Ecommerce Tables at Scale | v2.0 | 2/2 | Complete    | 2026-03-24 |
 | 16. Admin UX + Rename | v2.0 | 5/5 | Complete   | 2026-03-24 |
 | 17. Project Rename | v2.0 | N/A | Absorbed into P16 | - |
+| 18. Predicate Config Multi-Provider | v2.0 | 0/2 | Planned | - |
