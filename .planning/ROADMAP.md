@@ -55,7 +55,7 @@
 - [x] **Phase 15: Ecommerce Tables at Scale** - All ~15 ecommerce settings tables with FK ordering, cache invalidation, and duplicate DataItemType handling (completed 2026-03-24)
 - [x] **Phase 16: Admin UX + Rename** - Project rename, log viewer, asset management deserialize action, menu relocation, scheduled task deprecation (completed 2026-03-24)
 - [x] **Phase 17: Project Rename** - Absorbed into Phase 16 (REN-01 pulled forward as Wave 1) (completed 2026-03-24)
-- [ ] **Phase 18: Predicate Config Multi-Provider Support** - Admin UI predicate edit/list screens support both Content and SqlTable provider types with provider-specific field groups
+- [x] **Phase 18: Predicate Config Multi-Provider Support** - Admin UI predicate edit/list screens support both Content and SqlTable provider types with provider-specific field groups (completed 2026-03-24)
 
 ## Phase Details
 
@@ -140,7 +140,7 @@ Plans:
 **Plans**: 2 plans
 Plans:
 - [x] 18-01-PLAN.md — Data layer: PredicateEditModel expansion + query/command multi-provider support + tests
-- [ ] 18-02-PLAN.md — UI layer: Edit screen conditional fields + list screen type-aware columns
+- [x] 18-02-PLAN.md — UI layer: Edit screen conditional fields + list screen type-aware columns
 
 ## Progress
 
@@ -165,4 +165,4 @@ Plans:
 | 15. Ecommerce Tables at Scale | v2.0 | 2/2 | Complete    | 2026-03-24 |
 | 16. Admin UX + Rename | v2.0 | 5/5 | Complete   | 2026-03-24 |
 | 17. Project Rename | v2.0 | N/A | Absorbed into P16 | - |
-| 18. Predicate Config Multi-Provider | v2.0 | 1/2 | In Progress|  |
+| 18. Predicate Config Multi-Provider | v2.0 | 2/2 | Complete   | 2026-03-24 |

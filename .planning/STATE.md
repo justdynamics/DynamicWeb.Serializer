@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: DynamicWeb.Serializer
-status: Ready to execute
-stopped_at: Completed 18-01-PLAN.md
-last_updated: "2026-03-24T19:18:00.578Z"
+status: Phase complete — ready for verification
+stopped_at: Completed 18-02-PLAN.md
+last_updated: "2026-03-24T19:22:01.936Z"
 progress:
   total_phases: 6
-  completed_phases: 4
+  completed_phases: 5
   total_plans: 14
-  completed_plans: 13
+  completed_plans: 14
 ---
 
 # Project State
@@ -63,6 +63,7 @@ Plan: 2 of 2
 | Phase 16 P04 | 6min | 2 tasks | 7 files |
 | Phase 16-admin-ux P05 | 1min | 2 tasks | 3 files |
 | Phase 18 P01 | 3min | 2 tasks | 4 files |
+| Phase 18 P02 | 2min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -97,6 +98,7 @@ Recent decisions affecting current work:
 - [Phase 16-admin-ux]: webRoot = Directory.GetParent(filesRoot) for DW virtual path resolution (avoids doubled /Files/ segment)
 - [Phase 18]: Provider-branched validation: Content requires AreaId/PageId, SqlTable requires Table, unknown types rejected
 - [Phase 18]: D-02 enforcement: on update, ProviderType read from existing config predicate, not from model
+- [Phase 18]: ProviderType Select with WithReloadOnChange only for new predicates; Type+Target list columns per D-08
 
 ### Roadmap Evolution
 
@@ -114,6 +116,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-24T19:18:00.574Z
-Stopped at: Completed 18-01-PLAN.md
+Last session: 2026-03-24T19:22:01.933Z
+Stopped at: Completed 18-02-PLAN.md
 Resume file: None
