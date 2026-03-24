@@ -1,4 +1,5 @@
 using Dynamicweb.ContentSync.Configuration;
+using Dynamicweb.ContentSync.Models;
 using Xunit;
 
 namespace Dynamicweb.ContentSync.Tests.Configuration;
@@ -18,9 +19,10 @@ public class ContentPredicateTests
     [InlineData("/customer center/Products", 1, true)] // case-insensitive
     public void ShouldInclude_BasicPathMatching(string contentPath, int areaId, bool expected)
     {
-        var definition = new PredicateDefinition
+        var definition = new ProviderPredicateDefinition
         {
             Name = "Customer Center",
+            ProviderType = "Content",
             Path = "/Customer Center",
             AreaId = 1
         };
@@ -41,9 +43,10 @@ public class ContentPredicateTests
     [InlineData("/Customer Center/Products", 1, true)]      // non-excluded sibling
     public void ShouldInclude_ExcludeOverridesInclude(string contentPath, int areaId, bool expected)
     {
-        var definition = new PredicateDefinition
+        var definition = new ProviderPredicateDefinition
         {
             Name = "Customer Center",
+            ProviderType = "Content",
             Path = "/Customer Center",
             AreaId = 1,
             Excludes = new List<string> { "/Customer Center/Archive" }
@@ -61,9 +64,10 @@ public class ContentPredicateTests
     [InlineData("/Customer Center/Products", 1, true)]   // non-excluded child
     public void ShouldInclude_MultipleExcludes(string contentPath, int areaId, bool expected)
     {
-        var definition = new PredicateDefinition
+        var definition = new ProviderPredicateDefinition
         {
             Name = "Customer Center",
+            ProviderType = "Content",
             Path = "/Customer Center",
             AreaId = 1,
             Excludes = new List<string> { "/Customer Center/Archive", "/Customer Center/Drafts" }
@@ -85,10 +89,10 @@ public class ContentPredicateTests
         var config = new SyncConfiguration
         {
             OutputDirectory = "/out",
-            Predicates = new List<PredicateDefinition>
+            Predicates = new List<ProviderPredicateDefinition>
             {
-                new() { Name = "Customer Center", Path = "/Customer Center", AreaId = 1 },
-                new() { Name = "Blog", Path = "/Blog", AreaId = 2 }
+                new() { Name = "Customer Center", ProviderType = "Content", Path = "/Customer Center", AreaId = 1 },
+                new() { Name = "Blog", ProviderType = "Content", Path = "/Blog", AreaId = 2 }
             }
         };
         var set = new ContentPredicateSet(config);
@@ -103,9 +107,9 @@ public class ContentPredicateTests
         var config = new SyncConfiguration
         {
             OutputDirectory = "/out",
-            Predicates = new List<PredicateDefinition>
+            Predicates = new List<ProviderPredicateDefinition>
             {
-                new() { Name = "Customer Center", Path = "/Customer Center", AreaId = 1 }
+                new() { Name = "Customer Center", ProviderType = "Content", Path = "/Customer Center", AreaId = 1 }
             }
         };
         var set = new ContentPredicateSet(config);
@@ -120,11 +124,12 @@ public class ContentPredicateTests
         var config = new SyncConfiguration
         {
             OutputDirectory = "/out",
-            Predicates = new List<PredicateDefinition>
+            Predicates = new List<ProviderPredicateDefinition>
             {
                 new()
                 {
                     Name = "Customer Center",
+                    ProviderType = "Content",
                     Path = "/Customer Center",
                     AreaId = 1,
                     Excludes = new List<string> { "/Customer Center/Archive" }

@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Dynamicweb.ContentSync.Models;
 
 namespace Dynamicweb.ContentSync.Configuration;
 
@@ -75,13 +76,17 @@ public static class ConfigLoader
         return ConflictStrategy.SourceWins; // Unknown values default to source-wins
     }
 
-    private static PredicateDefinition BuildPredicate(RawPredicateDefinition raw) => new()
+    private static ProviderPredicateDefinition BuildPredicate(RawPredicateDefinition raw) => new()
     {
         Name = raw.Name!,
-        Path = raw.Path!,
+        ProviderType = string.IsNullOrEmpty(raw.ProviderType) ? "Content" : raw.ProviderType,
+        Path = raw.Path ?? "",
         AreaId = raw.AreaId,
         PageId = raw.PageId,
-        Excludes = raw.Excludes ?? new List<string>()
+        Excludes = raw.Excludes ?? new List<string>(),
+        Table = raw.Table,
+        NameColumn = raw.NameColumn,
+        CompareColumns = raw.CompareColumns
     };
 
     // Raw (nullable) models for deserialization — no required constraints so we can produce clear validation errors
@@ -103,5 +108,8 @@ public static class ConfigLoader
         public int AreaId { get; set; }
         public int PageId { get; set; }
         public List<string>? Excludes { get; set; }
+        public string? Table { get; set; }
+        public string? NameColumn { get; set; }
+        public string? CompareColumns { get; set; }
     }
 }

@@ -1,5 +1,6 @@
 using Dynamicweb.ContentSync.AdminUI.Models;
 using Dynamicweb.ContentSync.Configuration;
+using Dynamicweb.ContentSync.Models;
 using Dynamicweb.CoreUI.Data;
 
 namespace Dynamicweb.ContentSync.AdminUI.Commands;
@@ -30,7 +31,7 @@ public sealed class SaveSyncSettingsCommand : CommandBase<SyncSettingsModel>
                 var tempConfig = new SyncConfiguration
                 {
                     OutputDirectory = Model.OutputDirectory,
-                    Predicates = new List<PredicateDefinition>()
+                    Predicates = new List<ProviderPredicateDefinition>()
                 };
                 tempConfig.EnsureDirectories(systemDir);
             }

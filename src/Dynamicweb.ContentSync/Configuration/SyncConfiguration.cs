@@ -1,3 +1,5 @@
+using Dynamicweb.ContentSync.Models;
+
 namespace Dynamicweb.ContentSync.Configuration;
 
 public record SyncConfiguration
@@ -10,7 +12,7 @@ public record SyncConfiguration
     public string LogLevel { get; init; } = "info";
     public bool DryRun { get; init; } = false;
     public ConflictStrategy ConflictStrategy { get; init; } = ConflictStrategy.SourceWins;
-    public required List<PredicateDefinition> Predicates { get; init; }
+    public required List<ProviderPredicateDefinition> Predicates { get; init; }
 
     /// <summary>Subfolder for YAML serialization files (scheduled tasks read/write here).</summary>
     public string SerializeRoot => Path.Combine(OutputDirectory, "SerializeRoot");

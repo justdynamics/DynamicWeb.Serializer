@@ -58,7 +58,7 @@ public class ContentSerializer
     // Private pipeline
     // -------------------------------------------------------------------------
 
-    private SerializedArea? SerializePredicate(PredicateDefinition predicate)
+    private SerializedArea? SerializePredicate(ProviderPredicateDefinition predicate)
     {
         var area = Services.Areas.GetArea(predicate.AreaId);
         if (area == null)
@@ -96,7 +96,7 @@ public class ContentSerializer
         return serializedArea;
     }
 
-    private SerializedPage? SerializePage(Page page, PredicateDefinition predicate, string contentPath)
+    private SerializedPage? SerializePage(Page page, ProviderPredicateDefinition predicate, string contentPath)
     {
         // Check predicate inclusion BEFORE loading children (short-circuit optimization)
         if (!_predicateSet.ShouldInclude(contentPath, predicate.AreaId))

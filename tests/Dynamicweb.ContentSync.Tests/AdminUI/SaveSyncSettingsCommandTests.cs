@@ -1,6 +1,7 @@
 using Dynamicweb.ContentSync.AdminUI.Commands;
 using Dynamicweb.ContentSync.AdminUI.Models;
 using Dynamicweb.ContentSync.Configuration;
+using Dynamicweb.ContentSync.Models;
 using Dynamicweb.CoreUI.Data;
 using Xunit;
 
@@ -40,9 +41,9 @@ public class SaveSyncSettingsCommandTests : IDisposable
             LogLevel = "info",
             DryRun = false,
             ConflictStrategy = ConflictStrategy.SourceWins,
-            Predicates = new List<PredicateDefinition>
+            Predicates = new List<ProviderPredicateDefinition>
             {
-                new() { Name = "Default", Path = "/", AreaId = 1 }
+                new() { Name = "Default", ProviderType = "Content", Path = "/", AreaId = 1 }
             }
         };
         ConfigWriter.Save(config, _configPath);

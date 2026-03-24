@@ -1,10 +1,12 @@
+using Dynamicweb.ContentSync.Models;
+
 namespace Dynamicweb.ContentSync.Configuration;
 
 public class ContentPredicate
 {
-    private readonly PredicateDefinition _definition;
+    private readonly ProviderPredicateDefinition _definition;
 
-    public ContentPredicate(PredicateDefinition definition)
+    public ContentPredicate(ProviderPredicateDefinition definition)
     {
         _definition = definition;
     }

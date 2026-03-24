@@ -120,7 +120,7 @@ public class ContentDeserializer
     // Predicate-level processing
     // -------------------------------------------------------------------------
 
-    private DeserializeResult DeserializePredicate(PredicateDefinition predicate, SerializedArea area)
+    private DeserializeResult DeserializePredicate(ProviderPredicateDefinition predicate, SerializedArea area)
     {
         var targetArea = Services.Areas.GetArea(predicate.AreaId);
         if (targetArea == null)

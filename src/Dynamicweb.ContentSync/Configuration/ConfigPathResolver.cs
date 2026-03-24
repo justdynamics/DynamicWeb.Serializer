@@ -1,3 +1,5 @@
+using Dynamicweb.ContentSync.Models;
+
 namespace Dynamicweb.ContentSync.Configuration;
 
 public static class ConfigPathResolver
@@ -36,9 +38,9 @@ public static class ConfigPathResolver
             LogLevel = "info",
             DryRun = false,
             ConflictStrategy = ConflictStrategy.SourceWins,
-            Predicates = new List<PredicateDefinition>
+            Predicates = new List<ProviderPredicateDefinition>
             {
-                new() { Name = "Default", Path = "/", AreaId = 1 }
+                new() { Name = "Default", ProviderType = "Content", Path = "/", AreaId = 1 }
             }
         };
 

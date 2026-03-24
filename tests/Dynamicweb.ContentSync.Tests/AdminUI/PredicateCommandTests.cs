@@ -1,6 +1,7 @@
 using Dynamicweb.ContentSync.AdminUI.Commands;
 using Dynamicweb.ContentSync.AdminUI.Models;
 using Dynamicweb.ContentSync.Configuration;
+using Dynamicweb.ContentSync.Models;
 using Dynamicweb.CoreUI.Data;
 using Xunit;
 
@@ -24,7 +25,7 @@ public class PredicateCommandTests : IDisposable
             Directory.Delete(_tempDir, recursive: true);
     }
 
-    private void CreateSeedConfig(List<PredicateDefinition>? predicates = null)
+    private void CreateSeedConfig(List<ProviderPredicateDefinition>? predicates = null)
     {
         var config = new SyncConfiguration
         {
@@ -32,9 +33,9 @@ public class PredicateCommandTests : IDisposable
             LogLevel = "info",
             DryRun = false,
             ConflictStrategy = ConflictStrategy.SourceWins,
-            Predicates = predicates ?? new List<PredicateDefinition>
+            Predicates = predicates ?? new List<ProviderPredicateDefinition>
             {
-                new() { Name = "Default", Path = "/", AreaId = 1, PageId = 10 }
+                new() { Name = "Default", ProviderType = "Content", Path = "/", AreaId = 1, PageId = 10 }
             }
         };
         ConfigWriter.Save(config, _configPath);
@@ -77,9 +78,9 @@ public class PredicateCommandTests : IDisposable
     [Fact]
     public void Save_DuplicateName_ReturnsInvalid()
     {
-        CreateSeedConfig(new List<PredicateDefinition>
+        CreateSeedConfig(new List<ProviderPredicateDefinition>
         {
-            new() { Name = "Existing", Path = "/existing", AreaId = 1, PageId = 10 }
+            new() { Name = "Existing", ProviderType = "Content", Path = "/existing", AreaId = 1, PageId = 10 }
         });
 
         var cmd = new SavePredicateCommand
@@ -103,9 +104,9 @@ public class PredicateCommandTests : IDisposable
     [Fact]
     public void Save_IndexOutOfRange_ReturnsError()
     {
-        CreateSeedConfig(new List<PredicateDefinition>
+        CreateSeedConfig(new List<ProviderPredicateDefinition>
         {
-            new() { Name = "Only", Path = "/only", AreaId = 1, PageId = 10 }
+            new() { Name = "Only", ProviderType = "Content", Path = "/only", AreaId = 1, PageId = 10 }
         });
 
         var cmd = new SavePredicateCommand
@@ -128,9 +129,9 @@ public class PredicateCommandTests : IDisposable
     [Fact]
     public void Save_NewPredicate_AppendsToConfig()
     {
-        CreateSeedConfig(new List<PredicateDefinition>
+        CreateSeedConfig(new List<ProviderPredicateDefinition>
         {
-            new() { Name = "Existing", Path = "/existing", AreaId = 1, PageId = 10 }
+            new() { Name = "Existing", ProviderType = "Content", Path = "/existing", AreaId = 1, PageId = 10 }
         });
 
         var cmd = new SavePredicateCommand
@@ -161,10 +162,10 @@ public class PredicateCommandTests : IDisposable
     [Fact]
     public void Save_UpdateExisting_ReplacesAtIndex()
     {
-        CreateSeedConfig(new List<PredicateDefinition>
+        CreateSeedConfig(new List<ProviderPredicateDefinition>
         {
-            new() { Name = "First", Path = "/first", AreaId = 1, PageId = 10 },
-            new() { Name = "Second", Path = "/second", AreaId = 2, PageId = 20 }
+            new() { Name = "First", ProviderType = "Content", Path = "/first", AreaId = 1, PageId = 10 },
+            new() { Name = "Second", ProviderType = "Content", Path = "/second", AreaId = 2, PageId = 20 }
         });
 
         var cmd = new SavePredicateCommand
@@ -197,10 +198,10 @@ public class PredicateCommandTests : IDisposable
     [Fact]
     public void Delete_ValidIndex_RemovesPredicate()
     {
-        CreateSeedConfig(new List<PredicateDefinition>
+        CreateSeedConfig(new List<ProviderPredicateDefinition>
         {
-            new() { Name = "First", Path = "/first", AreaId = 1, PageId = 10 },
-            new() { Name = "Second", Path = "/second", AreaId = 2, PageId = 20 }
+            new() { Name = "First", ProviderType = "Content", Path = "/first", AreaId = 1, PageId = 10 },
+            new() { Name = "Second", ProviderType = "Content", Path = "/second", AreaId = 2, PageId = 20 }
         });
 
         var cmd = new DeletePredicateCommand
@@ -253,9 +254,9 @@ public class PredicateCommandTests : IDisposable
     [Fact]
     public void Delete_LastPredicate_ResultsInEmptyList()
     {
-        CreateSeedConfig(new List<PredicateDefinition>
+        CreateSeedConfig(new List<ProviderPredicateDefinition>
         {
-            new() { Name = "Only", Path = "/only", AreaId = 1, PageId = 10 }
+            new() { Name = "Only", ProviderType = "Content", Path = "/only", AreaId = 1, PageId = 10 }
         });
 
         var cmd = new DeletePredicateCommand

@@ -1,4 +1,5 @@
 using Dynamicweb.ContentSync.Configuration;
+using Dynamicweb.ContentSync.Models;
 using Xunit;
 
 namespace Dynamicweb.ContentSync.Tests.Configuration;
@@ -25,11 +26,12 @@ public class ConfigWriterTests : IDisposable
         LogLevel = "debug",
         DryRun = true,
         ConflictStrategy = ConflictStrategy.SourceWins,
-        Predicates = new List<PredicateDefinition>
+        Predicates = new List<ProviderPredicateDefinition>
         {
             new()
             {
                 Name = "Customer Center",
+                ProviderType = "Content",
                 Path = "/Customer Center",
                 AreaId = 1,
                 Excludes = new List<string> { "/Customer Center/Archive" }
@@ -100,11 +102,12 @@ public class ConfigWriterTests : IDisposable
         var config = new SyncConfiguration
         {
             OutputDirectory = "/out",
-            Predicates = new List<PredicateDefinition>
+            Predicates = new List<ProviderPredicateDefinition>
             {
                 new()
                 {
                     Name = "Test",
+                    ProviderType = "Content",
                     Path = "/Test",
                     AreaId = 2,
                     Excludes = new List<string> { "/Test/Archive", "/Test/Temp" }

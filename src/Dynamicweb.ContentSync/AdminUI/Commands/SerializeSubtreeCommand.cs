@@ -1,6 +1,7 @@
 using System.IO.Compression;
 using Dynamicweb.Content;
 using Dynamicweb.ContentSync.Configuration;
+using Dynamicweb.ContentSync.Models;
 using Dynamicweb.ContentSync.Serialization;
 using Dynamicweb.CoreUI.Data;
 
@@ -41,11 +42,12 @@ public sealed class SerializeSubtreeCommand : CommandBase
                     LogLevel = "info",
                     DryRun = false,
                     ConflictStrategy = ConflictStrategy.SourceWins,
-                    Predicates = new List<PredicateDefinition>
+                    Predicates = new List<ProviderPredicateDefinition>
                     {
-                        new PredicateDefinition
+                        new ProviderPredicateDefinition
                         {
                             Name = "ad-hoc-serialize",
+                            ProviderType = "Content",
                             Path = contentPath,
                             AreaId = AreaId,
                             Excludes = new List<string>()

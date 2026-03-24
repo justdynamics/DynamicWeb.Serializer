@@ -1,6 +1,7 @@
 using Dynamicweb.Content;
 using Dynamicweb.ContentSync.AdminUI.Models;
 using Dynamicweb.ContentSync.Configuration;
+using Dynamicweb.ContentSync.Models;
 using Dynamicweb.CoreUI.Data;
 
 namespace Dynamicweb.ContentSync.AdminUI.Commands;
@@ -63,9 +64,10 @@ public sealed class SavePredicateCommand : CommandBase<PredicateEditModel>
                 .Where(e => e.Length > 0)
                 .ToList();
 
-            var predicate = new PredicateDefinition
+            var predicate = new ProviderPredicateDefinition
             {
                 Name = Model.Name.Trim(),
+                ProviderType = "Content",
                 Path = path,
                 AreaId = Model.AreaId,
                 PageId = Model.PageId,
