@@ -1,0 +1,252 @@
+{
+  "_comment": [
+    "Example predicates array for all DW10 ecommerce settings tables.",
+    "Copy desired entries into the main contentsync.json 'predicates' array.",
+    "Each table is configured once regardless of which DataGroup it appears in (per D-07).",
+    "FK ordering is handled automatically at runtime by FkDependencyResolver (per D-04).",
+    "serviceCaches lists are sourced from DW10 DataGroup XML files (Settings_Ecommerce_*)."
+  ],
+  "predicates": [
+    {
+      "name": "EcomOrderFlow",
+      "providerType": "SqlTable",
+      "table": "EcomOrderFlow",
+      "nameColumn": "OrderFlowName",
+      "compareColumns": "",
+      "serviceCaches": []
+    },
+    {
+      "name": "EcomOrderStates",
+      "providerType": "SqlTable",
+      "table": "EcomOrderStates",
+      "nameColumn": "OrderStateName",
+      "compareColumns": "",
+      "serviceCaches": []
+    },
+    {
+      "name": "EcomOrderStateRules",
+      "providerType": "SqlTable",
+      "table": "EcomOrderStateRules",
+      "nameColumn": "",
+      "compareColumns": "",
+      "serviceCaches": []
+    },
+    {
+      "name": "EcomPayments",
+      "providerType": "SqlTable",
+      "table": "EcomPayments",
+      "nameColumn": "PaymentName",
+      "compareColumns": "",
+      "serviceCaches": [
+        "Dynamicweb.Content.Versioning.CheckOutService",
+        "Dynamicweb.Ecommerce.Orders.PaymentService"
+      ]
+    },
+    {
+      "name": "EcomShippings",
+      "providerType": "SqlTable",
+      "table": "EcomShippings",
+      "nameColumn": "ShippingName",
+      "compareColumns": "",
+      "serviceCaches": [
+        "Dynamicweb.Ecommerce.Orders.ShippingService"
+      ]
+    },
+    {
+      "name": "EcomMethodCountryRelation",
+      "providerType": "SqlTable",
+      "table": "EcomMethodCountryRelation",
+      "nameColumn": "MethodCountryRelMethodId",
+      "compareColumns": "",
+      "serviceCaches": [
+        "Dynamicweb.Ecommerce.Orders.PaymentService",
+        "Dynamicweb.Ecommerce.Orders.ShippingService"
+      ]
+    },
+    {
+      "name": "EcomStockGroups",
+      "providerType": "SqlTable",
+      "table": "EcomStockGroups",
+      "nameColumn": "StockGroupName",
+      "compareColumns": "",
+      "serviceCaches": []
+    },
+    {
+      "name": "EcomStockStatusLine",
+      "providerType": "SqlTable",
+      "table": "EcomStockStatusLine",
+      "nameColumn": "",
+      "compareColumns": "",
+      "serviceCaches": []
+    },
+    {
+      "name": "EcomStockStatusLanguageValue",
+      "providerType": "SqlTable",
+      "table": "EcomStockStatusLanguageValue",
+      "nameColumn": "StockStatusLanguageValueText",
+      "compareColumns": "",
+      "serviceCaches": []
+    },
+    {
+      "name": "EcomOrderField",
+      "providerType": "SqlTable",
+      "table": "EcomOrderField",
+      "nameColumn": "OrderFieldName",
+      "compareColumns": "",
+      "serviceCaches": [
+        "Dynamicweb.Ecommerce.Orders.OrderService"
+      ]
+    },
+    {
+      "name": "EcomOrderLineFields",
+      "providerType": "SqlTable",
+      "table": "EcomOrderLineFields",
+      "nameColumn": "OrderLineFieldName",
+      "compareColumns": "",
+      "serviceCaches": [
+        "Dynamicweb.Ecommerce.Orders.OrderService"
+      ]
+    },
+    {
+      "name": "EcomOrderContexts",
+      "providerType": "SqlTable",
+      "table": "EcomOrderContexts",
+      "nameColumn": "OrderContextName",
+      "compareColumns": "",
+      "serviceCaches": []
+    },
+    {
+      "name": "EcomOrderContextShopRelation",
+      "providerType": "SqlTable",
+      "table": "EcomOrderContextShopRelation",
+      "nameColumn": "",
+      "compareColumns": "",
+      "serviceCaches": []
+    },
+    {
+      "name": "EcomOrderContextAccessUserRelation",
+      "providerType": "SqlTable",
+      "table": "EcomOrderContextAccessUserRelation",
+      "nameColumn": "",
+      "compareColumns": "",
+      "serviceCaches": []
+    },
+    {
+      "name": "EcomTrackAndTrace",
+      "providerType": "SqlTable",
+      "table": "EcomTrackAndTrace",
+      "nameColumn": "TrackAndTraceName",
+      "compareColumns": "",
+      "serviceCaches": []
+    },
+    {
+      "name": "EcomAddressValidatorSettings",
+      "providerType": "SqlTable",
+      "table": "EcomAddressValidatorSettings",
+      "nameColumn": "AddressValidatorName",
+      "compareColumns": "",
+      "serviceCaches": []
+    },
+    {
+      "name": "EcomValidationGroups",
+      "providerType": "SqlTable",
+      "table": "EcomValidationGroups",
+      "nameColumn": "ValidationGroupName",
+      "compareColumns": "",
+      "serviceCaches": []
+    },
+    {
+      "name": "EcomValidationGroupsTranslation",
+      "providerType": "SqlTable",
+      "table": "EcomValidationGroupsTranslation",
+      "nameColumn": "",
+      "compareColumns": "",
+      "serviceCaches": []
+    },
+    {
+      "name": "EcomValidations",
+      "providerType": "SqlTable",
+      "table": "EcomValidations",
+      "nameColumn": "ValidationId",
+      "compareColumns": "",
+      "serviceCaches": []
+    },
+    {
+      "name": "EcomValidationRules",
+      "providerType": "SqlTable",
+      "table": "EcomValidationRules",
+      "nameColumn": "",
+      "compareColumns": "",
+      "serviceCaches": []
+    },
+    {
+      "name": "EcomCountries",
+      "providerType": "SqlTable",
+      "table": "EcomCountries",
+      "nameColumn": "",
+      "compareColumns": "",
+      "serviceCaches": [
+        "Dynamicweb.Ecommerce.International.CountryRelationService",
+        "Dynamicweb.Ecommerce.International.CountryService",
+        "Dynamicweb.Ecommerce.International.VatGroupCountryRelationService",
+        "Dynamicweb.Ecommerce.International.VatGroupService"
+      ]
+    },
+    {
+      "name": "EcomCountryText",
+      "providerType": "SqlTable",
+      "table": "EcomCountryText",
+      "nameColumn": "CountryTextName",
+      "compareColumns": "",
+      "serviceCaches": [
+        "Dynamicweb.Ecommerce.International.CountryRelationService",
+        "Dynamicweb.Ecommerce.International.CountryService",
+        "Dynamicweb.Ecommerce.International.VatGroupCountryRelationService",
+        "Dynamicweb.Ecommerce.International.VatGroupService"
+      ]
+    },
+    {
+      "name": "EcomLanguages",
+      "providerType": "SqlTable",
+      "table": "EcomLanguages",
+      "nameColumn": "LanguageName",
+      "compareColumns": "",
+      "serviceCaches": [
+        "Dynamicweb.Ecommerce.International.LanguageService",
+        "Dynamicweb.SystemTools.TranslationLanguageService"
+      ]
+    },
+    {
+      "name": "EcomCurrencies",
+      "providerType": "SqlTable",
+      "table": "EcomCurrencies",
+      "nameColumn": "CurrencyName",
+      "compareColumns": "",
+      "serviceCaches": [
+        "Dynamicweb.Ecommerce.International.CurrencyService"
+      ]
+    },
+    {
+      "name": "EcomVatGroups",
+      "providerType": "SqlTable",
+      "table": "EcomVatGroups",
+      "nameColumn": "VatGroupName",
+      "compareColumns": "",
+      "serviceCaches": [
+        "Dynamicweb.Ecommerce.International.VatGroupCountryRelationService",
+        "Dynamicweb.Ecommerce.International.VatGroupService"
+      ]
+    },
+    {
+      "name": "EcomVatCountryRelations",
+      "providerType": "SqlTable",
+      "table": "EcomVatCountryRelations",
+      "nameColumn": "",
+      "compareColumns": "",
+      "serviceCaches": [
+        "Dynamicweb.Ecommerce.International.VatGroupCountryRelationService",
+        "Dynamicweb.Ecommerce.International.VatGroupService"
+      ]
+    }
+  ]
+}
