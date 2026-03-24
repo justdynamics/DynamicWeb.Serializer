@@ -18,7 +18,7 @@ Requirements for the DynamicWeb.Serializer milestone. Each maps to roadmap phase
 
 - [x] **SQL-01**: SqlTableProvider serializes any SQL table to YAML using DataGroup XML metadata (Table, NameColumn, CompareColumns)
 - [x] **SQL-02**: Identity resolution matches rows by NameColumn with CompareColumns fallback for empty NameColumn tables
-- [ ] **SQL-03**: FK dependency ordering via topological sort prevents constraint violations during deserialization
+- [x] **SQL-03**: FK dependency ordering via topological sort prevents constraint violations during deserialization
 - [x] **SQL-04**: Structured result objects report rows added/updated/skipped/failed per table
 - [x] **SQL-05**: Source-wins conflict strategy: YAML rows overwrite matched target rows
 
@@ -31,7 +31,7 @@ Requirements for the DynamicWeb.Serializer milestone. Each maps to roadmap phase
 
 ### Cache & Config
 
-- [ ] **CACHE-01**: DW service caches invalidated after SQL table deserialization so admin UI reflects new data
+- [x] **CACHE-01**: DW service caches invalidated after SQL table deserialization so admin UI reflects new data
 - [x] **CACHE-02**: Predicate definitions extended with DataType field for provider routing
 - [x] **CACHE-03**: Existing v1.x configs without DataType default to "Content" (backward compatibility)
 
@@ -89,14 +89,14 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PROV-04 | Phase 14 | Complete |
 | SQL-01 | Phase 13 | Complete |
 | SQL-02 | Phase 13 | Complete |
-| SQL-03 | Phase 15 | Pending |
+| SQL-03 | Phase 15 | Complete |
 | SQL-04 | Phase 13 | Complete |
 | SQL-05 | Phase 13 | Complete |
 | ECOM-01 | Phase 15 | Pending |
 | ECOM-02 | Phase 15 | Pending |
 | ECOM-03 | Phase 15 | Pending |
 | ECOM-04 | Phase 15 | Pending |
-| CACHE-01 | Phase 15 | Pending |
+| CACHE-01 | Phase 15 | Complete |
 | CACHE-02 | Phase 14 | Complete |
 | CACHE-03 | Phase 14 | Complete |
 | UX-01 | Phase 16 | Pending |

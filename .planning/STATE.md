@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: DynamicWeb.Serializer
 status: unknown
-stopped_at: Completed 14-02-PLAN.md
-last_updated: "2026-03-24T10:16:56.038Z"
+stopped_at: Completed 15-01-PLAN.md
+last_updated: "2026-03-24T11:07:44.894Z"
 progress:
   total_phases: 5
   completed_phases: 2
-  total_plans: 5
-  completed_plans: 5
+  total_plans: 7
+  completed_plans: 6
 ---
 
 # Project State
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-23)
 
 **Core value:** Developers can reliably move DynamicWeb database state between environments through source control, with serialized YAML files as the single source of truth.
-**Current focus:** Phase 14 — content-migration-orchestrator
+**Current focus:** Phase 15 — ecommerce-tables-at-scale
 
 ## Current Position
 
-Phase: 15
-Plan: Not started
+Phase: 15 (ecommerce-tables-at-scale) — EXECUTING
+Plan: 2 of 2
 
 ## Performance Metrics
 
@@ -55,6 +55,7 @@ Plan: Not started
 | Phase 13 P03 | 5min | 2 tasks | 5 files |
 | Phase 14 P01 | 9min | 2 tasks | 15 files |
 | Phase 14 P02 | 4min | 2 tasks | 9 files |
+| Phase 15 P01 | 6min | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -75,6 +76,8 @@ Recent decisions affecting current work:
 - [Phase 14]: ContentProvider directly implements ISerializationProvider, delegates to ContentSerializer/ContentDeserializer
 - [Phase 14]: ProviderRegistry.CreateDefault() factory centralizes provider construction across all entry points
 - [Phase 14]: SqlTable commands deleted, unified ContentSync commands dispatch all providers via orchestrator
+- [Phase 15]: ICacheResolver/ICacheInstance interfaces abstract DW AddInManager for testability
+- [Phase 15]: Self-referencing FK filtering in C# as defense-in-depth alongside SQL WHERE
 
 ### Pending Todos
 
@@ -88,6 +91,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-24T10:13:53.371Z
-Stopped at: Completed 14-02-PLAN.md
+Last session: 2026-03-24T11:07:44.888Z
+Stopped at: Completed 15-01-PLAN.md
 Resume file: None
