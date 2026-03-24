@@ -1,89 +1,81 @@
 using DynamicWeb.Serializer.AdminUI.Commands;
 using DynamicWeb.Serializer.AdminUI.Models;
-using Dynamicweb.CoreUI;
-using Dynamicweb.CoreUI.Actions;
-using Dynamicweb.CoreUI.Actions.Implementations;
+using Dynamicweb.Content;
 using Dynamicweb.CoreUI.Data;
-using Dynamicweb.CoreUI.Displays.Information;
 using Dynamicweb.CoreUI.Editors;
 using Dynamicweb.CoreUI.Editors.Inputs;
-using Dynamicweb.CoreUI.Layout;
+using Dynamicweb.CoreUI.Editors.Lists;
+using static Dynamicweb.CoreUI.Editors.Inputs.ListBase;
 using Dynamicweb.CoreUI.Screens;
 
 namespace DynamicWeb.Serializer.AdminUI.Screens;
 
 /// <summary>
-/// Dialog screen for deserializing from a zip file.
-/// Auto-runs a dry-run on load (via query/model) and shows per-table breakdown.
-/// User confirms to execute actual deserialization via DeserializeFromZipCommand.
+/// Full-page screen for importing content from a zip file.
+/// Shows area selector with reload-on-change, then zip content preview and save/import button.
+/// Uses EditScreenBase because WithReloadOnChange does not work inside DW dialogs.
 /// </summary>
-public sealed class DeserializeFromZipScreen : PromptScreenBase<DeserializeFromZipModel>
+public sealed class DeserializeFromZipScreen : EditScreenBase<DeserializeFromZipModel>
 {
     protected override string GetScreenName() => "Import to Database";
 
-    protected override void BuildPromptScreen()
+    protected override void BuildEditScreen()
     {
         var model = Model;
         if (model == null)
             return;
 
-        // Show file name being imported
-        AddComponent(EditorFor(m => m.FileName), "Import Details");
-
-        if (!model.IsValid)
+        // Build all sections in a single group (single tab)
+        var sections = new List<LayoutWrapper>
         {
-            // Show validation error
-            if (!string.IsNullOrEmpty(model.ValidationError))
-            {
-                AddComponent(EditorFor(m => m.ValidationError), "Validation");
-            }
+            new("Import Details",
+            [
+                EditorFor(m => m.FileName),
+                EditorFor(m => m.TargetAreaId)
+            ])
+        };
+
+        if (!string.IsNullOrEmpty(model.ValidationError))
+        {
+            sections.Add(new("Validation",
+            [
+                EditorFor(m => m.ValidationError)
+            ]));
+            AddComponents("Import to Database", sections);
             return;
         }
 
-        // Show dry-run per-table breakdown (PredicateSummary iteration)
-        if (model.DryRunSummary != null)
+        if (!model.IsValid)
         {
-            var breakdownComponents = new List<UiComponentBase?>();
-
-            foreach (var predicate in model.DryRunSummary.Predicates)
-            {
-                var line = $"{predicate.Name} ({predicate.Table}): " +
-                           $"{predicate.Created} new, {predicate.Updated} updated, {predicate.Skipped} skipped";
-                if (predicate.Failed > 0)
-                    line += $", {predicate.Failed} failed";
-
-                breakdownComponents.Add(new TextBlock { Value = line });
-            }
-
-            var totalLine = $"Total: {model.DryRunSummary.TotalCreated} new, " +
-                           $"{model.DryRunSummary.TotalUpdated} updated, " +
-                           $"{model.DryRunSummary.TotalSkipped} skipped";
-            if (model.DryRunSummary.TotalFailed > 0)
-                totalLine += $", {model.DryRunSummary.TotalFailed} failed";
-
-            breakdownComponents.Add(new TextBlock { Value = totalLine });
-
-            AddComponents(breakdownComponents, "Dry-Run Summary");
-
-            // Show warnings if dry-run had errors
-            if (model.DryRunSummary.Errors.Count > 0)
-            {
-                var warningComponents = model.DryRunSummary.Errors
-                    .Select(e => (UiComponentBase?)new TextBlock { Value = $"Warning: {e}" })
-                    .ToList();
-                AddComponents(warningComponents, "Warnings");
-            }
+            AddComponents("Import to Database", sections);
+            return;
         }
-    }
 
-    protected override string GetOkActionName() => "Confirm Import";
+        if (model.TargetAreaIdParsed <= 0)
+        {
+            AddComponents("Import to Database", sections);
+            return;
+        }
 
-    protected override CommandBase<DeserializeFromZipModel>? GetOkCommand()
-    {
-        if (Model?.IsValid != true)
-            return null;
+        // Extract zip and scan content after ShadowEdit sets TargetAreaId
+        model.ReloadWithArea();
 
-        return new DeserializeFromZipCommand { FilePath = Model.FilePath };
+        if (!string.IsNullOrEmpty(model.ValidationError))
+        {
+            sections.Add(new("Validation",
+            [
+                EditorFor(m => m.ValidationError)
+            ]));
+        }
+        else if (!string.IsNullOrEmpty(model.DryRunText))
+        {
+            sections.Add(new("Import Preview",
+            [
+                EditorFor(m => m.DryRunText)
+            ]));
+        }
+
+        AddComponents("Import to Database", sections);
     }
 
     protected override EditorBase? GetEditor(string property)
@@ -91,8 +83,45 @@ public sealed class DeserializeFromZipScreen : PromptScreenBase<DeserializeFromZ
         return property switch
         {
             nameof(DeserializeFromZipModel.FileName) => new Text { Readonly = true },
+            nameof(DeserializeFromZipModel.TargetAreaId) => CreateAreaSelect(),
+            nameof(DeserializeFromZipModel.DryRunText) => new Textarea { Readonly = true },
             nameof(DeserializeFromZipModel.ValidationError) => new Textarea { Readonly = true },
             _ => null
         };
+    }
+
+    protected override CommandBase<DeserializeFromZipModel> GetSaveCommand()
+    {
+        if (Model?.IsValid != true || Model.TargetAreaIdParsed <= 0)
+            return null!;
+
+        return new DeserializeFromZipCommand { FilePath = Model.FilePath, TargetAreaId = Model.TargetAreaIdParsed };
+    }
+
+    private Select CreateAreaSelect()
+    {
+        var options = new List<ListOption>
+        {
+            new() { Value = "", Label = "-- Select area --" }
+        };
+
+        try
+        {
+            var areas = Services.Areas.GetAreas();
+            foreach (var area in areas)
+            {
+                options.Add(new ListOption { Value = area.ID.ToString(), Label = area.Name });
+            }
+        }
+        catch
+        {
+            // DW runtime not available
+        }
+
+        return new Select
+        {
+            SortOrder = OrderBy.Default,
+            Options = options
+        }.WithReloadOnChange();
     }
 }

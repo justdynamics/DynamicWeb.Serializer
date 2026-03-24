@@ -5,7 +5,7 @@ namespace DynamicWeb.Serializer.AdminUI.Queries;
 
 /// <summary>
 /// Query passed from the FileOverviewScreen injector to DeserializeFromZipScreen.
-/// Carries the selected zip file path.
+/// Carries the selected zip file path. TargetAreaId is set via ShadowEdit overlay on the model.
 /// </summary>
 public sealed class DeserializeFromZipQuery : DataQueryModelBase<DeserializeFromZipModel>
 {
@@ -13,6 +13,6 @@ public sealed class DeserializeFromZipQuery : DataQueryModelBase<DeserializeFrom
 
     public override DeserializeFromZipModel? GetModel()
     {
-        return DeserializeFromZipModel.LoadDryRun(FilePath);
+        return DeserializeFromZipModel.Load(FilePath);
     }
 }

@@ -39,7 +39,7 @@ public sealed class SerializerFileOverviewInjector : ScreenInjector<FileOverview
                 {
                     Name = "Import to database",
                     Icon = Icon.Upload,
-                    NodeAction = OpenDialogAction.To<DeserializeFromZipScreen>()
+                    NodeAction = NavigateScreenAction.To<DeserializeFromZipScreen>()
                         .With(new DeserializeFromZipQuery { FilePath = model.FilePath })
                 }
             ]

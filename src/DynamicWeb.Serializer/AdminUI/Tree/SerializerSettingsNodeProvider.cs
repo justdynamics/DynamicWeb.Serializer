@@ -2,6 +2,7 @@ using Dynamicweb.Application.UI;
 using DynamicWeb.Serializer.AdminUI.Queries;
 using DynamicWeb.Serializer.AdminUI.Screens;
 using Dynamicweb.CoreUI.Actions.Implementations;
+using Dynamicweb.CoreUI.Icons;
 using Dynamicweb.CoreUI.Navigation;
 
 namespace DynamicWeb.Serializer.AdminUI.Tree;
@@ -28,6 +29,7 @@ public sealed class SerializerSettingsNodeProvider : NavigationNodeProvider<Syst
             {
                 Id = SerializeNodeId,
                 Name = "Serialize",
+                Icon = Icon.Exchange,
                 Sort = 100,
                 HasSubNodes = true,
                 NodeAction = NavigateScreenAction.To<SerializerSettingsEditScreen>()
@@ -40,6 +42,7 @@ public sealed class SerializerSettingsNodeProvider : NavigationNodeProvider<Syst
             {
                 Id = PredicatesNodeId,
                 Name = "Predicates",
+                Icon = Icon.Filter,
                 Sort = 10,
                 HasSubNodes = false,
                 NodeAction = NavigateScreenAction.To<PredicateListScreen>()
@@ -50,6 +53,7 @@ public sealed class SerializerSettingsNodeProvider : NavigationNodeProvider<Syst
             {
                 Id = LogViewerNodeId,
                 Name = "Log Viewer",
+                Icon = Icon.History,
                 Sort = 20,
                 HasSubNodes = false,
                 NodeAction = NavigateScreenAction.To<LogViewerScreen>()

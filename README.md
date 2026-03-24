@@ -73,9 +73,12 @@ For moving individual pages between environments without a full sync cycle (e.g.
 
 **Import (Deserialize):**
 
-1. Place the zip file in `Files/System/Serializer/Upload/` on the target environment
-2. Run the **Deserialize** command via Management API with the zip filename
-3. The zip is extracted, validated, and applied to the content tree
+1. Upload the zip file to `Files/System/Serializer/Upload/` on the target environment (via DW Files manager or FTP)
+2. Navigate to the zip file in **Files** (asset management)
+3. Click **"Import to database"** in the file's action menu
+4. Select the **target area** to import into (supports importing into a different area than the source)
+5. Review the import preview showing pages and grid rows found in the zip
+6. Click **Save** to execute the import -- content is matched by GUID, new pages are created
 
 ## Content Model
 
@@ -173,7 +176,10 @@ Predicates define which data to synchronize. Manage them at **Settings > Databas
 | **Area** | DynamicWeb area containing the content tree (for Content predicates) |
 | **Page** | Root page for the predicate (content tree picker, for Content predicates) |
 | **Table** | SQL table name (for SqlTable predicates) |
-| **Excludes** | Paths to exclude from sync (one per line, optional) |
+| **Name Column** | Column used as natural key for row identity (for SqlTable predicates, optional) |
+| **Compare Columns** | Columns used for change detection (for SqlTable predicates, optional) |
+| **Service Caches** | DW service cache types to clear after deserialization (for SqlTable predicates, one per line) |
+| **Excludes** | Paths to exclude from sync (one per line, for Content predicates) |
 
 ### Config File
 
@@ -195,10 +201,12 @@ The config file at `Files/Serializer.config.json` is the source of truth. The ad
       "excludes": []
     },
     {
-      "name": "EcomOrderFlows",
+      "name": "Order Flows",
       "providerType": "SqlTable",
-      "tableName": "EcomOrderFlows",
-      "excludes": []
+      "table": "EcomOrderFlow",
+      "nameColumn": "OrderFlowName",
+      "compareColumns": "OrderFlowName,OrderFlowDescription",
+      "serviceCaches": ["Dynamicweb.Ecommerce.Orders.OrderFlowService"]
     }
   ]
 }
@@ -215,9 +223,13 @@ Files/System/{OutputDirectory}/
 
 ## Admin UI
 
-### Serialize Node in Navigation Tree
+### Navigation Tree
 
-The Serialize node appears under **Settings > Database** with a Predicates sub-node.
+The Serialize node appears under **Settings > Database** with sub-nodes:
+
+- **Serialize** -- Settings screen (output directory, log level, dry run, conflict strategy)
+- **Predicates** -- CRUD management of Content and SqlTable predicates
+- **Log Viewer** -- View per-run logs with summaries and actionable advice
 
 ### Serialize Action on Pages
 

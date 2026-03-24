@@ -2,20 +2,23 @@ using DynamicWeb.Serializer.AdminUI.Models;
 using DynamicWeb.Serializer.Configuration;
 using DynamicWeb.Serializer.Infrastructure;
 using DynamicWeb.Serializer.Models;
-using DynamicWeb.Serializer.Providers;
+using DynamicWeb.Serializer.Serialization;
 using Dynamicweb.CoreUI.Data;
 using System.IO.Compression;
 
 namespace DynamicWeb.Serializer.AdminUI.Commands;
 
 /// <summary>
-/// Command that performs actual deserialization from a zip file after user confirms the dry-run.
-/// Called only from DeserializeFromZipScreen after user reviews the dry-run breakdown.
-/// Creates a per-run log file with summary and advice, then returns success.
+/// Command that imports content from an extracted zip directly into the target area.
+/// Uses ContentDeserializer directly (not via orchestrator) since zip import is a
+/// one-time content import, not a full multi-provider deserialization.
+/// Zip is extracted to Files/System/Serializer/ZipImport/ and cleaned up after.
 /// </summary>
 public sealed class DeserializeFromZipCommand : CommandBase<DeserializeFromZipModel>
 {
     public string FilePath { get; set; } = "";
+
+    public int TargetAreaId { get; set; }
 
     private readonly List<string> _logLines = new();
 
@@ -33,9 +36,11 @@ public sealed class DeserializeFromZipCommand : CommandBase<DeserializeFromZipMo
 
     public override CommandResult Handle()
     {
-        string? tempDir = null;
         try
         {
+            if (TargetAreaId <= 0)
+                return new() { Status = CommandResult.ResultType.Invalid, Message = "Target area is required" };
+
             var configPath = ConfigPathResolver.FindConfigFile();
             if (configPath == null)
                 return new() { Status = CommandResult.ResultType.Error, Message = "Serializer.config.json not found" };
@@ -45,65 +50,78 @@ public sealed class DeserializeFromZipCommand : CommandBase<DeserializeFromZipMo
             var systemDir = Path.Combine(filesRoot, "System");
             var paths = config.EnsureDirectories(systemDir);
 
-            // Resolve physical zip path: use webRoot (parent of filesRoot) since DW virtual paths include /Files/ prefix
-            var webRoot = Directory.GetParent(filesRoot)?.FullName ?? filesRoot;
-            var physicalZipPath = Path.Combine(webRoot, FilePath.TrimStart('/', '\\'));
+            // Use the ZipImport directory under System/Serializer/
+            var zipImportDir = Path.Combine(filesRoot, "System", "Serializer", "ZipImport");
+
+            // Clean and recreate
+            if (Directory.Exists(zipImportDir))
+                Directory.Delete(zipImportDir, recursive: true);
+            Directory.CreateDirectory(zipImportDir);
+
+            // Extract zip
+            var physicalZipPath = Dynamicweb.Core.SystemInformation.MapPath(FilePath);
             if (!File.Exists(physicalZipPath))
                 return new() { Status = CommandResult.ResultType.Error, Message = $"Zip file not found: {FilePath}" };
 
-            if (!string.Equals(Path.GetExtension(physicalZipPath), ".zip", StringComparison.OrdinalIgnoreCase))
-                return new() { Status = CommandResult.ResultType.Error, Message = "File is not a .zip archive" };
-
-            // Extract to temp directory
-            tempDir = Path.Combine(Path.GetTempPath(), "Serializer_Import_" + Guid.NewGuid().ToString("N"));
-            Directory.CreateDirectory(tempDir);
-            ZipFile.ExtractToDirectory(physicalZipPath, tempDir);
-
-            // Validate extracted content (D-21)
-            var yamlFiles = Directory.GetFiles(tempDir, "*.yml", SearchOption.AllDirectories);
-            if (yamlFiles.Length == 0)
-            {
-                return new()
-                {
-                    Status = CommandResult.ResultType.Error,
-                    Message = "This zip doesn't contain valid serialization data. Expected YAML files matching configured predicates."
-                };
-            }
+            ZipFile.ExtractToDirectory(physicalZipPath, zipImportDir);
 
             // Create log file
-            var logFile = LogFileWriter.CreateLogFile(paths.Log, "DeserializeZip");
-            Log("=== Serializer DeserializeZip started ===");
+            var logFile = LogFileWriter.CreateLogFile(paths.Log, "ZipImport");
+            Log("=== Serializer ZipImport started ===");
             Log($"Source zip: {FilePath}");
+            Log($"Target area: {TargetAreaId}");
 
-            // Run actual deserialization (NOT dry-run)
-            var orchestrator = ProviderRegistry.CreateOrchestrator(filesRoot);
-            var result = orchestrator.DeserializeAll(config.Predicates, tempDir, Log, isDryRun: false);
+            // Build a synthetic predicate for the target area
+            // This is a one-time content import — use ContentDeserializer directly
+            var importPredicate = new ProviderPredicateDefinition
+            {
+                Name = "ZipImport",
+                ProviderType = "Content",
+                AreaId = TargetAreaId,
+                Path = "/",
+                PageId = 0,
+                Excludes = new List<string>()
+            };
 
-            // Generate advice and build summary
-            var advice = AdviceGenerator.GenerateAdvice(result);
+            var importConfig = new SerializerConfiguration
+            {
+                OutputDirectory = zipImportDir,
+                Predicates = new List<ProviderPredicateDefinition> { importPredicate }
+            };
+
+            var deserializer = new ContentDeserializer(importConfig, log: Log, isDryRun: false, filesRoot: filesRoot);
+            var result = deserializer.Deserialize();
+
+            // Build summary
             var summary = new LogFileSummary
             {
-                Operation = "DeserializeZip",
+                Operation = "ZipImport",
                 Timestamp = DateTime.UtcNow,
                 DryRun = false,
-                Predicates = result.DeserializeResults.Select(r => new PredicateSummary
+                Predicates = new List<PredicateSummary>
                 {
-                    Name = r.TableName,
-                    Table = r.TableName,
-                    Created = r.Created,
-                    Updated = r.Updated,
-                    Skipped = r.Skipped,
-                    Failed = r.Failed,
-                    Errors = r.Errors.ToList()
-                }).ToList(),
-                TotalCreated = result.DeserializeResults.Sum(r => r.Created),
-                TotalUpdated = result.DeserializeResults.Sum(r => r.Updated),
-                TotalSkipped = result.DeserializeResults.Sum(r => r.Skipped),
-                TotalFailed = result.DeserializeResults.Sum(r => r.Failed),
-                Errors = result.Errors.ToList(),
-                Advice = advice
+                    new()
+                    {
+                        Name = "Content Import",
+                        Table = "Content",
+                        Created = result.Created,
+                        Updated = result.Updated,
+                        Skipped = result.Skipped,
+                        Failed = result.Failed,
+                        Errors = result.Errors.ToList()
+                    }
+                },
+                TotalCreated = result.Created,
+                TotalUpdated = result.Updated,
+                TotalSkipped = result.Skipped,
+                TotalFailed = result.Failed,
+                Errors = result.Errors.ToList()
             };
             FlushLog(logFile, summary);
+
+            // Clean up ZipImport dir
+            try { Directory.Delete(zipImportDir, recursive: true); }
+            catch { /* best effort */ }
 
             var message = result.Summary;
             if (result.HasErrors)
@@ -117,16 +135,7 @@ public sealed class DeserializeFromZipCommand : CommandBase<DeserializeFromZipMo
         }
         catch (Exception ex)
         {
-            return new() { Status = CommandResult.ResultType.Error, Message = $"Zip deserialization failed: {ex.Message}" };
-        }
-        finally
-        {
-            // Clean up temp directory (D-20)
-            if (tempDir != null && Directory.Exists(tempDir))
-            {
-                try { Directory.Delete(tempDir, recursive: true); }
-                catch { /* best effort cleanup */ }
-            }
+            return new() { Status = CommandResult.ResultType.Error, Message = $"Zip import failed: {ex.Message}" };
         }
     }
 }

@@ -100,16 +100,10 @@ public class ContentProvider : ISerializationProvider
         {
             var contentDir = Path.Combine(inputRoot, "_content");
 
+            // Fall back to inputRoot if _content/ subdirectory doesn't exist
+            // (supports zips created by ad-hoc serialize which don't use the _content/ prefix)
             if (!Directory.Exists(contentDir))
-            {
-                var msg = $"Content directory '{contentDir}' does not exist. Cannot deserialize.";
-                log?.Invoke(msg);
-                return new ProviderDeserializeResult
-                {
-                    TableName = "Content",
-                    Errors = new[] { msg }
-                };
-            }
+                contentDir = inputRoot;
 
             var config = BuildSerializerConfiguration(predicate, contentDir);
             var deserializer = new ContentDeserializer(config, log: log, isDryRun: isDryRun, filesRoot: _filesRoot);
