@@ -48,9 +48,9 @@ Requirements for the DynamicWeb.Serializer milestone. Each maps to roadmap phase
 
 ### Predicate Config Multi-Provider
 
-- [ ] **PRED-01**: PredicateEditModel carries ProviderType, Table, NameColumn, CompareColumns, ServiceCaches properties for both provider types
-- [ ] **PRED-02**: SavePredicateCommand applies provider-branched validation (Content: AreaId+PageId required; SqlTable: Table required) and preserves ProviderType on updates (D-02)
-- [ ] **PRED-03**: PredicateByIndexQuery maps all ProviderPredicateDefinition fields so SqlTable predicates round-trip without data loss
+- [x] **PRED-01**: PredicateEditModel carries ProviderType, Table, NameColumn, CompareColumns, ServiceCaches properties for both provider types
+- [x] **PRED-02**: SavePredicateCommand applies provider-branched validation (Content: AreaId+PageId required; SqlTable: Table required) and preserves ProviderType on updates (D-02)
+- [x] **PRED-03**: PredicateByIndexQuery maps all ProviderPredicateDefinition fields so SqlTable predicates round-trip without data loss
 - [ ] **PRED-04**: PredicateEditScreen shows ProviderType dropdown with WithReloadOnChange, conditionally rendering Content or SqlTable field groups
 - [ ] **PRED-05**: PredicateListScreen differentiates Content vs SqlTable predicates with Type and Target columns
 

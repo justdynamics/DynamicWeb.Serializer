@@ -139,7 +139,7 @@ Plans:
   5. List screen differentiates predicates by Type and Target columns
 **Plans**: 2 plans
 Plans:
-- [ ] 18-01-PLAN.md — Data layer: PredicateEditModel expansion + query/command multi-provider support + tests
+- [x] 18-01-PLAN.md — Data layer: PredicateEditModel expansion + query/command multi-provider support + tests
 - [ ] 18-02-PLAN.md — UI layer: Edit screen conditional fields + list screen type-aware columns
 
 ## Progress
@@ -165,4 +165,4 @@ Plans:
 | 15. Ecommerce Tables at Scale | v2.0 | 2/2 | Complete    | 2026-03-24 |
 | 16. Admin UX + Rename | v2.0 | 5/5 | Complete   | 2026-03-24 |
 | 17. Project Rename | v2.0 | N/A | Absorbed into P16 | - |
-| 18. Predicate Config Multi-Provider | v2.0 | 0/2 | Planned | - |
+| 18. Predicate Config Multi-Provider | v2.0 | 1/2 | In Progress|  |
