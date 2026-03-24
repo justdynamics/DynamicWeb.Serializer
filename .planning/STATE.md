@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: DynamicWeb.Serializer
 status: unknown
-stopped_at: Completed 15-02-PLAN.md
-last_updated: "2026-03-24T11:22:52.763Z"
+stopped_at: Completed 16-01-PLAN.md
+last_updated: "2026-03-24T12:51:53.693Z"
 progress:
   total_phases: 5
   completed_phases: 3
-  total_plans: 7
-  completed_plans: 7
+  total_plans: 11
+  completed_plans: 8
 ---
 
 # Project State
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-23)
 
 **Core value:** Developers can reliably move DynamicWeb database state between environments through source control, with serialized YAML files as the single source of truth.
-**Current focus:** Phase 15 — ecommerce-tables-at-scale
+**Current focus:** Phase 16 — admin-ux
 
 ## Current Position
 
-Phase: 16
-Plan: Not started
+Phase: 16 (admin-ux) — EXECUTING
+Plan: 2 of 4
 
 ## Performance Metrics
 
@@ -57,6 +57,7 @@ Plan: Not started
 | Phase 14 P02 | 4min | 2 tasks | 9 files |
 | Phase 15 P01 | 6min | 2 tasks | 7 files |
 | Phase 15 P02 | 9min | 2 tasks | 6 files |
+| Phase 16-01 P01 | 9min | 1 tasks | 96 files |
 
 ## Accumulated Context
 
@@ -82,6 +83,7 @@ Recent decisions affecting current work:
 - [Phase 15]: FkDependencyResolver and CacheInvalidator optional nullable constructor params for backward compatibility
 - [Phase 15]: DwCacheResolver uses reflection for AddInManager calls, avoiding compile-time DW version coupling
 - [Phase 15]: Non-SqlTable predicates first, then FK-ordered SqlTable predicates in deserialization
+- [Phase 16-01]: Full project rename from Dynamicweb.ContentSync to DynamicWeb.Serializer with backward-compat config file detection
 
 ### Pending Todos
 
@@ -95,6 +97,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-24T11:19:19.667Z
-Stopped at: Completed 15-02-PLAN.md
+Last session: 2026-03-24T12:51:53.689Z
+Stopped at: Completed 16-01-PLAN.md
 Resume file: None

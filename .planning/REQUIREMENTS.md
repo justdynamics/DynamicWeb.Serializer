@@ -44,7 +44,7 @@ Requirements for the DynamicWeb.Serializer milestone. Each maps to roadmap phase
 
 ### Rename
 
-- [ ] **REN-01**: Project renamed from Dynamicweb.ContentSync to DynamicWeb.Serializer (namespace, assembly, NuGet package)
+- [x] **REN-01**: Project renamed from Dynamicweb.ContentSync to DynamicWeb.Serializer (namespace, assembly, NuGet package)
 
 ## Future Requirements
 
@@ -103,7 +103,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | UX-02 | Phase 16 | Pending |
 | UX-03 | Phase 16 | Pending |
 | UX-04 | Phase 16 | Pending |
-| REN-01 | Phase 17 | Pending |
+| REN-01 | Phase 17 | Complete |
 
 **Coverage:**
 - v2.0 requirements: 21 total
