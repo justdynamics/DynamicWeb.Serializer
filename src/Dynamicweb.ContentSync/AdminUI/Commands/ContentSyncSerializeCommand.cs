@@ -41,8 +41,7 @@ public sealed class ContentSyncSerializeCommand : CommandBase
             _logFile = Path.Combine(paths.Log, "ContentSync.log");
             Log("=== ContentSync Serialize (API) started ===");
 
-            var registry = ProviderRegistry.CreateDefault(filesRoot);
-            var orchestrator = new SerializerOrchestrator(registry);
+            var orchestrator = ProviderRegistry.CreateOrchestrator(filesRoot);
             var result = orchestrator.SerializeAll(config.Predicates, paths.SerializeRoot, Log);
 
             var fileCount = Directory.Exists(paths.SerializeRoot)

@@ -45,8 +45,7 @@ public sealed class ContentSyncDeserializeCommand : CommandBase
             if (yamlCount == 0)
                 return new() { Status = CommandResult.ResultType.Error, Message = "SerializeRoot contains no YAML files" };
 
-            var registry = ProviderRegistry.CreateDefault(filesRoot);
-            var orchestrator = new SerializerOrchestrator(registry);
+            var orchestrator = ProviderRegistry.CreateOrchestrator(filesRoot);
             var result = orchestrator.DeserializeAll(config.Predicates, paths.SerializeRoot, Log, config.DryRun);
 
             var message = result.Summary;

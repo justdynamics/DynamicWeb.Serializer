@@ -1,23 +1,33 @@
 using Dynamicweb.ContentSync.Models;
+using Dynamicweb.ContentSync.Providers.SqlTable;
 
 namespace Dynamicweb.ContentSync.Providers;
 
 /// <summary>
 /// Central dispatch: iterates predicates, resolves providers via ProviderRegistry,
 /// validates each predicate, and aggregates results across all providers.
+/// Supports FK-ordered deserialization and per-predicate cache invalidation.
 /// </summary>
 public class SerializerOrchestrator
 {
     private readonly ProviderRegistry _registry;
+    private readonly FkDependencyResolver? _fkResolver;
+    private readonly CacheInvalidator? _cacheInvalidator;
 
-    public SerializerOrchestrator(ProviderRegistry registry)
+    public SerializerOrchestrator(
+        ProviderRegistry registry,
+        FkDependencyResolver? fkResolver = null,
+        CacheInvalidator? cacheInvalidator = null)
     {
         _registry = registry ?? throw new ArgumentNullException(nameof(registry));
+        _fkResolver = fkResolver;
+        _cacheInvalidator = cacheInvalidator;
     }
 
     /// <summary>
     /// Serialize all predicates, optionally filtered by provider type.
     /// Unknown provider types and failed validations are logged and skipped.
+    /// Note: FK ordering is NOT applied to serialization (order doesn't matter for reads).
     /// </summary>
     public OrchestratorResult SerializeAll(
         List<ProviderPredicateDefinition> predicates,
@@ -60,6 +70,8 @@ public class SerializerOrchestrator
 
     /// <summary>
     /// Deserialize all predicates, optionally filtered by provider type.
+    /// SqlTable predicates are reordered by FK dependency (parents first, children last).
+    /// Cache invalidation runs after each successful predicate deserialize (skipped during dry-run).
     /// Unknown provider types and failed validations are logged and skipped.
     /// </summary>
     public OrchestratorResult DeserializeAll(
@@ -71,6 +83,43 @@ public class SerializerOrchestrator
     {
         var results = new List<ProviderDeserializeResult>();
         var errors = new List<string>();
+
+        // FK ordering: sort SqlTable predicates by dependency order (parents first, children last)
+        // per D-04, D-05. Content and other predicates are unaffected.
+        if (_fkResolver != null)
+        {
+            var sqlTablePredicates = predicates
+                .Where(p => string.Equals(p.ProviderType, "SqlTable", StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            if (sqlTablePredicates.Count > 1)
+            {
+                var tableNames = sqlTablePredicates
+                    .Where(p => !string.IsNullOrEmpty(p.Table))
+                    .Select(p => p.Table!)
+                    .ToList();
+
+                var orderedTables = _fkResolver.GetDeserializationOrder(tableNames);
+
+                // Build a lookup: table name -> position in FK order
+                var orderIndex = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+                for (int i = 0; i < orderedTables.Count; i++)
+                    orderIndex[orderedTables[i]] = i;
+
+                // Reorder: non-SqlTable predicates keep original position (front),
+                // SqlTable predicates are sorted by FK dependency order (after non-SqlTable)
+                var nonSqlPredicates = predicates
+                    .Where(p => !string.Equals(p.ProviderType, "SqlTable", StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+                var sortedSqlPredicates = sqlTablePredicates
+                    .OrderBy(p => orderIndex.TryGetValue(p.Table ?? "", out var idx) ? idx : int.MaxValue)
+                    .ToList();
+
+                predicates = nonSqlPredicates.Concat(sortedSqlPredicates).ToList();
+
+                log?.Invoke($"FK ordering: {string.Join(" -> ", orderedTables)}");
+            }
+        }
 
         foreach (var predicate in predicates)
         {
@@ -97,6 +146,21 @@ public class SerializerOrchestrator
 
             var result = provider.Deserialize(predicate, inputRoot, log, isDryRun);
             results.Add(result);
+
+            // Cache invalidation: clear configured service caches after successful deserialize (per D-08, D-09)
+            // Skip during dry-run (no data was actually written)
+            if (!isDryRun && _cacheInvalidator != null && predicate.ServiceCaches.Count > 0 && !result.HasErrors)
+            {
+                try
+                {
+                    _cacheInvalidator.InvalidateCaches(predicate.ServiceCaches, log);
+                }
+                catch (Exception ex)
+                {
+                    log?.Invoke($"WARNING: Cache invalidation failed for predicate '{predicate.Name}': {ex.Message}");
+                    // Don't fail the overall operation — cache invalidation is best-effort
+                }
+            }
         }
 
         return new OrchestratorResult { DeserializeResults = results, Errors = errors };
