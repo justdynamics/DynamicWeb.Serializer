@@ -34,6 +34,7 @@
     <PackageReference Include="Dynamicweb" Version="10.23.9" />
     <PackageReference Include="Dynamicweb.Content.UI" Version="10.23.9" />
     <PackageReference Include="Dynamicweb.CoreUI.Rendering" Version="10.23.9" />
+    <PackageReference Include="Dynamicweb.Files.UI" Version="10.23.9" />
     <PackageReference Include="YamlDotNet" Version="13.7.1" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="8.0.1" />
     <PackageReference Include="Microsoft.Extensions.FileProviders.Embedded" Version="8.0.15" />
