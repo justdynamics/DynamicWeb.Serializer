@@ -24,10 +24,10 @@ Requirements for the DynamicWeb.Serializer milestone. Each maps to roadmap phase
 
 ### Ecommerce Data Groups
 
-- [ ] **ECOM-01**: OrderFlows and OrderStates serialized and deserialized
-- [ ] **ECOM-02**: Payment and Shipping methods serialized and deserialized
-- [ ] **ECOM-03**: Countries, Currencies, and VAT settings serialized and deserialized
-- [ ] **ECOM-04**: Duplicate DataItemTypes across groups (e.g., EcomMethodCountryRelation) handled without duplicate rows
+- [x] **ECOM-01**: OrderFlows and OrderStates serialized and deserialized
+- [x] **ECOM-02**: Payment and Shipping methods serialized and deserialized
+- [x] **ECOM-03**: Countries, Currencies, and VAT settings serialized and deserialized
+- [x] **ECOM-04**: Duplicate DataItemTypes across groups (e.g., EcomMethodCountryRelation) handled without duplicate rows
 
 ### Cache & Config
 
@@ -92,10 +92,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SQL-03 | Phase 15 | Complete |
 | SQL-04 | Phase 13 | Complete |
 | SQL-05 | Phase 13 | Complete |
-| ECOM-01 | Phase 15 | Pending |
-| ECOM-02 | Phase 15 | Pending |
-| ECOM-03 | Phase 15 | Pending |
-| ECOM-04 | Phase 15 | Pending |
+| ECOM-01 | Phase 15 | Complete |
+| ECOM-02 | Phase 15 | Complete |
+| ECOM-03 | Phase 15 | Complete |
+| ECOM-04 | Phase 15 | Complete |
 | CACHE-01 | Phase 15 | Complete |
 | CACHE-02 | Phase 14 | Complete |
 | CACHE-03 | Phase 14 | Complete |

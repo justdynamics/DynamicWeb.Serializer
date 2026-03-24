@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: DynamicWeb.Serializer
 status: unknown
-stopped_at: Completed 15-01-PLAN.md
-last_updated: "2026-03-24T11:07:44.894Z"
+stopped_at: Completed 15-02-PLAN.md
+last_updated: "2026-03-24T11:19:19.674Z"
 progress:
   total_phases: 5
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 7
-  completed_plans: 6
+  completed_plans: 7
 ---
 
 # Project State
@@ -56,6 +56,7 @@ Plan: 2 of 2
 | Phase 14 P01 | 9min | 2 tasks | 15 files |
 | Phase 14 P02 | 4min | 2 tasks | 9 files |
 | Phase 15 P01 | 6min | 2 tasks | 7 files |
+| Phase 15 P02 | 9min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -78,6 +79,9 @@ Recent decisions affecting current work:
 - [Phase 14]: SqlTable commands deleted, unified ContentSync commands dispatch all providers via orchestrator
 - [Phase 15]: ICacheResolver/ICacheInstance interfaces abstract DW AddInManager for testability
 - [Phase 15]: Self-referencing FK filtering in C# as defense-in-depth alongside SQL WHERE
+- [Phase 15]: FkDependencyResolver and CacheInvalidator optional nullable constructor params for backward compatibility
+- [Phase 15]: DwCacheResolver uses reflection for AddInManager calls, avoiding compile-time DW version coupling
+- [Phase 15]: Non-SqlTable predicates first, then FK-ordered SqlTable predicates in deserialization
 
 ### Pending Todos
 
@@ -91,6 +95,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-24T11:07:44.888Z
-Stopped at: Completed 15-01-PLAN.md
+Last session: 2026-03-24T11:19:19.667Z
+Stopped at: Completed 15-02-PLAN.md
 Resume file: None
