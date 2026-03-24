@@ -12,7 +12,7 @@ Requirements for the DynamicWeb.Serializer milestone. Each maps to roadmap phase
 - [x] **PROV-01**: Pluggable ISerializationProvider interface with Serialize/Deserialize/DryRun contract
 - [x] **PROV-02**: Provider registry mapping data type strings to provider instances
 - [x] **PROV-03**: Existing ContentSerializer/ContentDeserializer wrapped as ContentProvider adapter
-- [ ] **PROV-04**: Orchestrator coordinates multiple providers based on predicate data types
+- [x] **PROV-04**: Orchestrator coordinates multiple providers based on predicate data types
 
 ### SQL Table Serialization
 
@@ -86,7 +86,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PROV-01 | Phase 13 | Complete |
 | PROV-02 | Phase 13 | Complete |
 | PROV-03 | Phase 14 | Complete |
-| PROV-04 | Phase 14 | Pending |
+| PROV-04 | Phase 14 | Complete |
 | SQL-01 | Phase 13 | Complete |
 | SQL-02 | Phase 13 | Complete |
 | SQL-03 | Phase 15 | Pending |

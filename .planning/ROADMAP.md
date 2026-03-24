@@ -51,7 +51,7 @@
 **Milestone Goal:** Broaden from content-only sync to full database serialization with a pluggable provider architecture, starting with ecommerce settings tables, admin UX improvements, and project rename.
 
 - [x] **Phase 13: Provider Foundation + SqlTableProvider Proof** - ISerializationProvider interface, provider registry, and SqlTableProvider proven on EcomOrderFlow round-trip (completed 2026-03-23)
-- [ ] **Phase 14: Content Migration + Orchestrator** - ContentProvider adapter wraps existing serializers, orchestrator routes predicates by data type
+- [x] **Phase 14: Content Migration + Orchestrator** - ContentProvider adapter wraps existing serializers, orchestrator routes predicates by data type (completed 2026-03-24)
 - [ ] **Phase 15: Ecommerce Tables at Scale** - All ~15 ecommerce settings tables with FK ordering, cache invalidation, and duplicate DataItemType handling
 - [ ] **Phase 16: Admin UX** - Log viewer, asset management deserialize action, menu relocation, scheduled task deprecation
 - [ ] **Phase 17: Project Rename** - Rename from Dynamicweb.ContentSync to DynamicWeb.Serializer (namespace, assembly, NuGet package)
@@ -86,7 +86,7 @@ Plans:
 **Plans**: 2 plans
 Plans:
 - [x] 14-01-PLAN.md — ConfigLoader migration to ProviderPredicateDefinition + ContentProvider adapter
-- [ ] 14-02-PLAN.md — SerializerOrchestrator + unified commands + scheduled task updates
+- [x] 14-02-PLAN.md — SerializerOrchestrator + unified commands + scheduled task updates
 
 ### Phase 15: Ecommerce Tables at Scale
 **Goal**: All ecommerce settings tables (~15) serialize and deserialize reliably with correct FK ordering, cache invalidation, and no duplicate rows from shared DataItemTypes
@@ -140,7 +140,7 @@ Plans:
 | 11. Permission Serialization | v1.3 | 1/1 | Complete | 2026-03-22 |
 | 12. Permission Deserialization + Docs | v1.3 | 2/2 | Complete | 2026-03-23 |
 | 13. Provider Foundation + SqlTableProvider Proof | v2.0 | 3/3 | Complete    | 2026-03-23 |
-| 14. Content Migration + Orchestrator | v2.0 | 1/2 | In Progress|  |
+| 14. Content Migration + Orchestrator | v2.0 | 2/2 | Complete   | 2026-03-24 |
 | 15. Ecommerce Tables at Scale | v2.0 | 0/0 | Not started | - |
 | 16. Admin UX | v2.0 | 0/0 | Not started | - |
 | 17. Project Rename | v2.0 | 0/0 | Not started | - |
