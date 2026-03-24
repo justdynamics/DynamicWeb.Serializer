@@ -1,4 +1,5 @@
 using Dynamicweb.ContentSync.Configuration;
+using Dynamicweb.ContentSync.Models;
 using Xunit;
 
 namespace Dynamicweb.ContentSync.Tests.Configuration;
@@ -390,5 +391,116 @@ public class ConfigLoaderTests : IDisposable
         var config = ConfigLoader.Load(path);
 
         Assert.Equal(ConflictStrategy.SourceWins, config.ConflictStrategy);
+    }
+
+    // -------------------------------------------------------------------------
+    // ProviderPredicateDefinition migration tests
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public void Load_ContentPredicate_WithoutProviderType_DefaultsToContent()
+    {
+        var json = """
+            {
+              "outputDirectory": "/serialization",
+              "predicates": [
+                {
+                  "name": "Customer Center",
+                  "path": "/Customer Center",
+                  "areaId": 1
+                }
+              ]
+            }
+            """;
+        var path = WriteConfigFile(json);
+
+        var config = ConfigLoader.Load(path);
+
+        Assert.Single(config.Predicates);
+        Assert.IsType<ProviderPredicateDefinition>(config.Predicates[0]);
+        Assert.Equal("Content", config.Predicates[0].ProviderType);
+        Assert.Equal("/Customer Center", config.Predicates[0].Path);
+        Assert.Equal(1, config.Predicates[0].AreaId);
+    }
+
+    [Fact]
+    public void Load_SqlTablePredicate_ReturnsProviderPredicateDefinitionWithTableFields()
+    {
+        var json = """
+            {
+              "outputDirectory": "/serialization",
+              "predicates": [
+                {
+                  "name": "Order Flows",
+                  "providerType": "SqlTable",
+                  "table": "EcomOrderFlow",
+                  "nameColumn": "OrderFlowName",
+                  "compareColumns": "OrderFlowName,OrderFlowDescription"
+                }
+              ]
+            }
+            """;
+        var path = WriteConfigFile(json);
+
+        var config = ConfigLoader.Load(path);
+
+        Assert.Single(config.Predicates);
+        Assert.Equal("SqlTable", config.Predicates[0].ProviderType);
+        Assert.Equal("EcomOrderFlow", config.Predicates[0].Table);
+        Assert.Equal("OrderFlowName", config.Predicates[0].NameColumn);
+        Assert.Equal("OrderFlowName,OrderFlowDescription", config.Predicates[0].CompareColumns);
+    }
+
+    [Fact]
+    public void Load_MixedPredicates_ReturnsBothWithCorrectProviderTypes()
+    {
+        var json = """
+            {
+              "outputDirectory": "/serialization",
+              "predicates": [
+                {
+                  "name": "Customer Center",
+                  "path": "/Customer Center",
+                  "areaId": 1
+                },
+                {
+                  "name": "Order Flows",
+                  "providerType": "SqlTable",
+                  "table": "EcomOrderFlow",
+                  "nameColumn": "OrderFlowName"
+                }
+              ]
+            }
+            """;
+        var path = WriteConfigFile(json);
+
+        var config = ConfigLoader.Load(path);
+
+        Assert.Equal(2, config.Predicates.Count);
+        Assert.Equal("Content", config.Predicates[0].ProviderType);
+        Assert.Equal("SqlTable", config.Predicates[1].ProviderType);
+    }
+
+    [Fact]
+    public void Load_SqlTablePredicate_MissingPath_DoesNotThrow()
+    {
+        var json = """
+            {
+              "outputDirectory": "/serialization",
+              "predicates": [
+                {
+                  "name": "Order Flows",
+                  "providerType": "SqlTable",
+                  "table": "EcomOrderFlow",
+                  "nameColumn": "OrderFlowName"
+                }
+              ]
+            }
+            """;
+        var path = WriteConfigFile(json);
+
+        // Should NOT throw — SqlTable predicates don't require path/areaId
+        var config = ConfigLoader.Load(path);
+        Assert.Single(config.Predicates);
     }
 }
