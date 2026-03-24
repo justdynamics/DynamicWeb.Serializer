@@ -53,8 +53,8 @@
 - [x] **Phase 13: Provider Foundation + SqlTableProvider Proof** - ISerializationProvider interface, provider registry, and SqlTableProvider proven on EcomOrderFlow round-trip (completed 2026-03-23)
 - [x] **Phase 14: Content Migration + Orchestrator** - ContentProvider adapter wraps existing serializers, orchestrator routes predicates by data type (completed 2026-03-24)
 - [x] **Phase 15: Ecommerce Tables at Scale** - All ~15 ecommerce settings tables with FK ordering, cache invalidation, and duplicate DataItemType handling (completed 2026-03-24)
-- [ ] **Phase 16: Admin UX** - Log viewer, asset management deserialize action, menu relocation, scheduled task deprecation
-- [ ] **Phase 17: Project Rename** - Rename from Dynamicweb.ContentSync to DynamicWeb.Serializer (namespace, assembly, NuGet package)
+- [ ] **Phase 16: Admin UX + Rename** - Project rename, log viewer, asset management deserialize action, menu relocation, scheduled task deprecation
+- [ ] **Phase 17: Project Rename** - Absorbed into Phase 16 (REN-01 pulled forward as Wave 1)
 
 ## Phase Details
 
@@ -103,30 +103,32 @@ Plans:
 - [x] 15-01-PLAN.md — FkDependencyResolver + CacheInvalidator + ServiceCaches config field
 - [x] 15-02-PLAN.md — Orchestrator FK/cache integration + ecommerce predicate config documentation
 
-### Phase 16: Admin UX
-**Goal**: Users have a log viewer with guided advice, can deserialize from asset management, find the settings screen at its new location, and scheduled tasks are deprecated
+### Phase 16: Admin UX + Rename
+**Goal**: Project renamed to DynamicWeb.Serializer, users have a log viewer with guided advice, can deserialize from asset management, find the settings screen at its new location, and scheduled tasks are deprecated
 **Depends on**: Phase 14 (orchestrator produces structured logs), Phase 15 (ecommerce providers generate log data)
-**Requirements**: UX-01, UX-02, UX-03, UX-04
-**Success Criteria** (what must be TRUE):
-  1. Log viewer screen shows per-provider summaries (rows added/updated/skipped/failed) with actionable advice (e.g., "Create missing groups: X, Y")
-  2. A "Deserialize" action appears on zip files in the DW asset management file detail page
-  3. Admin tree node is located at Settings > Database > Serialize (moved from Settings > Content > Sync)
-  4. Scheduled tasks are deprecated with a logged warning directing users to API commands as the replacement
-**Plans**: TBD
-
-### Phase 17: Project Rename
-**Goal**: The project identity is updated from Dynamicweb.ContentSync to DynamicWeb.Serializer across all artifacts
-**Depends on**: Phase 16 (all feature work complete before rename)
-**Requirements**: REN-01
+**Requirements**: REN-01, UX-01, UX-02, UX-03, UX-04
 **Success Criteria** (what must be TRUE):
   1. Root namespace is DynamicWeb.Serializer and the assembly/NuGet package is named DynamicWeb.Serializer
-  2. Config file path, log file path, and all user-facing strings reference "Serializer" not "ContentSync"
-  3. The built DLL loads and functions in a DynamicWeb 10.x instance under the new name
-**Plans**: TBD
+  2. Log viewer screen shows per-provider summaries (rows added/updated/skipped/failed) with actionable advice (e.g., "Create missing groups: X, Y")
+  3. A "Deserialize" action appears on zip files in the DW asset management file detail page
+  4. Admin tree node is located at Settings > Database > Serialize (moved from Settings > Content > Sync)
+  5. Scheduled tasks are deprecated with API commands documented as the replacement
+**Plans**: 4 plans
+Plans:
+- [ ] 16-01-PLAN.md — Full project rename: namespace, assembly, csproj, API commands, config file compat
+- [ ] 16-02-PLAN.md — Log infrastructure (LogFileWriter, AdviceGenerator) + tree node relocation + per-run logging
+- [ ] 16-03-PLAN.md — Log viewer screen with file selection, summary display, and advice
+- [ ] 16-04-PLAN.md — Asset management zip deserialize injector and command
+
+### Phase 17: Project Rename
+**Goal**: Absorbed into Phase 16 Wave 1 (REN-01 pulled forward to avoid double-touching new code)
+**Depends on**: N/A
+**Requirements**: REN-01 (covered in Phase 16)
+**Plans**: 0 plans (absorbed into Phase 16)
 
 ## Progress
 
-**Execution Order:** Phases 13 -> 14 -> 15 -> 16 -> 17
+**Execution Order:** Phases 13 -> 14 -> 15 -> 16 (Phase 17 absorbed into 16)
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
@@ -145,5 +147,5 @@ Plans:
 | 13. Provider Foundation + SqlTableProvider Proof | v2.0 | 3/3 | Complete    | 2026-03-23 |
 | 14. Content Migration + Orchestrator | v2.0 | 2/2 | Complete    | 2026-03-24 |
 | 15. Ecommerce Tables at Scale | v2.0 | 2/2 | Complete    | 2026-03-24 |
-| 16. Admin UX | v2.0 | 0/0 | Not started | - |
-| 17. Project Rename | v2.0 | 0/0 | Not started | - |
+| 16. Admin UX + Rename | v2.0 | 0/4 | Not started | - |
+| 17. Project Rename | v2.0 | N/A | Absorbed into P16 | - |
