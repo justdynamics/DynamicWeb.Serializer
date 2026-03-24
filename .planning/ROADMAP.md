@@ -165,4 +165,4 @@ Plans:
 | 15. Ecommerce Tables at Scale | v2.0 | 2/2 | Complete    | 2026-03-24 |
 | 16. Admin UX + Rename | v2.0 | 5/5 | Complete   | 2026-03-24 |
 | 17. Project Rename | v2.0 | N/A | Absorbed into P16 | - |
-| 18. Predicate Config Multi-Provider | v2.0 | 2/2 | Complete   | 2026-03-24 |
+| 18. Predicate Config Multi-Provider | v2.0 | 2/2 | Complete    | 2026-03-24 |
