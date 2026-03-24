@@ -59,7 +59,7 @@ Developers can reliably move DynamicWeb database state between environments thro
 - [ ] Rename project to DynamicWeb.Serializer
 - [x] Pluggable provider architecture per data group — v2.0 Phase 13
 - [x] SqlTableProvider for generic SQL table serialization — v2.0 Phase 13
-- [ ] Migrate existing ContentProvider into provider architecture
+- [x] Migrate existing ContentProvider into provider architecture — v2.0 Phase 14
 - [ ] Ecommerce settings serialization (~15 SQL tables)
 - [ ] Settings & Schema serialization (~25 items)
 - [ ] Users, Marketing, PIM, Apps serialization (~30 tables)
@@ -163,4 +163,4 @@ This document evolves at phase transitions and milestone boundaries.
 - **v1.3 Permissions** — Permission serialization/deserialization with safety fallback (2026-03-23)
 
 ---
-*Last updated: 2026-03-23 after Phase 13 complete — provider architecture + SqlTableProvider proven*
+*Last updated: 2026-03-24 after Phase 14 complete — ContentProvider adapter + orchestrator wired*
