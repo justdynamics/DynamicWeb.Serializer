@@ -15,6 +15,7 @@
 
 using Dynamicweb.Content;
 using Dynamicweb.ContentSync.Configuration;
+using Dynamicweb.ContentSync.Models;
 using Dynamicweb.ContentSync.Serialization;
 using Xunit;
 
@@ -47,11 +48,12 @@ public class CustomerCenterSerializationTests : IDisposable
         return new SyncConfiguration
         {
             OutputDirectory = outputDir,
-            Predicates = new List<PredicateDefinition>
+            Predicates = new List<ProviderPredicateDefinition>
             {
-                new PredicateDefinition
+                new ProviderPredicateDefinition
                 {
                     Name = "CustomerCenter",
+                    ProviderType = "Content",
                     AreaId = areaId,
                     Path = pagePath,
                     Excludes = new List<string>()
