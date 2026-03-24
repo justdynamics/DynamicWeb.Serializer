@@ -19,7 +19,7 @@ Source Environment                          Target Environment
   DynamicWeb DB                               DynamicWeb DB
        |                                           ^
        | Serialize                                 | Deserialize
-       | (scheduled task or API)                   | (API call after deploy)
+       | (Management API)                          | (Management API after deploy)
        v                                           |
   Files/System/ContentSync/                   Files/System/ContentSync/
        SerializeRoot/                              SerializeRoot/
@@ -36,7 +36,7 @@ Source Environment                          Target Environment
 **Steps:**
 
 1. **Configure predicates** in the admin UI (Settings > Content > Sync > Predicates) pointing to the content trees you want to sync
-2. **Serialize** — run via scheduled task, Management API, or DW CLI:
+2. **Serialize** — run via Management API or DW CLI:
    ```bash
    # Management API
    curl -X POST https://source.example.com/Admin/Api/ContentSyncSerialize \
@@ -47,7 +47,7 @@ Source Environment                          Target Environment
    ```
 3. **Commit the YAML files** to your Git repository
 4. **Deploy to target environment** — the YAML files arrive via Git pull/deploy pipeline
-5. **Deserialize** — trigger immediately after deploy via API or CLI (no waiting for scheduled tasks):
+5. **Deserialize** — trigger immediately after deploy via API or CLI:
    ```bash
    # Management API
    curl -X POST https://target.example.com/Admin/Api/ContentSyncDeserialize \
@@ -74,7 +74,7 @@ For moving individual pages between environments without a full sync cycle (e.g.
 **Import (Deserialize):**
 
 1. Place the zip file in `Files/System/ContentSync/Upload/` on the target environment
-2. Run the **Deserialize scheduled task** with the **Zip File** parameter set to the filename (e.g. `ContentSync_CustomerCenter_2026-03-22.zip`)
+2. Run the **Deserialize** command via Management API with the zip filename
 3. The zip is extracted, validated, and applied to the content tree
 
 ## Content Model
@@ -145,7 +145,7 @@ All permission actions are logged:
 - **Skipped** — a group permission was skipped because the group was not found on the target
 - **Safety fallback triggered** — Anonymous was set to None due to a missing group
 
-Check the scheduled task logs or Management API response for details.
+Check the Management API response or log files for details.
 
 ## Configuration
 
@@ -203,21 +203,10 @@ The config file at `Files/ContentSync.config.json` is the source of truth. The a
 
 ```
 Files/System/{OutputDirectory}/
-  SerializeRoot/     YAML files — scheduled tasks read/write here
+  SerializeRoot/     YAML files — Management API reads/writes here
   Upload/            Drop .zip files here for zip-based import
   Download/          Ad-hoc serialize saves zip copies here
 ```
-
-## Scheduled Tasks
-
-Two scheduled tasks are available in the DynamicWeb admin at **Settings > Integration > Scheduled Tasks**:
-
-| Task | Description |
-|------|-------------|
-| **ContentSync - Serialize** | Serializes content matching all predicates to YAML in `SerializeRoot/` |
-| **ContentSync - Deserialize** | Deserializes YAML from `SerializeRoot/` (folder mode) or from a zip in `Upload/` (zip mode) |
-
-The Deserialize task has an optional **Zip File** parameter. Leave empty for folder mode, or set to a filename (e.g. `import.zip`) to import from the Upload folder.
 
 ## Admin UI
 
@@ -289,7 +278,7 @@ Deploy to target (code + YAML files land in SerializeRoot/)
         ↓
 POST /Admin/Api/ContentSyncDeserialize
         ↓
-Content is immediately applied — no scheduled task delay
+Content is immediately applied
 ```
 
 ## Installation
