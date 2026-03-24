@@ -1,8 +1,7 @@
 # Dynamicweb.ContentSync
 
 A DynamicWeb AppStore app that serializes and deserializes content trees to/from YAML files on disk, enabling content to be version-controlled and deployed alongside code.
-
-The DynamicWeb equivalent of **Sitecore Unicorn** — replacing manual content sync with automated, developer-friendly content synchronization.
+Replacing manual content sync with automated, developer-friendly content synchronization.
 
 ## How It Works
 
