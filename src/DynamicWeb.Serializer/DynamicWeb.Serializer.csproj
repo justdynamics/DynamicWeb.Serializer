@@ -1,0 +1,42 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>DynamicWeb.Serializer</RootNamespace>
+    <AssemblyName>DynamicWeb.Serializer</AssemblyName>
+    <AddRazorSupportForMvc>true</AddRazorSupportForMvc>
+    <GenerateEmbeddedFilesManifest>true</GenerateEmbeddedFilesManifest>
+
+    <!-- NuGet package metadata -->
+    <PackageId>DynamicWeb.Serializer</PackageId>
+    <Version>0.1.0-beta</Version>
+    <AssemblyVersion>0.1.0.0</AssemblyVersion>
+    <Title>DynamicWeb Serializer</Title>
+    <Description>Serialize and deserialize DynamicWeb database state to YAML files for version control and environment sync.</Description>
+    <Authors>DynamicWeb Serializer Contributors</Authors>
+    <PackageProjectUrl>https://github.com/dynamicweb/DynamicWeb.Serializer</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/dynamicweb/DynamicWeb.Serializer</RepositoryUrl>
+    <PackageTags>dynamicweb-app-store task dw10 addin</PackageTags>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="wwwroot/**/*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Dynamicweb" Version="10.23.9" />
+    <PackageReference Include="Dynamicweb.Content.UI" Version="10.23.9" />
+    <PackageReference Include="Dynamicweb.CoreUI.Rendering" Version="10.23.9" />
+    <PackageReference Include="YamlDotNet" Version="13.7.1" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="8.0.1" />
+    <PackageReference Include="Microsoft.Extensions.FileProviders.Embedded" Version="8.0.15" />
+  </ItemGroup>
+
+</Project>
