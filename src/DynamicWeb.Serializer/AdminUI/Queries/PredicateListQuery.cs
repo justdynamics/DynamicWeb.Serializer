@@ -15,12 +15,20 @@ public sealed class PredicateListQuery : DataQueryModelBase<DataListViewModel<Pr
             return new DataListViewModel<PredicateListModel>();
 
         var config = ConfigLoader.Load(configPath);
-        var items = config.Predicates.Select((p, i) => new PredicateListModel
+        var items = config.Predicates.Select((p, i) =>
         {
-            Index = i,
-            Name = p.Name,
-            Path = p.Path,
-            AreaName = Services.Areas.GetArea(p.AreaId)?.Name ?? $"Area {p.AreaId}"
+            string type = p.ProviderType == "SqlTable" ? "SQL Table" : "Content";
+            string target = p.ProviderType == "SqlTable"
+                ? p.Table ?? "(no table)"
+                : $"{(Services.Areas?.GetArea(p.AreaId)?.Name ?? $"Area {p.AreaId}")}: {p.Path}";
+
+            return new PredicateListModel
+            {
+                Index = i,
+                Name = p.Name,
+                Type = type,
+                Target = target
+            };
         });
 
         return new DataListViewModel<PredicateListModel>

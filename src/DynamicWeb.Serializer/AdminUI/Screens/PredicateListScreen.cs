@@ -13,7 +13,7 @@ namespace DynamicWeb.Serializer.AdminUI.Screens;
 
 public sealed class PredicateListScreen : ListScreenBase<PredicateListModel>
 {
-    protected override string GetScreenName() => "Content Sync Predicates";
+    protected override string GetScreenName() => "Serializer Predicates";
 
     protected override IEnumerable<ListViewMapping> GetViewMappings() =>
     [
@@ -22,8 +22,8 @@ public sealed class PredicateListScreen : ListScreenBase<PredicateListModel>
             Columns =
             [
                 CreateMapping(m => m.Name),
-                CreateMapping(m => m.Path),
-                CreateMapping(m => m.AreaName)
+                CreateMapping(m => m.Type),
+                CreateMapping(m => m.Target)
             ]
         }
     ];

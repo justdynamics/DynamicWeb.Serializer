@@ -9,9 +9,9 @@ public sealed class PredicateListModel : DataViewModelBase
     [ConfigurableProperty("Name")]
     public string Name { get; set; } = string.Empty;
 
-    [ConfigurableProperty("Path")]
-    public string Path { get; set; } = string.Empty;
+    [ConfigurableProperty("Type")]
+    public string Type { get; set; } = string.Empty;
 
-    [ConfigurableProperty("Area")]
-    public string AreaName { get; set; } = string.Empty;
+    [ConfigurableProperty("Target")]
+    public string Target { get; set; } = string.Empty;
 }
