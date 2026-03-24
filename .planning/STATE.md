@@ -3,10 +3,10 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: DynamicWeb.Serializer
 status: unknown
-stopped_at: Completed 16-05-PLAN.md
-last_updated: "2026-03-24T14:59:07.136Z"
+stopped_at: Phase 18 context gathered
+last_updated: "2026-03-24T18:31:42.902Z"
 progress:
-  total_phases: 5
+  total_phases: 6
   completed_phases: 4
   total_plans: 12
   completed_plans: 12
@@ -95,6 +95,10 @@ Recent decisions affecting current work:
 - [Phase 16]: IsPathUnderDirectory/IsZipExtension extracted as public static for direct unit testing
 - [Phase 16-admin-ux]: webRoot = Directory.GetParent(filesRoot) for DW virtual path resolution (avoids doubled /Files/ segment)
 
+### Roadmap Evolution
+
+- Phase 18 added: Predicate Config Multi-Provider Support — Admin UI predicate edit/list screens support both Content and SqlTable provider types
+
 ### Pending Todos
 
 None yet.
@@ -107,6 +111,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-24T14:59:07.133Z
-Stopped at: Completed 16-05-PLAN.md
-Resume file: None
+Last session: 2026-03-24T18:31:42.898Z
+Stopped at: Phase 18 context gathered
+Resume file: .planning/phases/18-predicate-config-multi-provider/18-CONTEXT.md
