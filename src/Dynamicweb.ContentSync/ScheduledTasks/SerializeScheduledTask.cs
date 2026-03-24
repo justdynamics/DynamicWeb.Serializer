@@ -1,5 +1,5 @@
 using Dynamicweb.ContentSync.Configuration;
-using Dynamicweb.ContentSync.Serialization;
+using Dynamicweb.ContentSync.Providers;
 using Dynamicweb.Extensibility.AddIns;
 using Dynamicweb.Scheduling;
 
@@ -7,7 +7,7 @@ namespace Dynamicweb.ContentSync.ScheduledTasks;
 
 [AddInName("ContentSync.Serialize")]
 [AddInLabel("ContentSync - Serialize")]
-[AddInDescription("Serializes DynamicWeb content trees to YAML files on disk based on ContentSync.config.json predicates.")]
+[AddInDescription("Serializes DynamicWeb content and data to YAML files on disk based on ContentSync.config.json predicates. Dispatches all providers (Content, SqlTable) via orchestrator.")]
 public class SerializeScheduledTask : BaseScheduledTaskAddIn
 {
     private string? _logFile;
@@ -33,7 +33,7 @@ public class SerializeScheduledTask : BaseScheduledTaskAddIn
             Log($"OutputDirectory: {config.OutputDirectory}");
             Log($"Predicates: {config.Predicates.Count}");
             foreach (var p in config.Predicates)
-                Log($"  Predicate: name={p.Name}, path={p.Path}, areaId={p.AreaId}");
+                Log($"  Predicate: name={p.Name}, providerType={p.ProviderType}");
 
             // Resolve and ensure all subdirectories exist
             var filesDir = Path.GetDirectoryName(configPath)!;
@@ -43,19 +43,24 @@ public class SerializeScheduledTask : BaseScheduledTaskAddIn
             Log("=== ContentSync Serialize started ===");
             Log($"SerializeRoot: {paths.SerializeRoot}");
 
-            // Use serializeRoot subfolder for YAML output
-            var serializeConfig = config with { OutputDirectory = paths.SerializeRoot };
-
-            var serializer = new ContentSerializer(serializeConfig, log: Log);
-            serializer.Serialize();
+            // Use orchestrator to dispatch all predicates to correct providers
+            var registry = ProviderRegistry.CreateDefault(filesDir);
+            var orchestrator = new SerializerOrchestrator(registry);
+            var result = orchestrator.SerializeAll(config.Predicates, paths.SerializeRoot, Log);
 
             // Report what was written
             var fileCount = Directory.Exists(paths.SerializeRoot)
                 ? Directory.GetFiles(paths.SerializeRoot, "*.yml", SearchOption.AllDirectories).Length
                 : 0;
-            Log($"Serialization complete. Files written: {fileCount}");
+            Log($"Serialization complete. Files written: {fileCount}. {result.Summary}");
 
-            return true;
+            if (result.HasErrors)
+            {
+                foreach (var error in result.Errors)
+                    Log($"ERROR: {error}");
+            }
+
+            return !result.HasErrors;
         }
         catch (Exception ex)
         {

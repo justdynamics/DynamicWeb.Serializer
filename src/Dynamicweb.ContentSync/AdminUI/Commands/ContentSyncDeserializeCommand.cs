@@ -1,15 +1,15 @@
 using Dynamicweb.ContentSync.Configuration;
-using Dynamicweb.ContentSync.Serialization;
+using Dynamicweb.ContentSync.Providers;
 using Dynamicweb.CoreUI.Data;
 
 namespace Dynamicweb.ContentSync.AdminUI.Commands;
 
 /// <summary>
-/// API-callable command that triggers ContentSync deserialization immediately.
+/// API-callable command that triggers deserialization for ALL configured providers.
 /// Use via DW CLI: dw command ContentSyncDeserialize
 /// Or via Management API: POST /Admin/Api/ContentSyncDeserialize
 ///
-/// Runs folder-mode deserialization from SerializeRoot/ using the current config.
+/// Uses SerializerOrchestrator to dispatch predicates to correct providers (Content, SqlTable, etc.).
 /// </summary>
 public sealed class ContentSyncDeserializeCommand : CommandBase
 {
@@ -45,11 +45,11 @@ public sealed class ContentSyncDeserializeCommand : CommandBase
             if (yamlCount == 0)
                 return new() { Status = CommandResult.ResultType.Error, Message = "SerializeRoot contains no YAML files" };
 
-            var effectiveConfig = config with { OutputDirectory = paths.SerializeRoot };
-            var deserializer = new ContentDeserializer(effectiveConfig, log: Log, isDryRun: config.DryRun, filesRoot: filesRoot);
-            var result = deserializer.Deserialize();
+            var registry = ProviderRegistry.CreateDefault(filesRoot);
+            var orchestrator = new SerializerOrchestrator(registry);
+            var result = orchestrator.DeserializeAll(config.Predicates, paths.SerializeRoot, Log, config.DryRun);
 
-            var message = $"{result.Created} created, {result.Updated} updated, {result.Skipped} skipped, {result.Failed} failed.";
+            var message = result.Summary;
             if (result.HasErrors)
                 message += $" Errors: {string.Join("; ", result.Errors)}";
 

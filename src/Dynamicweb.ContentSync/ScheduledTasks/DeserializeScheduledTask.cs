@@ -1,6 +1,6 @@
 using System.IO.Compression;
 using Dynamicweb.ContentSync.Configuration;
-using Dynamicweb.ContentSync.Serialization;
+using Dynamicweb.ContentSync.Providers;
 using Dynamicweb.Extensibility.AddIns;
 using Dynamicweb.Extensibility.Editors;
 using Dynamicweb.Scheduling;
@@ -9,7 +9,7 @@ namespace Dynamicweb.ContentSync.ScheduledTasks;
 
 [AddInName("ContentSync.Deserialize")]
 [AddInLabel("ContentSync - Deserialize")]
-[AddInDescription("Deserializes YAML content files to DynamicWeb database. Default: folder mode (reads from serializeRoot). Set Zip File to a filename in the upload folder for zip-based import.")]
+[AddInDescription("Deserializes YAML content and data files to DynamicWeb database. Default: folder mode (reads from serializeRoot). Set Zip File to a filename in the upload folder for zip-based import. Dispatches all providers via orchestrator.")]
 public class DeserializeScheduledTask : BaseScheduledTaskAddIn
 {
     private string? _logFile;
@@ -36,7 +36,7 @@ public class DeserializeScheduledTask : BaseScheduledTaskAddIn
             Log($"OutputDirectory: {config.OutputDirectory}");
             Log($"Predicates: {config.Predicates.Count}");
             foreach (var p in config.Predicates)
-                Log($"  Predicate: name={p.Name}, path={p.Path}, areaId={p.AreaId}");
+                Log($"  Predicate: name={p.Name}, providerType={p.ProviderType}");
 
             var filesRoot = Path.GetDirectoryName(configPath);
             var systemDir = Path.Combine(filesRoot ?? ".", "System");
@@ -91,18 +91,17 @@ public class DeserializeScheduledTask : BaseScheduledTaskAddIn
 
             try
             {
-                var effectiveConfig = config with { OutputDirectory = deserializeDir };
-
-                var deserializer = new ContentDeserializer(effectiveConfig, log: Log, isDryRun: config.DryRun, filesRoot: filesRoot);
-                var result = deserializer.Deserialize();
+                // Use orchestrator to dispatch all predicates to correct providers
+                var registry = ProviderRegistry.CreateDefault(filesRoot);
+                var orchestrator = new SerializerOrchestrator(registry);
+                var result = orchestrator.DeserializeAll(config.Predicates, deserializeDir, Log, config.DryRun);
 
                 Log(result.Summary);
 
                 if (result.HasErrors)
                 {
                     foreach (var error in result.Errors)
-                        Log(error);
-                    Log($"Total errors: {result.Errors.Count}");
+                        Log($"ERROR: {error}");
                 }
 
                 return !result.HasErrors;

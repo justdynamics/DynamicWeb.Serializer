@@ -1,15 +1,15 @@
 using Dynamicweb.ContentSync.Configuration;
-using Dynamicweb.ContentSync.Serialization;
+using Dynamicweb.ContentSync.Providers;
 using Dynamicweb.CoreUI.Data;
 
 namespace Dynamicweb.ContentSync.AdminUI.Commands;
 
 /// <summary>
-/// API-callable command that triggers ContentSync serialization immediately.
+/// API-callable command that triggers serialization for ALL configured providers.
 /// Use via DW CLI: dw command ContentSyncSerialize
 /// Or via Management API: POST /Admin/Api/ContentSyncSerialize
 ///
-/// Runs full serialization to SerializeRoot/ using all predicates from config.
+/// Uses SerializerOrchestrator to dispatch predicates to correct providers (Content, SqlTable, etc.).
 /// </summary>
 public sealed class ContentSyncSerializeCommand : CommandBase
 {
@@ -25,8 +25,6 @@ public sealed class ContentSyncSerializeCommand : CommandBase
     {
         try
         {
-            // Log file path set after config is loaded and paths resolved
-
             var configPath = ConfigPathResolver.FindConfigFile();
             if (configPath == null)
                 return new() { Status = CommandResult.ResultType.Error, Message = "ContentSync.config.json not found" };
@@ -43,16 +41,22 @@ public sealed class ContentSyncSerializeCommand : CommandBase
             _logFile = Path.Combine(paths.Log, "ContentSync.log");
             Log("=== ContentSync Serialize (API) started ===");
 
-            var serializeConfig = config with { OutputDirectory = paths.SerializeRoot };
-            var serializer = new ContentSerializer(serializeConfig, log: Log);
-            serializer.Serialize();
+            var registry = ProviderRegistry.CreateDefault(filesRoot);
+            var orchestrator = new SerializerOrchestrator(registry);
+            var result = orchestrator.SerializeAll(config.Predicates, paths.SerializeRoot, Log);
 
-            var fileCount = Directory.GetFiles(paths.SerializeRoot, "*.yml", SearchOption.AllDirectories).Length;
+            var fileCount = Directory.Exists(paths.SerializeRoot)
+                ? Directory.GetFiles(paths.SerializeRoot, "*.yml", SearchOption.AllDirectories).Length
+                : 0;
+
+            var message = $"Serialization complete. {fileCount} YAML files written to {config.SerializeRoot}. {result.Summary}";
+            if (result.HasErrors)
+                message += $" Errors: {string.Join("; ", result.Errors)}";
 
             return new CommandResult
             {
-                Status = CommandResult.ResultType.Ok,
-                Message = $"Serialization complete. {fileCount} YAML files written to {config.SerializeRoot}"
+                Status = result.HasErrors ? CommandResult.ResultType.Error : CommandResult.ResultType.Ok,
+                Message = message
             };
         }
         catch (Exception ex)
