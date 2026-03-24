@@ -83,7 +83,10 @@ Plans:
   2. Orchestrator iterates configured predicates, dispatches each to the correct provider based on its DataType field, and aggregates results
   3. Predicates in the config file accept a DataType field that routes to the appropriate provider (e.g., "Content" or "SqlTable")
   4. Existing v1.x config files without a DataType field default to "Content" and work without modification
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 14-01-PLAN.md — ConfigLoader migration to ProviderPredicateDefinition + ContentProvider adapter
+- [ ] 14-02-PLAN.md — SerializerOrchestrator + unified commands + scheduled task updates
 
 ### Phase 15: Ecommerce Tables at Scale
 **Goal**: All ecommerce settings tables (~15) serialize and deserialize reliably with correct FK ordering, cache invalidation, and no duplicate rows from shared DataItemTypes
@@ -137,7 +140,7 @@ Plans:
 | 11. Permission Serialization | v1.3 | 1/1 | Complete | 2026-03-22 |
 | 12. Permission Deserialization + Docs | v1.3 | 2/2 | Complete | 2026-03-23 |
 | 13. Provider Foundation + SqlTableProvider Proof | v2.0 | 3/3 | Complete    | 2026-03-23 |
-| 14. Content Migration + Orchestrator | v2.0 | 0/0 | Not started | - |
+| 14. Content Migration + Orchestrator | v2.0 | 0/2 | Not started | - |
 | 15. Ecommerce Tables at Scale | v2.0 | 0/0 | Not started | - |
 | 16. Admin UX | v2.0 | 0/0 | Not started | - |
 | 17. Project Rename | v2.0 | 0/0 | Not started | - |
