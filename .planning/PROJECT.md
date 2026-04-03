@@ -8,16 +8,15 @@ A DynamicWeb AppStore app that serializes and deserializes database content to/f
 
 Developers can reliably move DynamicWeb database state between environments through source control, with serialized YAML files as the single source of truth.
 
-## Current Milestone: v2.0 DynamicWeb.Serializer
+## Current Milestone: v0.3.1 Internal Link Resolution
 
-**Goal:** Broaden from content-only sync to full database serialization with a pluggable provider architecture.
+**Goal:** Resolve internal page ID references in content fields during deserialization so cross-environment links work correctly.
 
 **Target features:**
-- Rename to DynamicWeb.Serializer (Settings > Database > Serialize)
-- Pluggable provider architecture (SqlTableProvider, SettingsProvider, SchemaProvider, ContentProvider)
-- SqlTableProvider for generic SQL table serialization (~74 data groups)
-- Migrate existing ContentProvider into new architecture
-- Ecommerce settings serialization (OrderFlows, OrderStates, Payment, Shipping, Countries, Currencies, VAT)
+- Detect `Default.aspx?ID=NNN` patterns in ItemType field values during deserialization
+- Build source-PageID → target-PageID mapping using PageUniqueId (GUID) as bridge
+- Rewrite page ID references in ItemType fields to target IDs during content deserialization
+- Re-tag Git history from v1.0/v2.0 to 0.x pre-release versioning scheme
 - Settings & Schema serialization (~25 items)
 - Users, Marketing, PIM, Apps tables (~30 tables)
 - Log viewer with guided advice
@@ -68,6 +67,9 @@ Developers can reliably move DynamicWeb database state between environments thro
 - [x] Remove scheduled tasks (API commands replace them) — v2.0 Phase 16
 - [x] Move admin UI from Settings > Content > Sync to Settings > Database > Serialize — v2.0 Phase 16
 - [x] Predicate config multi-provider support (Content + SqlTable fields) — v2.0 Phase 18
+
+- [ ] Resolve internal page ID references (`Default.aspx?ID=NNN`) in ItemType fields during deserialization — v0.3.1
+- [ ] Re-tag Git from v1.0/v2.0 to 0.x pre-release versioning — v0.3.1
 
 ### Out of Scope
 
@@ -164,4 +166,4 @@ This document evolves at phase transitions and milestone boundaries.
 - **v1.3 Permissions** — Permission serialization/deserialization with safety fallback (2026-03-23)
 
 ---
-*Last updated: 2026-03-24 after Phase 16 complete — project renamed to DynamicWeb.Serializer, log viewer, zip deserialize, tree relocation*
+*Last updated: 2026-04-03 — milestone v0.3.1 started (internal link resolution)*

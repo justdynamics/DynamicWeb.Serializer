@@ -1,30 +1,32 @@
 ---
 gsd_state_version: 1.0
-milestone: v2.0
-milestone_name: DynamicWeb.Serializer
-status: Milestone complete
-stopped_at: Completed 18-02-PLAN.md
-last_updated: "2026-03-24T19:24:54.829Z"
+milestone: v0.3.1
+milestone_name: Internal Link Resolution
+status: Defining requirements
+stopped_at: null
+last_updated: "2026-04-03T09:00:00.000Z"
 progress:
-  total_phases: 6
-  completed_phases: 5
-  total_plans: 14
-  completed_plans: 14
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-03-23)
+See: .planning/PROJECT.md (updated 2026-04-03)
 
 **Core value:** Developers can reliably move DynamicWeb database state between environments through source control, with serialized YAML files as the single source of truth.
-**Current focus:** Phase 18 — predicate-config-multi-provider
+**Current focus:** Defining requirements for v0.3.1 — internal link resolution
 
 ## Current Position
 
-Phase: 18
-Plan: Not started
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-04-03 — Milestone v0.3.1 started
 
 ## Performance Metrics
 
