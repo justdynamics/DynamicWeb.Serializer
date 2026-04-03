@@ -21,11 +21,29 @@ public class ContentMapper
     /// </summary>
     public SerializedArea MapArea(Area area, List<SerializedPage> pages)
     {
+        var itemFields = new Dictionary<string, object>();
+        if (!string.IsNullOrEmpty(area.ItemType) && !string.IsNullOrEmpty(area.ItemId))
+        {
+            var itemEntry = Services.Items.GetItem(area.ItemType, area.ItemId);
+            if (itemEntry != null)
+            {
+                var dict = new Dictionary<string, object?>();
+                itemEntry.SerializeTo(dict);
+                foreach (var kvp in dict)
+                {
+                    if (kvp.Value != null)
+                        itemFields[kvp.Key] = kvp.Value;
+                }
+            }
+        }
+
         return new SerializedArea
         {
             AreaId = area.UniqueId,
             Name = area.Name ?? string.Empty,
             SortOrder = area.Sort,
+            ItemType = area.ItemType,
+            ItemFields = itemFields,
             Pages = pages
         };
     }

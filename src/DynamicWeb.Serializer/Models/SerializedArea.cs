@@ -11,5 +11,7 @@ public record SerializedArea
     public required Guid AreaId { get; init; }
     public required string Name { get; init; }
     public required int SortOrder { get; init; }
+    public string? ItemType { get; init; }
+    public Dictionary<string, object> ItemFields { get; init; } = new();
     public List<SerializedPage> Pages { get; init; } = new();
 }

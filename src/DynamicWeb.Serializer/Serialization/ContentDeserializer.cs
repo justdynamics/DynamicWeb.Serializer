@@ -147,6 +147,21 @@ public class ContentDeserializer
             PageGuidCache = pageGuidCache
         };
 
+        // Save area-level ItemType fields (AREA-01)
+        if (!string.IsNullOrEmpty(area.ItemType) && area.ItemFields.Count > 0)
+        {
+            var targetAreaItemId = targetArea.ItemId;
+            if (!string.IsNullOrEmpty(targetAreaItemId))
+            {
+                Log($"Applying area ItemType fields: type={area.ItemType}, id={targetAreaItemId}, fields={area.ItemFields.Count}");
+                SaveItemFields(area.ItemType, targetAreaItemId, area.ItemFields);
+            }
+            else
+            {
+                Log($"WARNING: Target area has no ItemId — cannot apply area ItemType fields");
+            }
+        }
+
         foreach (var page in area.Pages)
         {
             DeserializePageSafe(page, ctx);

@@ -338,6 +338,34 @@ public class YamlRoundTripTests
     }
 
     [Fact]
+    public void Yaml_RoundTrips_AreaWithItemTypeFields()
+    {
+        var area = new SerializedArea
+        {
+            AreaId = Guid.NewGuid(),
+            Name = "Test Area",
+            SortOrder = 1,
+            ItemType = "AreaSettings",
+            ItemFields = new Dictionary<string, object>
+            {
+                ["HeaderPage"] = "Default.aspx?ID=121",
+                ["FooterPage"] = "Default.aspx?ID=122",
+                ["MasterPage"] = "Default.aspx?ID=123",
+                ["SiteName"] = "My Website"
+            },
+            Pages = new List<SerializedPage>()
+        };
+
+        var yaml = _serializer.Serialize(area);
+        var result = _deserializer.Deserialize<SerializedArea>(yaml);
+
+        Assert.Equal(area.ItemType, result.ItemType);
+        Assert.Equal(area.ItemFields.Count, result.ItemFields.Count);
+        Assert.Equal("Default.aspx?ID=121", result.ItemFields["HeaderPage"]?.ToString());
+        Assert.Equal("My Website", result.ItemFields["SiteName"]?.ToString());
+    }
+
+    [Fact]
     public void Yaml_Serialization_IsDeterministic()
     {
         var page = ContentTreeBuilder.BuildSinglePage("Test") with
