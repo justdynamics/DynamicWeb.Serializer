@@ -171,7 +171,7 @@ public class SqlTableProvider : SerializationProviderBase
                     continue;
                 }
 
-                var outcome = _writer.WriteRow(yamlRow, metadata, isDryRun, log);
+                var outcome = _writer.WriteRow(yamlRow, metadata, isDryRun, log, notNullColumns);
                 switch (outcome)
                 {
                     case WriteOutcome.Created:

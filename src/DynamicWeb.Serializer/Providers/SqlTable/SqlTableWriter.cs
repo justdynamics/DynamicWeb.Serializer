@@ -31,7 +31,7 @@ public class SqlTableWriter
     /// Build a parameterized MERGE command following the DW10 pattern exactly.
     /// Uses CommandBuilder {0} placeholders for SQL parameter safety.
     /// </summary>
-    public CommandBuilder BuildMergeCommand(Dictionary<string, object?> row, TableMetadata metadata)
+    public CommandBuilder BuildMergeCommand(Dictionary<string, object?> row, TableMetadata metadata, HashSet<string>? notNullColumns = null)
     {
         var keyColumns = metadata.KeyColumns;
         var allColumns = metadata.AllColumns;
@@ -100,11 +100,17 @@ public class SqlTableWriter
         }
 
         // WHEN NOT MATCHED: insert all eligible columns
+        // Wrap NOT NULL columns with ISNULL() to guard against parameter-level null leakage
         cb.Add("WHEN NOT MATCHED THEN INSERT (");
         cb.Add(string.Join(",", insertColumns.Select(col => $"[{col}]")));
         cb.Add(")");
         cb.Add("VALUES(");
-        cb.Add(string.Join(",", insertColumns.Select(col => $"source.[{col}]")));
+        cb.Add(string.Join(",", insertColumns.Select(col =>
+        {
+            if (notNullColumns != null && notNullColumns.Contains(col))
+                return $"ISNULL(source.[{col}], '')";
+            return $"source.[{col}]";
+        })));
         cb.Add(");");
 
         if (enableIdentityInsert)
@@ -119,7 +125,7 @@ public class SqlTableWriter
     /// Write a single row to the target table via MERGE upsert.
     /// In dry-run mode, checks existence but does NOT execute any SQL writes.
     /// </summary>
-    public virtual WriteOutcome WriteRow(Dictionary<string, object?> row, TableMetadata metadata, bool isDryRun, Action<string>? log = null)
+    public virtual WriteOutcome WriteRow(Dictionary<string, object?> row, TableMetadata metadata, bool isDryRun, Action<string>? log = null, HashSet<string>? notNullColumns = null)
     {
         try
         {
@@ -133,7 +139,7 @@ public class SqlTableWriter
             }
 
             // Execute MERGE upsert
-            var cb = BuildMergeCommand(row, metadata);
+            var cb = BuildMergeCommand(row, metadata, notNullColumns);
             _sqlExecutor.ExecuteNonQuery(cb);
 
             return exists ? WriteOutcome.Updated : WriteOutcome.Created;

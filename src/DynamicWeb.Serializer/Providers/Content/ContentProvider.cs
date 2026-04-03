@@ -1,3 +1,4 @@
+using Dynamicweb.Content;
 using DynamicWeb.Serializer.Configuration;
 using DynamicWeb.Serializer.Models;
 using DynamicWeb.Serializer.Serialization;
@@ -98,6 +99,11 @@ public class ContentProvider : ISerializationProvider
 
         try
         {
+            // Clear area cache — when SqlTable predicates insert Area rows before Content
+            // runs, DW's cached AreaService may still return stale data
+            try { Services.Areas.ClearCache(); }
+            catch { /* ignore if cache clear fails */ }
+
             var contentDir = Path.Combine(inputRoot, "_content");
 
             // Fall back to inputRoot if _content/ subdirectory doesn't exist
