@@ -90,7 +90,10 @@
   3. PageNavigationSettings (UseEcomGroups, ParentType, ShopId, MaxLevels, ProductPage, IncludeProducts, NavigationProvider) round-trips correctly through serialize/deserialize
   4. ShortCut values containing Default.aspx?ID=NNN are rewritten to the correct target page ID during deserialization
   5. ProductPage values in NavigationSettings containing Default.aspx?ID=NNN are rewritten to the correct target page ID during deserialization
-**Plans**: TBD
+**Plans:** 2 plans
+Plans:
+- [ ] 23-01-PLAN.md — DTO models + sub-records + ContentMapper extension + tests
+- [ ] 23-02-PLAN.md — ContentDeserializer extension + ShortCut/ProductPage link resolution
 
 ### Phase 24: Area ItemType Fields
 **Goal**: Area-level ItemType connections (header, footer, master page) are preserved through serialize/deserialize with page references resolved to target environment IDs
@@ -139,6 +142,6 @@
 | 20. Link Resolution Core | v0.3.1 | 2/2 | Complete | 2026-04-03 |
 | 21. Paragraph Anchor Resolution | v0.3.1 | 1/1 | Complete | 2026-04-03 |
 | 22. Version Housekeeping | v0.3.1 | 1/1 | Complete | 2026-04-03 |
-| 23. Full Page Properties + Navigation Settings | v0.4.0 | 0/? | Not started | - |
+| 23. Full Page Properties + Navigation Settings | v0.4.0 | 0/2 | Not started | - |
 | 24. Area ItemType Fields | v0.4.0 | 0/? | Not started | - |
 | 25. Ecommerce Schema Sync | v0.4.0 | 0/? | Not started | - |
