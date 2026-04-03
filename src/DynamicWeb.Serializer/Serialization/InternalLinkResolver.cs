@@ -30,6 +30,14 @@ public class InternalLinkResolver
         @"(Default\.aspx\?ID=)(\d+)(#(\d+))?",
         RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
+    /// <summary>
+    /// Matches JSON "SelectedValue": "NNN" patterns in ButtonEditor serialized values.
+    /// Group 1 = prefix ("SelectedValue": "), Group 2 = digits, Group 3 = closing quote.
+    /// </summary>
+    private static readonly Regex SelectedValuePattern = new(
+        @"(""SelectedValue"":\s*"")(\d+)("")",
+        RegexOptions.Compiled);
+
     public InternalLinkResolver(
         Dictionary<int, int> sourceToTargetPageIds,
         Action<string>? log = null,
@@ -50,6 +58,23 @@ public class InternalLinkResolver
     {
         if (string.IsNullOrEmpty(fieldValue))
             return fieldValue;
+
+        // Handle raw numeric page IDs (e.g., LinkEditor stores "121" instead of "Default.aspx?ID=121")
+        // Only match if the ENTIRE string is a pure number that exists in our source-to-target map
+        if (int.TryParse(fieldValue.Trim(), out var rawPageId) && _sourceToTargetPageIds.TryGetValue(rawPageId, out var rawTargetId))
+        {
+            _resolvedCount++;
+            return rawTargetId.ToString();
+        }
+
+        // Also resolve "SelectedValue": "NNN" in ButtonEditor JSON
+        fieldValue = SelectedValuePattern.Replace(fieldValue, match =>
+        {
+            var sourceId = int.Parse(match.Groups[2].Value);
+            if (_sourceToTargetPageIds.TryGetValue(sourceId, out var targetId))
+                return match.Groups[1].Value + targetId.ToString() + match.Groups[3].Value;
+            return match.Value;
+        });
 
         return InternalLinkPattern.Replace(fieldValue, match =>
         {
