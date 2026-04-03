@@ -13,8 +13,8 @@
 
 ## Serialization
 
-- [ ] **SER-01**: SerializedPage DTO includes SourcePageId (numeric) alongside the existing GUID, enabling ID mapping construction at deserialization time
-- [ ] **SER-02**: SerializedParagraph DTO includes SourceParagraphId for paragraph anchor resolution
+- [x] **SER-01**: SerializedPage DTO includes SourcePageId (numeric) alongside the existing GUID, enabling ID mapping construction at deserialization time
+- [x] **SER-02**: SerializedParagraph DTO includes SourceParagraphId for paragraph anchor resolution
 
 ## Versioning
 
@@ -40,6 +40,6 @@
 | LINK-03 | Phase 20 | — | Pending |
 | LINK-04 | Phase 20 | — | Pending |
 | LINK-05 | Phase 21 | — | Pending |
-| SER-01 | Phase 19 | — | Pending |
-| SER-02 | Phase 19 | — | Pending |
+| SER-01 | Phase 19 | 19-01 | Complete |
+| SER-02 | Phase 19 | 19-01 | Complete |
 | VER-01 | Phase 22 | — | Pending |

@@ -81,7 +81,7 @@
   4. Re-serializing an already-synced environment produces YAML with that environment's own numeric IDs (not stale source IDs)
 **Plans**: 1 plan
 Plans:
-- [ ] 19-01-PLAN.md -- Add SourcePageId/SourceParagraphId to DTOs, ContentMapper, and unit tests
+- [x] 19-01-PLAN.md -- Add SourcePageId/SourceParagraphId to DTOs, ContentMapper, and unit tests
 
 ### Phase 20: Link Resolution Core
 **Goal**: Internal page links (`Default.aspx?ID=NNN`) embedded in ItemType field values are automatically rewritten to the correct target page IDs during deserialization
@@ -137,7 +137,7 @@ Plans:
 | 16. Admin UX + Rename | v2.0 | 5/5 | Complete | 2026-03-24 |
 | 17. Project Rename | v2.0 | N/A | Absorbed into P16 | - |
 | 18. Predicate Config Multi-Provider | v2.0 | 2/2 | Complete | 2026-03-24 |
-| 19. Source ID Serialization | v0.3.1 | 0/1 | In progress | - |
+| 19. Source ID Serialization | v0.3.1 | 1/1 | Complete | 2026-04-03 |
 | 20. Link Resolution Core | v0.3.1 | 0/0 | Not started | - |
 | 21. Paragraph Anchor Resolution | v0.3.1 | 0/0 | Not started | - |
 | 22. Version Housekeeping | v0.3.1 | 0/0 | Not started | - |
