@@ -158,7 +158,7 @@ public class ContentDeserializer
         {
             var resolver = new InternalLinkResolver(sourceToTarget, _log);
             ResolveLinksInArea(predicate.AreaId, resolver);
-            var (resolved, unresolved) = resolver.GetStats();
+            var (resolved, unresolved, paraResolved, paraUnresolved) = resolver.GetStats();
             if (resolved > 0 || unresolved > 0)
                 Log($"Link resolution: {resolved} resolved, {unresolved} unresolvable");
         }

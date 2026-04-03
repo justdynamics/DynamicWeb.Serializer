@@ -12,26 +12,32 @@ namespace DynamicWeb.Serializer.Serialization;
 public class InternalLinkResolver
 {
     private readonly Dictionary<int, int> _sourceToTargetPageIds;
+    private readonly Dictionary<int, int> _sourceToTargetParagraphIds;
     private readonly Action<string>? _log;
     private int _resolvedCount;
     private int _unresolvedCount;
+    private int _paragraphResolvedCount;
+    private int _paragraphUnresolvedCount;
 
     /// <summary>
-    /// Boundary-aware regex: matches Default.aspx?ID=NNN where NNN is
-    /// a sequence of digits. Greedy \d+ naturally captures the full number,
-    /// so ID=12 matches as "12" not "1" followed by "2".
+    /// Boundary-aware regex: matches Default.aspx?ID=NNN optionally followed by #PPP.
+    /// Group 1 = prefix (Default.aspx?ID=), Group 2 = page ID digits,
+    /// Group 3 = full fragment (#PPP), Group 4 = paragraph ID digits.
+    /// Greedy \d+ naturally captures the full number.
     /// IgnoreCase handles default.aspx?id= variants.
     /// </summary>
     private static readonly Regex InternalLinkPattern = new(
-        @"(Default\.aspx\?ID=)(\d+)",
+        @"(Default\.aspx\?ID=)(\d+)(#(\d+))?",
         RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
     public InternalLinkResolver(
         Dictionary<int, int> sourceToTargetPageIds,
-        Action<string>? log = null)
+        Action<string>? log = null,
+        Dictionary<int, int>? sourceToTargetParagraphIds = null)
     {
         _sourceToTargetPageIds = sourceToTargetPageIds;
         _log = log;
+        _sourceToTargetParagraphIds = sourceToTargetParagraphIds ?? new Dictionary<int, int>();
     }
 
     /// <summary>
@@ -47,15 +53,35 @@ public class InternalLinkResolver
 
         return InternalLinkPattern.Replace(fieldValue, match =>
         {
-            var sourceId = int.Parse(match.Groups[2].Value);
-            if (_sourceToTargetPageIds.TryGetValue(sourceId, out var targetId))
+            var sourcePageId = int.Parse(match.Groups[2].Value);
+            var hasFragment = match.Groups[4].Success;
+
+            if (_sourceToTargetPageIds.TryGetValue(sourcePageId, out var targetPageId))
             {
                 _resolvedCount++;
-                return match.Groups[1].Value + targetId.ToString();
+                var result = match.Groups[1].Value + targetPageId.ToString();
+
+                if (hasFragment)
+                {
+                    var sourceParagraphId = int.Parse(match.Groups[4].Value);
+                    if (_sourceToTargetParagraphIds.TryGetValue(sourceParagraphId, out var targetParagraphId))
+                    {
+                        _paragraphResolvedCount++;
+                        result += "#" + targetParagraphId.ToString();
+                    }
+                    else
+                    {
+                        _log?.Invoke($"  WARNING: Unresolvable paragraph ID {sourceParagraphId} in anchor link");
+                        _paragraphUnresolvedCount++;
+                        result += "#" + sourceParagraphId.ToString();
+                    }
+                }
+
+                return result;
             }
             else
             {
-                _log?.Invoke($"  WARNING: Unresolvable page ID {sourceId} in link");
+                _log?.Invoke($"  WARNING: Unresolvable page ID {sourcePageId} in link");
                 _unresolvedCount++;
                 return match.Value;
             }
@@ -78,11 +104,55 @@ public class InternalLinkResolver
     }
 
     /// <summary>
-    /// Returns cumulative (resolved, unresolved) link counts across all
-    /// ResolveLinks calls on this instance.
+    /// Returns cumulative (resolved, unresolved, paragraphResolved, paragraphUnresolved)
+    /// link counts across all ResolveLinks calls on this instance.
     /// </summary>
-    public (int resolved, int unresolved) GetStats() =>
-        (_resolvedCount, _unresolvedCount);
+    public (int resolved, int unresolved, int paragraphResolved, int paragraphUnresolved) GetStats() =>
+        (_resolvedCount, _unresolvedCount, _paragraphResolvedCount, _paragraphUnresolvedCount);
+
+    /// <summary>
+    /// Builds a source-to-target paragraph ID mapping by recursively walking
+    /// pages -> GridRows -> Columns -> Paragraphs. For each paragraph with
+    /// SourceParagraphId and ParagraphUniqueId found in the cache:
+    /// map[SourceParagraphId] = paragraphGuidCache[ParagraphUniqueId].
+    /// </summary>
+    public static Dictionary<int, int> BuildSourceToTargetParagraphMap(
+        List<SerializedPage> pages,
+        Dictionary<Guid, int> paragraphGuidCache)
+    {
+        var map = new Dictionary<int, int>();
+        CollectSourceParagraphIds(pages, paragraphGuidCache, map);
+        return map;
+    }
+
+    private static void CollectSourceParagraphIds(
+        List<SerializedPage> pages,
+        Dictionary<Guid, int> paragraphGuidCache,
+        Dictionary<int, int> map)
+    {
+        foreach (var page in pages)
+        {
+            foreach (var row in page.GridRows)
+            {
+                foreach (var column in row.Columns)
+                {
+                    foreach (var para in column.Paragraphs)
+                    {
+                        if (para.SourceParagraphId.HasValue &&
+                            paragraphGuidCache.TryGetValue(para.ParagraphUniqueId, out var targetId))
+                        {
+                            map[para.SourceParagraphId.Value] = targetId;
+                        }
+                    }
+                }
+            }
+
+            if (page.Children.Count > 0)
+            {
+                CollectSourceParagraphIds(page.Children, paragraphGuidCache, map);
+            }
+        }
+    }
 
     private static void CollectSourcePageIds(
         List<SerializedPage> pages,
