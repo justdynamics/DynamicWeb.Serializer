@@ -7,7 +7,7 @@
 
 - [x] **LINK-01**: Serializer detects `Default.aspx?ID=NNN` patterns in ItemType field values and rewrites page IDs to target environment IDs during deserialization
 - [x] **LINK-02**: Source-to-target page ID mapping is built using PageUniqueId (GUID) as the bridge — source numeric ID → GUID (from YAML) → target numeric ID (from PageGuidCache)
-- [ ] **LINK-03**: Link resolution handles all field types: structured link fields, button fields, and rich text HTML containing embedded links
+- [x] **LINK-03**: Link resolution handles all field types: structured link fields, button fields, and rich text HTML containing embedded links
 - [x] **LINK-04**: Links referencing pages that don't exist in the target are preserved as-is and logged as warnings (no data corruption)
 - [ ] **LINK-05**: Paragraph anchor fragments (`Default.aspx?ID=NNN#PPP`) are resolved for both page ID and paragraph ID
 

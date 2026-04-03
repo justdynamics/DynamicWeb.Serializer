@@ -64,7 +64,7 @@
 **Milestone Goal:** Resolve internal page ID references in content fields during deserialization so cross-environment links work correctly.
 
 - [ ] **Phase 19: Source ID Serialization** - Serialize source numeric IDs into YAML so deserialization can build the ID mapping
-- [ ] **Phase 20: Link Resolution Core** - Detect and rewrite `Default.aspx?ID=NNN` patterns in ItemType fields during deserialization
+- [x] **Phase 20: Link Resolution Core** - Detect and rewrite `Default.aspx?ID=NNN` patterns in ItemType fields during deserialization (completed 2026-04-03)
 - [ ] **Phase 21: Paragraph Anchor Resolution** - Resolve paragraph ID fragments in `Default.aspx?ID=NNN#PPP` anchor links
 - [ ] **Phase 22: Version Housekeeping** - Re-tag Git history from v1.0/v2.0 to 0.x pre-release versioning
 
@@ -96,7 +96,7 @@ Plans:
 **Plans**: 2 plans
 Plans:
 - [x] 20-01-PLAN.md -- TDD InternalLinkResolver: boundary-aware regex resolver + BuildSourceToTargetMap + unit tests
-- [ ] 20-02-PLAN.md -- Wire Phase 2 link resolution into ContentDeserializer.DeserializePredicate
+- [x] 20-02-PLAN.md -- Wire Phase 2 link resolution into ContentDeserializer.DeserializePredicate
 
 ### Phase 21: Paragraph Anchor Resolution
 **Goal**: Paragraph anchor links (`Default.aspx?ID=NNN#PPP`) have both their page ID and paragraph ID fragments resolved to target environment values
@@ -141,6 +141,6 @@ Plans:
 | 17. Project Rename | v2.0 | N/A | Absorbed into P16 | - |
 | 18. Predicate Config Multi-Provider | v2.0 | 2/2 | Complete | 2026-03-24 |
 | 19. Source ID Serialization | v0.3.1 | 1/1 | Complete | 2026-04-03 |
-| 20. Link Resolution Core | v0.3.1 | 1/2 | In Progress|  |
+| 20. Link Resolution Core | v0.3.1 | 2/2 | Complete   | 2026-04-03 |
 | 21. Paragraph Anchor Resolution | v0.3.1 | 0/0 | Not started | - |
 | 22. Version Housekeeping | v0.3.1 | 0/0 | Not started | - |
