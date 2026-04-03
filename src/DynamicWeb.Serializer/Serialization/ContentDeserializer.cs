@@ -952,6 +952,32 @@ public class ContentDeserializer
             // Resolve PropertyItem fields (Icon, SubmenuType, etc.)
             ResolveLinksInPropertyItem(page, resolver);
 
+            // Resolve ShortCut link (PAGE-02) -- e.g., "Default.aspx?ID=42" -> "Default.aspx?ID=99"
+            bool pageNeedsResave = false;
+            if (!string.IsNullOrEmpty(page.ShortCut))
+            {
+                var resolved = resolver.ResolveLinks(page.ShortCut);
+                if (resolved != page.ShortCut)
+                {
+                    page.ShortCut = resolved;
+                    pageNeedsResave = true;
+                }
+            }
+
+            // Resolve NavigationSettings.ProductPage link (ECOM-02)
+            if (page.NavigationSettings?.ProductPage != null)
+            {
+                var resolved = resolver.ResolveLinks(page.NavigationSettings.ProductPage);
+                if (resolved != page.NavigationSettings.ProductPage)
+                {
+                    page.NavigationSettings.ProductPage = resolved;
+                    pageNeedsResave = true;
+                }
+            }
+
+            if (pageNeedsResave)
+                Services.Pages.SavePage(page);
+
             // Resolve paragraph item fields
             var paragraphs = Services.Paragraphs.GetParagraphsByPageId(page.ID);
             foreach (var para in paragraphs)
