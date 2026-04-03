@@ -114,7 +114,9 @@ Plans:
 **Success Criteria** (what must be TRUE):
   1. During deserialization, EcomProductGroupField definitions are processed and UpdateTable() is called before any EcomGroups row data is inserted
   2. Custom columns created by EcomProductGroupField are present on the EcomGroups table after deserialization (verified by querying table schema)
-**Plans**: TBD
+**Plans:** 1 plan
+Plans:
+- [ ] 25-01-PLAN.md — EcomGroupFieldSchemaSync + orchestrator integration + tests
 
 ## Progress
 
@@ -146,4 +148,4 @@ Plans:
 | 22. Version Housekeeping | v0.3.1 | 1/1 | Complete | 2026-04-03 |
 | 23. Full Page Properties + Navigation Settings | v0.4.0 | 2/2 | Complete   | 2026-04-03 |
 | 24. Area ItemType Fields | v0.4.0 | 0/1 | Not started | - |
-| 25. Ecommerce Schema Sync | v0.4.0 | 0/? | Not started | - |
+| 25. Ecommerce Schema Sync | v0.4.0 | 0/1 | Not started | - |
