@@ -82,6 +82,10 @@ public class ContentDeserializer
         int totalFailed = 0;
         var allErrors = new List<string>();
 
+        // Collect all areas and their deserialized page caches for cross-area link resolution
+        var allAreaPages = new List<SerializedPage>();
+        var globalPageGuidCache = new Dictionary<Guid, int>();
+
         foreach (var predicate in _configuration.Predicates)
         {
             // Resolve the area name from the predicate AreaId to read the correct subfolder
@@ -89,12 +93,65 @@ public class ContentDeserializer
             var areaName = dwArea?.Name;
             var area = _store.ReadTree(_configuration.OutputDirectory, areaName);
 
-            var result = DeserializePredicate(predicate, area);
+            var result = DeserializePredicate(predicate, area, globalPageGuidCache, allAreaPages);
             totalCreated += result.Created;
             totalUpdated += result.Updated;
             totalSkipped += result.Skipped;
             totalFailed += result.Failed;
             allErrors.AddRange(result.Errors);
+        }
+
+        // Phase 2: Resolve internal links using a CROSS-AREA map
+        // Read ALL area directories from the content root to build a complete source→target map
+        // (ContentProvider calls us per-area, but links reference pages across areas)
+        if (!_isDryRun && globalPageGuidCache != null && globalPageGuidCache.Count > 0)
+        {
+            // Collect pages from ALL area directories for a complete source ID map
+            var allYamlPages = new List<SerializedPage>();
+            var allGuidCache = new Dictionary<Guid, int>();
+
+            // Scan all area subdirectories in the content root
+            var contentRoot = _configuration.OutputDirectory;
+            foreach (var areaDir in Directory.GetDirectories(contentRoot))
+            {
+                var areaYml = Path.Combine(areaDir, "area.yml");
+                if (!File.Exists(areaYml)) continue;
+
+                try
+                {
+                    var areaData = _store.ReadTree(contentRoot, Path.GetFileName(areaDir));
+                    allYamlPages.AddRange(areaData.Pages);
+                }
+                catch { /* skip unreadable areas */ }
+            }
+
+            // Build GUID cache from ALL areas in the target DB
+            foreach (var masterArea in Services.Areas.GetAreas())
+            {
+                foreach (var page in Services.Pages.GetPagesByAreaID(masterArea.ID))
+                    if (page.UniqueId != Guid.Empty)
+                        allGuidCache.TryAdd(page.UniqueId, page.ID);
+            }
+
+            var crossAreaMap = InternalLinkResolver.BuildSourceToTargetMap(allYamlPages, allGuidCache);
+            Log($"Cross-area link resolution: {crossAreaMap.Count} page ID mappings from {Directory.GetDirectories(contentRoot).Length} areas");
+
+            // Build paragraph map too
+            var paragraphCache = new Dictionary<Guid, int>();
+            foreach (var masterArea in Services.Areas.GetAreas())
+                foreach (var page in Services.Pages.GetPagesByAreaID(masterArea.ID))
+                    foreach (var para in Services.Paragraphs.GetParagraphsByPageId(page.ID))
+                        if (para.UniqueId != Guid.Empty)
+                            paragraphCache.TryAdd(para.UniqueId, para.ID);
+            var paragraphMap = InternalLinkResolver.BuildSourceToTargetParagraphMap(allYamlPages, paragraphCache);
+
+            var resolver = new InternalLinkResolver(crossAreaMap, _log, sourceToTargetParagraphIds: paragraphMap);
+            foreach (var predicate in _configuration.Predicates)
+                ResolveLinksInArea(predicate.AreaId, resolver);
+
+            var (resolved, unresolved, paraResolved, paraUnresolved) = resolver.GetStats();
+            if (resolved > 0 || unresolved > 0)
+                Log($"Link resolution: {resolved} page links resolved, {unresolved} unresolvable; {paraResolved} paragraph anchors resolved, {paraUnresolved} unresolvable");
         }
 
         var aggregated = new DeserializeResult
@@ -123,7 +180,8 @@ public class ContentDeserializer
     // Predicate-level processing
     // -------------------------------------------------------------------------
 
-    private DeserializeResult DeserializePredicate(ProviderPredicateDefinition predicate, SerializedArea area)
+    private DeserializeResult DeserializePredicate(ProviderPredicateDefinition predicate, SerializedArea area,
+        Dictionary<Guid, int>? globalPageGuidCache = null, List<SerializedPage>? allAreaPages = null)
     {
         var targetArea = Services.Areas.GetArea(predicate.AreaId);
         if (targetArea == null)
@@ -183,31 +241,13 @@ public class ContentDeserializer
             DeserializePageSafe(page, ctx);
         }
 
-        // Phase 2: Resolve internal page links and paragraph anchors in all item field values
-        var sourceToTarget = InternalLinkResolver.BuildSourceToTargetMap(area.Pages, ctx.PageGuidCache);
-
-        // Build paragraph GUID cache from target area pages
-        var allTargetPages = Services.Pages.GetPagesByAreaID(predicate.AreaId);
-        var paragraphGuidCache = new Dictionary<Guid, int>();
-        foreach (var page in allTargetPages)
+        // Contribute this area's pages and GUID cache to the global collections for cross-area link resolution
+        if (globalPageGuidCache != null)
         {
-            foreach (var para in Services.Paragraphs.GetParagraphsByPageId(page.ID))
-            {
-                if (para.UniqueId != Guid.Empty)
-                    paragraphGuidCache[para.UniqueId] = para.ID;
-            }
+            foreach (var kvp in ctx.PageGuidCache)
+                globalPageGuidCache.TryAdd(kvp.Key, kvp.Value);
         }
-
-        var paragraphMap = InternalLinkResolver.BuildSourceToTargetParagraphMap(area.Pages, paragraphGuidCache);
-
-        if (sourceToTarget.Count > 0 || paragraphMap.Count > 0)
-        {
-            var resolver = new InternalLinkResolver(sourceToTarget, _log, sourceToTargetParagraphIds: paragraphMap);
-            ResolveLinksInArea(predicate.AreaId, resolver);
-            var (resolved, unresolved, paraResolved, paraUnresolved) = resolver.GetStats();
-            if (resolved > 0 || unresolved > 0 || paraResolved > 0 || paraUnresolved > 0)
-                Log($"Link resolution: {resolved} page links resolved, {unresolved} unresolvable; {paraResolved} paragraph anchors resolved, {paraUnresolved} unresolvable");
-        }
+        allAreaPages?.AddRange(area.Pages);
 
         return new DeserializeResult
         {
