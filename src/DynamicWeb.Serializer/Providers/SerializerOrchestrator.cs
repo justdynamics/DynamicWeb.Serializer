@@ -13,15 +13,18 @@ public class SerializerOrchestrator
     private readonly ProviderRegistry _registry;
     private readonly FkDependencyResolver? _fkResolver;
     private readonly CacheInvalidator? _cacheInvalidator;
+    private readonly EcomGroupFieldSchemaSync? _ecomSchemaSync;
 
     public SerializerOrchestrator(
         ProviderRegistry registry,
         FkDependencyResolver? fkResolver = null,
-        CacheInvalidator? cacheInvalidator = null)
+        CacheInvalidator? cacheInvalidator = null,
+        EcomGroupFieldSchemaSync? ecomSchemaSync = null)
     {
         _registry = registry ?? throw new ArgumentNullException(nameof(registry));
         _fkResolver = fkResolver;
         _cacheInvalidator = cacheInvalidator;
+        _ecomSchemaSync = ecomSchemaSync;
     }
 
     /// <summary>
@@ -160,6 +163,25 @@ public class SerializerOrchestrator
                 {
                     log?.Invoke($"WARNING: Cache invalidation failed for predicate '{predicate.Name}': {ex.Message}");
                     // Don't fail the overall operation — cache invalidation is best-effort
+                }
+            }
+
+            // Schema sync: create custom columns on target table after field definitions are imported
+            if (!isDryRun && _ecomSchemaSync != null
+                && !string.IsNullOrEmpty(predicate.SchemaSync)
+                && string.Equals(predicate.SchemaSync, "EcomGroupFields", StringComparison.OrdinalIgnoreCase)
+                && !result.HasErrors)
+            {
+                try
+                {
+                    log?.Invoke($"Running schema sync for {predicate.Name}...");
+                    _ecomSchemaSync.SyncSchema(log);
+                }
+                catch (Exception ex)
+                {
+                    log?.Invoke($"WARNING: Schema sync failed for predicate '{predicate.Name}': {ex.Message}");
+                    // Don't fail the overall operation — schema sync is best-effort
+                    // (EcomGroups deserialization will fail with clear error if columns are missing)
                 }
             }
         }

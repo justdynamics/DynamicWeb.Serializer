@@ -381,16 +381,15 @@ public class SerializerOrchestratorTests
         registry.Register(contentProvider.Object);
         registry.Register(sqlProvider.Object);
 
-        // Order: sqlPredA, contentPred, sqlPredB — Content should go first, then SqlTable in FK order (B, A)
+        // Order: sqlPredA, contentPred, sqlPredB — SqlTable in FK order (B, A) first, then Content
         var orchestrator = new SerializerOrchestrator(registry, fkResolver);
         orchestrator.DeserializeAll(new List<ProviderPredicateDefinition> { sqlPredA, contentPred, sqlPredB }, "/input");
 
         Assert.Equal(3, callOrder.Count);
-        // Content should be first (non-SqlTable at front)
-        Assert.Equal("Content:Pages", callOrder[0]);
-        // SqlTable B before SqlTable A (B is parent)
-        Assert.Equal("SqlTable:B", callOrder[1]);
-        Assert.Equal("SqlTable:A", callOrder[2]);
+        // SqlTable B before SqlTable A (B is parent), then Content last
+        Assert.Equal("SqlTable:B", callOrder[0]);
+        Assert.Equal("SqlTable:A", callOrder[1]);
+        Assert.Equal("Content:Pages", callOrder[2]);
     }
 
     [Fact]
@@ -537,6 +536,99 @@ public class SerializerOrchestratorTests
         Assert.False(result.HasErrors);
         // No cache calls for empty ServiceCaches
         mockCacheResolver.Verify(r => r.GetCacheType(It.IsAny<string>()), Times.Never);
+    }
+
+    // === Phase 25 Tests: Schema Sync ===
+
+    [Fact]
+    [Trait("Category", "Phase25")]
+    public void DeserializeAll_CallsSchemaSyncAfterPredicateWithSchemaSyncConfig()
+    {
+        var pred = new ProviderPredicateDefinition
+        {
+            Name = "EcomProductGroupField",
+            ProviderType = "SqlTable",
+            Table = "EcomProductGroupField",
+            SchemaSync = "EcomGroupFields"
+        };
+
+        var sqlProvider = new Mock<ISerializationProvider>();
+        sqlProvider.Setup(p => p.ProviderType).Returns("SqlTable");
+        sqlProvider.Setup(p => p.ValidatePredicate(It.IsAny<ProviderPredicateDefinition>()))
+            .Returns(ValidationResult.Success());
+        sqlProvider.Setup(p => p.Deserialize(It.IsAny<ProviderPredicateDefinition>(), It.IsAny<string>(), It.IsAny<Action<string>?>(), It.IsAny<bool>()))
+            .Returns(new ProviderDeserializeResult { Created = 3, TableName = "EcomProductGroupField" });
+
+        var mockSchemaSync = new Mock<EcomGroupFieldSchemaSync>(MockBehavior.Loose, new object[] { new Mock<ISqlExecutor>().Object });
+        mockSchemaSync.Setup(s => s.SyncSchema(It.IsAny<Action<string>?>()));
+
+        var registry = new ProviderRegistry();
+        registry.Register(sqlProvider.Object);
+
+        var orchestrator = new SerializerOrchestrator(registry, ecomSchemaSync: mockSchemaSync.Object);
+        orchestrator.DeserializeAll(new List<ProviderPredicateDefinition> { pred }, "/input");
+
+        mockSchemaSync.Verify(s => s.SyncSchema(It.IsAny<Action<string>?>()), Times.Once);
+    }
+
+    [Fact]
+    [Trait("Category", "Phase25")]
+    public void DeserializeAll_DryRun_DoesNotCallSchemaSync()
+    {
+        var pred = new ProviderPredicateDefinition
+        {
+            Name = "EcomProductGroupField",
+            ProviderType = "SqlTable",
+            Table = "EcomProductGroupField",
+            SchemaSync = "EcomGroupFields"
+        };
+
+        var sqlProvider = new Mock<ISerializationProvider>();
+        sqlProvider.Setup(p => p.ProviderType).Returns("SqlTable");
+        sqlProvider.Setup(p => p.ValidatePredicate(It.IsAny<ProviderPredicateDefinition>()))
+            .Returns(ValidationResult.Success());
+        sqlProvider.Setup(p => p.Deserialize(It.IsAny<ProviderPredicateDefinition>(), It.IsAny<string>(), It.IsAny<Action<string>?>(), It.IsAny<bool>()))
+            .Returns(new ProviderDeserializeResult { Created = 3, TableName = "EcomProductGroupField" });
+
+        var mockSchemaSync = new Mock<EcomGroupFieldSchemaSync>(MockBehavior.Loose, new object[] { new Mock<ISqlExecutor>().Object });
+
+        var registry = new ProviderRegistry();
+        registry.Register(sqlProvider.Object);
+
+        var orchestrator = new SerializerOrchestrator(registry, ecomSchemaSync: mockSchemaSync.Object);
+        orchestrator.DeserializeAll(new List<ProviderPredicateDefinition> { pred }, "/input", isDryRun: true);
+
+        mockSchemaSync.Verify(s => s.SyncSchema(It.IsAny<Action<string>?>()), Times.Never);
+    }
+
+    [Fact]
+    [Trait("Category", "Phase25")]
+    public void DeserializeAll_NoSchemaSyncProperty_DoesNotCallSchemaSync()
+    {
+        var pred = new ProviderPredicateDefinition
+        {
+            Name = "EcomOrderFlow",
+            ProviderType = "SqlTable",
+            Table = "EcomOrderFlow"
+            // No SchemaSync property
+        };
+
+        var sqlProvider = new Mock<ISerializationProvider>();
+        sqlProvider.Setup(p => p.ProviderType).Returns("SqlTable");
+        sqlProvider.Setup(p => p.ValidatePredicate(It.IsAny<ProviderPredicateDefinition>()))
+            .Returns(ValidationResult.Success());
+        sqlProvider.Setup(p => p.Deserialize(It.IsAny<ProviderPredicateDefinition>(), It.IsAny<string>(), It.IsAny<Action<string>?>(), It.IsAny<bool>()))
+            .Returns(new ProviderDeserializeResult { Created = 1, TableName = "EcomOrderFlow" });
+
+        var mockSchemaSync = new Mock<EcomGroupFieldSchemaSync>(MockBehavior.Loose, new object[] { new Mock<ISqlExecutor>().Object });
+
+        var registry = new ProviderRegistry();
+        registry.Register(sqlProvider.Object);
+
+        var orchestrator = new SerializerOrchestrator(registry, ecomSchemaSync: mockSchemaSync.Object);
+        orchestrator.DeserializeAll(new List<ProviderPredicateDefinition> { pred }, "/input");
+
+        mockSchemaSync.Verify(s => s.SyncSchema(It.IsAny<Action<string>?>()), Times.Never);
     }
 
     [Fact]

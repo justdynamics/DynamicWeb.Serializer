@@ -171,6 +171,7 @@ public class ProviderRegistry
         var sqlExecutor = new DwSqlExecutor();
         var fkResolver = new FkDependencyResolver(sqlExecutor);
         var cacheInvalidator = new CacheInvalidator(new DwCacheResolver());
-        return new SerializerOrchestrator(registry, fkResolver, cacheInvalidator);
+        var ecomSchemaSync = new EcomGroupFieldSchemaSync(sqlExecutor);
+        return new SerializerOrchestrator(registry, fkResolver, cacheInvalidator, ecomSchemaSync);
     }
 }

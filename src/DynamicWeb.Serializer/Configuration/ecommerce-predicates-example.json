@@ -8,6 +8,25 @@
   ],
   "predicates": [
     {
+      "name": "EcomFieldType",
+      "providerType": "SqlTable",
+      "table": "EcomFieldType",
+      "nameColumn": "FieldTypeName",
+      "compareColumns": "",
+      "serviceCaches": []
+    },
+    {
+      "name": "EcomProductGroupField",
+      "providerType": "SqlTable",
+      "table": "EcomProductGroupField",
+      "nameColumn": "ProductGroupFieldSystemName",
+      "compareColumns": "",
+      "schemaSync": "EcomGroupFields",
+      "serviceCaches": [
+        "Dynamicweb.Ecommerce.Products.ProductGroupFieldService"
+      ]
+    },
+    {
       "name": "EcomOrderFlow",
       "providerType": "SqlTable",
       "table": "EcomOrderFlow",
