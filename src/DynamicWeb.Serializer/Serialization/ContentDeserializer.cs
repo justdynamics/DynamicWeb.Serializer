@@ -148,17 +148,33 @@ public class ContentDeserializer
         };
 
         // Save area-level ItemType fields (AREA-01)
-        if (!string.IsNullOrEmpty(area.ItemType) && area.ItemFields.Count > 0)
+        if (!string.IsNullOrEmpty(area.ItemType) && area.ItemFields.Count > 0 && !_isDryRun)
         {
             var targetAreaItemId = targetArea.ItemId;
+
+            // If the area has no Item row yet, create one (same pattern as GridRow Item creation)
+            if (string.IsNullOrEmpty(targetAreaItemId) || Services.Items.GetItem(area.ItemType, targetAreaItemId) == null)
+            {
+                try
+                {
+                    var item = new Dynamicweb.Content.Items.Item(area.ItemType);
+                    Services.Items.SaveItem(item);
+                    targetAreaItemId = item.Id;
+                    targetArea.ItemId = targetAreaItemId;
+                    Services.Areas.SaveArea(targetArea);
+                    Services.Areas.ClearCache();
+                    Log($"Created area Item: type={area.ItemType}, id={targetAreaItemId}");
+                }
+                catch (Exception ex)
+                {
+                    Log($"WARNING: Could not create area Item: {ex.Message}");
+                }
+            }
+
             if (!string.IsNullOrEmpty(targetAreaItemId))
             {
                 Log($"Applying area ItemType fields: type={area.ItemType}, id={targetAreaItemId}, fields={area.ItemFields.Count}");
                 SaveItemFields(area.ItemType, targetAreaItemId, area.ItemFields);
-            }
-            else
-            {
-                Log($"WARNING: Target area has no ItemId — cannot apply area ItemType fields");
             }
         }
 
