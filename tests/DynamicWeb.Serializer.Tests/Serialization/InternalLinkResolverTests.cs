@@ -15,8 +15,14 @@ public class InternalLinkResolverTests
         { 50, 60 }
     };
 
-    private InternalLinkResolver CreateResolver(Action<string>? log = null)
-        => new(_map, log);
+    private readonly Dictionary<int, int> _paragraphMap = new()
+    {
+        { 456, 789 },
+        { 50, 60 }
+    };
+
+    private InternalLinkResolver CreateResolver(Action<string>? log = null, Dictionary<int, int>? paragraphMap = null)
+        => new(_map, log, paragraphMap);
 
     // -------------------------------------------------------------------------
     // Test 1: Simple rewrite
@@ -141,15 +147,15 @@ public class InternalLinkResolverTests
     }
 
     // -------------------------------------------------------------------------
-    // Test 10: Paragraph anchor preservation
+    // Test 10: Paragraph anchor — both page and paragraph resolved
     // -------------------------------------------------------------------------
 
     [Fact]
-    public void ResolveLinks_AnchorFragment_PreservesFragment()
+    public void ResolveLinks_AnchorFragment_RewritesBothPageAndParagraph()
     {
-        var resolver = CreateResolver();
+        var resolver = CreateResolver(paragraphMap: _paragraphMap);
         var result = resolver.ResolveLinks("Default.aspx?ID=123#456");
-        Assert.Equal("Default.aspx?ID=456#456", result);
+        Assert.Equal("Default.aspx?ID=456#789", result);
     }
 
     // -------------------------------------------------------------------------
@@ -267,21 +273,262 @@ public class InternalLinkResolverTests
     }
 
     // -------------------------------------------------------------------------
-    // Test 15: GetStats returns resolved/unresolved counts
+    // Test 15: GetStats returns resolved/unresolved counts (including paragraph)
     // -------------------------------------------------------------------------
 
     [Fact]
     public void GetStats_AfterMultipleCalls_ReturnsCorrectCounts()
     {
         var warnings = new List<string>();
-        var resolver = CreateResolver(msg => warnings.Add(msg));
+        var resolver = CreateResolver(msg => warnings.Add(msg), _paragraphMap);
 
-        resolver.ResolveLinks("Default.aspx?ID=123"); // resolved
-        resolver.ResolveLinks("Default.aspx?ID=200"); // resolved
-        resolver.ResolveLinks("Default.aspx?ID=999"); // unresolved
+        resolver.ResolveLinks("Default.aspx?ID=123"); // page resolved, no fragment
+        resolver.ResolveLinks("Default.aspx?ID=200"); // page resolved, no fragment
+        resolver.ResolveLinks("Default.aspx?ID=999"); // page unresolved
 
-        var (resolved, unresolved) = resolver.GetStats();
+        var (resolved, unresolved, paraResolved, paraUnresolved) = resolver.GetStats();
         Assert.Equal(2, resolved);
         Assert.Equal(1, unresolved);
+        Assert.Equal(0, paraResolved);
+        Assert.Equal(0, paraUnresolved);
+    }
+
+    // -------------------------------------------------------------------------
+    // Test 16: Anchor fragment — page resolved, paragraph unresolved
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public void ResolveLinks_AnchorFragment_PageResolvedParagraphUnresolved()
+    {
+        var warnings = new List<string>();
+        var resolver = CreateResolver(msg => warnings.Add(msg), _paragraphMap);
+        var result = resolver.ResolveLinks("Default.aspx?ID=123#999");
+
+        Assert.Equal("Default.aspx?ID=456#999", result);
+        Assert.Contains(warnings, w => w.Contains("999") && w.Contains("paragraph"));
+    }
+
+    // -------------------------------------------------------------------------
+    // Test 17: Anchor fragment — page unresolved, entire link preserved
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public void ResolveLinks_AnchorFragment_PageUnresolved_PreservesEntireLink()
+    {
+        var warnings = new List<string>();
+        var resolver = CreateResolver(msg => warnings.Add(msg), _paragraphMap);
+        var result = resolver.ResolveLinks("Default.aspx?ID=999#50");
+
+        Assert.Equal("Default.aspx?ID=999#50", result);
+    }
+
+    // -------------------------------------------------------------------------
+    // Test 18: No fragment — still works (regression guard)
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public void ResolveLinks_NoFragment_StillWorks()
+    {
+        var resolver = CreateResolver(paragraphMap: _paragraphMap);
+        var result = resolver.ResolveLinks("Default.aspx?ID=123");
+        Assert.Equal("Default.aspx?ID=456", result);
+    }
+
+    // -------------------------------------------------------------------------
+    // Test 19: BuildSourceToTargetParagraphMap — builds from page tree
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public void BuildSourceToTargetParagraphMap_BuildsFromPageTree()
+    {
+        var paraGuid = Guid.NewGuid();
+        var pages = new List<SerializedPage>
+        {
+            new()
+            {
+                PageUniqueId = Guid.NewGuid(), SourcePageId = 100,
+                Name = "Page1", MenuText = "", UrlName = "p1", SortOrder = 1,
+                GridRows = new List<SerializedGridRow>
+                {
+                    new()
+                    {
+                        Id = Guid.NewGuid(), SortOrder = 1,
+                        Columns = new List<SerializedGridColumn>
+                        {
+                            new()
+                            {
+                                Id = 1, Width = 12,
+                                Paragraphs = new List<SerializedParagraph>
+                                {
+                                    new()
+                                    {
+                                        ParagraphUniqueId = paraGuid,
+                                        SourceParagraphId = 50,
+                                        SortOrder = 1
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        };
+        var paragraphGuidCache = new Dictionary<Guid, int> { { paraGuid, 60 } };
+
+        var map = InternalLinkResolver.BuildSourceToTargetParagraphMap(pages, paragraphGuidCache);
+
+        Assert.Single(map);
+        Assert.Equal(60, map[50]);
+    }
+
+    // -------------------------------------------------------------------------
+    // Test 20: BuildSourceToTargetParagraphMap — skips null SourceParagraphId
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public void BuildSourceToTargetParagraphMap_SkipsNullSourceParagraphId()
+    {
+        var paraGuid = Guid.NewGuid();
+        var pages = new List<SerializedPage>
+        {
+            new()
+            {
+                PageUniqueId = Guid.NewGuid(), SourcePageId = 100,
+                Name = "Page1", MenuText = "", UrlName = "p1", SortOrder = 1,
+                GridRows = new List<SerializedGridRow>
+                {
+                    new()
+                    {
+                        Id = Guid.NewGuid(), SortOrder = 1,
+                        Columns = new List<SerializedGridColumn>
+                        {
+                            new()
+                            {
+                                Id = 1, Width = 12,
+                                Paragraphs = new List<SerializedParagraph>
+                                {
+                                    new()
+                                    {
+                                        ParagraphUniqueId = paraGuid,
+                                        SourceParagraphId = null,
+                                        SortOrder = 1
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        };
+        var paragraphGuidCache = new Dictionary<Guid, int> { { paraGuid, 60 } };
+
+        var map = InternalLinkResolver.BuildSourceToTargetParagraphMap(pages, paragraphGuidCache);
+
+        Assert.Empty(map);
+    }
+
+    // -------------------------------------------------------------------------
+    // Test 21: BuildSourceToTargetParagraphMap — nested children
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public void BuildSourceToTargetParagraphMap_NestedChildren_CollectsParagraphs()
+    {
+        var paraGuidParent = Guid.NewGuid();
+        var paraGuidChild = Guid.NewGuid();
+        var pages = new List<SerializedPage>
+        {
+            new()
+            {
+                PageUniqueId = Guid.NewGuid(), SourcePageId = 100,
+                Name = "Parent", MenuText = "", UrlName = "parent", SortOrder = 1,
+                GridRows = new List<SerializedGridRow>
+                {
+                    new()
+                    {
+                        Id = Guid.NewGuid(), SortOrder = 1,
+                        Columns = new List<SerializedGridColumn>
+                        {
+                            new()
+                            {
+                                Id = 1, Width = 12,
+                                Paragraphs = new List<SerializedParagraph>
+                                {
+                                    new()
+                                    {
+                                        ParagraphUniqueId = paraGuidParent,
+                                        SourceParagraphId = 10,
+                                        SortOrder = 1
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                Children = new List<SerializedPage>
+                {
+                    new()
+                    {
+                        PageUniqueId = Guid.NewGuid(), SourcePageId = 200,
+                        Name = "Child", MenuText = "", UrlName = "child", SortOrder = 1,
+                        GridRows = new List<SerializedGridRow>
+                        {
+                            new()
+                            {
+                                Id = Guid.NewGuid(), SortOrder = 1,
+                                Columns = new List<SerializedGridColumn>
+                                {
+                                    new()
+                                    {
+                                        Id = 1, Width = 12,
+                                        Paragraphs = new List<SerializedParagraph>
+                                        {
+                                            new()
+                                            {
+                                                ParagraphUniqueId = paraGuidChild,
+                                                SourceParagraphId = 20,
+                                                SortOrder = 1
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        };
+        var paragraphGuidCache = new Dictionary<Guid, int>
+        {
+            { paraGuidParent, 110 },
+            { paraGuidChild, 220 }
+        };
+
+        var map = InternalLinkResolver.BuildSourceToTargetParagraphMap(pages, paragraphGuidCache);
+
+        Assert.Equal(2, map.Count);
+        Assert.Equal(110, map[10]);
+        Assert.Equal(220, map[20]);
+    }
+
+    // -------------------------------------------------------------------------
+    // Test 22: GetStats includes paragraph resolved/unresolved counts
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public void GetStats_IncludesParagraphCounts()
+    {
+        var resolver = CreateResolver(paragraphMap: _paragraphMap);
+
+        // Resolve link with both page and paragraph resolved
+        resolver.ResolveLinks("Default.aspx?ID=123#456");
+        // Resolve link with page resolved but paragraph unresolved
+        resolver.ResolveLinks("Default.aspx?ID=123#999");
+
+        var (resolved, unresolved, paraResolved, paraUnresolved) = resolver.GetStats();
+        Assert.Equal(2, resolved);
+        Assert.Equal(0, unresolved);
+        Assert.Equal(1, paraResolved);
+        Assert.Equal(1, paraUnresolved);
     }
 }
