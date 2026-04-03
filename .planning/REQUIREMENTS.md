@@ -1,128 +1,45 @@
-# Requirements: DynamicWeb.Serializer
+# Requirements: v0.3.1 Internal Link Resolution
 
-**Defined:** 2026-03-23
+**Defined:** 2026-04-03
 **Core Value:** Developers can reliably move DynamicWeb database state between environments through source control, with serialized YAML files as the single source of truth.
 
-## v2.0 Requirements
+## Link Resolution
 
-Requirements for the DynamicWeb.Serializer milestone. Each maps to roadmap phases.
+- [ ] **LINK-01**: Serializer detects `Default.aspx?ID=NNN` patterns in ItemType field values and rewrites page IDs to target environment IDs during deserialization
+- [ ] **LINK-02**: Source-to-target page ID mapping is built using PageUniqueId (GUID) as the bridge — source numeric ID → GUID (from YAML) → target numeric ID (from PageGuidCache)
+- [ ] **LINK-03**: Link resolution handles all field types: structured link fields, button fields, and rich text HTML containing embedded links
+- [ ] **LINK-04**: Links referencing pages that don't exist in the target are preserved as-is and logged as warnings (no data corruption)
+- [ ] **LINK-05**: Paragraph anchor fragments (`Default.aspx?ID=NNN#PPP`) are resolved for both page ID and paragraph ID
 
-### Provider Architecture
+## Serialization
 
-- [x] **PROV-01**: Pluggable ISerializationProvider interface with Serialize/Deserialize/DryRun contract
-- [x] **PROV-02**: Provider registry mapping data type strings to provider instances
-- [x] **PROV-03**: Existing ContentSerializer/ContentDeserializer wrapped as ContentProvider adapter
-- [x] **PROV-04**: Orchestrator coordinates multiple providers based on predicate data types
+- [ ] **SER-01**: SerializedPage DTO includes SourcePageId (numeric) alongside the existing GUID, enabling ID mapping construction at deserialization time
+- [ ] **SER-02**: SerializedParagraph DTO includes SourceParagraphId for paragraph anchor resolution
 
-### SQL Table Serialization
+## Versioning
 
-- [x] **SQL-01**: SqlTableProvider serializes any SQL table to YAML using DataGroup XML metadata (Table, NameColumn, CompareColumns)
-- [x] **SQL-02**: Identity resolution matches rows by NameColumn with CompareColumns fallback for empty NameColumn tables
-- [x] **SQL-03**: FK dependency ordering via topological sort prevents constraint violations during deserialization
-- [x] **SQL-04**: Structured result objects report rows added/updated/skipped/failed per table
-- [x] **SQL-05**: Source-wins conflict strategy: YAML rows overwrite matched target rows
+- [ ] **VER-01**: Git tags re-created from v1.0/v2.0 scheme to 0.x pre-release versioning
 
-### Ecommerce Data Groups
+## Future Requirements (deferred)
 
-- [x] **ECOM-01**: OrderFlows and OrderStates serialized and deserialized
-- [x] **ECOM-02**: Payment and Shipping methods serialized and deserialized
-- [x] **ECOM-03**: Countries, Currencies, and VAT settings serialized and deserialized
-- [x] **ECOM-04**: Duplicate DataItemTypes across groups (e.g., EcomMethodCountryRelation) handled without duplicate rows
-
-### Cache & Config
-
-- [x] **CACHE-01**: DW service caches invalidated after SQL table deserialization so admin UI reflects new data
-- [x] **CACHE-02**: Predicate definitions extended with DataType field for provider routing
-- [x] **CACHE-03**: Existing v1.x configs without DataType default to "Content" (backward compatibility)
-
-### Admin UX
-
-- [x] **UX-01**: Log viewer screen shows per-provider summaries with guided advice (e.g., "Create missing groups: X, Y")
-- [x] **UX-02**: Deserialize action available on Asset management file detail page for zip files
-- [x] **UX-03**: Admin tree node relocated from Settings > Content > Sync to Settings > Database > Serialize
-- [x] **UX-04**: Scheduled tasks deprecated (API commands are the replacement)
-
-### Rename
-
-- [x] **REN-01**: Project renamed from Dynamicweb.ContentSync to DynamicWeb.Serializer (namespace, assembly, NuGet package)
-
-### Predicate Config Multi-Provider
-
-- [x] **PRED-01**: PredicateEditModel carries ProviderType, Table, NameColumn, CompareColumns, ServiceCaches properties for both provider types
-- [x] **PRED-02**: SavePredicateCommand applies provider-branched validation (Content: AreaId+PageId required; SqlTable: Table required) and preserves ProviderType on updates (D-02)
-- [x] **PRED-03**: PredicateByIndexQuery maps all ProviderPredicateDefinition fields so SqlTable predicates round-trip without data loss
-- [x] **PRED-04**: PredicateEditScreen shows ProviderType dropdown with WithReloadOnChange, conditionally rendering Content or SqlTable field groups
-- [x] **PRED-05**: PredicateListScreen differentiates Content vs SqlTable predicates with Type and Target columns
-
-## Future Requirements
-
-### Settings & Schema Providers
-
-- **SET-01**: SettingsDataItemProvider serializes ~20 settings items to YAML
-- **SET-02**: Environment-specific settings blocklist prevents dangerous key paths from serialization
-- **SCH-01**: SchemaDataItemProvider exports ~5 schema definitions as reference YAML
-
-### Remaining Data Groups
-
-- **REM-01**: Users, Marketing, PIM, Apps SQL tables (~30 tables) serialized via SqlTableProvider
-- **REM-02**: DataGroup auto-discovery from DW XML metadata at runtime
-
-### Publishing
-
-- **PUB-01**: App published to NuGet registry with dynamicweb-app-store tag
-- **PUB-02**: Tested across multiple content trees beyond Customer Center
+- Product/group link resolution (`ProductID=`, `GroupID=` references) — separate concern from page links
+- GUID-native YAML storage (store GUIDs instead of numeric IDs in link fields) — breaking format change, deferred to v0.4+
 
 ## Out of Scope
 
-| Feature | Reason |
-|---------|--------|
-| Bidirectional merge / conflict resolution | Exponential complexity for arbitrary SQL rows; source-wins is proven |
-| Incremental / delta sync | DW tables lack uniform modification timestamps; full sync is fast enough for config data |
-| Real-time change detection (Notifications API) | Serializing in request context is slow and error-prone |
-| Transactional data (orders, carts, sessions) | High-volume, environment-specific, not deployment artifacts |
-| Per-field merge rules | Configuration nightmare across 74 tables |
-| Schema migration (ALTER TABLE) | Use DW's own migration system or purpose-built tools |
-| File / media serialization | Files stay in git directly; 24 file-based data groups excluded |
-| Provider-level parallelism | FK ordering conflicts during parallel writes; sequential is correct |
+- HTML DOM parsing — regex/string replacement suffices for `Default.aspx?ID=` pattern
+- Per-field-type mapper system — DW uses uniform link format across all field types
+- Real-time link validation — sync tool, not a link checker
 
 ## Traceability
 
-Which phases cover which requirements. Updated during roadmap creation.
-
-| Requirement | Phase | Status |
-|-------------|-------|--------|
-| PROV-01 | Phase 13 | Complete |
-| PROV-02 | Phase 13 | Complete |
-| PROV-03 | Phase 14 | Complete |
-| PROV-04 | Phase 14 | Complete |
-| SQL-01 | Phase 13 | Complete |
-| SQL-02 | Phase 13 | Complete |
-| SQL-03 | Phase 15 | Complete |
-| SQL-04 | Phase 13 | Complete |
-| SQL-05 | Phase 13 | Complete |
-| ECOM-01 | Phase 15 | Complete |
-| ECOM-02 | Phase 15 | Complete |
-| ECOM-03 | Phase 15 | Complete |
-| ECOM-04 | Phase 15 | Complete |
-| CACHE-01 | Phase 15 | Complete |
-| CACHE-02 | Phase 14 | Complete |
-| CACHE-03 | Phase 14 | Complete |
-| UX-01 | Phase 16 | Complete |
-| UX-02 | Phase 16 | Complete |
-| UX-03 | Phase 16 | Complete |
-| UX-04 | Phase 16 | Complete |
-| REN-01 | Phase 17 | Complete |
-| PRED-01 | Phase 18 | Planned |
-| PRED-02 | Phase 18 | Planned |
-| PRED-03 | Phase 18 | Planned |
-| PRED-04 | Phase 18 | Planned |
-| PRED-05 | Phase 18 | Planned |
-
-**Coverage:**
-- v2.0 requirements: 26 total
-- Mapped to phases: 26
-- Unmapped: 0
-
----
-*Requirements defined: 2026-03-23*
-*Last updated: 2026-03-24 after Phase 18 planning*
+| REQ-ID | Phase | Plan | Status |
+|--------|-------|------|--------|
+| LINK-01 | — | — | Pending |
+| LINK-02 | — | — | Pending |
+| LINK-03 | — | — | Pending |
+| LINK-04 | — | — | Pending |
+| LINK-05 | — | — | Pending |
+| SER-01 | — | — | Pending |
+| SER-02 | — | — | Pending |
+| VER-01 | — | — | Pending |
