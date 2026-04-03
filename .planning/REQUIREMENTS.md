@@ -15,8 +15,8 @@
 
 ## Area Configuration
 
-- [ ] **AREA-01**: Area-level ItemType fields (header/footer/master page connections) are serialized to YAML and deserialized back
-- [ ] **AREA-02**: Page ID references in Area ItemType fields are resolved via InternalLinkResolver
+- [x] **AREA-01**: Area-level ItemType fields (header/footer/master page connections) are serialized to YAML and deserialized back
+- [x] **AREA-02**: Page ID references in Area ItemType fields are resolved via InternalLinkResolver
 
 ## Schema Sync
 

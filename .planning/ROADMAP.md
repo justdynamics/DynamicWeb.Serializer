@@ -75,7 +75,7 @@
 **Milestone Goal:** Serialize and deserialize ALL page-level settings, area ItemType connections, and ecommerce navigation configuration so that deserialized pages are functionally identical to the source.
 
 - [x] **Phase 23: Full Page Properties + Navigation Settings** - Extend SerializedPage with all ~30 missing properties and PageNavigationSettings, with link resolution for ShortCut and ProductPage (completed 2026-04-03)
-- [ ] **Phase 24: Area ItemType Fields** - Serialize and deserialize Area-level ItemType connections with page ID resolution
+- [x] **Phase 24: Area ItemType Fields** - Serialize and deserialize Area-level ItemType connections with page ID resolution (completed 2026-04-03)
 - [ ] **Phase 25: Ecommerce Schema Sync** - Ensure EcomProductGroupField custom columns exist before data import
 
 ## Phase Details
@@ -103,9 +103,9 @@ Plans:
   1. SerializedArea YAML includes ItemType name and all ItemType field values for each area
   2. Deserializing an area restores its ItemType connection and field values, so the area's header/footer/master page configuration matches the source
   3. Page ID references within Area ItemType field values (e.g., header page link) are resolved via InternalLinkResolver to correct target IDs
-**Plans:** 1 plan
+**Plans:** 1/1 plans complete
 Plans:
-- [ ] 24-01-PLAN.md — SerializedArea DTO + mapper + deserializer + link resolution
+- [x] 24-01-PLAN.md — SerializedArea DTO + mapper + deserializer + link resolution
 
 ### Phase 25: Ecommerce Schema Sync
 **Goal**: EcomProductGroupField custom columns are guaranteed to exist on the EcomGroups table before any product group data is deserialized, preventing column-not-found errors
@@ -147,5 +147,5 @@ Plans:
 | 21. Paragraph Anchor Resolution | v0.3.1 | 1/1 | Complete | 2026-04-03 |
 | 22. Version Housekeeping | v0.3.1 | 1/1 | Complete | 2026-04-03 |
 | 23. Full Page Properties + Navigation Settings | v0.4.0 | 2/2 | Complete   | 2026-04-03 |
-| 24. Area ItemType Fields | v0.4.0 | 0/1 | Not started | - |
+| 24. Area ItemType Fields | v0.4.0 | 1/1 | Complete   | 2026-04-03 |
 | 25. Ecommerce Schema Sync | v0.4.0 | 0/1 | Not started | - |
