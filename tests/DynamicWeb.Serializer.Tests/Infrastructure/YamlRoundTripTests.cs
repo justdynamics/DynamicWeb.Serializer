@@ -100,6 +100,62 @@ public class YamlRoundTripTests
     }
 
     [Fact]
+    public void Yaml_RoundTrips_PageWithSourcePageId()
+    {
+        var page = ContentTreeBuilder.BuildSinglePage("Test") with { SourcePageId = 42 };
+
+        var yaml = _serializer.Serialize(page);
+        var result = _deserializer.Deserialize<SerializedPage>(yaml);
+
+        Assert.Equal(42, result.SourcePageId);
+    }
+
+    [Fact]
+    public void Yaml_RoundTrips_ParagraphWithSourceParagraphId()
+    {
+        var para = new SerializedParagraph
+        {
+            ParagraphUniqueId = Guid.NewGuid(),
+            SortOrder = 1,
+            SourceParagraphId = 99,
+            ItemType = "ContentModule"
+        };
+
+        var yaml = _serializer.Serialize(para);
+        var result = _deserializer.Deserialize<SerializedParagraph>(yaml);
+
+        Assert.Equal(99, result.SourceParagraphId);
+    }
+
+    [Fact]
+    public void Yaml_Deserializes_PageWithoutSourcePageId_AsNull()
+    {
+        var page = ContentTreeBuilder.BuildSinglePage("Test");
+        // SourcePageId is not set, defaults to null
+
+        var yaml = _serializer.Serialize(page);
+        var result = _deserializer.Deserialize<SerializedPage>(yaml);
+
+        Assert.Null(result.SourcePageId);
+    }
+
+    [Fact]
+    public void Yaml_Deserializes_ParagraphWithoutSourceParagraphId_AsNull()
+    {
+        var para = new SerializedParagraph
+        {
+            ParagraphUniqueId = Guid.NewGuid(),
+            SortOrder = 1
+        };
+        // SourceParagraphId is not set, defaults to null
+
+        var yaml = _serializer.Serialize(para);
+        var result = _deserializer.Deserialize<SerializedParagraph>(yaml);
+
+        Assert.Null(result.SourceParagraphId);
+    }
+
+    [Fact]
     public void Yaml_Serialization_IsDeterministic()
     {
         var page = ContentTreeBuilder.BuildSinglePage("Test") with

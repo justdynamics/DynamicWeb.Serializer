@@ -95,6 +95,54 @@ public class DtoTests
     }
 
     [Fact]
+    public void SerializedPage_SourcePageId_DefaultsToNull()
+    {
+        var page = new SerializedPage
+        {
+            PageUniqueId = Guid.NewGuid(),
+            Name = "Test", MenuText = "Test",
+            UrlName = "test", SortOrder = 1
+        };
+        Assert.Null(page.SourcePageId);
+    }
+
+    [Fact]
+    public void SerializedPage_SourcePageId_CanBeSet()
+    {
+        var page = new SerializedPage
+        {
+            PageUniqueId = Guid.NewGuid(),
+            Name = "Test", MenuText = "Test",
+            UrlName = "test", SortOrder = 1,
+            SourcePageId = 42
+        };
+        Assert.Equal(42, page.SourcePageId);
+    }
+
+    [Fact]
+    public void SerializedParagraph_SourceParagraphId_DefaultsToNull()
+    {
+        var para = new SerializedParagraph
+        {
+            ParagraphUniqueId = Guid.NewGuid(),
+            SortOrder = 1
+        };
+        Assert.Null(para.SourceParagraphId);
+    }
+
+    [Fact]
+    public void SerializedParagraph_SourceParagraphId_CanBeSet()
+    {
+        var para = new SerializedParagraph
+        {
+            ParagraphUniqueId = Guid.NewGuid(),
+            SortOrder = 1,
+            SourceParagraphId = 99
+        };
+        Assert.Equal(99, para.SourceParagraphId);
+    }
+
+    [Fact]
     public void ContentHierarchy_FullDepth_CanBeConstructed()
     {
         var tree = ContentTreeBuilder.BuildSampleTree();

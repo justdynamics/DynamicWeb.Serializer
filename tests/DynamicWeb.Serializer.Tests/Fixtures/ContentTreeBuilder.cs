@@ -122,6 +122,11 @@ public static class ContentTreeBuilder
         };
     }
 
+    public static SerializedPage BuildSinglePageWithSourceId(string name, int sourcePageId, Guid? guid = null)
+    {
+        return BuildSinglePage(name, guid) with { SourcePageId = sourcePageId };
+    }
+
     /// <summary>
     /// Builds a single page with 2 sample permissions for testing permission serialization.
     /// Anonymous with "none" level and AuthenticatedFrontend with "read" level.
