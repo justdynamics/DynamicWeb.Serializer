@@ -7,7 +7,8 @@
 - [x] **v1.2 Admin UI** - Phases 7-10 (shipped 2026-03-22)
 - [x] **v1.3 Permissions** - Phases 11-12 (shipped 2026-03-23)
 - [x] **v2.0 DynamicWeb.Serializer** - Phases 13-18 (shipped 2026-03-24)
-- [ ] **v0.3.1 Internal Link Resolution** - Phases 19-22 (in progress)
+- [x] **v0.3.1 Internal Link Resolution** - Phases 19-22 (shipped 2026-04-03)
+- [ ] **v0.4.0 Full Page Fidelity** - Phases 23-25 (in progress)
 
 ## Phases
 
@@ -59,70 +60,60 @@
 
 </details>
 
-### v0.3.1 Internal Link Resolution (In Progress)
+<details>
+<summary>v0.3.1 Internal Link Resolution (Phases 19-22) - SHIPPED 2026-04-03</summary>
 
-**Milestone Goal:** Resolve internal page ID references in content fields during deserialization so cross-environment links work correctly.
+- [x] Phase 19: Source ID Serialization (1/1 plans) - completed 2026-04-03
+- [x] Phase 20: Link Resolution Core (2/2 plans) - completed 2026-04-03
+- [x] Phase 21: Paragraph Anchor Resolution (1/1 plans) - completed 2026-04-03
+- [x] Phase 22: Version Housekeeping (1/1 plans) - completed 2026-04-03
 
-- [ ] **Phase 19: Source ID Serialization** - Serialize source numeric IDs into YAML so deserialization can build the ID mapping
-- [x] **Phase 20: Link Resolution Core** - Detect and rewrite `Default.aspx?ID=NNN` patterns in ItemType fields during deserialization (completed 2026-04-03)
-- [x] **Phase 21: Paragraph Anchor Resolution** - Resolve paragraph ID fragments in `Default.aspx?ID=NNN#PPP` anchor links (completed 2026-04-03)
-- [x] **Phase 22: Version Housekeeping** - Re-tag Git history from v1.0/v2.0 to 0.x pre-release versioning (completed 2026-04-03)
+</details>
+
+### v0.4.0 Full Page Fidelity (In Progress)
+
+**Milestone Goal:** Serialize and deserialize ALL page-level settings, area ItemType connections, and ecommerce navigation configuration so that deserialized pages are functionally identical to the source.
+
+- [ ] **Phase 23: Full Page Properties + Navigation Settings** - Extend SerializedPage with all ~30 missing properties and PageNavigationSettings, with link resolution for ShortCut and ProductPage
+- [ ] **Phase 24: Area ItemType Fields** - Serialize and deserialize Area-level ItemType connections with page ID resolution
+- [ ] **Phase 25: Ecommerce Schema Sync** - Ensure EcomProductGroupField custom columns exist before data import
 
 ## Phase Details
 
-### Phase 19: Source ID Serialization
-**Goal**: Serialized YAML includes the source environment's numeric page and paragraph IDs alongside GUIDs, enabling ID mapping construction at deserialization time
-**Depends on**: Phase 18 (current codebase)
-**Requirements**: SER-01, SER-02
+### Phase 23: Full Page Properties + Navigation Settings
+**Goal**: Deserialized pages carry every page-level setting (SEO, visibility, URL, navigation, SSL, permissions, display) and ecommerce navigation configuration, with internal links resolved to target IDs
+**Depends on**: Phase 22 (current codebase with InternalLinkResolver)
+**Requirements**: PAGE-01, PAGE-02, ECOM-01, ECOM-02
 **Success Criteria** (what must be TRUE):
-  1. SerializedPage YAML files contain a SourcePageId field with the numeric page ID from the source environment
-  2. SerializedParagraph YAML files contain a SourceParagraphId field with the numeric paragraph ID from the source environment
-  3. Existing deserialization still works correctly with the new fields present (backward compatible)
-  4. Re-serializing an already-synced environment produces YAML with that environment's own numeric IDs (not stale source IDs)
-**Plans**: 1 plan
-Plans:
-- [x] 19-01-PLAN.md -- Add SourcePageId/SourceParagraphId to DTOs, ContentMapper, and unit tests
+  1. A page serialized from source environment produces YAML containing all ~30 properties (NavigationTag, ShortCut, UrlName, MetaTitle, MetaDescription, SSLMode, PermissionType, visibility flags, etc.) with correct values
+  2. Deserializing that YAML into a clean target environment creates a page with all property values matching the source (verified by comparing DB column values)
+  3. PageNavigationSettings (UseEcomGroups, ParentType, ShopId, MaxLevels, ProductPage, IncludeProducts, NavigationProvider) round-trips correctly through serialize/deserialize
+  4. ShortCut values containing Default.aspx?ID=NNN are rewritten to the correct target page ID during deserialization
+  5. ProductPage values in NavigationSettings containing Default.aspx?ID=NNN are rewritten to the correct target page ID during deserialization
+**Plans**: TBD
 
-### Phase 20: Link Resolution Core
-**Goal**: Internal page links (`Default.aspx?ID=NNN`) embedded in ItemType field values are automatically rewritten to the correct target page IDs during deserialization
-**Depends on**: Phase 19 (source IDs available in YAML)
-**Requirements**: LINK-01, LINK-02, LINK-03, LINK-04
+### Phase 24: Area ItemType Fields
+**Goal**: Area-level ItemType connections (header, footer, master page) are preserved through serialize/deserialize with page references resolved to target environment IDs
+**Depends on**: Phase 23 (extended content pipeline)
+**Requirements**: AREA-01, AREA-02
 **Success Criteria** (what must be TRUE):
-  1. After deserialization, `Default.aspx?ID=NNN` references in link fields point to the correct target page (verified by checking the target DB value matches the page with the same GUID)
-  2. Rich text HTML fields containing `<a href="Default.aspx?ID=NNN">` have their embedded page IDs correctly rewritten
-  3. Button field values containing `Default.aspx?ID=NNN` patterns have their page IDs correctly rewritten
-  4. Links referencing pages that do not exist in the target environment are left unchanged and a warning is logged identifying the unresolvable source page ID
-  5. ID replacement is boundary-aware: rewriting ID=1 does not corrupt ID=12 or ID=100
-**Plans**: 2 plans
-Plans:
-- [x] 20-01-PLAN.md -- TDD InternalLinkResolver: boundary-aware regex resolver + BuildSourceToTargetMap + unit tests
-- [x] 20-02-PLAN.md -- Wire Phase 2 link resolution into ContentDeserializer.DeserializePredicate
+  1. SerializedArea YAML includes ItemType name and all ItemType field values for each area
+  2. Deserializing an area restores its ItemType connection and field values, so the area's header/footer/master page configuration matches the source
+  3. Page ID references within Area ItemType field values (e.g., header page link) are resolved via InternalLinkResolver to correct target IDs
+**Plans**: TBD
 
-### Phase 21: Paragraph Anchor Resolution
-**Goal**: Paragraph anchor links (`Default.aspx?ID=NNN#PPP`) have both their page ID and paragraph ID fragments resolved to target environment values
-**Depends on**: Phase 20 (link resolver infrastructure), Phase 19 (SourceParagraphId in YAML)
-**Requirements**: LINK-05
+### Phase 25: Ecommerce Schema Sync
+**Goal**: EcomProductGroupField custom columns are guaranteed to exist on the EcomGroups table before any product group data is deserialized, preventing column-not-found errors
+**Depends on**: Phase 23 (navigation settings context)
+**Requirements**: SCHEMA-01
 **Success Criteria** (what must be TRUE):
-  1. After deserialization, `Default.aspx?ID=NNN#PPP` references have both the page ID and paragraph ID rewritten to target values
-  2. Anchor links where the paragraph does not exist in target but the page does are resolved for the page ID portion and a warning is logged for the paragraph fragment
-**Plans**: 1 plan
-Plans:
-- [x] 21-01-PLAN.md -- TDD paragraph anchor resolution in InternalLinkResolver + wire paragraph map into ContentDeserializer
-
-### Phase 22: Version Housekeeping
-**Goal**: Git history uses consistent 0.x pre-release versioning instead of the legacy v1.0/v2.0 scheme
-**Depends on**: Nothing (independent of other phases)
-**Requirements**: VER-01
-**Success Criteria** (what must be TRUE):
-  1. Git tags follow a 0.x.y pattern (e.g., 0.1.0, 0.2.0, 0.3.0) replacing the previous v1.0/v2.0 tags
-  2. Running `git tag` shows only 0.x tags (no leftover v1.x or v2.x tags)
-**Plans**: 1 plan
-Plans:
-- [x] 22-01-PLAN.md -- Re-tag git history to 0.x versioning and update .csproj version
+  1. During deserialization, EcomProductGroupField definitions are processed and UpdateTable() is called before any EcomGroups row data is inserted
+  2. Custom columns created by EcomProductGroupField are present on the EcomGroups table after deserialization (verified by querying table schema)
+**Plans**: TBD
 
 ## Progress
 
-**Execution Order:** Phases 19 -> 20 -> 21; Phase 22 can run anytime (independent)
+**Execution Order:** Phases 23 -> 24 -> 25
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
@@ -145,6 +136,9 @@ Plans:
 | 17. Project Rename | v2.0 | N/A | Absorbed into P16 | - |
 | 18. Predicate Config Multi-Provider | v2.0 | 2/2 | Complete | 2026-03-24 |
 | 19. Source ID Serialization | v0.3.1 | 1/1 | Complete | 2026-04-03 |
-| 20. Link Resolution Core | v0.3.1 | 2/2 | Complete   | 2026-04-03 |
-| 21. Paragraph Anchor Resolution | v0.3.1 | 1/1 | Complete   | 2026-04-03 |
-| 22. Version Housekeeping | v0.3.1 | 1/1 | Complete   | 2026-04-03 |
+| 20. Link Resolution Core | v0.3.1 | 2/2 | Complete | 2026-04-03 |
+| 21. Paragraph Anchor Resolution | v0.3.1 | 1/1 | Complete | 2026-04-03 |
+| 22. Version Housekeeping | v0.3.1 | 1/1 | Complete | 2026-04-03 |
+| 23. Full Page Properties + Navigation Settings | v0.4.0 | 0/? | Not started | - |
+| 24. Area ItemType Fields | v0.4.0 | 0/? | Not started | - |
+| 25. Ecommerce Schema Sync | v0.4.0 | 0/? | Not started | - |

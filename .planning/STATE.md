@@ -2,12 +2,12 @@
 gsd_state_version: 1.0
 milestone: v0.4.0
 milestone_name: Full Page Fidelity
-status: Defining requirements
+status: Ready to plan
 stopped_at: null
-last_updated: "2026-04-03T18:00:00.000Z"
-last_activity: 2026-04-03
+last_updated: "2026-04-02T12:00:00.000Z"
+last_activity: 2026-04-02
 progress:
-  total_phases: 0
+  total_phases: 3
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -20,22 +20,20 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-03)
 
 **Core value:** Developers can reliably move DynamicWeb database state between environments through source control, with serialized YAML files as the single source of truth.
-**Current focus:** Defining requirements for v0.4.0 — full page fidelity
+**Current focus:** Phase 23 - Full Page Properties + Navigation Settings
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements
-Last activity: 2026-04-03 — Milestone v0.4.0 started
-Last activity: 2026-04-03
+Phase: 23 (1 of 3 in v0.4.0 milestone)
+Plan: 0 of ? in current phase
+Status: Ready to plan
+Last activity: 2026-04-02 -- Roadmap created for v0.4.0 Full Page Fidelity
 
-Progress: [███████░░░] 67% (v0.3.1)
+Progress: [░░░░░░░░░░] 0% (v0.4.0)
 
 ## Performance Metrics
 
 **Velocity:**
-
 - Total plans completed: 20 (prior milestones)
 - Average duration: 4min
 - Total execution time: ~1.4 hours
@@ -46,17 +44,15 @@ Progress: [███████░░░] 67% (v0.3.1)
 |-------|-------|-------|----------|
 | (prior milestones) | 20 | ~80min | ~4min |
 | 19 | 1 | 3min | 3min |
+| 20 | 2 | 7min | 3.5min |
+| 21 | 1 | 3min | 3min |
+| 22 | 1 | 1min | 1min |
 
 **Recent Trend:**
-
-- Last 5 plans: 1min, 2min, 3min, 6min, 4min
+- Last 5 plans: 5min, 2min, 3min, 1min, 3min
 - Trend: Stable
 
 *Updated after each plan completion*
-| Phase 20 P01 | 5min | 1 tasks | 2 files |
-| Phase 20 P02 | 2min | 1 tasks | 1 files |
-| Phase 21 P01 | 3min | 2 tasks | 3 files |
-| Phase 22 P01 | 1min | 2 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -65,17 +61,13 @@ Progress: [███████░░░] 67% (v0.3.1)
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
-- DW LinkHelper API for link detection (no custom regex needed)
-- SourcePageId/SourceParagraphId are nullable int? for backward-compatible YAML extension
-- SourcePageId must be serialized in YAML before deserialization can build mapping
-- Boundary-aware ID replacement required to avoid substring collisions (ID=1 vs ID=12)
-- Forward reference problem: all pages must be deserialized before link resolution runs
-- ButtonEditor serialized value format needs runtime inspection
-- [Phase 20]: Regex greedy \d+ provides boundary safety for ID replacement
-- [Phase 20]: PropertyItem link resolution uses separate method (page.PropertyItemType not available on DW Page API)
-- [Phase 21]: Extended regex with optional fragment group rather than separate pass for paragraph anchors
-- [Phase 21]: 4-tuple GetStats return for combined page + paragraph resolution counts
-- [Phase 22]: Use 0.3.0 without beta suffix since v0.3.1 milestone is completing
+- All ~30 page properties have public setters, flow through SavePage -- no special API needed
+- PageNavigationSettings is inline columns on Page table, not separate entity
+- Area ItemType uses standard Item.SerializeTo()/DeserializeFrom() pattern
+- InternalLinkResolver already exists from v0.3.1 -- reuse for ShortCut and ProductPage links
+- Timestamps deferred to future milestone (requires direct SQL post-save)
+- No backward compatibility needed (beta)
+- Sub-object DTOs for logical groupings (SEO, URL settings, visibility, navigation) to keep YAML clean
 
 ### Pending Todos
 
@@ -83,12 +75,10 @@ None yet.
 
 ### Blockers/Concerns
 
-- ButtonEditor serialized value format not fully documented -- need runtime inspection
-- Paragraph GUID resolution during deserialization needs validation
-- LinkHelper.GetInternalPageIdsFromText behavior with malformed URLs needs testing
+- EcomProductGroupField.UpdateTable() behavior not yet decompiled (MEDIUM confidence from research)
 
 ## Session Continuity
 
-Last session: 2026-04-03T15:10:03.985Z
-Stopped at: Completed 22-01-PLAN.md
+Last session: 2026-04-02
+Stopped at: Roadmap created for v0.4.0
 Resume file: None

@@ -38,10 +38,10 @@
 
 | REQ-ID | Phase | Plan | Status |
 |--------|-------|------|--------|
-| PAGE-01 | — | — | Pending |
-| PAGE-02 | — | — | Pending |
-| ECOM-01 | — | — | Pending |
-| ECOM-02 | — | — | Pending |
-| AREA-01 | — | — | Pending |
-| AREA-02 | — | — | Pending |
-| SCHEMA-01 | — | — | Pending |
+| PAGE-01 | Phase 23 | — | Pending |
+| PAGE-02 | Phase 23 | — | Pending |
+| ECOM-01 | Phase 23 | — | Pending |
+| ECOM-02 | Phase 23 | — | Pending |
+| AREA-01 | Phase 24 | — | Pending |
+| AREA-02 | Phase 24 | — | Pending |
+| SCHEMA-01 | Phase 25 | — | Pending |
