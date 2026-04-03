@@ -5,12 +5,12 @@
 
 ## Page Properties
 
-- [ ] **PAGE-01**: All ~30 missing page properties are serialized to YAML and deserialized back (NavigationTag, ShortCut, UrlName, MetaTitle, MetaDescription, MetaCanonical, Noindex, Nofollow, Robots404, SSLMode, PermissionType, UrlIgnoreForChildren, UrlDataProvider, ExactUrl, AllowClick, ShowInSitemap, AllowSearch, ShowInLegend, HideForPhones, HideForTablets, HideForDesktops, ActiveFrom, ActiveTo, DisplayMode, MasterPageId, MasterType, ContentType, ColorSchemeId, TopImage)
+- [x] **PAGE-01**: All ~30 missing page properties are serialized to YAML and deserialized back (NavigationTag, ShortCut, UrlName, MetaTitle, MetaDescription, MetaCanonical, Noindex, Nofollow, Robots404, SSLMode, PermissionType, UrlIgnoreForChildren, UrlDataProvider, ExactUrl, AllowClick, ShowInSitemap, AllowSearch, ShowInLegend, HideForPhones, HideForTablets, HideForDesktops, ActiveFrom, ActiveTo, DisplayMode, MasterPageId, MasterType, ContentType, ColorSchemeId, TopImage)
 - [ ] **PAGE-02**: ShortCut field values containing Default.aspx?ID=NNN are resolved via InternalLinkResolver during deserialization
 
 ## Ecommerce Navigation
 
-- [ ] **ECOM-01**: PageNavigationSettings (UseEcomGroups, ParentType, Groups, ShopId, MaxLevels, ProductPage, IncludeProducts, NavigationProvider) are serialized and deserialized
+- [x] **ECOM-01**: PageNavigationSettings (UseEcomGroups, ParentType, Groups, ShopId, MaxLevels, ProductPage, IncludeProducts, NavigationProvider) are serialized and deserialized
 - [ ] **ECOM-02**: ProductPage field in NavigationSettings containing Default.aspx?ID=NNN is resolved via InternalLinkResolver
 
 ## Area Configuration

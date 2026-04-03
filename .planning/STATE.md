@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v0.4.0
 milestone_name: Full Page Fidelity
-status: Ready to plan
-stopped_at: null
-last_updated: "2026-04-02T12:00:00.000Z"
-last_activity: 2026-04-02
+status: Executing
+stopped_at: "Completed 23-01-PLAN.md"
+last_updated: "2026-04-03T17:03:19.000Z"
+last_activity: 2026-04-03
 progress:
   total_phases: 3
   completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
+  total_plans: 2
+  completed_plans: 1
 ---
 
 # Project State
@@ -25,11 +25,11 @@ See: .planning/PROJECT.md (updated 2026-04-03)
 ## Current Position
 
 Phase: 23 (1 of 3 in v0.4.0 milestone)
-Plan: 0 of ? in current phase
-Status: Ready to plan
-Last activity: 2026-04-02 -- Roadmap created for v0.4.0 Full Page Fidelity
+Plan: 1 of 2 in current phase
+Status: Executing
+Last activity: 2026-04-03 -- Completed 23-01 (page properties DTO + mapper)
 
-Progress: [░░░░░░░░░░] 0% (v0.4.0)
+Progress: [█░░░░░░░░░] 10% (v0.4.0)
 
 ## Performance Metrics
 
@@ -47,6 +47,7 @@ Progress: [░░░░░░░░░░] 0% (v0.4.0)
 | 20 | 2 | 7min | 3.5min |
 | 21 | 1 | 3min | 3min |
 | 22 | 1 | 1min | 1min |
+| 23 | 1 | 3min | 3min |
 
 **Recent Trend:**
 - Last 5 plans: 5min, 2min, 3min, 1min, 3min
@@ -61,6 +62,9 @@ Progress: [░░░░░░░░░░] 0% (v0.4.0)
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
+- Sub-objects (Seo, UrlSettings, Visibility) always serialized; NavigationSettings only when UseEcomGroups=true
+- Allowclick/Allowsearch/ShowInSitemap/ShowInLegend default to true on DTO matching DW field initializers
+- ActiveFrom/ActiveTo as nullable DateTime to distinguish unset from explicit
 - All ~30 page properties have public setters, flow through SavePage -- no special API needed
 - PageNavigationSettings is inline columns on Page table, not separate entity
 - Area ItemType uses standard Item.SerializeTo()/DeserializeFrom() pattern
@@ -79,6 +83,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-02
-Stopped at: Roadmap created for v0.4.0
+Last session: 2026-04-03
+Stopped at: Completed 23-01-PLAN.md
 Resume file: None
