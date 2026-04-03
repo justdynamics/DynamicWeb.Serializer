@@ -294,6 +294,7 @@ public class ContentDeserializer
             page.LayoutApplyToSubPages = dto.LayoutApplyToSubPages;
             page.IsFolder = dto.IsFolder;
             page.TreeSection = dto.TreeSection ?? string.Empty;
+            ApplyPageProperties(page, dto);
             // Do NOT set page.ID — leave 0 for insert path (Pitfall 4)
 
             var saved = Services.Pages.SavePage(page);
@@ -353,6 +354,7 @@ public class ContentDeserializer
             existingPage.LayoutApplyToSubPages = dto.LayoutApplyToSubPages;
             existingPage.IsFolder = dto.IsFolder;
             existingPage.TreeSection = dto.TreeSection ?? string.Empty;
+            ApplyPageProperties(existingPage, dto);
 
             Services.Pages.SavePage(existingPage);
 
@@ -851,6 +853,87 @@ public class ContentDeserializer
 
         _loggedTemplateMissing.Add(key);
         Log($"WARNING: Grid row definition '{definitionId}.json' not found in any design folder under {designsDir}");
+    }
+
+    // -------------------------------------------------------------------------
+    // Page property assignment helper (shared by INSERT and UPDATE paths)
+    // -------------------------------------------------------------------------
+
+    private static void ApplyPageProperties(Page page, SerializedPage dto)
+    {
+        // Flat scalars
+        page.NavigationTag = dto.NavigationTag;
+        page.ShortCut = dto.ShortCut;
+        page.Hidden = dto.Hidden;
+        page.Allowclick = dto.Allowclick;
+        page.Allowsearch = dto.Allowsearch;
+        page.ShowInSitemap = dto.ShowInSitemap;
+        page.ShowInLegend = dto.ShowInLegend;
+        page.SslMode = dto.SslMode;
+        page.ColorSchemeId = dto.ColorSchemeId;
+        page.ExactUrl = dto.ExactUrl;
+        page.ContentType = dto.ContentType;
+        page.TopImage = dto.TopImage;
+        page.PermissionType = dto.PermissionType;
+
+        // DisplayMode -- parse from string, skip if not parseable
+        if (!string.IsNullOrEmpty(dto.DisplayMode) &&
+            Enum.TryParse<Dynamicweb.Content.DisplayMode>(dto.DisplayMode, true, out var dm))
+            page.DisplayMode = dm;
+
+        // ActiveFrom/ActiveTo -- only set when DTO has non-null values
+        // (DW defaults to DateTime.Now / DateHelper.MaxDate() -- do not overwrite)
+        if (dto.ActiveFrom.HasValue)
+            page.ActiveFrom = dto.ActiveFrom.Value;
+        if (dto.ActiveTo.HasValue)
+            page.ActiveTo = dto.ActiveTo.Value;
+
+        // SEO sub-object
+        if (dto.Seo != null)
+        {
+            page.MetaTitle = dto.Seo.MetaTitle;
+            page.MetaCanonical = dto.Seo.MetaCanonical;
+            page.Description = dto.Seo.Description;
+            page.Keywords = dto.Seo.Keywords;
+            page.Noindex = dto.Seo.Noindex;
+            page.Nofollow = dto.Seo.Nofollow;
+            page.Robots404 = dto.Seo.Robots404;
+        }
+
+        // URL settings sub-object
+        if (dto.UrlSettings != null)
+        {
+            page.UrlDataProviderTypeName = dto.UrlSettings.UrlDataProviderTypeName;
+            page.UrlDataProviderParameters = dto.UrlSettings.UrlDataProviderParameters;
+            page.UrlIgnoreForChildren = dto.UrlSettings.UrlIgnoreForChildren;
+            page.UrlUseAsWritten = dto.UrlSettings.UrlUseAsWritten;
+        }
+
+        // Visibility sub-object
+        if (dto.Visibility != null)
+        {
+            page.HideForPhones = dto.Visibility.HideForPhones;
+            page.HideForTablets = dto.Visibility.HideForTablets;
+            page.HideForDesktops = dto.Visibility.HideForDesktops;
+        }
+
+        // NavigationSettings -- ONLY create when UseEcomGroups is true (per research pitfall 3)
+        if (dto.NavigationSettings != null && dto.NavigationSettings.UseEcomGroups)
+        {
+            page.NavigationSettings = new PageNavigationSettings
+            {
+                UseEcomGroups = true,
+                Groups = dto.NavigationSettings.Groups,
+                ShopID = dto.NavigationSettings.ShopID,
+                MaxLevels = dto.NavigationSettings.MaxLevels,
+                ProductPage = dto.NavigationSettings.ProductPage,
+                NavigationProvider = dto.NavigationSettings.NavigationProvider,
+                IncludeProducts = dto.NavigationSettings.IncludeProducts
+            };
+            if (Enum.TryParse<EcommerceNavigationParentType>(
+                dto.NavigationSettings.ParentType, true, out var pt))
+                page.NavigationSettings.ParentType = pt;
+        }
     }
 
     // -------------------------------------------------------------------------
