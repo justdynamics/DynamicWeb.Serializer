@@ -154,7 +154,7 @@ Plans:
   4. Existing area ItemType field serialization (from Phase 24) continues working alongside the new area properties
 **Plans**: 1 plan
 Plans:
-- [ ] 27-01-PLAN.md — xmlColumns config + SqlTable pipeline XML pretty-print/compact
+- [ ] 30-01-PLAN.md — Full area properties serialize/deserialize with SQL read/write and excludeFields
 
 ### Phase 31: Predicate UI Enhancement
 **Goal**: Admin UI predicate edit screens expose all new v0.5.0 config fields (excludeFields, xmlColumns, excludeXmlElements) for visual configuration
