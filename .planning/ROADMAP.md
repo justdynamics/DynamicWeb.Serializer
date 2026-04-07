@@ -84,7 +84,7 @@
 
 **Milestone Goal:** Pretty-print embedded XML, consolidate areas into ContentProvider, and add field-level include/exclude filtering across all provider types with updated predicate UI.
 
-- [ ] **Phase 26: XML Pretty-Print for Content** - XmlFormatter utility + content pipeline XML pretty-printing with round-trip compaction
+- [x] **Phase 26: XML Pretty-Print for Content** - XmlFormatter utility + content pipeline XML pretty-printing with round-trip compaction (completed 2026-04-07)
 - [ ] **Phase 27: XML Pretty-Print for SqlTable** - SQL table pipeline XML pretty-printing via config-driven xmlColumns
 - [ ] **Phase 28: Field-Level Filtering Core** - Predicate excludeFields/excludeXmlElements for content with deserialize skip guard
 - [ ] **Phase 29: SqlTable Field Filtering** - excludeFields support for SqlTable predicates
@@ -103,7 +103,7 @@
   3. Content that contains no embedded XML is unaffected by the formatter (no regressions)
 **Plans**: 1 plan
 Plans:
-- [ ] 26-01-PLAN.md — XmlFormatter utility + content pipeline integration
+- [x] 26-01-PLAN.md — XmlFormatter utility + content pipeline integration
 
 ### Phase 27: XML Pretty-Print for SqlTable
 **Goal**: SQL table YAML files with XML columns show readable indented XML, controlled by a per-predicate xmlColumns config list
@@ -199,7 +199,7 @@ Plans:
 | 23. Full Page Properties + Navigation Settings | v0.4.0 | 2/2 | Complete | 2026-04-03 |
 | 24. Area ItemType Fields | v0.4.0 | 1/1 | Complete | 2026-04-03 |
 | 25. Ecommerce Schema Sync | v0.4.0 | 1/1 | Complete | 2026-04-03 |
-| 26. XML Pretty-Print for Content | v0.5.0 | 0/? | Not started | - |
+| 26. XML Pretty-Print for Content | v0.5.0 | 1/1 | Complete   | 2026-04-07 |
 | 27. XML Pretty-Print for SqlTable | v0.5.0 | 0/? | Not started | - |
 | 28. Field-Level Filtering Core | v0.5.0 | 0/? | Not started | - |
 | 29. SqlTable Field Filtering | v0.5.0 | 0/? | Not started | - |
