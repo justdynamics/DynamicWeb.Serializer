@@ -86,7 +86,7 @@
 
 - [x] **Phase 26: XML Pretty-Print for Content** - XmlFormatter utility + content pipeline XML pretty-printing with round-trip compaction (completed 2026-04-07)
 - [ ] **Phase 27: XML Pretty-Print for SqlTable** - SQL table pipeline XML pretty-printing via config-driven xmlColumns
-- [ ] **Phase 28: Field-Level Filtering Core** - Predicate excludeFields/excludeXmlElements for content with deserialize skip guard
+- [x] **Phase 28: Field-Level Filtering Core** - Predicate excludeFields/excludeXmlElements for content with deserialize skip guard (completed 2026-04-07)
 - [ ] **Phase 29: SqlTable Field Filtering** - excludeFields support for SqlTable predicates
 - [ ] **Phase 30: Area Property Consolidation** - Full area properties in ContentProvider with field-level blacklist
 - [ ] **Phase 31: Predicate UI Enhancement** - Admin UI for excludeFields, xmlColumns, and excludeXmlElements configuration
@@ -128,7 +128,7 @@ Plans:
   4. Fields not in the exclude list continue to serialize and deserialize normally (no regression)
 **Plans**: 1 plan
 Plans:
-- [ ] 28-01-PLAN.md — excludeFields/excludeXmlElements config + serialize filtering + deserialize skip guard + XmlFormatter.RemoveElements
+- [x] 28-01-PLAN.md — excludeFields/excludeXmlElements config + serialize filtering + deserialize skip guard + XmlFormatter.RemoveElements
 
 ### Phase 29: SqlTable Field Filtering
 **Goal**: SqlTable predicates can exclude specific columns from serialization with the same skip-guard protection on deserialize
@@ -201,7 +201,7 @@ Plans:
 | 25. Ecommerce Schema Sync | v0.4.0 | 1/1 | Complete | 2026-04-03 |
 | 26. XML Pretty-Print for Content | v0.5.0 | 1/1 | Complete   | 2026-04-07 |
 | 27. XML Pretty-Print for SqlTable | v0.5.0 | 0/? | Not started | - |
-| 28. Field-Level Filtering Core | v0.5.0 | 0/? | Not started | - |
+| 28. Field-Level Filtering Core | v0.5.0 | 1/1 | Complete   | 2026-04-07 |
 | 29. SqlTable Field Filtering | v0.5.0 | 0/? | Not started | - |
 | 30. Area Property Consolidation | v0.5.0 | 0/? | Not started | - |
 | 31. Predicate UI Enhancement | v0.5.0 | 0/? | Not started | - |

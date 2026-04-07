@@ -13,10 +13,10 @@
 
 ### Field-Level Filtering
 
-- [ ] **FILT-01**: Content predicates support an excludeFields list that omits specified page/paragraph/area fields during serialization
+- [x] **FILT-01**: Content predicates support an excludeFields list that omits specified page/paragraph/area fields during serialization
 - [ ] **FILT-02**: SqlTable predicates support an excludeFields list that omits specified columns during serialization
-- [ ] **FILT-03**: Excluded fields are NOT nulled out during deserialization (skip guard on source-wins null-out logic)
-- [ ] **FILT-04**: Predicates support an excludeXmlElements list that removes specific XML element names from embedded XML blobs before serialization
+- [x] **FILT-03**: Excluded fields are NOT nulled out during deserialization (skip guard on source-wins null-out logic)
+- [x] **FILT-04**: Predicates support an excludeXmlElements list that removes specific XML element names from embedded XML blobs before serialization
 
 ### Area Consolidation
 
@@ -56,10 +56,10 @@
 | XML-01 | Phase 26 | Complete |
 | XML-02 | Phase 27 | Complete |
 | XML-03 | Phase 26 | Complete |
-| FILT-01 | Phase 28 | Pending |
+| FILT-01 | Phase 28 | Complete |
 | FILT-02 | Phase 29 | Pending |
-| FILT-03 | Phase 28 | Pending |
-| FILT-04 | Phase 28 | Pending |
+| FILT-03 | Phase 28 | Complete |
+| FILT-04 | Phase 28 | Complete |
 | AREA-03 | Phase 30 | Pending |
 | AREA-04 | Phase 30 | Pending |
 | AREA-05 | Phase 30 | Pending |
