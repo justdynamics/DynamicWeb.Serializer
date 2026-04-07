@@ -1,4 +1,5 @@
 using System.Globalization;
+using DynamicWeb.Serializer.Infrastructure;
 using DynamicWeb.Serializer.Models;
 
 namespace DynamicWeb.Serializer.Providers.SqlTable;
@@ -46,9 +47,22 @@ public class SqlTableProvider : SerializationProviderBase
 
         _fileStore.WriteMeta(outputRoot, metadata.TableName, metadata);
 
+        var xmlColumns = new HashSet<string>(predicate.XmlColumns, StringComparer.OrdinalIgnoreCase);
+
         var usedNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var row in rows)
         {
+            if (xmlColumns.Count > 0)
+            {
+                foreach (var col in xmlColumns)
+                {
+                    if (row.TryGetValue(col, out var val) && val is string strVal)
+                    {
+                        row[col] = XmlFormatter.PrettyPrint(strVal);
+                    }
+                }
+            }
+
             var identity = _tableReader.GenerateRowIdentity(row, metadata);
             _fileStore.WriteRow(outputRoot, metadata.TableName, identity, row, usedNames);
         }
@@ -111,6 +125,8 @@ public class SqlTableProvider : SerializationProviderBase
         {
             CoerceRowTypes(row, columnTypes);
             FixNotNullDefaults(row, columnTypes, notNullColumns);
+            if (predicate.XmlColumns.Count > 0)
+                CompactXmlColumns(row, predicate.XmlColumns);
         }
 
         // Disable FK constraints during deserialization to avoid ordering issues
@@ -288,6 +304,21 @@ public class SqlTableProvider : SerializationProviderBase
                     "decimal" or "numeric" or "money" or "smallmoney" or "float" or "real" => 0m,
                     _ => row[col] // leave as null for types we can't default (let SQL fail with a clear error)
                 };
+            }
+        }
+    }
+
+    /// <summary>
+    /// Compact XML columns back to single-line before DB write.
+    /// Restores compact format so serialize->deserialize->serialize is idempotent.
+    /// </summary>
+    private static void CompactXmlColumns(Dictionary<string, object?> row, IReadOnlyCollection<string> xmlColumns)
+    {
+        foreach (var col in xmlColumns)
+        {
+            if (row.TryGetValue(col, out var val) && val is string strVal)
+            {
+                row[col] = XmlFormatter.Compact(strVal);
             }
         }
     }
