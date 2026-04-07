@@ -1,101 +1,312 @@
-# Domain Pitfalls: Full Page Fidelity (v0.4.0)
+# Pitfalls Research: Granular Serialization Control (v0.5.0)
 
-**Domain:** Expanding page property coverage in DynamicWeb content serializer
-**Researched:** 2026-04-02 (updated with DLL decompilation findings)
+**Domain:** Adding embedded XML handling, field-level filtering, and area consolidation to an existing YAML serializer for DynamicWeb
+**Researched:** 2026-04-07
+**Confidence:** HIGH (based on codebase analysis, YAML spec, .NET XML APIs, and existing patterns)
 
 ## Critical Pitfalls
 
-### Pitfall 1: Page() Constructor Always Sets Audit to DateTime.Now
-**What goes wrong:** `new Page()` calls `base.Audit = new AuditedEntity(DateTime.Now, userId)`. This means every newly created page gets current timestamps. The `internal Page(AuditedEntity, ...)` constructor that accepts custom timestamps is not accessible from outside the DW assembly.
-**Why it happens:** DW's entity pattern sets audit info in the constructor. There is no public API to override it before SavePage.
-**Consequences:** All deserialized NEW pages show "created" and "last updated" as the deserialization time, not the original content creation/update time.
-**Prevention:** Use a two-step approach: (1) `SavePage` via API to create the page and get its ID, (2) direct SQL `UPDATE [Page] SET [PageCreatedDate]=@date, [PageUpdatedDate]=@date WHERE [PageID]=@id` to restore original timestamps. The `Dynamicweb.Data.Database.ExecuteNonQuery(CommandBuilder)` pattern is already used in SqlTableProvider.
-**Detection:** Compare `PageCreatedDate`/`PageUpdatedDate` in target DB with values in YAML after deserialization.
+### Pitfall 1: YAML Literal Block Scalar + Pretty-Printed XML Indentation Interaction
 
-### Pitfall 2: ShortCut Contains Internal Page Links
-**What goes wrong:** `Page.ShortCut` stores values like `"Default.aspx?ID=8284"`. If serialized as-is, the numeric page ID will point to a different (or non-existent) page in the target environment.
-**Why it happens:** ShortCut uses the same internal link format as ItemType field references.
-**Consequences:** Page redirects break or redirect to wrong pages after deserialization.
-**Prevention:** Run `ShortCut` values through `InternalLinkResolver` during the link resolution phase. This requires extending the resolver to handle non-item-field string values.
-**Detection:** Check for `Default.aspx?ID=` patterns in serialized ShortCut values.
+**What goes wrong:**
+When you pretty-print XML and store it in a YAML literal block scalar (`|`), YamlDotNet handles the indentation correctly -- the library adds the required YAML indentation prefix to every line during emit, and strips it during parse. However, the risk is in MANUAL construction or post-processing. If code tries to manually build YAML strings with embedded pretty-printed XML, or applies regex-based transformations to the YAML output, the indentation context breaks and produces invalid YAML.
 
-### Pitfall 3: NavigationSettings.ProductPage Contains Internal Page Links
-**What goes wrong:** `PageNavigationSettings.ProductPage` stores values like `"Default.aspx?Id=5862"`. Same problem as ShortCut.
-**Consequences:** Ecommerce product navigation links to wrong product detail page.
-**Prevention:** Include `NavigationSettings.ProductPage` in the InternalLinkResolver pass. This is a separate string from item fields, so needs explicit handling.
-**Detection:** Check for `Default.aspx?Id=` patterns in NavigationSettings ProductPage values.
+Additionally, YamlDotNet has a known issue (GitHub #523) where literal block scalars with inconsistent leading whitespace in the first content line throw `SemanticErrorException: "While scanning a literal block scalar, found extra spaces in first line"`. Pretty-printed XML naturally has the root element at column 0 and children indented -- this is fine. But if the pretty-print function accidentally adds leading whitespace to the root element, the scanner fails.
 
-### Pitfall 4: Area ItemType Fields Contain Raw Page IDs
-**What goes wrong:** Area-level item fields like `HeaderDesktop = "121"` are raw numeric page IDs. These differ between environments.
-**Why it happens:** The ItemType table stores page references as string-encoded numeric IDs, not as GUIDs.
-**Consequences:** Header/footer pages point to wrong pages (or non-existent pages) in target environment, breaking the entire site layout.
-**Prevention:** Extend `ResolveLinksInArea()` to also scan Area item fields. The existing `InternalLinkResolver` pattern applies. After page deserialization builds the source-to-target page ID map, resolve Area item field values.
-**Detection:** Verify that header/footer pages render correctly after deserialization.
+**Why it happens:**
+Developers unfamiliar with YAML block scalars try to "help" by manually indenting the XML to match the surrounding YAML structure, or they use string concatenation instead of letting the serializer handle it.
 
-### Pitfall 5: EcomProductGroupField Column Must Exist Before EcomGroups Data Import
-**What goes wrong:** If `SqlTableProvider` deserializes `EcomGroups` data before `EcomProductGroupField` schema is applied, INSERT/UPDATE fails because custom columns don't exist on the target `EcomGroups` table.
-**Why it happens:** `ProductGroupFieldRepository.Save()` + `UpdateTable()` creates columns on `EcomGroups`. If the field definition rows are imported but `UpdateTable()` is not called, the physical columns are missing.
-**Consequences:** Ecommerce group data deserialization fails with SQL column-not-found errors.
-**Prevention:** Ensure `EcomProductGroupField` deserialization calls `UpdateTable()` for each field, or ensure schema sync runs before data sync.
-**Detection:** SQL errors referencing missing columns on `EcomGroups` during deserialization.
+**How to avoid:**
+1. Pretty-print XML in the model layer (before YamlDotNet touches it). Set the string property to the pretty-printed XML. Let `ForceStringScalarEmitter` and YamlDotNet handle all YAML indentation.
+2. Ensure the pretty-printed XML string starts at column 0 (no leading whitespace on the first line).
+3. On deserialize, the YAML parser returns the clean XML string -- no post-processing needed.
+4. Write a round-trip test: original XML -> pretty-print -> YAML serialize -> YAML deserialize -> compare with pretty-printed version (not original compact version).
 
-## Moderate Pitfalls
+**Warning signs:**
+- `SemanticErrorException` mentioning "block scalar" during deserialize
+- XML that looks correct in the `.yml` file but has extra/missing indentation after loading
+- Tests pass with flat XML (`<a/>`) but fail with nested XML
 
-### Pitfall 6: NavigationSettings Only Populated When UseEcomGroups is True
-**What goes wrong:** `PageRowExtractor.ExtractPage()` only creates a `NavigationSettings` object when `PageNavigation_UseEcomGroups` is true in the DB. If you create a `PageNavigationSettings` on a page that previously had no ecommerce navigation, `SavePage` will write the columns. But if you want to REMOVE navigation settings, setting `page.NavigationSettings = null` may not clear the DB columns because `AddNavigationSettingsUpdateStatement` skips when NavigationSettings is null.
-**Prevention:** To clear navigation settings, explicitly set `UseEcomGroups = false` and save, rather than setting NavigationSettings to null. On deserialization, if YAML has no NavigationSettings, do NOT touch the property (leave it as loaded from DB).
-**Detection:** Round-trip test: serialize a page with ecommerce navigation, deserialize, verify settings persist.
+**Phase to address:**
+Phase 1 (XML pretty-print) -- validate with round-trip tests before building anything on top.
 
-### Pitfall 7: Audit.CreatedBy/LastModifiedBy Store User IDs as Strings
-**What goes wrong:** The `PageUserCreate` and `PageUserEdit` columns store numeric user IDs as strings (verified: `Converter.ToInt32(dataReader["PageUserCreate"])` then `num.ToString(CultureInfo.InvariantCulture)`). User IDs are environment-specific -- user ID 5 in source may not be the same user in target.
-**Prevention:** Serialize the user ID as-is. Accept that user attribution may not resolve correctly in the target environment. This is a known limitation -- user sync is out of scope for v0.4.0. Document it.
-**Detection:** Check `PageUserCreate`/`PageUserEdit` values after deserialization.
+---
 
-### Pitfall 8: Area.Item May Be Null for Areas Without ItemType
-**What goes wrong:** Calling `area.Item.SerializeTo(dict)` when `area.ItemType` is null/empty throws a NullReferenceException.
-**Prevention:** Always check `!string.IsNullOrEmpty(area.ItemType)` AND `area.Item != null` before accessing.
+### Pitfall 2: Field-Level Blacklist Causes Null-Out of Excluded Fields on Deserialize
 
-### Pitfall 9: YAML Null vs Empty String for Optional Properties
-**What goes wrong:** YAML serializes `null` and `""` differently. When deserializing, a property that was `null` in source might become `""` in target (or vice versa), causing unnecessary "updates" on every sync.
-**Prevention:** Normalize: treat both `null` and `""` as "no value" for string properties. Use `string.IsNullOrEmpty()` consistently. For boolean defaults (Allowclick=true, Allowsearch=true, etc.), ensure YAML omits default values or always includes them.
+**What goes wrong:**
+The existing `SaveItemFields` method (ContentDeserializer.cs line 842-850) implements source-wins by nulling out any field present in the target's ItemType definition but ABSENT from the serialized YAML:
 
-### Pitfall 10: Boolean Properties with Non-False Defaults
-**What goes wrong:** Several Page properties default to `true` in DW (Allowclick, Allowsearch, ShowInSitemap, ShowInLegend, Active). If old YAML files don't include these new properties, YamlDotNet will deserialize them as `false`, changing the page behavior.
-**Prevention:** Set `init` defaults on the DTO to match DW defaults: `public bool Allowclick { get; init; } = true;`. This ensures missing YAML keys produce correct defaults.
-**Detection:** Deserialize old YAML with new code; verify these booleans are true.
+```csharp
+// Source-wins: null out item fields not present in the serialized data.
+foreach (var fieldName in itemEntry.Names)
+{
+    if (!ItemSystemFields.Contains(fieldName) && !contentFields.ContainsKey(fieldName))
+    {
+        contentFields[fieldName] = null;
+    }
+}
+```
 
-## Minor Pitfalls
+If you add a field blacklist that excludes fields during SERIALIZATION, those excluded fields will be absent from the YAML. On DESERIALIZE, this null-out loop sees them as "missing from source" and actively destroys the target's values.
 
-### Pitfall 11: Large Description/Keywords Fields
-**What goes wrong:** `PageDescription` and `PageKeywords` are ntext columns. Very large values may cause YAML readability issues.
-**Prevention:** Use DoubleQuoted YAML style for multiline strings (already established pattern in codebase).
+**Why it happens:**
+The source-wins null-out was designed for a world where "absent from YAML" means "should be cleared." Field-level blacklisting introduces a third state: "intentionally not tracked." The deserializer cannot distinguish "missing because excluded" from "missing because should be empty."
 
-### Pitfall 12: NavigationSettings.Groups Contains Ecom Group IDs
-**What goes wrong:** `NavigationSettings.Groups` may contain ecommerce group IDs that differ between environments.
-**Prevention:** For v0.4.0, serialize as-is. Group ID resolution is out of scope. Document as a known limitation.
+**How to avoid:**
+1. The blacklist config MUST be available at both serialize AND deserialize time. On deserialize, excluded fields must be SKIPPED entirely (not set, not nulled).
+2. Add an `excludeFields` parameter to `SaveItemFields`. In the null-out loop, skip any field in the exclude set.
+3. Apply the same fix to `SavePropertyItemFields` (line 775-779) which has identical null-out logic.
+4. For SQL tables: `SqlTableWriter.BuildMergeCommand` must exclude blacklisted columns from both the UPDATE SET clause and the INSERT column list. Otherwise MERGE will SET excluded columns to NULL.
 
-### Pitfall 13: NavigationSettings.MaxLevels "AllLevels" Encoding
-**What goes wrong:** DW stores `MaxLevels > 10` as the string `"AllLevels"` in the DB. When reading, it converts back to `100`. If our YAML stores `100`, it will write `100` instead of `"AllLevels"`, but DW handles this correctly (both produce the same behavior). However, it means the DB value changes format.
-**Prevention:** Consider storing as `100` in YAML consistently. The DW `AddNavigationSettingsUpdateStatement` method handles the `>10` check and writes `"AllLevels"` automatically.
+**Warning signs:**
+- Fields that exist in the target but are absent from YAML get wiped to null after deserialize
+- Works correctly when blacklist is empty; breaks as soon as any field is excluded
+- Environment-specific settings (domains, API keys, connection strings) vanish after sync
 
-### Pitfall 14: DisplayMode is an Enum Stored as Int
-**What goes wrong:** `Page.DisplayMode` uses the `DisplayMode` enum. Serializing as int works but is not human-readable in YAML.
-**Prevention:** Serialize as string name (like NavigationSettings.ParentType), parse back with `Enum.TryParse` on deserialization. This matches the existing VerticalAlignment pattern in GridRow serialization.
+**Phase to address:**
+Field blacklist phase -- this MUST be solved simultaneously with the serialize-side exclusion. Never ship serialize-side filtering without the corresponding deserialize-side skip guard.
 
-## Phase-Specific Warnings
+---
 
-| Phase Topic | Likely Pitfall | Mitigation |
-|-------------|---------------|------------|
-| Page scalar properties | Pitfall 9, 10 (null vs empty, boolean defaults) | Normalize nulls, set correct init defaults |
-| NavigationSettings | Pitfall 3, 6, 13 (ProductPage links, null handling, MaxLevels) | Link resolver + careful null logic |
-| ShortCut | Pitfall 2 (internal links) | InternalLinkResolver |
-| Timestamps | Pitfall 1, 7 (SavePage overwrites, user IDs cross-env) | Direct SQL after SavePage |
-| Area ItemType | Pitfall 4, 8 (page ID refs, null item) | GUID resolution + null checks |
-| EcomProductGroupField | Pitfall 5 (column ordering) | Schema before data |
+### Pitfall 3: CRLF Line Endings in XML Force DoubleQuoted YAML (Unreadable)
+
+**What goes wrong:**
+The existing `ForceStringScalarEmitter` (line 18) checks `value.Contains('\r')` and forces `ScalarStyle.DoubleQuoted` for any string with carriage returns. SQL Server on Windows stores XML with `\r\n` line endings. Pretty-printed XML from `XDocument.ToString()` uses `Environment.NewLine` which is `\r\n` on Windows. Result: the pretty-printed XML gets emitted as a single DoubleQuoted string with escape sequences: `"<settings>\r\n  <module/>\r\n</settings>"`. This defeats the entire purpose of pretty-printing.
+
+**Why it happens:**
+The CRLF guard in the emitter was designed to preserve exact line endings for general content. XML content does not need this preservation -- the XML spec (section 2.11) normalizes all line endings to `\n` during parsing.
+
+**How to avoid:**
+1. Normalize XML line endings to LF-only BEFORE setting the model property: `xmlString.Replace("\r\n", "\n").Replace("\r", "\n")`.
+2. Apply normalization in the XML pretty-print function, NOT in the emitter (keep emitter general-purpose).
+3. This is safe per XML spec: all conformant XML parsers normalize `\r\n` to `\n`.
+4. On deserialize, the LF-only XML from YAML is functionally identical to the original CRLF XML.
+
+**Warning signs:**
+- Pretty-printed XML appearing as a single long DoubleQuoted line in YAML files
+- YAML files that are LARGER after pretty-print than before
+- `moduleSettings` field showing escaped `\r\n` instead of actual newlines
+
+**Phase to address:**
+Phase 1 (XML pretty-print) -- must be part of the core XML normalization step.
+
+---
+
+### Pitfall 4: XML Declaration Lost on Round-Trip
+
+**What goes wrong:**
+Some DW XML blobs include `<?xml version="1.0" encoding="utf-8"?>` and some do not. `XDocument.ToString()` OMITS the XML declaration. If the original had a declaration and the round-tripped version does not, DW's XML parser may behave differently (unlikely but possible for encoding-sensitive content).
+
+**Why it happens:**
+`XDocument.ToString()` returns only the root element and its children. The `Declaration` property is separate and must be explicitly included. `XDocument.Save(writer)` includes it based on `XmlWriterSettings.OmitXmlDeclaration`, but `ToString()` always omits it.
+
+**How to avoid:**
+1. Before pretty-printing, check if the original string starts with `<?xml`.
+2. If yes, reconstruct: `xdoc.Declaration?.ToString() + "\n" + xdoc.ToString()`.
+3. If no declaration in original, emit without it.
+4. Test with actual DW data: `moduleSettings` and `urlDataProviderParameters` from the Swift test instances.
+
+**Warning signs:**
+- XML strings that start with `<?xml` in the database lose that prefix after round-trip
+- Encoding attribute changes (e.g., `utf-16` to `utf-8` or vice versa)
+
+**Phase to address:**
+Phase 1 (XML pretty-print).
+
+---
+
+### Pitfall 5: Area Consolidation Creates Deserialize Ordering Dependency
+
+**What goes wrong:**
+Currently, `ContentDeserializer.DeserializePredicate` does `Services.Areas.GetArea(predicate.AreaId)` and SKIPS the predicate if the area is null. It does NOT create areas. If you consolidate the Area SQL table into ContentProvider (removing the SqlTable predicate for Area), and the target database has no matching area, deserialization silently skips everything.
+
+Additionally, the current `SerializedArea` model only has 5 properties: AreaId (GUID), Name, SortOrder, ItemType, ItemFields. The Area SQL table has 60+ columns including Domain, DefaultLanguageId, EcomLanguageId, MasterArea, PrimaryDomain, CdnDomain, Culture, TimeZone, MailServer, etc. Most of these are environment-specific -- exactly the kind of fields that need the blacklist feature.
+
+**Why it happens:**
+The original design assumed areas pre-exist in target environments (they are typically created during DW setup). Area consolidation changes this assumption.
+
+**How to avoid:**
+1. Expand `SerializedArea` to include the full set of Area SQL columns (60+ fields as nullable properties).
+2. Add area creation logic to `ContentDeserializer`: if `GetArea()` returns null, create the area from YAML data before processing pages.
+3. Must call `Services.Areas.ClearCache()` after area creation (documented in `project_dw_area_cache.md` memory).
+4. Apply field-level blacklist to area columns so environment-specific fields (Domain, MailServer, etc.) can be excluded.
+5. The expanded `SerializedArea` is backward-compatible with old YAML because `IgnoreUnmatchedProperties` is already configured in `YamlConfiguration.BuildDeserializer()`.
+
+**Warning signs:**
+- Deserialize silently skips with "Area with ID X not found" warning
+- Area properties (domain, language) not set because ContentProvider only handled ItemType fields
+- Cache staleness: new area created but `GetArea()` still returns null
+
+**Phase to address:**
+Area consolidation phase -- must be implemented after field blacklist is working (blacklist is needed for environment-specific area columns).
+
+---
+
+### Pitfall 6: Detecting Which SQL Columns Contain XML -- Heuristics Fail
+
+**What goes wrong:**
+To pretty-print XML in SQL table YAML files, you need to identify which columns contain XML. DW stores XML as `nvarchar(max)` or `ntext`, not as the SQL `xml` type. Heuristic detection (checking if value starts with `<`) false-positives on HTML content, partial XML fragments, and any text starting with angle brackets. Attempting `XDocument.Parse()` on non-XML data crashes or produces garbage.
+
+**Why it happens:**
+DW's schema makes no distinction between XML columns and other string columns. The ~100 SQL YAML files with XML span 5+ different table patterns (DashboardWidget, EcomFeed, EcomShippings, PersonalSettings, ScheduledTask) with inconsistent column naming.
+
+**How to avoid:**
+1. Use a CONFIG-DRIVEN known-columns approach, not heuristic detection.
+2. Add `xmlColumns` to the predicate config: `"xmlColumns": ["ShippingXml", "PaymentXml"]`.
+3. Content provider has KNOWN XML fields: `moduleSettings` on Paragraph, `urlDataProviderParameters` on Page -- hardcode these in ContentProvider.
+4. For SQL tables, require explicit declaration. As a discovery aid, log when a column contains a value that looks like XML but is not in the known list.
+5. NEVER try-parse arbitrary columns as XML during production serialization.
+
+**Warning signs:**
+- Serialize crashes on non-XML data that starts with `<`
+- HTML content in SQL columns getting reformatted (breaking the HTML)
+- Inconsistent: some XML columns pretty-printed, others left compact
+
+**Phase to address:**
+Phase 1 (XML pretty-print) -- the detection/configuration strategy must be decided before implementation.
+
+---
+
+### Pitfall 7: Config Schema Change Silently Drops New Fields
+
+**What goes wrong:**
+`ConfigLoader` uses a three-class pattern: `RawPredicateDefinition` (JSON deserialization) -> `Validate()` -> `BuildPredicate()` -> `ProviderPredicateDefinition` (runtime model). Adding new fields like `excludeFields`, `xmlColumns`, `excludeXmlFields` to `ProviderPredicateDefinition` without ALSO adding them to `RawPredicateDefinition` and the `BuildPredicate()` mapping function causes the fields to be silently null/empty after config load.
+
+**Why it happens:**
+The three-class mapping is explicit (no reflection/AutoMapper). Every field added to the model requires changes in 3 places. It is easy to add the field to the record, write code that reads it, test with a manually constructed config object, and miss that the file-loaded config drops the field.
+
+**How to avoid:**
+1. When adding ANY field to `ProviderPredicateDefinition`, immediately update `RawPredicateDefinition` and `BuildPredicate()`.
+2. Write a config round-trip test: create JSON with all new fields populated -> `ConfigLoader.Load()` -> verify every field is present.
+3. Consider consolidating to 2 classes (eliminate Raw or use `JsonSerializer` directly to the model) since the beta product does not need forward/backward compat.
+
+**Warning signs:**
+- Config loads without error but field blacklists are empty
+- Admin UI shows blank exclude lists despite JSON file having values
+- Feature "does not work" but no errors logged (config field silently dropped)
+
+**Phase to address:**
+Every phase that adds config fields -- this is a process pitfall. The first phase should establish the pattern with a test.
+
+---
+
+### Pitfall 8: Pretty-Print on Serialize Without Compact on Deserialize Creates Git Noise
+
+**What goes wrong:**
+If you pretty-print XML on serialize (for readable YAML) but write the pretty-printed XML directly to the database on deserialize, the database now contains pretty-printed XML. When the SAME environment re-serializes, the XML is already pretty-printed, so it gets pretty-printed AGAIN (double-indented) or matches (no change). But if a DIFFERENT serializer version (or DW itself) writes compact XML to the DB, the next serialize shows the entire XML blob as "changed" because compact != pretty-printed.
+
+**Why it happens:**
+The serializer is not the only thing that writes to these columns. DW admin UI, modules, and other tools write compact XML. If the serializer does not normalize on deserialize, the DB format is inconsistent.
+
+**How to avoid:**
+1. On SERIALIZE: pretty-print for YAML readability.
+2. On DESERIALIZE: compact the XML before writing to DB. Use `xdoc.ToString(SaveOptions.DisableFormatting)` to produce a canonical compact form.
+3. This makes the serialize->DB path idempotent: compact XML in DB -> pretty-print in YAML -> compact back to DB = original.
+4. Alternative: write pretty-printed XML to DB (DW does not care about XML whitespace). But this changes DB content unnecessarily and may conflict with DW's own writes.
+
+**Warning signs:**
+- Serialize -> deserialize -> serialize cycle shows XML diffs (not idempotent)
+- DB contains mix of compact and pretty-printed XML depending on how the data was last written
+- Checksum drift: `SqlTableReader.CalculateChecksum` produces different hashes for same logical data
+
+**Phase to address:**
+Phase 1 (XML pretty-print) -- decide the deserialize strategy upfront. Recommend: compact on deserialize for clean round-trips.
+
+---
+
+## Technical Debt Patterns
+
+| Shortcut | Immediate Benefit | Long-term Cost | When Acceptable |
+|----------|-------------------|----------------|-----------------|
+| Heuristic XML detection (try-parse) instead of config-driven known-columns | No config changes needed | False positives on HTML, crashes on malformed data, silent corruption | Never for serialize; acceptable only as a discovery logging aid |
+| Normalize XML on serialize only, skip deserialize compaction | Simpler code, one-way transform | DB accumulates pretty-printed XML, serialize becomes non-idempotent | Never -- always compact on deserialize |
+| Expanding SerializedArea with 60+ nullable properties | Directly maps to SQL schema | Massive model class, most fields unused | Acceptable for 0.x; can refactor to groups later |
+| Storing XML column list in code rather than config | No schema change needed | Adding a new XML column requires code change + rebuild | Never -- put in config from the start |
+| Skipping null-out guard for SqlTable field blacklist | SQL MERGE just sets all available columns | Excluded columns get SET to NULL/empty in target | Never -- must exclude from MERGE command |
+
+## Integration Gotchas
+
+| Integration | Common Mistake | Correct Approach |
+|-------------|----------------|------------------|
+| `ForceStringScalarEmitter` + XML with CRLF | Pretty-printed XML emitted as DoubleQuoted (unreadable) | Normalize to LF before setting model property; XML spec says this is safe |
+| `XDocument.Parse()` + `ToString()` | XML declaration (`<?xml ...?>`) silently dropped | Check and preserve `xdoc.Declaration` explicitly |
+| `SqlTableWriter.BuildMergeCommand` + field exclusion | Excluded columns still in MERGE UPDATE SET, setting them to NULL | Filter `updateColumns` and `insertColumns` to remove blacklisted columns |
+| `Services.Areas.GetArea()` after area creation | AreaService cache returns stale null | Call `Services.Areas.ClearCache()` after area insert (per `project_dw_area_cache.md`) |
+| `SaveItemFields` null-out + field blacklist | Excluded fields get nulled because absent from YAML | Add `excludeFields` set parameter; skip excluded fields in null-out loop |
+| `ConfigLoader.BuildPredicate()` + new fields | New fields on `ProviderPredicateDefinition` but not mapped from `RawPredicateDefinition` | Update all 3 locations: model record, raw class, mapping function |
+| `XDocument.Parse()` on non-XML data | Crash or mangled output on HTML/text columns | Config-driven known-columns list; never try-parse arbitrary columns |
+
+## Performance Traps
+
+| Trap | Symptoms | Prevention | When It Breaks |
+|------|----------|------------|----------------|
+| XML parsing every cell in every SQL row during serialize | Serialize time 10x slower for large tables | Only parse columns explicitly listed as XML (known-list) | Tables with 1000+ rows and nvarchar(max) columns |
+| Pretty-printing XML during deserialize (unnecessary work) | Deserialize slower with no benefit -- DB stores compact XML | Only pretty-print on SERIALIZE; compact on DESERIALIZE | Always -- deserialize should never format XML |
+| Re-parsing XML that is already pretty-printed (double work) | XML parsed, formatted, parsed again on next serialize cycle | Check if XML is already formatted before re-formatting (or accept minor cost) | Only noticeable with very large XML blobs (>100KB) |
+
+## UX Pitfalls
+
+| Pitfall | User Impact | Better Approach |
+|---------|-------------|-----------------|
+| Massive git diff on first serialize after enabling pretty-print | User thinks something is wrong, reverts, re-runs | Log: "XML format migration: N files reformatted. One-time change." |
+| Field blacklist configured but no visual feedback | User cannot verify exclusion is working -- field simply absent | Log: "Excluded 3 fields from [entity]: [field1, field2, field3]" during serialize |
+| Area consolidation silently drops area properties | Area domain, language not synced because old area.yml lacks new fields | Validate at config load: warn if Area table has no SqlTable predicate AND ContentProvider area mapping is incomplete |
+
+## "Looks Done But Isn't" Checklist
+
+- [ ] **XML pretty-print:** Round-trip test with CRLF line endings -- verify `\r\n` XML survives serialize-deserialize as LF
+- [ ] **XML pretty-print:** XML declaration preservation -- verify `<?xml ...?>` header survives round-trip when present in original
+- [ ] **XML pretty-print:** Empty/null XML handling -- verify null, empty string, and whitespace-only values do not crash the parser
+- [ ] **XML pretty-print:** Malformed XML fallback -- verify non-parseable XML is passed through as-is (not crashed, not corrupted)
+- [ ] **Field blacklist serialize:** Deserialize-side guard present -- verify excluded fields are NOT nulled on deserialize
+- [ ] **Field blacklist SQL:** MERGE command excludes blacklisted columns -- verify excluded columns not in UPDATE SET
+- [ ] **Field blacklist SQL:** INSERT command excludes blacklisted columns -- verify excluded columns not in INSERT INTO
+- [ ] **Area consolidation:** Area CREATION works (not just update) -- verify deserialize into DB with no matching area
+- [ ] **Area consolidation:** AreaService cache cleared after creation -- verify new area visible to subsequent ContentProvider calls
+- [ ] **Area consolidation:** Environment-specific fields blacklistable -- verify Domain, MailServer, etc. can be excluded
+- [ ] **Config schema:** `BuildPredicate()` maps all new fields -- verify config round-trips through load/save/load
+- [ ] **Config schema:** Admin UI reads/writes new fields -- verify predicate edit screen shows exclude lists
+
+## Recovery Strategies
+
+| Pitfall | Recovery Cost | Recovery Steps |
+|---------|---------------|----------------|
+| Null-out of excluded fields | MEDIUM | Re-serialize from source to regenerate complete YAML; re-deserialize. Target DB may need manual restore from backup for nulled values. |
+| XML declaration lost | LOW | Re-serialize to regenerate YAML. DW is likely tolerant of missing declarations. |
+| Area properties missing after consolidation | MEDIUM | Re-add SqlTable predicate for Area table temporarily. Or manually set area properties in DW admin. |
+| Config fields silently dropped | LOW | Fix mapping code, re-load config. No data loss -- feature just was not active. |
+| Pretty-printed XML corrupted in DB | HIGH | Restore from backup or re-serialize from clean source. Prevention much cheaper than recovery. |
+| CRLF XML in DoubleQuoted YAML (unreadable but functional) | LOW | Add LF normalization, re-serialize. Data is not corrupted, just ugly. |
+
+## Pitfall-to-Phase Mapping
+
+| Pitfall | Prevention Phase | Verification |
+|---------|------------------|--------------|
+| Literal block indentation (P1) | XML pretty-print | Round-trip test: serialize -> file -> deserialize -> byte-compare XML string |
+| Null-out of excluded fields (P2) | Field blacklist | Test: exclude field X, serialize, deserialize, verify X unchanged in target |
+| CRLF -> DoubleQuoted (P3) | XML pretty-print | Test: Windows CRLF XML -> literal block in YAML (not DoubleQuoted) |
+| XML declaration lost (P4) | XML pretty-print | Test: XML with and without `<?xml` -> both preserved correctly |
+| Area ordering dependency (P5) | Area consolidation | Test: deserialize into empty DB -> area created -> pages created successfully |
+| XML column detection (P6) | XML pretty-print | Config-driven known-list with discovery logging; test: unknown column logged not crashed |
+| Config schema mapping (P7) | Every config-changing phase | Test: write JSON with new fields -> load -> verify fields non-null |
+| Serialize/deserialize format mismatch (P8) | XML pretty-print | Test: serialize -> deserialize -> serialize -> no diff in YAML files |
 
 ## Sources
 
-- DW 10.23.9 DLL decompilation: `PageRepository.InsertPage()`, `PageRepository.UpdatePage()`, `PageRowExtractor.ExtractPage()`, `AuditedEntity` constructors, `AddNavigationSettingsUpdateStatement()` -- PRIMARY SOURCE
-- [Page Class API](https://doc.dynamicweb.dev/api/Dynamicweb.Content.Page.html)
-- [PageNavigationSettings](https://doc.dynamicweb.com/api/html/b9de46f1-8065-0ba0-6c5b-4fa01d90de7e.htm)
-- Existing codebase patterns (InternalLinkResolver, ContentDeserializer, SqlTableProvider)
+- **Codebase analysis (primary):**
+  - `ContentDeserializer.cs` lines 842-850: source-wins null-out logic for ItemFields
+  - `ContentDeserializer.cs` lines 775-779: source-wins null-out for PropertyItem fields
+  - `ForceStringScalarEmitter.cs` line 18: CRLF detection forcing DoubleQuoted style
+  - `ConfigLoader.cs` lines 79-92: three-class mapping pattern (Raw -> Build -> Model)
+  - `SqlTableWriter.cs` lines 48-52: MERGE UPDATE column list construction
+  - `SerializedArea.cs`: current 5-field model needing expansion to 60+ fields
+- [YamlDotNet literal block scalar issue #523](https://github.com/aaubry/YamlDotNet/issues/523) -- indentation errors
+- [YAML Multiline Strings reference](https://yaml-multiline.info/) -- chomp indicators and block scalar rules
+- [.NET XDocument whitespace preservation](https://learn.microsoft.com/en-us/dotnet/standard/linq/preserve-white-space-loading-parsing-xml)
+- [.NET XDocument serialization whitespace](https://learn.microsoft.com/en-us/dotnet/standard/linq/preserve-white-space-serializing)
+- Memory: `feedback_no_backcompat.md` (0.x beta, format changes OK), `project_dw_area_cache.md` (AreaService cache clearing required)
+
+---
+*Pitfalls research for: DynamicWeb.Serializer v0.5.0 -- granular serialization control*
+*Researched: 2026-04-07*

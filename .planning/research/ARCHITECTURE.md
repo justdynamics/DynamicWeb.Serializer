@@ -1,576 +1,448 @@
-# Architecture: Full Page Fidelity Extension
+# Architecture Research
 
-**Domain:** DynamicWeb content serialization -- extending existing pipeline for ~30 missing page properties
-**Researched:** 2026-04-02
-**Overall confidence:** HIGH (verified via DW 10.23.9 DLL decompilation)
+**Domain:** Granular serialization control for DynamicWeb.Serializer v0.5.0
+**Researched:** 2026-04-07
+**Confidence:** HIGH (based on full codebase review of existing architecture)
 
-## Executive Summary
+## System Overview: Current State
 
-The existing ContentMapper/ContentDeserializer/SerializedPage pipeline is well-structured and straightforward to extend. All ~30 missing page properties are simple scalar properties on the DW `Page` class that SavePage already persists. PageNavigationSettings is NOT a separate table -- it is columns on the Page table, saved inline by `SavePage` when `page.NavigationSettings != null`. Area ItemType connections use the existing `Area.ItemType`/`Area.Item`/`Area.ItemId` properties. Timestamp preservation requires a post-save SQL UPDATE because `new Page()` always sets `Audit = new AuditedEntity(DateTime.Now, userId)`, overwriting timestamps on INSERT.
+```
++-----------------------------------------------------------------+
+|                          Admin UI Layer                          |
+|  +------------------+  +------------------+  +----------------+ |
+|  |PredicateEditScreen|  |SettingsEditScreen|  |LogViewerScreen | |
+|  +--------+---------+  +--------+---------+  +----------------+ |
++-----------+------------------------+----------------------------+
+|                      Orchestration Layer                         |
+|  +----------------------+  +----------------+  +--------------+ |
+|  |SerializerOrchestrator|  |ProviderRegistry|  |FkDepResolver | |
+|  +----------+-----------+  +-------+--------+  +--------------+ |
++-------------+------------------------+--------------------------+
+|                        Provider Layer                            |
+|  +------------------+            +------------------+            |
+|  | ContentProvider   |            | SqlTableProvider  |            |
+|  +--------+---------+            +--------+---------+            |
++-----------+-----------------------------------+------------------+
+|                      Pipeline Layer                              |
+|  +--------------+  +----------------+  +--------------------+    |
+|  |ContentMapper  |  |ContentSerializr|  |ContentDeserializr  |    |
+|  |(DB -> DTO)    |  |(DTO -> YAML)   |  |(YAML -> DB)        |    |
+|  +--------------+  +----------------+  +--------------------+    |
+|  +--------------+  +----------------+  +----------------+        |
+|  |SqlTableReader |  | FlatFileStore  |  |SqlTableWriter  |        |
+|  +--------------+  +----------------+  +----------------+        |
++-----------------------------------------------------------------+
+|                     Infrastructure Layer                         |
+|  +------------------+  +----------------------------+            |
+|  | FileSystemStore   |  |ForceStringScalarEmitter    |            |
+|  | (content YAML)    |  |(YAML string quoting)       |            |
+|  +------------------+  +----------------------------+            |
+|  +------------------+  +----------------------------+            |
+|  | ConfigLoader      |  |YamlConfiguration           |            |
+|  +------------------+  +----------------------------+            |
++-----------------------------------------------------------------+
+```
 
-## Question 1: DTO Structure -- Sub-Objects vs Flat Properties
+## Integration Analysis: Where Each Feature Hooks In
 
-### Recommendation: Grouped sub-objects for readability, flat assignment for persistence
+### Feature 1: XML Pretty-Printing
 
-Add properties to `SerializedPage` using **logical sub-records** to keep the DTO readable while maintaining simple assignment in the mapper/deserializer.
+**Problem:** Fields like `ModuleSettings` and `UrlDataProviderParameters` (on paragraphs/pages) contain raw XML strings. SQL table rows also contain XML columns. These are currently serialized as opaque strings, making git diffs unreadable.
 
-### Current SerializedPage (26 lines)
+**Where it hooks in:** A shared utility that transforms XML strings, called from two sites:
 
-The existing DTO has 16 properties plus 4 collections. Adding 30+ flat properties would make it unwieldy.
+1. **Content pipeline** -- `ContentMapper.MapParagraph()` writes `paragraph.ModuleSettings` as-is into `SerializedParagraph.ModuleSettings`. The pretty-printer intercepts here, reformatting the XML before it reaches the DTO. Similarly, `ContentMapper.MapPage()` writes `page.UrlDataProviderParameters` into the `SerializedUrlSettings` DTO.
 
-### Recommended DTO Extension Strategy
+2. **SqlTable pipeline** -- `FlatFileStore.WriteRow()` serializes `Dictionary<string, object?>` to YAML. XML columns are just strings. The pretty-printer intercepts in `SqlTableReader.ReadAllRows()` or in `FlatFileStore.WriteRow()` before YAML serialization.
+
+**New component: `XmlFormatter` (shared utility)**
+
+```
+Infrastructure/XmlFormatter.cs
+```
 
 ```csharp
-public record SerializedPage
+public static class XmlFormatter
 {
-    // --- Existing properties (keep as-is) ---
-    public required Guid PageUniqueId { get; init; }
-    public int? SourcePageId { get; init; }
-    public required string Name { get; init; }
-    public required string MenuText { get; init; }
-    public required string UrlName { get; init; }
-    public required int SortOrder { get; init; }
-    public bool IsActive { get; init; }
-    public string? ItemType { get; init; }
-    public string? Layout { get; init; }
-    public bool LayoutApplyToSubPages { get; init; }
-    public bool IsFolder { get; init; }
-    public string? TreeSection { get; init; }
+    /// <summary>
+    /// If the value looks like XML, pretty-print it with indentation.
+    /// Returns the original string if it's not valid XML.
+    /// </summary>
+    public static string PrettyPrint(string value);
 
-    // --- NEW: Flat scalar properties (simple booleans/strings/ints) ---
-    // These map 1:1 to Page properties and are simple enough to stay flat.
-    public string? NavigationTag { get; init; }
-    public string? ShortCut { get; init; }
-    public bool Hidden { get; init; }
-    public bool Published { get; init; }
-    public bool Allowclick { get; init; } = true;
-    public bool Allowsearch { get; init; } = true;
-    public bool ShowInSitemap { get; init; } = true;
-    public bool ShowInMenu { get; init; } = true;
-    public bool ShowInLegend { get; init; } = true;
-    public int SslMode { get; init; }
-    public string? ColorSchemeId { get; init; }
-    public string? ExactUrl { get; init; }
-    public string? ContentType { get; init; }
-    public string? TopImage { get; init; }
-    public int DisplayMode { get; init; }
+    /// <summary>
+    /// Compact XML back to single-line for database write-back.
+    /// </summary>
+    public static string Compact(string value);
 
-    // --- NEW: URL settings sub-object ---
-    public SerializedUrlSettings? UrlSettings { get; init; }
+    /// <summary>
+    /// Remove specific XML elements by name (for XML field blacklist).
+    /// </summary>
+    public static string RemoveElements(string xml, IEnumerable<string> elementNames);
 
-    // --- NEW: SEO settings sub-object ---
-    public SerializedSeoSettings? Seo { get; init; }
-
-    // --- NEW: Visibility settings sub-object ---
-    public SerializedVisibilitySettings? Visibility { get; init; }
-
-    // --- NEW: Navigation (ecommerce) settings sub-object ---
-    public SerializedNavigationSettings? NavigationSettings { get; init; }
-
-    // --- NEW: Timestamp/audit sub-object ---
-    public SerializedAudit? Audit { get; init; }
-
-    // --- NEW: Date range ---
-    public DateTime? ActiveFrom { get; init; }
-    public DateTime? ActiveTo { get; init; }
-
-    // --- Existing collections (keep as-is) ---
-    public Dictionary<string, object> Fields { get; init; } = new();
-    public Dictionary<string, object> PropertyFields { get; init; } = new();
-    public List<SerializedPermission> Permissions { get; init; } = new();
-    public List<SerializedGridRow> GridRows { get; init; } = new();
-    public List<SerializedPage> Children { get; init; } = new();
-}
-
-public record SerializedUrlSettings
-{
-    public string? UrlDataProviderTypeName { get; init; }
-    public string? UrlDataProviderParameters { get; init; }
-    public bool UrlIgnoreForChildren { get; init; }
-    public bool UrlUseAsWritten { get; init; }
-}
-
-public record SerializedSeoSettings
-{
-    public string? MetaTitle { get; init; }
-    public string? MetaCanonical { get; init; }
-    public string? Description { get; init; }
-    public string? Keywords { get; init; }
-    public bool Noindex { get; init; }
-    public bool Nofollow { get; init; }
-    public bool Robots404 { get; init; }
-}
-
-public record SerializedVisibilitySettings
-{
-    public bool HideForPhones { get; init; }
-    public bool HideForTablets { get; init; }
-    public bool HideForDesktops { get; init; }
-}
-
-public record SerializedNavigationSettings
-{
-    public bool UseEcomGroups { get; init; }
-    public string? ParentType { get; init; }  // "Groups" or "Shop"
-    public string? Groups { get; init; }
-    public string? ShopID { get; init; }
-    public int MaxLevels { get; init; }
-    public string? ProductPage { get; init; }
-    public string? NavigationProvider { get; init; }
-    public bool IncludeProducts { get; init; }
-}
-
-public record SerializedAudit
-{
-    public DateTime? CreatedDate { get; init; }
-    public DateTime? UpdatedDate { get; init; }
-    public string? CreatedBy { get; init; }
-    public string? UpdatedBy { get; init; }
+    /// <summary>
+    /// Returns true if the string appears to be XML (starts with < after trimming).
+    /// </summary>
+    public static bool LooksLikeXml(string value);
 }
 ```
 
-### Rationale
+**Modification points:**
 
-- **Sub-objects for SEO, URL, Visibility, NavigationSettings, Audit**: These are logical groupings in the DW admin UI and produce cleaner YAML:
-  ```yaml
-  seo:
-    metaTitle: "Page Title"
-    noindex: true
-  urlSettings:
-    urlDataProviderTypeName: "Dynamicweb.Ecommerce..."
-  ```
-- **Flat for simple booleans**: `NavigationTag`, `ShortCut`, `Hidden` etc. are standalone concepts, not worth wrapping.
-- **Remove old CreatedDate/UpdatedDate/CreatedBy/UpdatedBy from top level**: Move into `Audit` sub-object. The existing fields on SerializedPage were never populated anyway.
-- **YAML backward compatibility**: New optional properties with defaults won't break existing YAML files. Missing properties deserialize as null/false/0 which is correct behavior.
+| Component | Change | Why |
+|-----------|--------|-----|
+| `ContentMapper.MapParagraph()` | Call `XmlFormatter.PrettyPrint(paragraph.ModuleSettings)` before assigning to DTO | Pretty-print content XML on serialize |
+| `ContentMapper.MapPage()` | Call `XmlFormatter.PrettyPrint(page.UrlDataProviderParameters)` | Pretty-print URL provider XML |
+| `ContentDeserializer` | Call `XmlFormatter.Compact()` when writing ModuleSettings/UrlDataProviderParameters back to DB | Restore original compact format |
+| `FlatFileStore.WriteRow()` | Detect XML columns and pretty-print before YAML serialization | Pretty-print SQL table XML |
+| `SqlTableProvider.Deserialize()` (CoerceRowTypes area) | Compact XML strings back before SQL write | Restore compact format |
 
-### Confidence: HIGH
-Verified by decompiling `Dynamicweb.Content.Page` from the 10.23.9 NuGet -- every property listed above has a public getter and setter on the Page class.
+**Key design decision:** Pretty-printing happens at the **mapping boundary** (DB value -> DTO or YAML dict), not in the YAML serializer itself. This keeps `ForceStringScalarEmitter` and `YamlConfiguration` unchanged. The YAML serializer sees a multiline string and uses Literal block style (already handled by `ForceStringScalarEmitter` for `\n`-containing strings).
 
----
+**For SQL tables:** `FlatFileStore` doesn't currently know which columns contain XML. Two options:
+- **Option A (recommended):** Auto-detect -- any string value starting with `<` and ending with `>` gets pretty-printed. Simple, no config needed, handles all tables uniformly.
+- **Option B:** Explicit column list in predicate config. More precise but adds config burden for every table.
 
-## Question 2: PageNavigationSettings -- Child Object or Separate API?
+Use Option A because it's zero-config and the false positive risk is negligible (few non-XML values start with `<` and are valid XML).
 
-### Answer: It is columns on the Page table, saved inline by SavePage
+### Feature 2: Field-Level Filtering (Blacklists)
 
-**Verified by decompilation (HIGH confidence):**
+**Problem:** Environment-specific columns (e.g., `AreaDomain`, `AreaSSLCertificate` for areas; `PageCreatedBy` for pages; specific SQL columns) should be excludable per predicate.
 
-PageNavigationSettings is NOT a separate database table. The settings are stored as columns directly on the `[Page]` table:
+**Where it hooks in:** The `ProviderPredicateDefinition` gains new fields, and filtering is applied at the mapping layer.
 
-| DB Column | PageNavigationSettings Property |
-|-----------|-------------------------------|
-| `PageNavigation_UseEcomGroups` | `UseEcomGroups` |
-| `PageNavigationParentType` | `ParentType` (enum: Groups=1, Shop=2) |
-| `PageNavigationGroupSelector` | `Groups` |
-| `PageNavigationShopSelector` | `ShopID` |
-| `PageNavigationMaxLevels` | `MaxLevels` (>10 stored as "AllLevels") |
-| `PageNavigationProductPage` | `ProductPage` |
-| `PageNavigationIncludeProducts` | `IncludeProducts` |
-| `PageNavigationProvider` | `NavigationProvider` |
-
-### How it works in DW internals
-
-**Serialization (read):** `PageRowExtractor.ExtractPage()` checks `PageNavigation_UseEcomGroups`. If true, creates a `PageNavigationSettings` object and calls `Fill(dataReader)` to populate from the same row.
-
-**Deserialization (write):** `PageRepository.UpdatePage()` calls `AddNavigationSettingsUpdateStatement()` which writes the columns inline in the UPDATE if `page.NavigationSettings != null`. Same for INSERT.
-
-### Integration approach
+**Config model change: `ProviderPredicateDefinition`**
 
 ```csharp
-// In ContentMapper.MapPage():
-var navSettings = page.NavigationSettings;
-SerializedNavigationSettings? serializedNav = null;
-if (navSettings != null && navSettings.UseEcomGroups)
-{
-    serializedNav = new SerializedNavigationSettings
-    {
-        UseEcomGroups = navSettings.UseEcomGroups,
-        ParentType = navSettings.ParentType.ToString(),
-        Groups = navSettings.Groups,
-        ShopID = navSettings.ShopID,
-        MaxLevels = navSettings.MaxLevels,
-        ProductPage = navSettings.ProductPage,
-        NavigationProvider = navSettings.NavigationProvider,
-        IncludeProducts = navSettings.IncludeProducts
-    };
-}
+// New fields on ProviderPredicateDefinition:
 
-// In ContentDeserializer.DeserializePage():
-if (dto.NavigationSettings != null && dto.NavigationSettings.UseEcomGroups)
-{
-    page.NavigationSettings = new PageNavigationSettings
-    {
-        UseEcomGroups = dto.NavigationSettings.UseEcomGroups,
-        Groups = dto.NavigationSettings.Groups,
-        ShopID = dto.NavigationSettings.ShopID,
-        MaxLevels = dto.NavigationSettings.MaxLevels,
-        ProductPage = dto.NavigationSettings.ProductPage,
-        NavigationProvider = dto.NavigationSettings.NavigationProvider,
-        IncludeProducts = dto.NavigationSettings.IncludeProducts
-    };
-    // ParentType needs enum parse
-    if (Enum.TryParse<EcommerceNavigationParentType>(
-        dto.NavigationSettings.ParentType, true, out var pt))
-        page.NavigationSettings.ParentType = pt;
-}
+/// <summary>
+/// Field names to exclude from serialization. Applied to page/paragraph/area
+/// properties for Content predicates, or column names for SqlTable predicates.
+/// </summary>
+public List<string> ExcludeFields { get; init; } = new();
+
+/// <summary>
+/// XML element names to exclude from embedded XML fields (ModuleSettings, etc.).
+/// Applied after XML pretty-printing, before YAML serialization.
+/// </summary>
+public List<string> ExcludeXmlElements { get; init; } = new();
 ```
 
-No separate API call needed. `Services.Pages.SavePage(page)` handles it.
+**Data flow for Content predicates:**
 
-### Confidence: HIGH
-Verified by decompiling `PageRepository.Save()`, `PageRepository.UpdatePage()`, `PageRowExtractor.ExtractPage()`, and `PageNavigationSettings.Fill()`.
+```
+DB (DW API)
+    |
+    v
+ContentMapper.MapPage(page, ..., excludeFields)     -- NEW: receives exclude list
+    |-- Skips excluded properties when building DTO
+    |-- Skips excluded keys in Fields/PropertyFields/ItemFields dictionaries
+    v
+SerializedPage DTO (filtered)
+    |
+    v
+FileSystemStore.WriteTree() (unchanged)
+    |
+    v
+YAML on disk (excluded fields absent)
+```
 
----
+**Modification points for Content:**
 
-## Question 3: Area ItemType -- New Provider or Extend ContentProvider?
+| Component | Change | Why |
+|-----------|--------|-----|
+| `ProviderPredicateDefinition` | Add `ExcludeFields`, `ExcludeXmlElements` properties | Config model extension |
+| `ContentMapper` | Accept `IReadOnlySet<string>? excludeFields` parameter on `MapPage`, `MapParagraph`, `MapArea` | Filter fields during mapping |
+| `ContentMapper.MapPage()` | Skip DTO properties and `Fields`/`PropertyFields` keys in exclude set | Field-level blacklist |
+| `ContentMapper.MapParagraph()` | Skip `Fields` keys in exclude set | Field-level blacklist |
+| `ContentMapper.MapArea()` | Skip `ItemFields` keys in exclude set | Field-level blacklist |
+| `ContentSerializer` | Pass `predicate.ExcludeFields` to ContentMapper calls | Thread config through |
+| `ContentDeserializer` | No change needed -- absent fields are simply not written to DB (already handled by source-wins null-out) | Absent = skip on deserialize |
 
-### Answer: Extend ContentProvider (specifically SerializedArea + ContentMapper)
+**Modification points for SqlTable:**
 
-The Area class has these relevant properties:
-- `Area.ItemType` (string) -- the ItemType system name
-- `Area.ItemId` (string) -- the Item instance ID
-- `Area.Item` (Item) -- the associated Item object (has header/footer/master connections as item fields)
-- `Area.ItemTypePageProperty` (string) -- ItemType for page-level properties
+| Component | Change | Why |
+|-----------|--------|-----|
+| `SqlTableProvider.Serialize()` | Remove excluded columns from row dict before writing | Filter SQL columns |
+| `FlatFileStore.WriteRow()` | No change -- receives pre-filtered dict | Clean separation |
 
-### Why NOT a new provider
+**XML element blacklist flow:**
 
-Area ItemType fields are conceptually part of the content tree. They define website-level settings (header page, footer page, master layout) that belong to the area being serialized. The existing ContentSerializer already receives the Area and already serializes `SerializedArea`.
+```
+Raw XML string (e.g., ModuleSettings)
+    |
+    v
+XmlFormatter.PrettyPrint(xml)                              -- Step 1: format
+    |
+    v
+XmlFormatter.RemoveElements(xml, excludeXmlElements)       -- Step 2: strip
+    |
+    v
+Assign to DTO field
+```
 
-### Integration approach
+This is a two-step transform: pretty-print first, then strip. Both happen in `ContentMapper` (or the `SqlTableProvider.Serialize` loop for SQL).
 
-Extend `SerializedArea` to include ItemType fields:
+### Feature 3: Area Consolidation into ContentProvider
+
+**Problem:** Currently `SerializedArea` only captures `AreaId`, `Name`, `SortOrder`, `ItemType`, `ItemFields`. The DW `Area` table has 60+ columns (AreaDomain, AreaCulture, AreaMasterArea, AreaSSLCertificate, etc.). These should be serialized into `area.yml` for full environment portability.
+
+**Where it hooks in:** `ContentMapper.MapArea()` is the sole location.
+
+**Design decision -- Typed properties vs. Dictionary:**
+
+Use a **Dictionary<string, object> `Properties`** field on `SerializedArea` rather than 60+ typed properties. Reasons:
+1. DW Area table schema can change between versions -- a dictionary is resilient.
+2. Field-level blacklist filtering works naturally with dictionary key removal.
+3. Consistent with how `Fields` and `ItemFields` already work on pages/paragraphs.
+4. The area.yml already uses YAML's natural key-value format.
 
 ```csharp
 public record SerializedArea
 {
-    public required Guid AreaId { get; init; }
-    public required string Name { get; init; }
-    public required int SortOrder { get; init; }
+    // ... existing fields (AreaId, Name, SortOrder, ItemType, ItemFields, Pages) ...
 
-    // NEW: Area-level ItemType data
-    public string? ItemType { get; init; }
-    public Dictionary<string, object> ItemFields { get; init; } = new();
-
-    public List<SerializedPage> Pages { get; init; } = new();
+    /// <summary>
+    /// All Area table columns beyond the named properties above.
+    /// Serialized as flat key-value pairs in area.yml.
+    /// </summary>
+    public Dictionary<string, object> Properties { get; init; } = new();
 }
 ```
 
-In `ContentMapper.MapArea()`:
+**How to read all Area columns:** Read directly from the Area SQL table using `CommandBuilder`/`Database.CreateDataReader`. The DW `Area` class doesn't expose all 60+ columns as properties, but they are all in the `[Area]` table. This is a read-only operation for serialization, so direct SQL is acceptable here.
 
 ```csharp
-public SerializedArea MapArea(Area area, List<SerializedPage> pages)
+// New helper in ContentMapper or a dedicated AreaPropertyReader:
+public static Dictionary<string, object> ReadAreaProperties(int areaId)
 {
-    var itemFields = new Dictionary<string, object>();
-    if (!string.IsNullOrEmpty(area.ItemType) && area.Item != null)
+    var props = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
+    var cb = new CommandBuilder();
+    cb.Add("SELECT * FROM [Area] WHERE [AreaID] = @id");
+    cb.AddParameter("id", areaId);
+    using var reader = Database.CreateDataReader(cb);
+    if (reader.Read())
     {
-        var dict = new Dictionary<string, object?>();
-        area.Item.SerializeTo(dict);
-        foreach (var kvp in dict)
+        for (int i = 0; i < reader.FieldCount; i++)
         {
-            if (kvp.Value != null)
-                itemFields[kvp.Key] = kvp.Value;
+            var name = reader.GetName(i);
+            var value = reader.GetValue(i);
+            if (value != DBNull.Value)
+                props[name] = value;
         }
     }
-
-    return new SerializedArea
-    {
-        AreaId = area.UniqueId,
-        Name = area.Name ?? string.Empty,
-        SortOrder = area.Sort,
-        ItemType = area.ItemType,
-        ItemFields = itemFields,
-        Pages = pages
-    };
+    // Remove columns already captured by named DTO properties
+    props.Remove("AreaID");
+    props.Remove("AreaName");
+    props.Remove("AreaSort");
+    props.Remove("AreaItemType");
+    return props;
 }
 ```
 
-In `ContentDeserializer`, after resolving the target area, apply item fields via the same `SaveItemFields` pattern already used for pages.
+**Modification points:**
 
-### Note on internal link resolution
+| Component | Change | Why |
+|-----------|--------|-----|
+| `SerializedArea` | Add `Dictionary<string, object> Properties` | Carry full Area table data |
+| `ContentMapper.MapArea()` | Read Area properties via SQL, populate Properties dict, apply excludeFields | Capture and filter all columns |
+| `ContentDeserializer.DeserializePredicate()` | Write Properties back to Area table via SQL UPDATE on deserialize | Full round-trip |
+| `FileSystemStore.WriteTree()` | No change -- Properties dict serializes naturally as YAML | Already handles dicts |
 
-Area ItemType fields may contain page references (e.g., header page = `Default.aspx?ID=123`). The existing `InternalLinkResolver` phase should also scan Area item fields. This is a straightforward extension of `ResolveLinksInArea()`.
-
-### Confidence: HIGH
-Verified by decompiling `Dynamicweb.Content.Area` -- ItemType/ItemId/Item are standard public properties. The Item uses the same `SerializeTo`/`DeserializeFrom` pattern as page items.
-
----
-
-## Question 4: Save Order for Timestamp Preservation
-
-### Answer: SavePage ALWAYS overwrites timestamps. Use post-save SQL UPDATE.
-
-**Critical finding from decompilation:**
-
-The `Page()` constructor (used for new pages) sets:
-```csharp
-base.Audit = new AuditedEntity(DateTime.Now, userId.ToString());
-```
-
-The `AuditedEntity` constructor sets BOTH `CreatedAt` AND `LastModifiedAt` to `DateTime.Now`.
-
-For the INSERT path, the SQL writes:
-```sql
-INSERT INTO [Page] (..., [PageCreatedDate], [PageUpdatedDate], ..., [PageUserCreate], [PageUserEdit], ...)
-VALUES (..., page.Audit.CreatedAt, page.Audit.LastModifiedAt, ..., page.Audit.CreatedBy, page.Audit.LastModifiedBy, ...)
-```
-
-For the UPDATE path, when loading an existing page via `GetPage()`, the `PageRowExtractor` correctly restores the original Audit from the DB. So updates preserve the original CreatedAt. However, the `LastModifiedAt` will be updated to `DateTime.Now` if any code calls `MarkAsUpdated()`.
-
-### Timestamp preservation strategy
-
-**For INSERT (new pages):** There is no way to set the Audit via public API before the constructor runs. The `internal Page(AuditedEntity audit, ...)` constructor is not accessible. Solution: **Post-save SQL UPDATE**.
-
-**For UPDATE (existing pages):** The existing Audit is loaded from DB by `PageRowExtractor`. When we load via `Services.Pages.GetPage(id)` and re-save, the original `CreatedAt` is preserved and `LastModifiedAt` reflects the actual update time. If we want to preserve the ORIGINAL `LastModifiedAt`, we need a post-save SQL UPDATE.
-
-### Recommended save order
-
-```
-1. SavePage(page)                    // Normal DW save (creates/updates page, assigns ID)
-2. SaveItemFields(...)               // Item fields via ItemService
-3. SavePropertyItemFields(...)       // PropertyItem fields
-4. SQL UPDATE timestamps             // Post-save direct SQL to restore original timestamps
-```
-
-### SQL UPDATE for timestamp restoration
+**Deserialization approach for Area properties:**
 
 ```csharp
-private void RestoreTimestamps(int pageId, SerializedAudit? audit)
+// In ContentDeserializer, after existing area ItemType handling:
+if (area.Properties.Count > 0 && !_isDryRun)
 {
-    if (audit == null) return;
-
+    // Build SQL UPDATE with all Properties keys
     var cb = new CommandBuilder();
-    cb.Add("UPDATE [Page] SET ", Array.Empty<object>());
-
-    var setClauses = new List<string>();
-    if (audit.CreatedDate.HasValue)
-        cb.Add<DateTime>("[PageCreatedDate]={0}", audit.CreatedDate.Value);
-    if (audit.UpdatedDate.HasValue)
-        cb.Add<DateTime>(",[PageUpdatedDate]={0}", audit.UpdatedDate.Value);
-    if (!string.IsNullOrEmpty(audit.CreatedBy))
-        cb.Add<string>(",[PageUserCreate]={0}", audit.CreatedBy);
-    if (!string.IsNullOrEmpty(audit.UpdatedBy))
-        cb.Add<string>(",[PageUserEdit]={0}", audit.UpdatedBy);
-
-    cb.Add<int>(" WHERE [PageID]={0}", pageId);
+    cb.Add("UPDATE [Area] SET ");
+    var first = true;
+    foreach (var kvp in area.Properties)
+    {
+        if (!first) cb.Add(", ");
+        cb.Add($"[{kvp.Key}] = @{kvp.Key}");
+        cb.AddParameter(kvp.Key, kvp.Value);
+        first = false;
+    }
+    cb.Add(" WHERE [AreaID] = @areaId");
+    cb.AddParameter("areaId", predicate.AreaId);
     Database.ExecuteNonQuery(cb);
+    Services.Areas.ClearCache();
 }
 ```
 
-This pattern is consistent with the existing `SqlTableProvider` which already uses `Dynamicweb.Data.Database` for direct SQL. The `DwSqlExecutor` provides the abstraction.
+### Feature 4: Enhanced Predicate UI
 
-### Important: Audit data in ContentMapper
+**Where it hooks in:** `PredicateEditScreen`, `PredicateEditModel`, `SavePredicateCommand`.
 
-The mapper currently does NOT extract audit data. Extension needed:
+**Modification points:**
 
-```csharp
-// In ContentMapper.MapPage():
-Audit = new SerializedAudit
-{
-    CreatedDate = page.Audit?.CreatedAt,      // from Entity<int>.Audit
-    UpdatedDate = page.Audit?.LastModifiedAt,
-    CreatedBy = page.Audit?.CreatedBy,
-    UpdatedBy = page.Audit?.LastModifiedBy
-}
-```
+| Component | Change | Why |
+|-----------|--------|-----|
+| `PredicateEditModel` | Add `ExcludeFields` (string, textarea), `ExcludeXmlElements` (string, textarea) | UI model for new fields |
+| `PredicateEditScreen.BuildEditScreen()` | Add "Field Filtering" group with ExcludeFields and ExcludeXmlElements editors, shown for both provider types | Show new fields in UI |
+| `PredicateEditScreen.GetEditor()` | Add cases for new fields (Textarea editors with explanatory text) | Configure editor appearance |
+| `SavePredicateCommand.Handle()` | Parse ExcludeFields/ExcludeXmlElements from textarea (newline-separated) into List<string>, for both Content and SqlTable branches | Persist to config |
+| `PredicateByIndexQuery` | Map new fields from config to edit model | Load for editing |
 
-Note: `page.Audit` is accessed via the `Entity<int>` base class. Since `Page : Entity<int>`, it is directly accessible. The cast `((Dynamicweb.Core.Entity<int>)page).Audit` may be needed if the compiler does not resolve it implicitly. The `Audit` property is public on `Entity<T>`.
+The UI groups should be:
+1. **Configuration** (Name, ProviderType) -- existing
+2. **Content Settings** or **SQL Table Settings** -- existing, provider-specific
+3. **Field Filtering** (ExcludeFields, ExcludeXmlElements) -- NEW, shown for both provider types when ProviderType is selected
 
-### Confidence: HIGH
-Verified via decompilation of `PageRepository.InsertPage()`, `PageRepository.UpdatePage()`, `PageRowExtractor.ExtractPage()`, and `AuditedEntity` constructors.
+## Component Map: New vs. Modified
 
----
+### New Components
 
-## Question 5: Properties Requiring Special DW API Calls
+| Component | File | Purpose |
+|-----------|------|---------|
+| `XmlFormatter` | `Infrastructure/XmlFormatter.cs` | Pretty-print, compact, and filter XML strings. Uses `System.Xml.Linq.XDocument` |
 
-### UrlDataProvider
+### Modified Components
 
-**No special API needed.** UrlDataProviderTypeName and UrlDataProviderParameters are plain string properties on Page, persisted by SavePage. They just store the .NET type name and its serialized parameters.
+| Component | File | Nature of Change |
+|-----------|------|------------------|
+| `ProviderPredicateDefinition` | `Models/ProviderPredicateDefinition.cs` | Add ExcludeFields, ExcludeXmlElements list properties |
+| `SerializedArea` | `Models/SerializedArea.cs` | Add Properties dictionary for full Area table columns |
+| `ContentMapper` | `Serialization/ContentMapper.cs` | XML pretty-print on map, field filtering, area property capture via SQL |
+| `ContentSerializer` | `Serialization/ContentSerializer.cs` | Pass predicate exclude config to mapper calls |
+| `ContentDeserializer` | `Serialization/ContentDeserializer.cs` | XML compact on deserialize, area property write-back via SQL UPDATE |
+| `FlatFileStore` | `Providers/SqlTable/FlatFileStore.cs` | XML auto-detect and pretty-print on WriteRow |
+| `SqlTableProvider` | `Providers/SqlTable/SqlTableProvider.cs` | Field filtering in serialize loop, XML compact in deserialize CoerceRowTypes |
+| `PredicateEditModel` | `AdminUI/Models/PredicateEditModel.cs` | Add ExcludeFields, ExcludeXmlElements string fields |
+| `PredicateEditScreen` | `AdminUI/Screens/PredicateEditScreen.cs` | Add Field Filtering UI group for both provider types |
+| `SavePredicateCommand` | `AdminUI/Commands/SavePredicateCommand.cs` | Parse and persist new fields in both Content and SqlTable branches |
+| `PredicateByIndexQuery` | `AdminUI/Queries/PredicateByIndexQuery.cs` | Load new fields for editing |
 
-```csharp
-page.UrlDataProviderTypeName = dto.UrlSettings?.UrlDataProviderTypeName;
-page.UrlDataProviderParameters = dto.UrlSettings?.UrlDataProviderParameters;
-```
+### Unchanged Components
 
-Caveat: The UrlDataProviderTypeName contains a fully-qualified .NET type name (e.g., `Dynamicweb.Ecommerce.Frontend.EcommerceUrlDataProvider`). This is environment-safe because it references the class name, not an instance. It will only work if the target environment has the same DW modules installed.
+| Component | Why Unchanged |
+|-----------|---------------|
+| `ISerializationProvider` | Interface unchanged -- filtering is config-level, not contract-level |
+| `SerializerOrchestrator` | Passes predicates through unchanged -- filtering happens inside providers |
+| `ProviderRegistry` | No new providers added |
+| `ForceStringScalarEmitter` | Already handles multiline strings correctly (Literal for LF-only) |
+| `YamlConfiguration` | No serializer config changes needed |
+| `FileSystemStore` | Writes whatever DTOs contain -- filtering happens upstream |
+| `InternalLinkResolver` | Unaffected by field filtering or XML formatting |
+| `ConfigLoader/ConfigWriter` | JSON serialization handles new List<string> properties automatically |
+| `ContentPredicate/ContentPredicateSet` | Path-based filtering unchanged; field filtering is orthogonal |
 
-### NavigationSettings
+## Suggested Build Order
 
-As documented in Question 2, handled inline by SavePage. Set `page.NavigationSettings = new PageNavigationSettings { ... }` before calling SavePage.
+The features have dependencies that dictate order:
 
-### Permissions
+### Phase 1: XmlFormatter Utility (foundation, no dependencies)
 
-Already handled by existing `PermissionMapper.ApplyPermissions()`. No change needed.
+Build `Infrastructure/XmlFormatter.cs` with:
+- `PrettyPrint(string)` -- uses `System.Xml.Linq.XDocument.Parse()` then `ToString(SaveOptions.None)` for indented output
+- `Compact(string)` -- `XDocument.Parse()` then `ToString(SaveOptions.DisableFormatting)`
+- `LooksLikeXml(string)` -- quick heuristic: trim, starts with `<`, try `XDocument.Parse`
+- `RemoveElements(string, IEnumerable<string>)` -- `XDocument`-based element removal via `Descendants().Where().Remove()`
 
-### Properties that are truly read-only or not settable
+**Why first:** Both Content and SqlTable pipelines depend on this. No external dependencies beyond `System.Xml.Linq` (already in .NET 8). Can be unit tested in isolation.
 
-| Property | Settable? | Notes |
-|----------|-----------|-------|
-| `Level` | Read-only | Computed from tree depth, not serializable |
-| `IsMaster` | Read-only | Computed from `Area.IsMaster` |
-| `IsLanguage` | Read-only | Computed from `Area.IsLanguage` |
-| `Parent` | Read-only navigation | Set via `ParentPageId` |
-| `MasterPage` | Read-only navigation | Set via `MasterPageId` |
-| `Layout` (object) | Read-only | Computed from `LayoutLocator.FindLayout(this)`. Use `LayoutTemplate` string. |
-| `ShowInMenu` | Writable | Standard bool property, persisted by SavePage |
-| `Published` | Writable | Standard bool property, persisted by SavePage |
+### Phase 2: XML Pretty-Printing in Content Pipeline
 
-### Confidence: HIGH
-Verified via decompilation -- all writable properties confirmed to have public setters.
+Modify `ContentMapper.MapParagraph()` and `ContentMapper.MapPage()` to pretty-print XML fields. Modify `ContentDeserializer` to compact on write-back.
 
----
+**Why second:** Validates XmlFormatter works end-to-end with real DW content data before adding filtering complexity. Test with existing Swift test environment.
 
-## Complete Property Mapping Reference
+### Phase 3: XML Pretty-Printing in SqlTable Pipeline
 
-This table maps every DW Page property to the DTO location. Properties already serialized are marked with [EXISTING].
+Modify `FlatFileStore.WriteRow()` to auto-detect and pretty-print XML values. Modify `SqlTableProvider` deserialize path to compact.
 
-| DW Page Property | DTO Location | Type | Default |
-|-----------------|-------------|------|---------|
-| UniqueId | PageUniqueId [EXISTING] | Guid | required |
-| ID | SourcePageId [EXISTING] | int? | - |
-| MenuText | MenuText [EXISTING] | string | required |
-| UrlName | UrlName [EXISTING] | string | required |
-| Sort | SortOrder [EXISTING] | int | required |
-| Active | IsActive [EXISTING] | bool | false |
-| ItemType | ItemType [EXISTING] | string? | null |
-| LayoutTemplate | Layout [EXISTING] | string? | null |
-| LayoutApplyToSubPages | LayoutApplyToSubPages [EXISTING] | bool | false |
-| IsFolder | IsFolder [EXISTING] | bool | false |
-| TreeSection | TreeSection [EXISTING] | string? | null |
-| NavigationTag | NavigationTag (flat) | string? | null |
-| ShortCut | ShortCut (flat) | string? | null |
-| Hidden | Hidden (flat) | bool | false |
-| Allowclick | Allowclick (flat) | bool | true |
-| Allowsearch | Allowsearch (flat) | bool | true |
-| ShowInSitemap | ShowInSitemap (flat) | bool | true |
-| ShowInLegend | ShowInLegend (flat) | bool | true |
-| ShowInMenu | ShowInMenu (flat) | bool | true |
-| SslMode | SslMode (flat) | int | 0 |
-| ColorSchemeId | ColorSchemeId (flat) | string? | null |
-| ExactUrl | ExactUrl (flat) | string? | null |
-| ContentType | ContentType (flat) | string? | null |
-| TopImage | TopImage (flat) | string? | null |
-| DisplayMode | DisplayMode (flat) | int | 0 |
-| ActiveFrom | ActiveFrom (flat) | DateTime? | null |
-| ActiveTo | ActiveTo (flat) | DateTime? | null |
-| UrlDataProviderTypeName | UrlSettings.UrlDataProviderTypeName | string? | null |
-| UrlDataProviderParameters | UrlSettings.UrlDataProviderParameters | string? | null |
-| UrlIgnoreForChildren | UrlSettings.UrlIgnoreForChildren | bool | false |
-| UrlUseAsWritten | UrlSettings.UrlUseAsWritten | bool | false |
-| MetaTitle | Seo.MetaTitle | string? | null |
-| MetaCanonical | Seo.MetaCanonical | string? | null |
-| Description | Seo.Description | string? | null |
-| Keywords | Seo.Keywords | string? | null |
-| Noindex | Seo.Noindex | bool | false |
-| Nofollow | Seo.Nofollow | bool | false |
-| Robots404 | Seo.Robots404 | bool | false |
-| HideForPhones | Visibility.HideForPhones | bool | false |
-| HideForTablets | Visibility.HideForTablets | bool | false |
-| HideForDesktops | Visibility.HideForDesktops | bool | false |
-| NavigationSettings.* | NavigationSettings.* | sub-object | null |
-| Audit.CreatedAt | Audit.CreatedDate | DateTime? | null |
-| Audit.LastModifiedAt | Audit.UpdatedDate | DateTime? | null |
-| Audit.CreatedBy | Audit.CreatedBy | string? | null |
-| Audit.LastModifiedBy | Audit.UpdatedBy | string? | null |
+**Why third:** Extends proven XmlFormatter to second pipeline. Independent from Content changes but benefits from Phase 2 validation.
 
-### Properties explicitly NOT serialized (computed/internal)
+### Phase 4: Predicate Config Extension + Field-Level Filtering (Content)
 
-| Property | Reason |
-|----------|--------|
-| Level | Computed from tree depth |
-| IsMaster / IsLanguage | Computed from Area |
-| Parent / MasterPage | Navigation properties |
-| Layout (object) | Computed; use LayoutTemplate string |
-| Languages | Separate area concept |
-| Item / PropertyItem | Serialized via Fields/PropertyFields dictionaries |
-| CreationRules | Internal template creation rules |
-| ApprovalType/State/Step | Workflow state, not content |
-| PermissionType/Template | Handled by PermissionMapper |
-| CopyOf / MasterPageId / MasterType | Template/language system internals |
+1. Extend `ProviderPredicateDefinition` with `ExcludeFields` and `ExcludeXmlElements`
+2. Modify `ContentMapper` methods to accept and apply exclude sets
+3. Modify `ContentSerializer` to thread predicate config to mapper
+4. Add XML element filtering (calls `XmlFormatter.RemoveElements`)
 
----
+**Why fourth:** Depends on Phase 1 (XmlFormatter.RemoveElements). Config model change is prerequisite for UI (Phase 7).
 
-## Component Modification Map
+### Phase 5: Field-Level Filtering (SqlTable)
 
-### Files to modify
+Apply `ExcludeFields` in `SqlTableProvider.Serialize()` to remove columns before write. Apply `ExcludeXmlElements` to XML columns.
 
-| File | Change | Complexity |
-|------|--------|-----------|
-| `Models/SerializedPage.cs` | Add ~15 flat properties, 5 sub-object properties | Low |
-| `Models/SerializedArea.cs` | Add ItemType + ItemFields | Low |
-| `Models/` (new files) | Create 5 sub-record types | Low |
-| `Serialization/ContentMapper.cs` | Extend `MapPage()` and `MapArea()` | Low-Med |
-| `Serialization/ContentDeserializer.cs` | Extend `DeserializePage()` (both INSERT and UPDATE paths), add `RestoreTimestamps()` | Medium |
-| `Serialization/ContentSerializer.cs` | No change needed (mapper handles it) | None |
+**Why fifth:** Same pattern as Phase 4, applied to second pipeline. Reuses config model from Phase 4.
 
-### Files NOT modified
+### Phase 6: Area Consolidation
 
-| File | Reason |
-|------|--------|
-| `Providers/Content/ContentProvider.cs` | Wrapper only, delegates to ContentSerializer/ContentDeserializer |
-| `Providers/ISerializationProvider.cs` | Interface unchanged |
-| `Infrastructure/FileSystemStore.cs` | YAML serialization handles new properties automatically |
+1. Extend `SerializedArea` with `Properties` dictionary
+2. Modify `ContentMapper.MapArea()` to read full Area properties via SQL
+3. Modify `ContentDeserializer` to write Properties back via SQL UPDATE
+4. Apply field filtering from Phase 4 to Area Properties
 
----
+**Why sixth:** Depends on field-level filtering (Phase 4) to be practical -- without filtering, you'd serialize environment-specific area columns like `AreaDomain` that shouldn't be portable. Must come after Phase 4 so users can immediately exclude environment-specific columns.
 
-## Data Flow
+### Phase 7: Enhanced Predicate UI
 
-### Serialization (read from DW, write to YAML)
+1. Extend `PredicateEditModel` with new textarea fields
+2. Extend `PredicateEditScreen` with "Field Filtering" group
+3. Extend `SavePredicateCommand` to persist new fields
+4. Extend `PredicateByIndexQuery` to load new fields
+
+**Why last:** UI is the final consumer. All backend features must work first. Users can test via JSON config editing during Phases 1-6.
+
+### Dependency Graph
 
 ```
-DW Page (with Audit, NavigationSettings, all properties)
-  |
-  v
-ContentMapper.MapPage()  -- reads page.NavigationTag, page.Seo, page.Audit, etc.
-  |                         creates sub-objects (SerializedSeoSettings, etc.)
-  |
-  v
-SerializedPage DTO (with sub-objects)
-  |
-  v
-YamlDotNet serialization --> .yml file on disk
+Phase 1: XmlFormatter
+    |
+    +---> Phase 2: XML in Content
+    |         |
+    +---> Phase 3: XML in SqlTable
+    |
+    +---> Phase 4: Config + Filtering (Content)
+              |
+              +---> Phase 5: Filtering (SqlTable)
+              |
+              +---> Phase 6: Area Consolidation
+              |
+              +---> Phase 7: Predicate UI
 ```
 
-### Deserialization (read from YAML, write to DW)
+Phases 2 and 3 can run in parallel. Phases 5, 6, and 7 depend on Phase 4 but are independent of each other.
 
-```
-.yml file on disk
-  |
-  v
-YamlDotNet deserialization --> SerializedPage DTO
-  |
-  v
-ContentDeserializer.DeserializePage()
-  |
-  +-- Step 1: Set all scalar properties on Page object
-  +-- Step 2: Set NavigationSettings sub-object if present
-  +-- Step 3: Services.Pages.SavePage(page)
-  +-- Step 4: SaveItemFields() / SavePropertyItemFields()
-  +-- Step 5: RestoreTimestamps() via direct SQL
-  +-- Step 6: PermissionMapper.ApplyPermissions()
-  |
-  v
-DW Database (page with all properties preserved)
-```
+## Anti-Patterns to Avoid
 
-### Area ItemType deserialization
+### Anti-Pattern 1: XML Processing in YAML Emitter
 
-```
-SerializedArea with ItemType + ItemFields
-  |
-  v
-ContentDeserializer.DeserializePredicate()
-  +-- Load target Area via Services.Areas.GetArea()
-  +-- If area.ItemType matches dto.ItemType:
-  |     SaveItemFields(area.ItemType, area.ItemId, dto.ItemFields)
-  +-- Run InternalLinkResolver on Area item fields too
-```
+**What people do:** Try to detect and format XML inside `ForceStringScalarEmitter` or a custom YAML type converter.
+**Why it's wrong:** YAML serialization should be format-agnostic. Mixing XML awareness into YAML infrastructure creates coupling and makes the emitter untestable in isolation.
+**Do this instead:** Format XML at the mapping layer (ContentMapper / FlatFileStore), before YAML sees it.
 
----
+### Anti-Pattern 2: Filtering in the Deserializer
+
+**What people do:** Apply field blacklists during deserialization (skip excluded fields when writing to DB).
+**Why it's wrong:** Source-wins semantics mean absent fields get null-ed out. If a field is absent because it was filtered during serialization, that's correct behavior. If you also filter during deserialization, you lose the ability to null-out stale values.
+**Do this instead:** Filter only during serialization. Deserialization should faithfully replay whatever's in the YAML.
+
+### Anti-Pattern 3: Area Properties via SqlTableProvider
+
+**What people do:** Create a separate SqlTable predicate for the Area table to capture all columns.
+**Why it's wrong:** Area is identity-linked to Content predicates via AreaId. Two different predicates managing the same Area creates ordering issues and config duplication. The predicate UI already requires an AreaId for Content predicates.
+**Do this instead:** Consolidate Area properties into ContentProvider's `area.yml` output.
+
+### Anti-Pattern 4: Separate XML Columns Config
+
+**What people do:** Add a per-predicate list of "XML column names" to tell the system which columns contain XML.
+**Why it's wrong:** Adds config burden for every SQL table predicate. Users must know which columns contain XML.
+**Do this instead:** Auto-detect XML by attempting `XDocument.Parse()`. False positives are negligible in practice.
 
 ## Sources
 
-- DW 10.23.9 DLL decompilation (Dynamicweb.dll, Dynamicweb.Core.dll) -- PRIMARY SOURCE for all findings
-- [Page Class Properties](https://doc.dynamicweb.dev/api/Dynamicweb.Content.Page.html)
-- [PageNavigationSettings](https://doc.dynamicweb.com/api/html/b9de46f1-8065-0ba0-6c5b-4fa01d90de7e.htm)
-- [Area ItemTypes manual](https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/content/itemtypes.html)
-- [Area Class API](https://doc.dynamicweb.dev/api/Dynamicweb.Content.Area.html)
-- [PageService API](https://doc.dynamicweb.dev/api/Dynamicweb.Content.PageService.html)
+- Full codebase review of all source files in `src/DynamicWeb.Serializer/` -- HIGH confidence
+- `System.Xml.Linq.XDocument` API for XML formatting -- HIGH confidence, standard .NET 8 API
+- Existing `ForceStringScalarEmitter` pattern for YAML multiline string handling -- HIGH confidence, verified in codebase
+- DW `Area` table schema knowledge from previous v0.4.0 research -- HIGH confidence
+
+---
+*Architecture research for: DynamicWeb.Serializer v0.5.0 granular serialization control*
+*Researched: 2026-04-07*
