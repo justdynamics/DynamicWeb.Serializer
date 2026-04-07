@@ -203,4 +203,75 @@ public class XmlFormatterTests
 
         Assert.StartsWith("<?xml version=\"1.0\" encoding=\"utf-8\"?>", compacted);
     }
+
+    // -----------------------------------------------------------------------
+    // RemoveElements — null / empty / non-XML
+    // -----------------------------------------------------------------------
+
+    [Fact]
+    public void RemoveElements_Null_ReturnsNull()
+    {
+        Assert.Null(XmlFormatter.RemoveElements(null, new[] { "sort" }));
+    }
+
+    [Fact]
+    public void RemoveElements_Empty_ReturnsEmpty()
+    {
+        Assert.Equal("", XmlFormatter.RemoveElements("", new[] { "sort" }));
+    }
+
+    [Fact]
+    public void RemoveElements_NonXml_ReturnsUnchanged()
+    {
+        Assert.Equal("not xml", XmlFormatter.RemoveElements("not xml", new[] { "sort" }));
+    }
+
+    // -----------------------------------------------------------------------
+    // RemoveElements — element removal
+    // -----------------------------------------------------------------------
+
+    [Fact]
+    public void RemoveElements_MatchingElements_RemovesThem()
+    {
+        const string input = "<Settings><sort>5</sort><pagesize>10</pagesize><title>Test</title></Settings>";
+
+        var result = XmlFormatter.RemoveElements(input, new[] { "sort", "pagesize" })!;
+
+        Assert.Contains("<title>", result);
+        Assert.DoesNotContain("<sort>", result);
+        Assert.DoesNotContain("<pagesize>", result);
+    }
+
+    [Fact]
+    public void RemoveElements_CaseInsensitive()
+    {
+        const string input = "<Settings><sort>5</sort><title>Test</title></Settings>";
+
+        var result = XmlFormatter.RemoveElements(input, new[] { "Sort" })!;
+
+        Assert.DoesNotContain("<sort>", result);
+        Assert.Contains("<title>", result);
+    }
+
+    [Fact]
+    public void RemoveElements_EmptyNamesList_ReturnsUnchanged()
+    {
+        const string input = "<Settings><sort>5</sort></Settings>";
+
+        var result = XmlFormatter.RemoveElements(input, Array.Empty<string>())!;
+
+        Assert.Contains("<sort>", result);
+    }
+
+    [Fact]
+    public void RemoveElements_NestedElements_RemovesAll()
+    {
+        const string input =
+            "<Settings><group><sort>5</sort></group><sort>10</sort></Settings>";
+
+        var result = XmlFormatter.RemoveElements(input, new[] { "sort" })!;
+
+        Assert.DoesNotContain("<sort>", result);
+        Assert.Contains("<group", result);
+    }
 }
