@@ -8,7 +8,8 @@
 - [x] **v1.3 Permissions** - Phases 11-12 (shipped 2026-03-23)
 - [x] **v2.0 DynamicWeb.Serializer** - Phases 13-18 (shipped 2026-03-24)
 - [x] **v0.3.1 Internal Link Resolution** - Phases 19-22 (shipped 2026-04-03)
-- [ ] **v0.4.0 Full Page Fidelity** - Phases 23-25 (in progress)
+- [x] **v0.4.0 Full Page Fidelity** - Phases 23-25 (shipped 2026-04-07)
+- [ ] **v0.5.0 Granular Serialization Control** - Phases 26-31 (in progress)
 
 ## Phases
 
@@ -70,57 +71,94 @@
 
 </details>
 
-### v0.4.0 Full Page Fidelity (In Progress)
+<details>
+<summary>v0.4.0 Full Page Fidelity (Phases 23-25) - SHIPPED 2026-04-07</summary>
 
-**Milestone Goal:** Serialize and deserialize ALL page-level settings, area ItemType connections, and ecommerce navigation configuration so that deserialized pages are functionally identical to the source.
+- [x] **Phase 23: Full Page Properties + Navigation Settings** (2/2 plans) - completed 2026-04-03
+- [x] **Phase 24: Area ItemType Fields** (1/1 plans) - completed 2026-04-03
+- [x] **Phase 25: Ecommerce Schema Sync** (1/1 plans) - completed 2026-04-03
 
-- [x] **Phase 23: Full Page Properties + Navigation Settings** - Extend SerializedPage with all ~30 missing properties and PageNavigationSettings, with link resolution for ShortCut and ProductPage (completed 2026-04-03)
-- [x] **Phase 24: Area ItemType Fields** - Serialize and deserialize Area-level ItemType connections with page ID resolution (completed 2026-04-03)
-- [x] **Phase 25: Ecommerce Schema Sync** - Ensure EcomProductGroupField custom columns exist before data import (completed 2026-04-03)
+</details>
+
+### v0.5.0 Granular Serialization Control (In Progress)
+
+**Milestone Goal:** Pretty-print embedded XML, consolidate areas into ContentProvider, and add field-level include/exclude filtering across all provider types with updated predicate UI.
+
+- [ ] **Phase 26: XML Pretty-Print for Content** - XmlFormatter utility + content pipeline XML pretty-printing with round-trip compaction
+- [ ] **Phase 27: XML Pretty-Print for SqlTable** - SQL table pipeline XML pretty-printing via config-driven xmlColumns
+- [ ] **Phase 28: Field-Level Filtering Core** - Predicate excludeFields/excludeXmlElements for content with deserialize skip guard
+- [ ] **Phase 29: SqlTable Field Filtering** - excludeFields support for SqlTable predicates
+- [ ] **Phase 30: Area Property Consolidation** - Full area properties in ContentProvider with field-level blacklist
+- [ ] **Phase 31: Predicate UI Enhancement** - Admin UI for excludeFields, xmlColumns, and excludeXmlElements configuration
 
 ## Phase Details
 
-### Phase 23: Full Page Properties + Navigation Settings
-**Goal**: Deserialized pages carry every page-level setting (SEO, visibility, URL, navigation, SSL, permissions, display) and ecommerce navigation configuration, with internal links resolved to target IDs
-**Depends on**: Phase 22 (current codebase with InternalLinkResolver)
-**Requirements**: PAGE-01, PAGE-02, ECOM-01, ECOM-02
+### Phase 26: XML Pretty-Print for Content
+**Goal**: Embedded XML blobs in content YAML (moduleSettings, urlDataProviderParameters) become readable indented multi-line XML, and round-trip back to compact single-line on deserialize
+**Depends on**: Phase 25 (current codebase)
+**Requirements**: XML-01, XML-03
 **Success Criteria** (what must be TRUE):
-  1. A page serialized from source environment produces YAML containing all ~30 properties (NavigationTag, ShortCut, UrlName, MetaTitle, MetaDescription, SSLMode, PermissionType, visibility flags, etc.) with correct values
-  2. Deserializing that YAML into a clean target environment creates a page with all property values matching the source (verified by comparing DB column values)
-  3. PageNavigationSettings (UseEcomGroups, ParentType, ShopId, MaxLevels, ProductPage, IncludeProducts, NavigationProvider) round-trips correctly through serialize/deserialize
-  4. ShortCut values containing Default.aspx?ID=NNN are rewritten to the correct target page ID during deserialization
-  5. ProductPage values in NavigationSettings containing Default.aspx?ID=NNN are rewritten to the correct target page ID during deserialization
-**Plans:** 2/2 plans complete
-Plans:
-- [x] 23-01-PLAN.md — DTO models + sub-records + ContentMapper extension + tests
-- [x] 23-02-PLAN.md — ContentDeserializer extension + ShortCut/ProductPage link resolution
+  1. Content YAML files containing moduleSettings or urlDataProviderParameters show indented multi-line XML using YAML literal block scalars instead of single-line escaped strings
+  2. Deserializing pretty-printed content YAML compacts the XML back to single-line before writing to the database, producing byte-identical DB values to the original
+  3. Content that contains no embedded XML is unaffected by the formatter (no regressions)
+**Plans**: TBD
 
-### Phase 24: Area ItemType Fields
-**Goal**: Area-level ItemType connections (header, footer, master page) are preserved through serialize/deserialize with page references resolved to target environment IDs
-**Depends on**: Phase 23 (extended content pipeline)
-**Requirements**: AREA-01, AREA-02
+### Phase 27: XML Pretty-Print for SqlTable
+**Goal**: SQL table YAML files with XML columns show readable indented XML, controlled by a per-predicate xmlColumns config list
+**Depends on**: Phase 26 (XmlFormatter utility)
+**Requirements**: XML-02
 **Success Criteria** (what must be TRUE):
-  1. SerializedArea YAML includes ItemType name and all ItemType field values for each area
-  2. Deserializing an area restores its ItemType connection and field values, so the area's header/footer/master page configuration matches the source
-  3. Page ID references within Area ItemType field values (e.g., header page link) are resolved via InternalLinkResolver to correct target IDs
-**Plans:** 1/1 plans complete
-Plans:
-- [x] 24-01-PLAN.md — SerializedArea DTO + mapper + deserializer + link resolution
+  1. SqlTable predicates accept an xmlColumns list in config specifying which columns contain XML
+  2. SQL table YAML files show indented multi-line XML for configured xmlColumns, using YAML literal block scalars
+  3. Deserializing SQL table YAML with pretty-printed XML compacts it back to single-line before writing to DB (round-trip correctness via XML-03 compaction logic from Phase 26)
+**Plans**: TBD
 
-### Phase 25: Ecommerce Schema Sync
-**Goal**: EcomProductGroupField custom columns are guaranteed to exist on the EcomGroups table before any product group data is deserialized, preventing column-not-found errors
-**Depends on**: Phase 23 (navigation settings context)
-**Requirements**: SCHEMA-01
+### Phase 28: Field-Level Filtering Core
+**Goal**: Content predicates can exclude specific fields from serialization, strip specific XML elements from blobs, and excluded fields are safely skipped during deserialization (no null-out destruction)
+**Depends on**: Phase 26 (XmlFormatter for XML element filtering)
+**Requirements**: FILT-01, FILT-03, FILT-04
 **Success Criteria** (what must be TRUE):
-  1. During deserialization, EcomProductGroupField definitions are processed and UpdateTable() is called before any EcomGroups row data is inserted
-  2. Custom columns created by EcomProductGroupField are present on the EcomGroups table after deserialization (verified by querying table schema)
-**Plans:** 1 plan
-Plans:
-- [x] 25-01-PLAN.md — EcomGroupFieldSchemaSync + orchestrator integration + tests
+  1. A content predicate with excludeFields: [PageNavigationTag, AreaDomain] omits those fields from serialized YAML output
+  2. Deserializing YAML that was serialized with excludeFields does NOT null out the excluded fields on the target DB (skip guard prevents source-wins destruction)
+  3. A content predicate with excludeXmlElements: [sort, pagesize] strips those element names from embedded XML blobs before writing YAML
+  4. Fields not in the exclude list continue to serialize and deserialize normally (no regression)
+**Plans**: TBD
+
+### Phase 29: SqlTable Field Filtering
+**Goal**: SqlTable predicates can exclude specific columns from serialization with the same skip-guard protection on deserialize
+**Depends on**: Phase 28 (filtering infrastructure)
+**Requirements**: FILT-02
+**Success Criteria** (what must be TRUE):
+  1. A SqlTable predicate with excludeFields: [LastModified, MachineName] omits those columns from serialized YAML output
+  2. Deserializing SQL table YAML with excluded fields does NOT null out or delete those column values on the target DB
+**Plans**: TBD
+
+### Phase 30: Area Property Consolidation
+**Goal**: ContentProvider serializes and deserializes all 60+ Area columns (Domain, Layout, Culture, EcomSettings, SSL, CDN, etc.) in area.yml, with field-level blacklist for environment-specific values
+**Depends on**: Phase 28 (excludeFields mechanism)
+**Requirements**: AREA-03, AREA-04, AREA-05
+**Success Criteria** (what must be TRUE):
+  1. area.yml contains all 60+ Area columns (Domain, Layout, Culture, EcomSettings, SSL, CDN, etc.) alongside existing ItemType fields
+  2. Deserializing area.yml restores all Area properties to the database, creating the area row if it does not exist on target
+  3. A content predicate with excludeFields: [AreaDomain, AreaNoindex] omits those area-specific columns from area.yml and does not null them on deserialize
+  4. Existing area ItemType field serialization (from Phase 24) continues working alongside the new area properties
+**Plans**: TBD
+
+### Phase 31: Predicate UI Enhancement
+**Goal**: Admin UI predicate edit screens expose all new v0.5.0 config fields (excludeFields, xmlColumns, excludeXmlElements) for visual configuration
+**Depends on**: Phase 28, Phase 29, Phase 30 (all config fields finalized)
+**Requirements**: UI-01, UI-02, UI-03
+**Success Criteria** (what must be TRUE):
+  1. Predicate edit screen for content predicates shows an excludeFields input where users can add/remove field names to exclude
+  2. Predicate edit screen for SqlTable predicates shows an xmlColumns input where users can specify which columns contain XML
+  3. Predicate edit screen shows an excludeXmlElements input where users can add/remove XML element names to strip
+  4. Changes made in the UI are persisted to the config file and take effect on next serialize/deserialize
+**Plans**: TBD
+**UI hint**: yes
 
 ## Progress
 
-**Execution Order:** Phases 23 -> 24 -> 25
+**Execution Order:** Phases 26 -> 27 -> 28 -> 29, 30 (parallel after 28) -> 31
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
@@ -146,6 +184,12 @@ Plans:
 | 20. Link Resolution Core | v0.3.1 | 2/2 | Complete | 2026-04-03 |
 | 21. Paragraph Anchor Resolution | v0.3.1 | 1/1 | Complete | 2026-04-03 |
 | 22. Version Housekeeping | v0.3.1 | 1/1 | Complete | 2026-04-03 |
-| 23. Full Page Properties + Navigation Settings | v0.4.0 | 2/2 | Complete   | 2026-04-03 |
-| 24. Area ItemType Fields | v0.4.0 | 1/1 | Complete   | 2026-04-03 |
+| 23. Full Page Properties + Navigation Settings | v0.4.0 | 2/2 | Complete | 2026-04-03 |
+| 24. Area ItemType Fields | v0.4.0 | 1/1 | Complete | 2026-04-03 |
 | 25. Ecommerce Schema Sync | v0.4.0 | 1/1 | Complete | 2026-04-03 |
+| 26. XML Pretty-Print for Content | v0.5.0 | 0/? | Not started | - |
+| 27. XML Pretty-Print for SqlTable | v0.5.0 | 0/? | Not started | - |
+| 28. Field-Level Filtering Core | v0.5.0 | 0/? | Not started | - |
+| 29. SqlTable Field Filtering | v0.5.0 | 0/? | Not started | - |
+| 30. Area Property Consolidation | v0.5.0 | 0/? | Not started | - |
+| 31. Predicate UI Enhancement | v0.5.0 | 0/? | Not started | - |

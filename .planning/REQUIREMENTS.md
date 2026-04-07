@@ -53,25 +53,25 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| XML-01 | — | Pending |
-| XML-02 | — | Pending |
-| XML-03 | — | Pending |
-| FILT-01 | — | Pending |
-| FILT-02 | — | Pending |
-| FILT-03 | — | Pending |
-| FILT-04 | — | Pending |
-| AREA-03 | — | Pending |
-| AREA-04 | — | Pending |
-| AREA-05 | — | Pending |
-| UI-01 | — | Pending |
-| UI-02 | — | Pending |
-| UI-03 | — | Pending |
+| XML-01 | Phase 26 | Pending |
+| XML-02 | Phase 27 | Pending |
+| XML-03 | Phase 26 | Pending |
+| FILT-01 | Phase 28 | Pending |
+| FILT-02 | Phase 29 | Pending |
+| FILT-03 | Phase 28 | Pending |
+| FILT-04 | Phase 28 | Pending |
+| AREA-03 | Phase 30 | Pending |
+| AREA-04 | Phase 30 | Pending |
+| AREA-05 | Phase 30 | Pending |
+| UI-01 | Phase 31 | Pending |
+| UI-02 | Phase 31 | Pending |
+| UI-03 | Phase 31 | Pending |
 
 **Coverage:**
 - v0.5.0 requirements: 13 total
-- Mapped to phases: 0
-- Unmapped: 13
+- Mapped to phases: 13
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-04-07*
-*Last updated: 2026-04-07 after initial definition*
+*Last updated: 2026-04-07 — roadmap created, all requirements mapped to phases 26-31*
