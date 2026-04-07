@@ -128,7 +128,7 @@ Plans:
   4. Fields not in the exclude list continue to serialize and deserialize normally (no regression)
 **Plans**: 1 plan
 Plans:
-- [ ] 27-01-PLAN.md — xmlColumns config + SqlTable pipeline XML pretty-print/compact
+- [ ] 28-01-PLAN.md — excludeFields/excludeXmlElements config + serialize filtering + deserialize skip guard + XmlFormatter.RemoveElements
 
 ### Phase 29: SqlTable Field Filtering
 **Goal**: SqlTable predicates can exclude specific columns from serialization with the same skip-guard protection on deserialize
