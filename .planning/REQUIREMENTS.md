@@ -26,9 +26,9 @@
 
 ### Predicate UI
 
-- [ ] **UI-01**: Predicate edit screen shows excludeFields configuration with a textarea or multi-select for field names
-- [ ] **UI-02**: SqlTable predicate edit screen shows xmlColumns configuration
-- [ ] **UI-03**: Predicate edit screen shows excludeXmlElements configuration
+- [x] **UI-01**: Predicate edit screen shows excludeFields configuration with a textarea or multi-select for field names
+- [x] **UI-02**: SqlTable predicate edit screen shows xmlColumns configuration
+- [x] **UI-03**: Predicate edit screen shows excludeXmlElements configuration
 
 ## Future Requirements (deferred)
 
@@ -63,9 +63,9 @@
 | AREA-03 | Phase 30 | Complete |
 | AREA-04 | Phase 30 | Complete |
 | AREA-05 | Phase 30 | Complete |
-| UI-01 | Phase 31 | Pending |
-| UI-02 | Phase 31 | Pending |
-| UI-03 | Phase 31 | Pending |
+| UI-01 | Phase 31 | Complete |
+| UI-02 | Phase 31 | Complete |
+| UI-03 | Phase 31 | Complete |
 
 **Coverage:**
 - v0.5.0 requirements: 13 total

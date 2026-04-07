@@ -89,7 +89,7 @@
 - [x] **Phase 28: Field-Level Filtering Core** - Predicate excludeFields/excludeXmlElements for content with deserialize skip guard (completed 2026-04-07)
 - [x] **Phase 29: SqlTable Field Filtering** - excludeFields support for SqlTable predicates (completed 2026-04-07)
 - [x] **Phase 30: Area Property Consolidation** - Full area properties in ContentProvider with field-level blacklist (completed 2026-04-07)
-- [ ] **Phase 31: Predicate UI Enhancement** - Admin UI for excludeFields, xmlColumns, and excludeXmlElements configuration
+- [x] **Phase 31: Predicate UI Enhancement** - Admin UI for excludeFields, xmlColumns, and excludeXmlElements configuration (completed 2026-04-07)
 
 ## Phase Details
 
@@ -115,7 +115,7 @@ Plans:
   3. Deserializing SQL table YAML with pretty-printed XML compacts it back to single-line before writing to DB (round-trip correctness via XML-03 compaction logic from Phase 26)
 **Plans**: 1 plan
 Plans:
-- [ ] 31-01-PLAN.md — excludeFields, xmlColumns, excludeXmlElements textarea editors on predicate edit screen
+- [x] 31-01-PLAN.md — excludeFields, xmlColumns, excludeXmlElements textarea editors on predicate edit screen
 
 ### Phase 28: Field-Level Filtering Core
 **Goal**: Content predicates can exclude specific fields from serialization, strip specific XML elements from blobs, and excluded fields are safely skipped during deserialization (no null-out destruction)
@@ -205,4 +205,4 @@ Plans:
 | 28. Field-Level Filtering Core | v0.5.0 | 1/1 | Complete   | 2026-04-07 |
 | 29. SqlTable Field Filtering | v0.5.0 | 1/1 | Complete   | 2026-04-07 |
 | 30. Area Property Consolidation | v0.5.0 | 1/1 | Complete   | 2026-04-07 |
-| 31. Predicate UI Enhancement | v0.5.0 | 0/? | Not started | - |
+| 31. Predicate UI Enhancement | v0.5.0 | 1/1 | Complete   | 2026-04-07 |
