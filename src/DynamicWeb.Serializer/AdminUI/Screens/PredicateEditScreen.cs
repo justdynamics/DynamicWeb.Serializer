@@ -35,6 +35,11 @@ public sealed class PredicateEditScreen : EditScreenBase<PredicateEditModel>
                 EditorFor(m => m.PageId),
                 EditorFor(m => m.Excludes)
             }));
+            groups.Add(new("Filtering", new List<EditorBase>
+            {
+                EditorFor(m => m.ExcludeFields),
+                EditorFor(m => m.ExcludeXmlElements)
+            }));
         }
         else if (Model?.ProviderType == "SqlTable")
         {
@@ -44,6 +49,12 @@ public sealed class PredicateEditScreen : EditScreenBase<PredicateEditModel>
                 EditorFor(m => m.NameColumn),
                 EditorFor(m => m.CompareColumns),
                 EditorFor(m => m.ServiceCaches)
+            }));
+            groups.Add(new("Filtering", new List<EditorBase>
+            {
+                EditorFor(m => m.XmlColumns),
+                EditorFor(m => m.ExcludeFields),
+                EditorFor(m => m.ExcludeXmlElements)
             }));
         }
         // else: no ProviderType selected — show nothing below Configuration (D-09)
@@ -72,6 +83,21 @@ public sealed class PredicateEditScreen : EditScreenBase<PredicateEditModel>
         {
             Label = "Service Caches",
             Explanation = "One fully-qualified DW cache type per line. Cleared after deserialization."
+        },
+        nameof(PredicateEditModel.ExcludeFields) => new Textarea
+        {
+            Label = "Exclude Fields",
+            Explanation = "One field name per line. These fields will be omitted from serialization."
+        },
+        nameof(PredicateEditModel.XmlColumns) => new Textarea
+        {
+            Label = "XML Columns",
+            Explanation = "One column name per line. SQL table columns containing XML to pretty-print in YAML."
+        },
+        nameof(PredicateEditModel.ExcludeXmlElements) => new Textarea
+        {
+            Label = "Exclude XML Elements",
+            Explanation = "One element name per line. These XML elements will be stripped from embedded XML blobs."
         },
         _ => null
     };
