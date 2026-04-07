@@ -8,16 +8,16 @@ A DynamicWeb AppStore app that serializes and deserializes database content to/f
 
 Developers can reliably move DynamicWeb database state between environments through source control, with serialized YAML files as the single source of truth.
 
-## Current Milestone: v0.4.0 Full Page Fidelity
+## Current Milestone: v0.5.0 Granular Serialization Control
 
-**Goal:** Serialize and deserialize ALL page-level settings, area ItemType connections, and ecommerce navigation configuration so that deserialized pages are functionally identical to the source.
+**Goal:** Pretty-print embedded XML, consolidate areas into ContentProvider, and add field-level include/exclude filtering across all provider types with updated predicate UI.
 
 **Target features:**
-- Expand SerializedPage DTO with all ~30 missing page properties (NavigationTag, ShortCut, UrlName, UrlDataProvider, SEO meta, SSL, permissions, visibility, URL inheritance, etc.)
-- Serialize and deserialize PageNavigationSettings (ecommerce navigation config)
-- Serialize and deserialize Area-level ItemType fields (header/footer/master connections)
-- Handle EcomProductGroupField custom column schema sync
-- Preserve original page timestamps during deserialization
+- Pretty-print embedded XML (moduleSettings, urlDataProviderParameters) in content YAML and SQL table YAML for readable git diffs
+- XML field blacklist — exclude specific XML elements per predicate
+- Merge full Area properties into ContentProvider (area.yml carries all 60+ columns + ItemType fields)
+- Area/page/paragraph/SQL field-level blacklist — exclude environment-specific or irrelevant columns per predicate
+- Enhanced predicate UI to configure field-level include/exclude visually
 
 ## Requirements
 
@@ -67,11 +67,16 @@ Developers can reliably move DynamicWeb database state between environments thro
 - [x] Resolve internal page ID references (`Default.aspx?ID=NNN`) in ItemType fields during deserialization — v0.3.1
 - [x] Re-tag Git from v1.0/v2.0 to 0.x pre-release versioning — v0.3.1
 
-- [ ] Serialize all ~30 missing page properties (NavigationTag, ShortCut, UrlName, SEO, SSL, etc.) — v0.4.0
-- [ ] Serialize PageNavigationSettings (ecommerce navigation config per page) — v0.4.0
-- [ ] Serialize Area-level ItemType fields (header/footer/master connections) — v0.4.0
-- [ ] Handle EcomProductGroupField custom column schema sync — v0.4.0
-- [ ] Preserve original page timestamps during deserialization — v0.4.0
+- [x] Serialize all ~30 missing page properties (NavigationTag, ShortCut, UrlName, SEO, SSL, etc.) — v0.4.0
+- [x] Serialize PageNavigationSettings (ecommerce navigation config per page) — v0.4.0
+- [x] Serialize Area-level ItemType fields (header/footer/master connections) — v0.4.0
+- [x] Handle EcomProductGroupField custom column schema sync — v0.4.0
+
+- [ ] Pretty-print embedded XML (moduleSettings, urlDataProviderParameters) in content and SQL YAML — v0.5.0
+- [ ] XML field blacklist per predicate — v0.5.0
+- [ ] Merge full Area properties into ContentProvider with field-level filtering — v0.5.0
+- [ ] Field-level blacklist for page/paragraph/SQL columns per predicate — v0.5.0
+- [ ] Enhanced predicate UI for field-level include/exclude configuration — v0.5.0
 
 ### Out of Scope
 
@@ -81,6 +86,12 @@ Developers can reliably move DynamicWeb database state between environments thro
 - OAuth/licensing — open source app
 - File-based data groups (24 items) — files already live in git, no need to serialize
 - Publishing to NuGet registry — deferred to later milestone
+- Item-to-Item reference resolution (Component Selector ID portability) — future milestone
+- User Group GUID-based matching for cross-environment permissions — future milestone
+- Deploy action across UI screens (ecommerce, area settings) — future milestone
+- Tree view for content comparison/diff — future milestone
+- Selective deployment (changed-only diff packages) — future milestone
+- Timestamp preservation (CreatedDate/UpdatedDate) — requires direct SQL
 
 ## Context
 
@@ -168,4 +179,4 @@ This document evolves at phase transitions and milestone boundaries.
 - **v1.3 Permissions** — Permission serialization/deserialization with safety fallback (2026-03-23)
 
 ---
-*Last updated: 2026-04-03 — milestone v0.4.0 started (full page fidelity)*
+*Last updated: 2026-04-07 — milestone v0.5.0 started (granular serialization control)*

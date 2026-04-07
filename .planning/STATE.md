@@ -1,17 +1,17 @@
 ---
 gsd_state_version: 1.0
-milestone: v0.4.0
-milestone_name: Full Page Fidelity
-status: complete
-stopped_at: Completed 25-01-PLAN.md
-last_updated: "2026-04-03T18:11:00.000Z"
-last_activity: 2026-04-03
+milestone: v0.5.0
+milestone_name: Granular Serialization Control
+status: active
+stopped_at: ""
+last_updated: "2026-04-07T00:00:00.000Z"
+last_activity: 2026-04-07
 progress:
-  total_phases: 3
-  completed_phases: 3
-  total_plans: 4
-  completed_plans: 4
-  percent: 100
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-03)
 
 **Core value:** Developers can reliably move DynamicWeb database state between environments through source control, with serialized YAML files as the single source of truth.
-**Current focus:** Phase 23 - Full Page Properties + Navigation Settings
+**Current focus:** Defining requirements for v0.5.0
 
 ## Current Position
 
-Phase: 25 (3 of 3 in v0.4.0 milestone)
-Plan: 1 of 1 in current phase
-Status: Milestone complete
-Last activity: 2026-04-03
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-04-07 — Milestone v0.5.0 started
 
 Progress: [██████████] 100% (v0.4.0)
 
