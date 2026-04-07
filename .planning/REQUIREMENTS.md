@@ -1,47 +1,77 @@
-# Requirements: v0.4.0 Full Page Fidelity
+# Requirements: v0.5.0 Granular Serialization Control
 
-**Defined:** 2026-04-03
+**Defined:** 2026-04-07
 **Core Value:** Developers can reliably move DynamicWeb database state between environments through source control, with serialized YAML files as the single source of truth.
 
-## Page Properties
+## v0.5.0 Requirements
 
-- [x] **PAGE-01**: All ~30 missing page properties are serialized to YAML and deserialized back (NavigationTag, ShortCut, UrlName, MetaTitle, MetaDescription, MetaCanonical, Noindex, Nofollow, Robots404, SSLMode, PermissionType, UrlIgnoreForChildren, UrlDataProvider, ExactUrl, AllowClick, ShowInSitemap, AllowSearch, ShowInLegend, HideForPhones, HideForTablets, HideForDesktops, ActiveFrom, ActiveTo, DisplayMode, MasterPageId, MasterType, ContentType, ColorSchemeId, TopImage)
-- [x] **PAGE-02**: ShortCut field values containing Default.aspx?ID=NNN are resolved via InternalLinkResolver during deserialization
+### XML Pretty-Printing
 
-## Ecommerce Navigation
+- [ ] **XML-01**: Embedded XML strings (moduleSettings, urlDataProviderParameters) in content YAML are pretty-printed as indented multi-line XML using YAML literal block scalars
+- [ ] **XML-02**: Embedded XML strings in SQL table YAML are pretty-printed using config-driven xmlColumns list per predicate
+- [ ] **XML-03**: Pretty-printed XML round-trips correctly — deserialize compacts XML back to single-line before writing to DB
 
-- [x] **ECOM-01**: PageNavigationSettings (UseEcomGroups, ParentType, Groups, ShopId, MaxLevels, ProductPage, IncludeProducts, NavigationProvider) are serialized and deserialized
-- [x] **ECOM-02**: ProductPage field in NavigationSettings containing Default.aspx?ID=NNN is resolved via InternalLinkResolver
+### Field-Level Filtering
 
-## Area Configuration
+- [ ] **FILT-01**: Content predicates support an excludeFields list that omits specified page/paragraph/area fields during serialization
+- [ ] **FILT-02**: SqlTable predicates support an excludeFields list that omits specified columns during serialization
+- [ ] **FILT-03**: Excluded fields are NOT nulled out during deserialization (skip guard on source-wins null-out logic)
+- [ ] **FILT-04**: Predicates support an excludeXmlElements list that removes specific XML element names from embedded XML blobs before serialization
 
-- [x] **AREA-01**: Area-level ItemType fields (header/footer/master page connections) are serialized to YAML and deserialized back
-- [x] **AREA-02**: Page ID references in Area ItemType fields are resolved via InternalLinkResolver
+### Area Consolidation
 
-## Schema Sync
+- [ ] **AREA-03**: ContentProvider serializes full Area properties (60+ columns including Domain, Layout, Culture, EcomSettings, SSL, CDN, etc.) in area.yml alongside existing ItemType fields
+- [ ] **AREA-04**: ContentProvider deserializes full Area properties back to the database, creating the area if it doesn't exist on target
+- [ ] **AREA-05**: Area field-level blacklist works via the same excludeFields mechanism (e.g., exclude AreaDomain, AreaNoindex for environment-specific values)
 
-- [x] **SCHEMA-01**: EcomProductGroupField custom columns are created on EcomGroups table during deserialization before product group data is imported
+### Predicate UI
+
+- [ ] **UI-01**: Predicate edit screen shows excludeFields configuration with a textarea or multi-select for field names
+- [ ] **UI-02**: SqlTable predicate edit screen shows xmlColumns configuration
+- [ ] **UI-03**: Predicate edit screen shows excludeXmlElements configuration
 
 ## Future Requirements (deferred)
 
-- Timestamp preservation (CreatedDate/UpdatedDate) — requires direct SQL, lower priority
-- NavigationSettings.Groups ecommerce group ID portability — depends on ecommerce data also being serialized
-- User ID portability for CreatedBy/UpdatedBy — environment-specific, document as limitation
+- **Item-to-Item reference resolution** — Component Selector ID portability (numeric Item IDs across environments)
+- **User Group GUID-based matching** — Cross-environment permissions portability
+- **Deploy action across UI screens** — Contextual serialize/deploy on ecommerce, area, and other settings screens
+- **Tree view for content comparison** — Visual diff showing content tree with changed items highlighted
+- **Selective deployment (changed-only)** — Diff-based packages instead of full state
+- **Timestamp preservation** — CreatedDate/UpdatedDate requires direct SQL post-save
+- **Default exclusion presets** — Hardcoded common exclusions for area environment columns (add after real-world validation)
 
 ## Out of Scope
 
-- Backward compatibility with pre-v0.4.0 YAML format — beta, no external consumers
-- Page workflow/approval fields — empty in Swift 2.2, add when needed
-- Page versioning fields — empty in Swift 2.2, add when needed
+| Feature | Reason |
+|---------|--------|
+| XML element-level transforms (rewriting values) | Filtering only, not transformation — v0.6+ |
+| Whitelist-only field filtering | Blacklist is safer default — new fields would silently disappear with whitelist |
+| Auto-detect XML columns via heuristic | False positives on HTML content; config-driven xmlColumns is explicit and safe |
+| Backward compatibility with pre-v0.5.0 YAML format | Beta product (0.x), no external consumers |
 
 ## Traceability
 
-| REQ-ID | Phase | Plan | Status |
-|--------|-------|------|--------|
-| PAGE-01 | Phase 23 | — | Pending |
-| PAGE-02 | Phase 23 | — | Pending |
-| ECOM-01 | Phase 23 | — | Pending |
-| ECOM-02 | Phase 23 | — | Pending |
-| AREA-01 | Phase 24 | — | Pending |
-| AREA-02 | Phase 24 | — | Pending |
-| SCHEMA-01 | Phase 25 | 25-01 | Complete |
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| XML-01 | — | Pending |
+| XML-02 | — | Pending |
+| XML-03 | — | Pending |
+| FILT-01 | — | Pending |
+| FILT-02 | — | Pending |
+| FILT-03 | — | Pending |
+| FILT-04 | — | Pending |
+| AREA-03 | — | Pending |
+| AREA-04 | — | Pending |
+| AREA-05 | — | Pending |
+| UI-01 | — | Pending |
+| UI-02 | — | Pending |
+| UI-03 | — | Pending |
+
+**Coverage:**
+- v0.5.0 requirements: 13 total
+- Mapped to phases: 0
+- Unmapped: 13
+
+---
+*Requirements defined: 2026-04-07*
+*Last updated: 2026-04-07 after initial definition*
