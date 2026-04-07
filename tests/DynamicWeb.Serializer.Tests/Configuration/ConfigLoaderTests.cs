@@ -553,4 +553,58 @@ public class ConfigLoaderTests : IDisposable
         var config = ConfigLoader.Load(path);
         Assert.Single(config.Predicates);
     }
+
+    // -------------------------------------------------------------------------
+    // XmlColumns config mapping (Phase 27 — Pitfall P7 three-class mapping)
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public void Load_SqlTablePredicate_WithXmlColumns_DeserializesXmlColumns()
+    {
+        var json = """
+            {
+              "outputDirectory": "/serialization",
+              "predicates": [
+                {
+                  "name": "Shipping Methods",
+                  "providerType": "SqlTable",
+                  "table": "EcomShippings",
+                  "nameColumn": "ShippingName",
+                  "xmlColumns": ["ShippingXml", "SettingsXml"]
+                }
+              ]
+            }
+            """;
+        var path = WriteConfigFile(json);
+
+        var config = ConfigLoader.Load(path);
+
+        Assert.Equal(2, config.Predicates[0].XmlColumns.Count);
+        Assert.Equal("ShippingXml", config.Predicates[0].XmlColumns[0]);
+        Assert.Equal("SettingsXml", config.Predicates[0].XmlColumns[1]);
+    }
+
+    [Fact]
+    public void Load_SqlTablePredicate_WithoutXmlColumns_DefaultsToEmptyList()
+    {
+        var json = """
+            {
+              "outputDirectory": "/serialization",
+              "predicates": [
+                {
+                  "name": "Order Flows",
+                  "providerType": "SqlTable",
+                  "table": "EcomOrderFlow",
+                  "nameColumn": "OrderFlowName"
+                }
+              ]
+            }
+            """;
+        var path = WriteConfigFile(json);
+
+        var config = ConfigLoader.Load(path);
+
+        Assert.NotNull(config.Predicates[0].XmlColumns);
+        Assert.Empty(config.Predicates[0].XmlColumns);
+    }
 }

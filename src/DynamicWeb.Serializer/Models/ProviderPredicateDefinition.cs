@@ -45,4 +45,7 @@ public record ProviderPredicateDefinition
     /// Format: "EcomGroupFields" (only supported value currently).
     /// </summary>
     public string? SchemaSync { get; init; }
+
+    /// <summary>Column names containing XML that should be pretty-printed in YAML. SqlTable predicates only.</summary>
+    public List<string> XmlColumns { get; init; } = new();
 }

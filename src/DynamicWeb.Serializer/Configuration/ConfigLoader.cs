@@ -88,7 +88,8 @@ public static class ConfigLoader
         NameColumn = raw.NameColumn,
         CompareColumns = raw.CompareColumns,
         ServiceCaches = raw.ServiceCaches ?? new List<string>(),
-        SchemaSync = raw.SchemaSync
+        SchemaSync = raw.SchemaSync,
+        XmlColumns = raw.XmlColumns ?? new List<string>()
     };
 
     // Raw (nullable) models for deserialization — no required constraints so we can produce clear validation errors
@@ -115,5 +116,6 @@ public static class ConfigLoader
         public string? CompareColumns { get; set; }
         public List<string>? ServiceCaches { get; set; }
         public string? SchemaSync { get; set; }
+        public List<string>? XmlColumns { get; set; }
     }
 }
