@@ -48,10 +48,14 @@ public class SqlTableProvider : SerializationProviderBase
         _fileStore.WriteMeta(outputRoot, metadata.TableName, metadata);
 
         var xmlColumns = new HashSet<string>(predicate.XmlColumns, StringComparer.OrdinalIgnoreCase);
+        var excludeFields = predicate.ExcludeFields.Count > 0
+            ? new HashSet<string>(predicate.ExcludeFields, StringComparer.OrdinalIgnoreCase)
+            : null;
 
         var usedNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var row in rows)
         {
+            // Step 1: Pretty-print XML columns
             if (xmlColumns.Count > 0)
             {
                 foreach (var col in xmlColumns)
@@ -61,6 +65,25 @@ public class SqlTableProvider : SerializationProviderBase
                         row[col] = XmlFormatter.PrettyPrint(strVal);
                     }
                 }
+            }
+
+            // Step 2: Strip excluded XML elements from XML columns
+            if (predicate.ExcludeXmlElements.Count > 0 && xmlColumns.Count > 0)
+            {
+                foreach (var col in xmlColumns)
+                {
+                    if (row.TryGetValue(col, out var val) && val is string strVal)
+                    {
+                        row[col] = XmlFormatter.RemoveElements(strVal, predicate.ExcludeXmlElements);
+                    }
+                }
+            }
+
+            // Step 3: Remove excluded columns from row
+            if (excludeFields != null)
+            {
+                foreach (var field in excludeFields)
+                    row.Remove(field);
             }
 
             var identity = _tableReader.GenerateRowIdentity(row, metadata);
