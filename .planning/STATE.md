@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.5.0
 milestone_name: Granular Serialization Control
 status: verifying
-stopped_at: Completed 28-01-PLAN.md
-last_updated: "2026-04-07T20:03:43.105Z"
+stopped_at: Completed 29-01-PLAN.md
+last_updated: "2026-04-07T20:15:52.981Z"
 last_activity: 2026-04-07
 progress:
   total_phases: 6
-  completed_phases: 3
-  total_plans: 3
-  completed_plans: 3
+  completed_phases: 4
+  total_plans: 4
+  completed_plans: 4
   percent: 100
 ---
 
@@ -59,6 +59,7 @@ Progress: [###░░░░░░░] 33% (v0.5.0 milestone)
 | Phase 26 P01 | 3min | 2 tasks | 4 files |
 | Phase 27 P01 | 5min | 2 tasks | 6 files |
 | Phase 28 P01 | 8min | 3 tasks | 8 files |
+| Phase 29 P01 | 5min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -75,6 +76,7 @@ Recent decisions affecting current work:
 - [Phase 26]: XML formatting at mapping boundary (ContentMapper/ContentDeserializer), not in YAML emitter
 - [Phase 27]: Config-driven xmlColumns for SqlTable predicates; three-class mapping extended (Pitfall P7 verified)
 - [Phase 28]: ExcludeFields carried via WriteContext rather than parameter threading; XmlFormatter.RemoveElements as standalone static method
+- [Phase 29]: excludeFields filtering applied after XML pretty-print and element stripping, before WriteRow
 
 ### Pending Todos
 
@@ -86,6 +88,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-07T20:03:43.100Z
-Stopped at: Completed 28-01-PLAN.md
+Last session: 2026-04-07T20:15:52.977Z
+Stopped at: Completed 29-01-PLAN.md
 Resume file: None
