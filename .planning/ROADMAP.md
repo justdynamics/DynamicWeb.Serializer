@@ -101,7 +101,9 @@
   1. Content YAML files containing moduleSettings or urlDataProviderParameters show indented multi-line XML using YAML literal block scalars instead of single-line escaped strings
   2. Deserializing pretty-printed content YAML compacts the XML back to single-line before writing to the database, producing byte-identical DB values to the original
   3. Content that contains no embedded XML is unaffected by the formatter (no regressions)
-**Plans**: TBD
+**Plans**: 1 plan
+Plans:
+- [ ] 26-01-PLAN.md — XmlFormatter utility + content pipeline integration
 
 ### Phase 27: XML Pretty-Print for SqlTable
 **Goal**: SQL table YAML files with XML columns show readable indented XML, controlled by a per-predicate xmlColumns config list
@@ -111,7 +113,9 @@
   1. SqlTable predicates accept an xmlColumns list in config specifying which columns contain XML
   2. SQL table YAML files show indented multi-line XML for configured xmlColumns, using YAML literal block scalars
   3. Deserializing SQL table YAML with pretty-printed XML compacts it back to single-line before writing to DB (round-trip correctness via XML-03 compaction logic from Phase 26)
-**Plans**: TBD
+**Plans**: 1 plan
+Plans:
+- [ ] 26-01-PLAN.md — XmlFormatter utility + content pipeline integration
 
 ### Phase 28: Field-Level Filtering Core
 **Goal**: Content predicates can exclude specific fields from serialization, strip specific XML elements from blobs, and excluded fields are safely skipped during deserialization (no null-out destruction)
@@ -122,7 +126,9 @@
   2. Deserializing YAML that was serialized with excludeFields does NOT null out the excluded fields on the target DB (skip guard prevents source-wins destruction)
   3. A content predicate with excludeXmlElements: [sort, pagesize] strips those element names from embedded XML blobs before writing YAML
   4. Fields not in the exclude list continue to serialize and deserialize normally (no regression)
-**Plans**: TBD
+**Plans**: 1 plan
+Plans:
+- [ ] 26-01-PLAN.md — XmlFormatter utility + content pipeline integration
 
 ### Phase 29: SqlTable Field Filtering
 **Goal**: SqlTable predicates can exclude specific columns from serialization with the same skip-guard protection on deserialize
@@ -131,7 +137,9 @@
 **Success Criteria** (what must be TRUE):
   1. A SqlTable predicate with excludeFields: [LastModified, MachineName] omits those columns from serialized YAML output
   2. Deserializing SQL table YAML with excluded fields does NOT null out or delete those column values on the target DB
-**Plans**: TBD
+**Plans**: 1 plan
+Plans:
+- [ ] 26-01-PLAN.md — XmlFormatter utility + content pipeline integration
 
 ### Phase 30: Area Property Consolidation
 **Goal**: ContentProvider serializes and deserializes all 60+ Area columns (Domain, Layout, Culture, EcomSettings, SSL, CDN, etc.) in area.yml, with field-level blacklist for environment-specific values
@@ -142,7 +150,9 @@
   2. Deserializing area.yml restores all Area properties to the database, creating the area row if it does not exist on target
   3. A content predicate with excludeFields: [AreaDomain, AreaNoindex] omits those area-specific columns from area.yml and does not null them on deserialize
   4. Existing area ItemType field serialization (from Phase 24) continues working alongside the new area properties
-**Plans**: TBD
+**Plans**: 1 plan
+Plans:
+- [ ] 26-01-PLAN.md — XmlFormatter utility + content pipeline integration
 
 ### Phase 31: Predicate UI Enhancement
 **Goal**: Admin UI predicate edit screens expose all new v0.5.0 config fields (excludeFields, xmlColumns, excludeXmlElements) for visual configuration
@@ -153,7 +163,9 @@
   2. Predicate edit screen for SqlTable predicates shows an xmlColumns input where users can specify which columns contain XML
   3. Predicate edit screen shows an excludeXmlElements input where users can add/remove XML element names to strip
   4. Changes made in the UI are persisted to the config file and take effect on next serialize/deserialize
-**Plans**: TBD
+**Plans**: 1 plan
+Plans:
+- [ ] 26-01-PLAN.md — XmlFormatter utility + content pipeline integration
 **UI hint**: yes
 
 ## Progress
