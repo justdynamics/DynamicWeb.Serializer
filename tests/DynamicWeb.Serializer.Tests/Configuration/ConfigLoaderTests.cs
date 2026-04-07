@@ -607,4 +607,83 @@ public class ConfigLoaderTests : IDisposable
         Assert.NotNull(config.Predicates[0].XmlColumns);
         Assert.Empty(config.Predicates[0].XmlColumns);
     }
+
+    // -------------------------------------------------------------------------
+    // ExcludeFields / ExcludeXmlElements config mapping (Phase 28 — Pitfall P7)
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public void Load_ContentPredicate_WithExcludeFields_DeserializesExcludeFields()
+    {
+        var json = """
+            {
+              "outputDirectory": "/serialization",
+              "predicates": [
+                {
+                  "name": "Customer Center",
+                  "path": "/Customer Center",
+                  "areaId": 1,
+                  "excludeFields": ["NavigationTag", "AreaDomain"]
+                }
+              ]
+            }
+            """;
+        var path = WriteConfigFile(json);
+
+        var config = ConfigLoader.Load(path);
+
+        Assert.Equal(2, config.Predicates[0].ExcludeFields.Count);
+        Assert.Equal("NavigationTag", config.Predicates[0].ExcludeFields[0]);
+        Assert.Equal("AreaDomain", config.Predicates[0].ExcludeFields[1]);
+    }
+
+    [Fact]
+    public void Load_ContentPredicate_WithExcludeXmlElements_DeserializesExcludeXmlElements()
+    {
+        var json = """
+            {
+              "outputDirectory": "/serialization",
+              "predicates": [
+                {
+                  "name": "Customer Center",
+                  "path": "/Customer Center",
+                  "areaId": 1,
+                  "excludeXmlElements": ["sort", "pagesize"]
+                }
+              ]
+            }
+            """;
+        var path = WriteConfigFile(json);
+
+        var config = ConfigLoader.Load(path);
+
+        Assert.Equal(2, config.Predicates[0].ExcludeXmlElements.Count);
+        Assert.Equal("sort", config.Predicates[0].ExcludeXmlElements[0]);
+        Assert.Equal("pagesize", config.Predicates[0].ExcludeXmlElements[1]);
+    }
+
+    [Fact]
+    public void Load_ContentPredicate_WithoutExcludeFields_DefaultsToEmptyLists()
+    {
+        var json = """
+            {
+              "outputDirectory": "/serialization",
+              "predicates": [
+                {
+                  "name": "Customer Center",
+                  "path": "/Customer Center",
+                  "areaId": 1
+                }
+              ]
+            }
+            """;
+        var path = WriteConfigFile(json);
+
+        var config = ConfigLoader.Load(path);
+
+        Assert.NotNull(config.Predicates[0].ExcludeFields);
+        Assert.Empty(config.Predicates[0].ExcludeFields);
+        Assert.NotNull(config.Predicates[0].ExcludeXmlElements);
+        Assert.Empty(config.Predicates[0].ExcludeXmlElements);
+    }
 }

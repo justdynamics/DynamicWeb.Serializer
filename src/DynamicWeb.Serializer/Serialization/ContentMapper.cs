@@ -20,7 +20,7 @@ public class ContentMapper
     /// <summary>
     /// Maps a DW Area to a SerializedArea DTO.
     /// </summary>
-    public SerializedArea MapArea(Area area, List<SerializedPage> pages)
+    public SerializedArea MapArea(Area area, List<SerializedPage> pages, IReadOnlySet<string>? excludeFields = null)
     {
         var itemFields = new Dictionary<string, object>();
         if (!string.IsNullOrEmpty(area.ItemType) && !string.IsNullOrEmpty(area.ItemId))
@@ -32,7 +32,7 @@ public class ContentMapper
                 itemEntry.SerializeTo(dict);
                 foreach (var kvp in dict)
                 {
-                    if (kvp.Value != null)
+                    if (kvp.Value != null && excludeFields?.Contains(kvp.Key) != true)
                         itemFields[kvp.Key] = kvp.Value;
                 }
             }
@@ -52,10 +52,10 @@ public class ContentMapper
     /// <summary>
     /// Maps a DW Page to a SerializedPage DTO.
     /// </summary>
-    public SerializedPage MapPage(Page page, List<SerializedGridRow> gridRows, List<SerializedPage> children, List<SerializedPermission> permissions)
+    public SerializedPage MapPage(Page page, List<SerializedGridRow> gridRows, List<SerializedPage> children, List<SerializedPermission> permissions, IReadOnlySet<string>? excludeFields = null, IReadOnlyList<string>? excludeXmlElements = null)
     {
-        var fields = ExtractItemFields(page.Item);
-        var propertyFields = ExtractPropertyItemFields(page);
+        var fields = ExtractItemFields(page.Item, excludeFields);
+        var propertyFields = ExtractPropertyItemFields(page, excludeFields);
 
         return new SerializedPage
         {
@@ -101,7 +101,7 @@ public class ContentMapper
             UrlSettings = new SerializedUrlSettings
             {
                 UrlDataProviderTypeName = page.UrlDataProviderTypeName,
-                UrlDataProviderParameters = XmlFormatter.PrettyPrint(page.UrlDataProviderParameters),
+                UrlDataProviderParameters = ApplyXmlElementFilter(XmlFormatter.PrettyPrint(page.UrlDataProviderParameters), excludeXmlElements),
                 UrlIgnoreForChildren = page.UrlIgnoreForChildren,
                 UrlUseAsWritten = page.UrlUseAsWritten
             },
@@ -167,12 +167,12 @@ public class ContentMapper
     /// Maps a DW Paragraph to a SerializedParagraph DTO.
     /// Registers the paragraph with the ReferenceResolver and resolves known reference fields to GUIDs.
     /// </summary>
-    public SerializedParagraph MapParagraph(Paragraph paragraph)
+    public SerializedParagraph MapParagraph(Paragraph paragraph, IReadOnlySet<string>? excludeFields = null, IReadOnlyList<string>? excludeXmlElements = null)
     {
         // Register this paragraph so later cross-references to it can be resolved
         _resolver.RegisterParagraph(paragraph.ID, paragraph.UniqueId);
 
-        var fields = ExtractItemFields(paragraph.Item);
+        var fields = ExtractItemFields(paragraph.Item, excludeFields);
 
         // Include paragraph body text if present
         if (!string.IsNullOrEmpty(paragraph.Text))
@@ -203,7 +203,7 @@ public class ContentMapper
             Template = paragraph.Template,
             ColorSchemeId = paragraph.ColorSchemeId,
             ModuleSystemName = paragraph.ModuleSystemName,
-            ModuleSettings = XmlFormatter.PrettyPrint(paragraph.ModuleSettings),
+            ModuleSettings = ApplyXmlElementFilter(XmlFormatter.PrettyPrint(paragraph.ModuleSettings), excludeXmlElements),
             Fields = fields
         };
     }
@@ -212,7 +212,7 @@ public class ContentMapper
     /// Groups paragraphs by GridRowColumn to reconstruct column structure.
     /// Returns a single empty column if no paragraphs are provided.
     /// </summary>
-    public List<SerializedGridColumn> BuildColumns(IEnumerable<Paragraph> paragraphs)
+    public List<SerializedGridColumn> BuildColumns(IEnumerable<Paragraph> paragraphs, IReadOnlySet<string>? excludeFields = null, IReadOnlyList<string>? excludeXmlElements = null)
     {
         var paragraphList = paragraphs.ToList();
 
@@ -232,7 +232,7 @@ public class ContentMapper
                 Id = g.Key,
                 Width = 0, // Column width not available from Paragraph; GridRow definition has this
                 Paragraphs = g.OrderBy(p => p.Sort)
-                              .Select(p => MapParagraph(p) with { ColumnId = g.Key })
+                              .Select(p => MapParagraph(p, excludeFields, excludeXmlElements) with { ColumnId = g.Key })
                               .ToList()
             })
             .ToList();
@@ -267,7 +267,7 @@ public class ContentMapper
     // Helpers
     // -------------------------------------------------------------------------
 
-    private static Dictionary<string, object> ExtractItemFields(Dynamicweb.Content.Items.Item? item)
+    private static Dictionary<string, object> ExtractItemFields(Dynamicweb.Content.Items.Item? item, IReadOnlySet<string>? excludeFields = null)
     {
         var fields = new Dictionary<string, object>();
 
@@ -276,6 +276,9 @@ public class ContentMapper
 
         foreach (var fieldName in item.Names)
         {
+            if (excludeFields?.Contains(fieldName) == true)
+                continue;
+
             var value = item[fieldName];
             if (value != null)
                 fields[fieldName] = value;
@@ -288,7 +291,7 @@ public class ContentMapper
     /// Extracts PropertyItem fields (e.g. Icon, SubmenuType) from a page's PropertyItem.
     /// These are separate from the page's own Item fields.
     /// </summary>
-    private static Dictionary<string, object> ExtractPropertyItemFields(Page page)
+    private static Dictionary<string, object> ExtractPropertyItemFields(Page page, IReadOnlySet<string>? excludeFields = null)
     {
         var fields = new Dictionary<string, object>();
 
@@ -303,10 +306,22 @@ public class ContentMapper
         propItem.SerializeTo(dict);
         foreach (var kvp in dict)
         {
-            if (kvp.Value != null)
+            if (kvp.Value != null && excludeFields?.Contains(kvp.Key) != true)
                 fields[kvp.Key] = kvp.Value;
         }
 
         return fields;
+    }
+
+    /// <summary>
+    /// Applies XML element filtering if excludeXmlElements is configured.
+    /// Returns the XML unchanged if no elements to exclude.
+    /// </summary>
+    private static string? ApplyXmlElementFilter(string? xml, IReadOnlyList<string>? excludeXmlElements)
+    {
+        if (excludeXmlElements == null || excludeXmlElements.Count == 0)
+            return xml;
+
+        return XmlFormatter.RemoveElements(xml, excludeXmlElements);
     }
 }

@@ -69,6 +69,14 @@ public class ContentSerializer
 
         Log($"Area found: ID={area.ID}, Name={area.Name}");
 
+        // Build exclude sets from predicate config
+        var excludeFields = predicate.ExcludeFields.Count > 0
+            ? new HashSet<string>(predicate.ExcludeFields, StringComparer.OrdinalIgnoreCase)
+            : null;
+        IReadOnlyList<string>? excludeXmlElements = predicate.ExcludeXmlElements.Count > 0
+            ? predicate.ExcludeXmlElements
+            : null;
+
         // Get all top-level pages for this area
         var rootPages = Services.Pages.GetRootPagesForArea(predicate.AreaId)
             .OrderBy(p => p.Sort)
@@ -83,7 +91,7 @@ public class ContentSerializer
         {
             var contentPath = "/" + rootPage.MenuText;
             Log($"  Checking predicate for path: '{contentPath}'");
-            var serializedPage = SerializePage(rootPage, predicate, contentPath);
+            var serializedPage = SerializePage(rootPage, predicate, contentPath, excludeFields, excludeXmlElements);
             if (serializedPage != null)
                 serializedPages.Add(serializedPage);
             else
@@ -91,12 +99,12 @@ public class ContentSerializer
         }
 
         Log($"Serialized pages: {serializedPages.Count}");
-        var serializedArea = _mapper.MapArea(area, serializedPages);
+        var serializedArea = _mapper.MapArea(area, serializedPages, excludeFields);
         _store.WriteTree(serializedArea, _configuration.OutputDirectory);
         return serializedArea;
     }
 
-    private SerializedPage? SerializePage(Page page, ProviderPredicateDefinition predicate, string contentPath)
+    private SerializedPage? SerializePage(Page page, ProviderPredicateDefinition predicate, string contentPath, HashSet<string>? excludeFields = null, IReadOnlyList<string>? excludeXmlElements = null)
     {
         // Check predicate inclusion BEFORE loading children (short-circuit optimization)
         if (!_predicateSet.ShouldInclude(contentPath, predicate.AreaId))
@@ -122,7 +130,7 @@ public class ContentSerializer
                 .Where(p => p.GridRowId == gridRow.ID)
                 .ToList();
 
-            var columns = _mapper.BuildColumns(rowParagraphs);
+            var columns = _mapper.BuildColumns(rowParagraphs, excludeFields, excludeXmlElements);
             var serializedGridRow = _mapper.MapGridRow(gridRow, columns);
             serializedGridRows.Add(serializedGridRow);
         }
@@ -136,13 +144,13 @@ public class ContentSerializer
         foreach (var child in childPages)
         {
             var childContentPath = contentPath + "/" + child.MenuText;
-            var serializedChild = SerializePage(child, predicate, childContentPath);
+            var serializedChild = SerializePage(child, predicate, childContentPath, excludeFields, excludeXmlElements);
             if (serializedChild != null)
                 serializedChildren.Add(serializedChild);
         }
 
         var permissions = _permissionMapper.MapPermissions(page.ID);
-        return _mapper.MapPage(page, serializedGridRows, serializedChildren, permissions);
+        return _mapper.MapPage(page, serializedGridRows, serializedChildren, permissions, excludeFields, excludeXmlElements);
     }
 
     private static void CountItems(IEnumerable<SerializedPage> pages, ref int pageCount, ref int gridRowCount, ref int paragraphCount)

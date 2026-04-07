@@ -45,6 +45,46 @@ public static class XmlFormatter
     }
 
     /// <summary>
+    /// Removes XML elements matching the specified names (case-insensitive) from the XML string.
+    /// Returns the original string unchanged for null, empty, whitespace, non-XML, or malformed XML.
+    /// The result is pretty-printed with LF line endings (same as PrettyPrint output).
+    /// </summary>
+    public static string? RemoveElements(string? xml, IEnumerable<string>? elementNames)
+    {
+        if (string.IsNullOrWhiteSpace(xml) || elementNames == null)
+            return xml;
+
+        var nameSet = new HashSet<string>(elementNames, StringComparer.OrdinalIgnoreCase);
+        if (nameSet.Count == 0)
+            return xml;
+
+        try
+        {
+            var xdoc = XDocument.Parse(xml);
+            var hadDeclaration = xml.TrimStart().StartsWith("<?xml", StringComparison.OrdinalIgnoreCase);
+
+            // Remove all matching elements (collect first to avoid modifying during enumeration)
+            var toRemove = xdoc.Descendants()
+                .Where(e => nameSet.Contains(e.Name.LocalName))
+                .ToList();
+            foreach (var el in toRemove)
+                el.Remove();
+
+            string result;
+            if (hadDeclaration && xdoc.Declaration != null)
+                result = xdoc.Declaration.ToString() + "\n" + xdoc.ToString(SaveOptions.None);
+            else
+                result = xdoc.ToString(SaveOptions.None);
+
+            return result.Replace("\r\n", "\n").Replace("\r", "\n");
+        }
+        catch (XmlException)
+        {
+            return xml;
+        }
+    }
+
+    /// <summary>
     /// Compacts pretty-printed XML into a single-line form suitable for database storage.
     /// Preserves XML declaration when present in the original.
     /// Returns the original string unchanged for null, empty, whitespace, non-XML, or malformed XML.
