@@ -53,6 +53,8 @@ public class ContentDeserializer
         public int Updated { get; set; }
         public int Skipped { get; set; }
         public int Failed { get; set; }
+        /// <summary>Fields excluded from serialization — must NOT be nulled out during deserialization.</summary>
+        public IReadOnlySet<string>? ExcludeFields { get; set; }
     }
 
     // -------------------------------------------------------------------------
@@ -202,7 +204,10 @@ public class ContentDeserializer
         {
             TargetAreaId = predicate.AreaId,
             ParentPageId = 0,
-            PageGuidCache = pageGuidCache
+            PageGuidCache = pageGuidCache,
+            ExcludeFields = predicate.ExcludeFields.Count > 0
+                ? new HashSet<string>(predicate.ExcludeFields, StringComparer.OrdinalIgnoreCase)
+                : null
         };
 
         // Save area-level ItemType fields (AREA-01)
@@ -232,7 +237,7 @@ public class ContentDeserializer
             if (!string.IsNullOrEmpty(targetAreaItemId))
             {
                 Log($"Applying area ItemType fields: type={area.ItemType}, id={targetAreaItemId}, fields={area.ItemFields.Count}");
-                SaveItemFields(area.ItemType, targetAreaItemId, area.ItemFields);
+                SaveItemFields(area.ItemType, targetAreaItemId, area.ItemFields, ctx.ExcludeFields);
             }
         }
 
@@ -375,7 +380,7 @@ public class ContentDeserializer
             var refetched = Services.Pages.GetPage(saved.ID);
             if (refetched != null)
             {
-                SaveItemFields(refetched.ItemType, refetched.ItemId, dto.Fields);
+                SaveItemFields(refetched.ItemType, refetched.ItemId, dto.Fields, ctx.ExcludeFields);
 
                 // Re-apply LayoutTemplate if DW overwrote it during HandleItemStructure
                 // (DW sets it to the ItemType's default template on new pages)
@@ -387,7 +392,7 @@ public class ContentDeserializer
                 }
 
                 // Apply PropertyItem fields (e.g. Icon, SubmenuType)
-                SavePropertyItemFields(refetched, dto.PropertyFields);
+                SavePropertyItemFields(refetched, dto.PropertyFields, ctx.ExcludeFields);
             }
 
             ctx.Created++;
@@ -430,10 +435,10 @@ public class ContentDeserializer
             Services.Pages.SavePage(existingPage);
 
             // Apply ItemType fields via ItemService (source-wins)
-            SaveItemFields(existingPage.ItemType, existingPage.ItemId, dto.Fields);
+            SaveItemFields(existingPage.ItemType, existingPage.ItemId, dto.Fields, ctx.ExcludeFields);
 
             // Apply PropertyItem fields (e.g. Icon, SubmenuType)
-            SavePropertyItemFields(existingPage, dto.PropertyFields);
+            SavePropertyItemFields(existingPage, dto.PropertyFields, ctx.ExcludeFields);
 
             ctx.Updated++;
             Log($"UPDATED page {dto.PageUniqueId} (ID={existingId})");
@@ -533,7 +538,7 @@ public class ContentDeserializer
                     Log($"  GridRow Item created: type={dto.ItemType}, id={item.Id}");
                     saved.ItemId = item.Id;
                     Services.Grids.SaveGridRow(saved);
-                    SaveItemFields(dto.ItemType, item.Id, dto.Fields);
+                    SaveItemFields(dto.ItemType, item.Id, dto.Fields, ctx.ExcludeFields);
                 }
                 catch (Exception ex)
                 {
@@ -542,7 +547,7 @@ public class ContentDeserializer
             }
             else if (!string.IsNullOrEmpty(saved.ItemId))
             {
-                SaveItemFields(dto.ItemType, saved.ItemId, dto.Fields);
+                SaveItemFields(dto.ItemType, saved.ItemId, dto.Fields, ctx.ExcludeFields);
             }
 
             var newGridRowId = saved.ID;
@@ -592,7 +597,7 @@ public class ContentDeserializer
 
             // Apply ItemType fields via ItemService
             if (!string.IsNullOrEmpty(existingRow2.ItemId))
-                SaveItemFields(dto.ItemType, existingRow2.ItemId, dto.Fields);
+                SaveItemFields(dto.ItemType, existingRow2.ItemId, dto.Fields, ctx.ExcludeFields);
 
             ctx.Updated++;
             Log($"UPDATED grid row {dto.Id} (ID={existingGridRowId})");
@@ -670,7 +675,7 @@ public class ContentDeserializer
             // Apply ItemType fields via ItemService using paragraph's ItemId (not paragraph ID)
             if (saved != null)
             {
-                SaveItemFields(dto.ItemType, saved.ItemId, dto.Fields);
+                SaveItemFields(dto.ItemType, saved.ItemId, dto.Fields, ctx.ExcludeFields);
 
                 // Re-apply fields that DW may overwrite during HandleItemStructure:
                 // - Header: DW sets it to Item's title (template default)
@@ -740,7 +745,7 @@ public class ContentDeserializer
             Services.Paragraphs.SaveParagraph(existingForUpdate);
 
             // Apply ItemType fields via ItemService (source-wins)
-            SaveItemFields(existingForUpdate.ItemType, existingForUpdate.ItemId, dto.Fields);
+            SaveItemFields(existingForUpdate.ItemType, existingForUpdate.ItemId, dto.Fields, ctx.ExcludeFields);
             ctx.Updated++;
             Log($"UPDATED paragraph {dto.ParagraphUniqueId} (ID={existingParagraphId})");
         }
@@ -750,7 +755,7 @@ public class ContentDeserializer
     // Page PropertyItem persistence (Icon, SubmenuType, etc.)
     // -------------------------------------------------------------------------
 
-    private void SavePropertyItemFields(Page page, Dictionary<string, object> propertyFields)
+    private void SavePropertyItemFields(Page page, Dictionary<string, object> propertyFields, IReadOnlySet<string>? excludeFields = null)
     {
         if (propertyFields.Count == 0)
             return;
@@ -776,7 +781,12 @@ public class ContentDeserializer
         foreach (var fieldName in propItem.Names)
         {
             if (!ItemSystemFields.Contains(fieldName) && !contentFields.ContainsKey(fieldName))
+            {
+                // Skip guard: do NOT null out fields that were intentionally excluded from serialization (FILT-03)
+                if (excludeFields != null && excludeFields.Contains(fieldName))
+                    continue;
                 contentFields[fieldName] = null;
+            }
         }
 
         if (contentFields.Count == 0)
@@ -823,7 +833,7 @@ public class ContentDeserializer
     /// Implements source-wins: fields present in the item type definition but absent
     /// from the serialized YAML are explicitly set to null so stale target data is cleared.
     /// </summary>
-    private void SaveItemFields(string? itemType, string itemId, Dictionary<string, object> fields)
+    private void SaveItemFields(string? itemType, string itemId, Dictionary<string, object> fields, IReadOnlySet<string>? excludeFields = null)
     {
         if (string.IsNullOrEmpty(itemType))
             return;
@@ -845,6 +855,9 @@ public class ContentDeserializer
         {
             if (!ItemSystemFields.Contains(fieldName) && !contentFields.ContainsKey(fieldName))
             {
+                // Skip guard: do NOT null out fields that were intentionally excluded from serialization (FILT-03)
+                if (excludeFields != null && excludeFields.Contains(fieldName))
+                    continue;
                 contentFields[fieldName] = null;
             }
         }
