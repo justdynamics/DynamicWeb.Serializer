@@ -1,4 +1,5 @@
 using Dynamicweb.Content;
+using Dynamicweb.Data;
 using DynamicWeb.Serializer.Infrastructure;
 using DynamicWeb.Serializer.Models;
 
@@ -45,6 +46,7 @@ public class ContentMapper
             SortOrder = area.Sort,
             ItemType = area.ItemType,
             ItemFields = itemFields,
+            Properties = ReadAreaProperties(area.ID, excludeFields),
             Pages = pages
         };
     }
@@ -261,6 +263,42 @@ public class ContentMapper
             NavigationProvider = navSettings.NavigationProvider,
             IncludeProducts = navSettings.IncludeProducts
         };
+    }
+
+    // -------------------------------------------------------------------------
+    // Area SQL property reading
+    // -------------------------------------------------------------------------
+
+    /// <summary>
+    /// Reads all columns from the [Area] SQL table for a given area.
+    /// The DW Area C# class does not expose all 60+ columns as properties,
+    /// so direct SQL is the only way to capture the full table state.
+    /// Columns already represented by named SerializedArea properties are removed to avoid duplication.
+    /// </summary>
+    private static Dictionary<string, object> ReadAreaProperties(int areaId, IReadOnlySet<string>? excludeFields)
+    {
+        var props = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
+        var cb = new CommandBuilder();
+        cb.Add("SELECT * FROM [Area] WHERE [AreaID] = {0}", areaId);
+        using var reader = Database.CreateDataReader(cb);
+        if (reader.Read())
+        {
+            for (int i = 0; i < reader.FieldCount; i++)
+            {
+                var name = reader.GetName(i);
+                var value = reader.GetValue(i);
+                if (value != DBNull.Value && excludeFields?.Contains(name) != true)
+                    props[name] = value;
+            }
+        }
+        // Remove columns already captured by named DTO properties to avoid duplication
+        props.Remove("AreaID");
+        props.Remove("AreaName");
+        props.Remove("AreaSort");
+        props.Remove("AreaItemType");
+        props.Remove("AreaItemId");
+        props.Remove("AreaUniqueId");
+        return props;
     }
 
     // -------------------------------------------------------------------------
