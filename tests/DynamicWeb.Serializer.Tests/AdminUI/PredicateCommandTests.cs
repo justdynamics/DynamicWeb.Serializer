@@ -394,6 +394,105 @@ public class PredicateCommandTests : IDisposable
     }
 
     // -------------------------------------------------------------------------
+    // Filtering fields round-trip tests
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public void Save_Content_NewPredicate_PersistsExcludeFields()
+    {
+        CreateSeedConfig(new List<ProviderPredicateDefinition>());
+
+        var cmd = new SavePredicateCommand
+        {
+            ConfigPath = _configPath,
+            Model = new PredicateEditModel
+            {
+                Index = -1,
+                Name = "Content Filtering",
+                ProviderType = "Content",
+                AreaId = 1,
+                PageId = 10,
+                ExcludeFields = "PageNavigationTag\r\nAreaDomain",
+                ExcludeXmlElements = "sort\npagesize"
+            }
+        };
+
+        var result = cmd.Handle();
+
+        Assert.Equal(CommandResult.ResultType.Ok, result.Status);
+        var config = ConfigLoader.Load(_configPath);
+        var pred = config.Predicates[0];
+        Assert.Equal(2, pred.ExcludeFields.Count);
+        Assert.Equal("PageNavigationTag", pred.ExcludeFields[0]);
+        Assert.Equal("AreaDomain", pred.ExcludeFields[1]);
+        Assert.Equal(2, pred.ExcludeXmlElements.Count);
+        Assert.Equal("sort", pred.ExcludeXmlElements[0]);
+        Assert.Equal("pagesize", pred.ExcludeXmlElements[1]);
+        Assert.Empty(pred.XmlColumns);
+    }
+
+    [Fact]
+    public void Save_SqlTable_NewPredicate_PersistsFilteringFields()
+    {
+        CreateSeedConfig(new List<ProviderPredicateDefinition>());
+
+        var cmd = new SavePredicateCommand
+        {
+            ConfigPath = _configPath,
+            Model = new PredicateEditModel
+            {
+                Index = -1,
+                Name = "SqlTable Filtering",
+                ProviderType = "SqlTable",
+                Table = "EcomOrderFlow",
+                ExcludeFields = "LastModified",
+                XmlColumns = "ShippingXml\nSettingsXml",
+                ExcludeXmlElements = "cache"
+            }
+        };
+
+        var result = cmd.Handle();
+
+        Assert.Equal(CommandResult.ResultType.Ok, result.Status);
+        var config = ConfigLoader.Load(_configPath);
+        var pred = config.Predicates[0];
+        Assert.Single(pred.ExcludeFields);
+        Assert.Equal("LastModified", pred.ExcludeFields[0]);
+        Assert.Equal(2, pred.XmlColumns.Count);
+        Assert.Equal("ShippingXml", pred.XmlColumns[0]);
+        Assert.Equal("SettingsXml", pred.XmlColumns[1]);
+        Assert.Single(pred.ExcludeXmlElements);
+        Assert.Equal("cache", pred.ExcludeXmlElements[0]);
+    }
+
+    [Fact]
+    public void Save_Content_XmlColumnsNotPersisted()
+    {
+        CreateSeedConfig(new List<ProviderPredicateDefinition>());
+
+        var cmd = new SavePredicateCommand
+        {
+            ConfigPath = _configPath,
+            Model = new PredicateEditModel
+            {
+                Index = -1,
+                Name = "Content No XmlColumns",
+                ProviderType = "Content",
+                AreaId = 1,
+                PageId = 10,
+                XmlColumns = "SomeColumn"
+            }
+        };
+
+        var result = cmd.Handle();
+
+        Assert.Equal(CommandResult.ResultType.Ok, result.Status);
+        var config = ConfigLoader.Load(_configPath);
+        var pred = config.Predicates[0];
+        Assert.Empty(pred.XmlColumns);
+    }
+
+    // -------------------------------------------------------------------------
     // DeletePredicateCommand tests
     // -------------------------------------------------------------------------
 

@@ -37,4 +37,13 @@ public sealed class PredicateEditModel : DataViewModelBase, IIdentifiable
 
     [ConfigurableProperty("Service Caches", explanation: "One fully-qualified DW cache type per line. Cleared after deserialization.")]
     public string ServiceCaches { get; set; } = string.Empty;
+
+    [ConfigurableProperty("Exclude Fields", explanation: "One field name per line. These fields will be omitted from serialization.")]
+    public string ExcludeFields { get; set; } = string.Empty;
+
+    [ConfigurableProperty("XML Columns", explanation: "One column name per line. These SQL table columns contain XML that should be pretty-printed.")]
+    public string XmlColumns { get; set; } = string.Empty;
+
+    [ConfigurableProperty("Exclude XML Elements", explanation: "One XML element name per line. These elements will be stripped from embedded XML blobs.")]
+    public string ExcludeXmlElements { get; set; } = string.Empty;
 }

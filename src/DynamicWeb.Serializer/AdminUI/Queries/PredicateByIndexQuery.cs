@@ -37,7 +37,10 @@ public sealed class PredicateByIndexQuery : DataQueryIdentifiableModelBase<Predi
             Table = pred.Table ?? string.Empty,
             NameColumn = pred.NameColumn ?? string.Empty,
             CompareColumns = pred.CompareColumns ?? string.Empty,
-            ServiceCaches = string.Join("\n", pred.ServiceCaches)
+            ServiceCaches = string.Join("\n", pred.ServiceCaches),
+            ExcludeFields = string.Join("\n", pred.ExcludeFields),
+            XmlColumns = string.Join("\n", pred.XmlColumns),
+            ExcludeXmlElements = string.Join("\n", pred.ExcludeXmlElements)
         };
     }
 }
