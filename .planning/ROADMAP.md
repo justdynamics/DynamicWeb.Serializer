@@ -115,7 +115,7 @@ Plans:
   3. Deserializing SQL table YAML with pretty-printed XML compacts it back to single-line before writing to DB (round-trip correctness via XML-03 compaction logic from Phase 26)
 **Plans**: 1 plan
 Plans:
-- [ ] 26-01-PLAN.md — XmlFormatter utility + content pipeline integration
+- [ ] 27-01-PLAN.md — xmlColumns config + SqlTable pipeline XML pretty-print/compact
 
 ### Phase 28: Field-Level Filtering Core
 **Goal**: Content predicates can exclude specific fields from serialization, strip specific XML elements from blobs, and excluded fields are safely skipped during deserialization (no null-out destruction)
@@ -128,7 +128,7 @@ Plans:
   4. Fields not in the exclude list continue to serialize and deserialize normally (no regression)
 **Plans**: 1 plan
 Plans:
-- [ ] 26-01-PLAN.md — XmlFormatter utility + content pipeline integration
+- [ ] 27-01-PLAN.md — xmlColumns config + SqlTable pipeline XML pretty-print/compact
 
 ### Phase 29: SqlTable Field Filtering
 **Goal**: SqlTable predicates can exclude specific columns from serialization with the same skip-guard protection on deserialize
@@ -139,7 +139,7 @@ Plans:
   2. Deserializing SQL table YAML with excluded fields does NOT null out or delete those column values on the target DB
 **Plans**: 1 plan
 Plans:
-- [ ] 26-01-PLAN.md — XmlFormatter utility + content pipeline integration
+- [ ] 27-01-PLAN.md — xmlColumns config + SqlTable pipeline XML pretty-print/compact
 
 ### Phase 30: Area Property Consolidation
 **Goal**: ContentProvider serializes and deserializes all 60+ Area columns (Domain, Layout, Culture, EcomSettings, SSL, CDN, etc.) in area.yml, with field-level blacklist for environment-specific values
@@ -152,7 +152,7 @@ Plans:
   4. Existing area ItemType field serialization (from Phase 24) continues working alongside the new area properties
 **Plans**: 1 plan
 Plans:
-- [ ] 26-01-PLAN.md — XmlFormatter utility + content pipeline integration
+- [ ] 27-01-PLAN.md — xmlColumns config + SqlTable pipeline XML pretty-print/compact
 
 ### Phase 31: Predicate UI Enhancement
 **Goal**: Admin UI predicate edit screens expose all new v0.5.0 config fields (excludeFields, xmlColumns, excludeXmlElements) for visual configuration
@@ -165,7 +165,7 @@ Plans:
   4. Changes made in the UI are persisted to the config file and take effect on next serialize/deserialize
 **Plans**: 1 plan
 Plans:
-- [ ] 26-01-PLAN.md — XmlFormatter utility + content pipeline integration
+- [ ] 27-01-PLAN.md — xmlColumns config + SqlTable pipeline XML pretty-print/compact
 **UI hint**: yes
 
 ## Progress
