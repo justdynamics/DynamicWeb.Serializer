@@ -658,7 +658,7 @@ public class ContentDeserializer
             para.ColorSchemeId = dto.ColorSchemeId;
             para.ItemType = dto.ItemType;
             para.ModuleSystemName = dto.ModuleSystemName ?? string.Empty;
-            para.ModuleSettings = dto.ModuleSettings ?? string.Empty;
+            para.ModuleSettings = XmlFormatter.Compact(dto.ModuleSettings) ?? string.Empty;
             // Do NOT set para.ID (insert path)
 
             Services.Paragraphs.SaveParagraph(para);
@@ -684,7 +684,7 @@ public class ContentDeserializer
                 if (!string.IsNullOrEmpty(dto.ModuleSystemName) && saved.ModuleSystemName != dto.ModuleSystemName)
                 {
                     saved.ModuleSystemName = dto.ModuleSystemName;
-                    saved.ModuleSettings = dto.ModuleSettings ?? string.Empty;
+                    saved.ModuleSettings = XmlFormatter.Compact(dto.ModuleSettings) ?? string.Empty;
                     needsResave = true;
                 }
                 if (!string.IsNullOrEmpty(dto.Template) && saved.Template != dto.Template)
@@ -735,7 +735,7 @@ public class ContentDeserializer
             existingForUpdate.ColorSchemeId = dto.ColorSchemeId;
             existingForUpdate.ItemType = dto.ItemType;
             existingForUpdate.ModuleSystemName = dto.ModuleSystemName ?? string.Empty;
-            existingForUpdate.ModuleSettings = dto.ModuleSettings ?? string.Empty;
+            existingForUpdate.ModuleSettings = XmlFormatter.Compact(dto.ModuleSettings) ?? string.Empty;
 
             Services.Paragraphs.SaveParagraph(existingForUpdate);
 
@@ -975,7 +975,7 @@ public class ContentDeserializer
         if (dto.UrlSettings != null)
         {
             page.UrlDataProviderTypeName = dto.UrlSettings.UrlDataProviderTypeName;
-            page.UrlDataProviderParameters = dto.UrlSettings.UrlDataProviderParameters;
+            page.UrlDataProviderParameters = XmlFormatter.Compact(dto.UrlSettings.UrlDataProviderParameters);
             page.UrlIgnoreForChildren = dto.UrlSettings.UrlIgnoreForChildren;
             page.UrlUseAsWritten = dto.UrlSettings.UrlUseAsWritten;
         }

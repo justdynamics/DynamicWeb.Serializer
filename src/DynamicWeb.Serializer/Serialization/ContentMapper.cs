@@ -1,4 +1,5 @@
 using Dynamicweb.Content;
+using DynamicWeb.Serializer.Infrastructure;
 using DynamicWeb.Serializer.Models;
 
 namespace DynamicWeb.Serializer.Serialization;
@@ -100,7 +101,7 @@ public class ContentMapper
             UrlSettings = new SerializedUrlSettings
             {
                 UrlDataProviderTypeName = page.UrlDataProviderTypeName,
-                UrlDataProviderParameters = page.UrlDataProviderParameters,
+                UrlDataProviderParameters = XmlFormatter.PrettyPrint(page.UrlDataProviderParameters),
                 UrlIgnoreForChildren = page.UrlIgnoreForChildren,
                 UrlUseAsWritten = page.UrlUseAsWritten
             },
@@ -202,7 +203,7 @@ public class ContentMapper
             Template = paragraph.Template,
             ColorSchemeId = paragraph.ColorSchemeId,
             ModuleSystemName = paragraph.ModuleSystemName,
-            ModuleSettings = paragraph.ModuleSettings,
+            ModuleSettings = XmlFormatter.PrettyPrint(paragraph.ModuleSettings),
             Fields = fields
         };
     }
