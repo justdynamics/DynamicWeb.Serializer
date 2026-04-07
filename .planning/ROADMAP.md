@@ -139,7 +139,9 @@ Plans:
   2. Deserializing SQL table YAML with excluded fields does NOT null out or delete those column values on the target DB
 **Plans**: 1 plan
 Plans:
-- [ ] 27-01-PLAN.md — xmlColumns config + SqlTable pipeline XML pretty-print/compact
+- [ ] 29-01-PLAN.md — excludeFields + excludeXmlElements in SqlTableProvider serialize + deserialize skip guard tests
+
+
 
 ### Phase 30: Area Property Consolidation
 **Goal**: ContentProvider serializes and deserializes all 60+ Area columns (Domain, Layout, Culture, EcomSettings, SSL, CDN, etc.) in area.yml, with field-level blacklist for environment-specific values
