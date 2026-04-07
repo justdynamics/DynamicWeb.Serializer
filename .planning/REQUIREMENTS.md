@@ -8,7 +8,7 @@
 ### XML Pretty-Printing
 
 - [x] **XML-01**: Embedded XML strings (moduleSettings, urlDataProviderParameters) in content YAML are pretty-printed as indented multi-line XML using YAML literal block scalars
-- [ ] **XML-02**: Embedded XML strings in SQL table YAML are pretty-printed using config-driven xmlColumns list per predicate
+- [x] **XML-02**: Embedded XML strings in SQL table YAML are pretty-printed using config-driven xmlColumns list per predicate
 - [x] **XML-03**: Pretty-printed XML round-trips correctly — deserialize compacts XML back to single-line before writing to DB
 
 ### Field-Level Filtering
@@ -54,7 +54,7 @@
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | XML-01 | Phase 26 | Complete |
-| XML-02 | Phase 27 | Pending |
+| XML-02 | Phase 27 | Complete |
 | XML-03 | Phase 26 | Complete |
 | FILT-01 | Phase 28 | Pending |
 | FILT-02 | Phase 29 | Pending |

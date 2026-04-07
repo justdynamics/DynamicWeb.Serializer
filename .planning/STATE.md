@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v0.5.0
 milestone_name: Granular Serialization Control
 status: executing
-stopped_at: Completed 26-01-PLAN.md
-last_updated: "2026-04-07T19:32:25.290Z"
-last_activity: 2026-04-07 -- Phase 26 planning complete
+stopped_at: Completed 27-01-PLAN.md
+last_updated: "2026-04-07T19:38:18.126Z"
+last_activity: 2026-04-07 -- Phase 27 planning complete
 progress:
   total_phases: 6
   completed_phases: 1
-  total_plans: 1
+  total_plans: 2
   completed_plans: 1
-  percent: 100
+  percent: 50
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-07)
 
 **Core value:** Developers can reliably move DynamicWeb database state between environments through source control, with serialized YAML files as the single source of truth.
-**Current focus:** Phase 26 - XML Pretty-Print for Content
+**Current focus:** Phase 27 - XML Pretty-Print for SqlTable
 
 ## Current Position
 
-Phase: 26 of 31 (XML Pretty-Print for Content)
-Plan: 0 of ? in current phase
-Status: Ready to execute
-Last activity: 2026-04-07 -- Phase 26 planning complete
+Phase: 27 of 31 (XML Pretty-Print for SqlTable)
+Plan: 1 of 1 in current phase
+Status: Phase 27 complete
+Last activity: 2026-04-07 -- Phase 27-01 executed
 
-Progress: [░░░░░░░░░░] 0% (v0.5.0 milestone)
+Progress: [###░░░░░░░] 33% (v0.5.0 milestone)
 
 ## Performance Metrics
 
@@ -57,6 +57,7 @@ Progress: [░░░░░░░░░░] 0% (v0.5.0 milestone)
 
 *Updated after each plan completion*
 | Phase 26 P01 | 3min | 2 tasks | 4 files |
+| Phase 27 P01 | 5min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -71,6 +72,7 @@ Recent decisions affecting current work:
 - [v0.5.0]: Phases 29 and 30 can run in parallel after Phase 28 completes
 - No backward compatibility needed (beta 0.x)
 - [Phase 26]: XML formatting at mapping boundary (ContentMapper/ContentDeserializer), not in YAML emitter
+- [Phase 27]: Config-driven xmlColumns for SqlTable predicates; three-class mapping extended (Pitfall P7 verified)
 
 ### Pending Todos
 
@@ -82,6 +84,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-07T19:32:25.286Z
-Stopped at: Completed 26-01-PLAN.md
+Last session: 2026-04-07T19:44:05Z
+Stopped at: Completed 27-01-PLAN.md
 Resume file: None
