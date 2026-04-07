@@ -20,9 +20,9 @@
 
 ### Area Consolidation
 
-- [ ] **AREA-03**: ContentProvider serializes full Area properties (60+ columns including Domain, Layout, Culture, EcomSettings, SSL, CDN, etc.) in area.yml alongside existing ItemType fields
-- [ ] **AREA-04**: ContentProvider deserializes full Area properties back to the database, creating the area if it doesn't exist on target
-- [ ] **AREA-05**: Area field-level blacklist works via the same excludeFields mechanism (e.g., exclude AreaDomain, AreaNoindex for environment-specific values)
+- [x] **AREA-03**: ContentProvider serializes full Area properties (60+ columns including Domain, Layout, Culture, EcomSettings, SSL, CDN, etc.) in area.yml alongside existing ItemType fields
+- [x] **AREA-04**: ContentProvider deserializes full Area properties back to the database, creating the area if it doesn't exist on target
+- [x] **AREA-05**: Area field-level blacklist works via the same excludeFields mechanism (e.g., exclude AreaDomain, AreaNoindex for environment-specific values)
 
 ### Predicate UI
 
@@ -60,9 +60,9 @@
 | FILT-02 | Phase 29 | Complete |
 | FILT-03 | Phase 28 | Complete |
 | FILT-04 | Phase 28 | Complete |
-| AREA-03 | Phase 30 | Pending |
-| AREA-04 | Phase 30 | Pending |
-| AREA-05 | Phase 30 | Pending |
+| AREA-03 | Phase 30 | Complete |
+| AREA-04 | Phase 30 | Complete |
+| AREA-05 | Phase 30 | Complete |
 | UI-01 | Phase 31 | Pending |
 | UI-02 | Phase 31 | Pending |
 | UI-03 | Phase 31 | Pending |

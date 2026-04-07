@@ -88,7 +88,7 @@
 - [ ] **Phase 27: XML Pretty-Print for SqlTable** - SQL table pipeline XML pretty-printing via config-driven xmlColumns
 - [x] **Phase 28: Field-Level Filtering Core** - Predicate excludeFields/excludeXmlElements for content with deserialize skip guard (completed 2026-04-07)
 - [x] **Phase 29: SqlTable Field Filtering** - excludeFields support for SqlTable predicates (completed 2026-04-07)
-- [ ] **Phase 30: Area Property Consolidation** - Full area properties in ContentProvider with field-level blacklist
+- [x] **Phase 30: Area Property Consolidation** - Full area properties in ContentProvider with field-level blacklist (completed 2026-04-07)
 - [ ] **Phase 31: Predicate UI Enhancement** - Admin UI for excludeFields, xmlColumns, and excludeXmlElements configuration
 
 ## Phase Details
@@ -154,7 +154,7 @@ Plans:
   4. Existing area ItemType field serialization (from Phase 24) continues working alongside the new area properties
 **Plans**: 1 plan
 Plans:
-- [ ] 30-01-PLAN.md — Full area properties serialize/deserialize with SQL read/write and excludeFields
+- [x] 30-01-PLAN.md — Full area properties serialize/deserialize with SQL read/write and excludeFields
 
 ### Phase 31: Predicate UI Enhancement
 **Goal**: Admin UI predicate edit screens expose all new v0.5.0 config fields (excludeFields, xmlColumns, excludeXmlElements) for visual configuration
@@ -205,5 +205,5 @@ Plans:
 | 27. XML Pretty-Print for SqlTable | v0.5.0 | 0/? | Not started | - |
 | 28. Field-Level Filtering Core | v0.5.0 | 1/1 | Complete   | 2026-04-07 |
 | 29. SqlTable Field Filtering | v0.5.0 | 1/1 | Complete   | 2026-04-07 |
-| 30. Area Property Consolidation | v0.5.0 | 0/? | Not started | - |
+| 30. Area Property Consolidation | v0.5.0 | 1/1 | Complete   | 2026-04-07 |
 | 31. Predicate UI Enhancement | v0.5.0 | 0/? | Not started | - |
