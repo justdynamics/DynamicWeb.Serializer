@@ -115,7 +115,7 @@ Plans:
   3. Deserializing SQL table YAML with pretty-printed XML compacts it back to single-line before writing to DB (round-trip correctness via XML-03 compaction logic from Phase 26)
 **Plans**: 1 plan
 Plans:
-- [ ] 27-01-PLAN.md — xmlColumns config + SqlTable pipeline XML pretty-print/compact
+- [ ] 31-01-PLAN.md — excludeFields, xmlColumns, excludeXmlElements textarea editors on predicate edit screen
 
 ### Phase 28: Field-Level Filtering Core
 **Goal**: Content predicates can exclude specific fields from serialization, strip specific XML elements from blobs, and excluded fields are safely skipped during deserialization (no null-out destruction)
@@ -167,8 +167,7 @@ Plans:
   4. Changes made in the UI are persisted to the config file and take effect on next serialize/deserialize
 **Plans**: 1 plan
 Plans:
-- [ ] 27-01-PLAN.md — xmlColumns config + SqlTable pipeline XML pretty-print/compact
-**UI hint**: yes
+- [ ] 31-01-PLAN.md — excludeFields, xmlColumns, excludeXmlElements textarea editors on predicate edit screen
 
 ## Progress
 
