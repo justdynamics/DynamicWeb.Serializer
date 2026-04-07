@@ -1,4 +1,5 @@
 using Dynamicweb.Content;
+using Dynamicweb.Data;
 using DynamicWeb.Serializer.Configuration;
 using DynamicWeb.Serializer.Infrastructure;
 using DynamicWeb.Serializer.Models;
@@ -185,11 +186,41 @@ public class ContentDeserializer
     private DeserializeResult DeserializePredicate(ProviderPredicateDefinition predicate, SerializedArea area,
         Dictionary<Guid, int>? globalPageGuidCache = null, List<SerializedPage>? allAreaPages = null)
     {
+        // Build excludeFields set early — needed for area creation before WriteContext
+        var excludeFieldsSet = predicate.ExcludeFields.Count > 0
+            ? new HashSet<string>(predicate.ExcludeFields, StringComparer.OrdinalIgnoreCase)
+            : null;
+
         var targetArea = Services.Areas.GetArea(predicate.AreaId);
         if (targetArea == null)
         {
-            Log($"Warning: Area with ID {predicate.AreaId} not found. Skipping predicate '{predicate.Name}'.");
-            return new DeserializeResult();
+            // AREA-04: Create the area if it doesn't exist on target
+            if (!_isDryRun && area.Properties.Count > 0)
+            {
+                Log($"Area with ID {predicate.AreaId} not found. Creating from YAML data.");
+                try
+                {
+                    CreateAreaFromProperties(predicate.AreaId, area, excludeFieldsSet);
+                    Services.Areas.ClearCache(); // Critical: per project_dw_area_cache.md
+                    targetArea = Services.Areas.GetArea(predicate.AreaId);
+                    if (targetArea == null)
+                    {
+                        Log($"ERROR: Area creation succeeded but GetArea still returns null after cache clear. Skipping predicate '{predicate.Name}'.");
+                        return new DeserializeResult();
+                    }
+                    Log($"Area created: ID={predicate.AreaId}, Name={area.Name}");
+                }
+                catch (Exception ex)
+                {
+                    Log($"ERROR: Failed to create area {predicate.AreaId}: {ex.Message}. Skipping predicate '{predicate.Name}'.");
+                    return new DeserializeResult();
+                }
+            }
+            else
+            {
+                Log($"Warning: Area with ID {predicate.AreaId} not found. Skipping predicate '{predicate.Name}'.");
+                return new DeserializeResult();
+            }
         }
 
         Log($"Deserializing predicate '{predicate.Name}' into area ID={predicate.AreaId}");
@@ -205,10 +236,16 @@ public class ContentDeserializer
             TargetAreaId = predicate.AreaId,
             ParentPageId = 0,
             PageGuidCache = pageGuidCache,
-            ExcludeFields = predicate.ExcludeFields.Count > 0
-                ? new HashSet<string>(predicate.ExcludeFields, StringComparer.OrdinalIgnoreCase)
-                : null
+            ExcludeFields = excludeFieldsSet
         };
+
+        // Write full area properties (AREA-04)
+        if (area.Properties.Count > 0 && !_isDryRun)
+        {
+            Log($"Writing {area.Properties.Count} area properties for area ID={predicate.AreaId}");
+            WriteAreaProperties(predicate.AreaId, area.Properties, ctx.ExcludeFields);
+            Services.Areas.ClearCache();
+        }
 
         // Save area-level ItemType fields (AREA-01)
         if (!string.IsNullOrEmpty(area.ItemType) && area.ItemFields.Count > 0 && !_isDryRun)
@@ -262,6 +299,69 @@ public class ContentDeserializer
             Failed = ctx.Failed,
             Errors = ctx.Errors
         };
+    }
+
+    // -------------------------------------------------------------------------
+    // Area SQL property write-back
+    // -------------------------------------------------------------------------
+
+    /// <summary>
+    /// Write area properties back to the [Area] table via SQL UPDATE.
+    /// Skips columns in excludeFields to preserve environment-specific values.
+    /// </summary>
+    private void WriteAreaProperties(int areaId, Dictionary<string, object> properties, IReadOnlySet<string>? excludeFields)
+    {
+        if (properties.Count == 0) return;
+
+        var cb = new CommandBuilder();
+        var first = true;
+        foreach (var kvp in properties)
+        {
+            // Skip excluded fields (per AREA-05)
+            if (excludeFields?.Contains(kvp.Key) == true) continue;
+
+            if (first)
+            {
+                cb.Add($"UPDATE [Area] SET [{kvp.Key}] = {{0}}", kvp.Value ?? DBNull.Value);
+                first = false;
+            }
+            else
+            {
+                cb.Add($", [{kvp.Key}] = {{0}}", kvp.Value ?? DBNull.Value);
+            }
+        }
+        // If all properties were excluded, nothing to update
+        if (first) return;
+
+        cb.Add(" WHERE [AreaID] = {0}", areaId);
+        Database.ExecuteNonQuery(cb);
+    }
+
+    /// <summary>
+    /// Create a new area row via SQL INSERT using serialized properties.
+    /// Called when the target area does not exist (AREA-04).
+    /// </summary>
+    private void CreateAreaFromProperties(int areaId, SerializedArea area, IReadOnlySet<string>? excludeFields)
+    {
+        var columns = new List<string> { "[AreaID]", "[AreaName]", "[AreaSort]", "[AreaUniqueId]" };
+        var values = new List<object> { areaId, area.Name, area.SortOrder, area.AreaId };
+
+        foreach (var kvp in area.Properties)
+        {
+            if (excludeFields?.Contains(kvp.Key) == true) continue;
+            columns.Add($"[{kvp.Key}]");
+            values.Add(kvp.Value ?? DBNull.Value);
+        }
+
+        var cb = new CommandBuilder();
+        cb.Add($"INSERT INTO [Area] ({string.Join(", ", columns)}) VALUES (");
+        for (int i = 0; i < values.Count; i++)
+        {
+            if (i > 0) cb.Add(", ");
+            cb.Add("{0}", values[i]);
+        }
+        cb.Add(")");
+        Database.ExecuteNonQuery(cb);
     }
 
     // -------------------------------------------------------------------------
