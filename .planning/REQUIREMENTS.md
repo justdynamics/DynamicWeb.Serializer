@@ -56,29 +56,29 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| CFG-01 | — | Pending |
-| CFG-02 | — | Pending |
-| ITEM-01 | — | Pending |
-| ITEM-02 | — | Pending |
-| ITEM-03 | — | Pending |
-| AREA-06 | — | Pending |
-| AREA-07 | — | Pending |
-| AREA-08 | — | Pending |
-| XMLUI-01 | — | Pending |
-| XMLUI-02 | — | Pending |
-| XMLUI-03 | — | Pending |
-| XMLUI-04 | — | Pending |
-| PRED-01 | — | Pending |
-| PRED-02 | — | Pending |
-| PRED-03 | — | Pending |
-| PRED-04 | — | Pending |
-| PRED-05 | — | Pending |
+| CFG-01 | Phase 32 | Pending |
+| CFG-02 | Phase 32 | Pending |
+| ITEM-01 | Phase 35 | Pending |
+| ITEM-02 | Phase 35 | Pending |
+| ITEM-03 | Phase 35 | Pending |
+| AREA-06 | Phase 36 | Pending |
+| AREA-07 | Phase 36 | Pending |
+| AREA-08 | Phase 36 | Pending |
+| XMLUI-01 | Phase 34 | Pending |
+| XMLUI-02 | Phase 34 | Pending |
+| XMLUI-03 | Phase 34 | Pending |
+| XMLUI-04 | Phase 34 | Pending |
+| PRED-01 | Phase 37 | Pending |
+| PRED-02 | Phase 37 | Pending |
+| PRED-03 | Phase 37 | Pending |
+| PRED-04 | Phase 33 | Pending |
+| PRED-05 | Phase 33 | Pending |
 
 **Coverage:**
 - v0.6.0 requirements: 17 total
-- Mapped to phases: 0
-- Unmapped: 17
+- Mapped to phases: 17
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-04-09*
-*Last updated: 2026-04-09 after initial definition*
+*Last updated: 2026-04-07 after roadmap creation*

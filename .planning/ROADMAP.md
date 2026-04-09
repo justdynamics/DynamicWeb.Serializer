@@ -10,6 +10,7 @@
 - [x] **v0.3.1 Internal Link Resolution** - Phases 19-22 (shipped 2026-04-03)
 - [x] **v0.4.0 Full Page Fidelity** - Phases 23-25 (shipped 2026-04-07)
 - [x] **v0.5.0 Granular Serialization Control** - Phases 26-31 (shipped 2026-04-09) - [Archive](milestones/v0.5.0-ROADMAP.md)
+- [ ] **v0.6.0 UI Configuration Improvements** - Phases 32-37 (in progress)
 
 ## Phases
 
@@ -92,6 +93,85 @@
 
 </details>
 
+### v0.6.0 UI Configuration Improvements (In Progress)
+
+**Milestone Goal:** Replace all free-text configuration with structured, discoverable UI controls across item types, embedded XML definitions, predicates, area settings, and SQL tables.
+
+- [ ] **Phase 32: Config Schema Extension** - Add dictionary-based exclusion config alongside existing flat arrays
+- [ ] **Phase 33: SqlTable Column Pickers** - Replace free-text excludeFields/xmlColumns with schema-driven CheckboxLists
+- [ ] **Phase 34: Embedded XML Screens** - New tree node with auto-discovery and element-level exclusion
+- [ ] **Phase 35: Item Type Screens** - New tree node with per-item-type field exclusion CheckboxList
+- [ ] **Phase 36: Area Screens** - New tree node with per-area column exclusion CheckboxList
+- [ ] **Phase 37: Predicate UI Polish** - Page picker for exclusions, read-only summaries with cross-links
+
+## Phase Details
+
+### Phase 32: Config Schema Extension
+**Goal**: Config JSON supports typed exclusion dictionaries so UI screens can persist per-type and per-item-type settings
+**Depends on**: Nothing (foundation for all v0.6.0 work)
+**Requirements**: CFG-01, CFG-02
+**Success Criteria** (what must be TRUE):
+  1. Config JSON accepts `excludeFieldsByItemType` as a dictionary mapping item type names to field lists, and `excludeXmlElementsByType` mapping XML type names to element lists
+  2. Existing v0.5.0 configs with flat `excludeFields` and `excludeXmlElements` arrays load and function identically (no breaking change)
+  3. Both flat arrays and typed dictionaries are applied during serialize/deserialize (additive merge)
+**Plans**: TBD
+
+### Phase 33: SqlTable Column Pickers
+**Goal**: SqlTable predicate editing uses auto-populated column selectors instead of free-text entry
+**Depends on**: Phase 32
+**Requirements**: PRED-04, PRED-05
+**Success Criteria** (what must be TRUE):
+  1. SqlTable predicate edit screen shows excludeFields as a CheckboxList populated from the table's actual SQL column schema
+  2. SqlTable predicate edit screen shows xmlColumns as a CheckboxList populated from the table's actual SQL column schema
+  3. Selections persist to config JSON and are applied during serialize/deserialize
+**Plans**: TBD
+**UI hint**: yes
+
+### Phase 34: Embedded XML Screens
+**Goal**: Users can discover XML types present in their data and configure element-level exclusions per type through a dedicated tree node
+**Depends on**: Phase 32
+**Requirements**: XMLUI-01, XMLUI-02, XMLUI-03, XMLUI-04
+**Success Criteria** (what must be TRUE):
+  1. "Embedded XML" tree node appears under Serialize and lists XML types that have been discovered
+  2. User can trigger a "Scan" action that queries the database for distinct moduleSystemName and urlDataProviderTypeName values and populates the list
+  3. Clicking an XML type opens an edit screen showing all elements from that type as a CheckboxList for exclusion selection
+  4. Element exclusions are saved to config under `excludeXmlElementsByType` and applied during serialization
+**Plans**: TBD
+**UI hint**: yes
+
+### Phase 35: Item Type Screens
+**Goal**: Users can browse all item types in the system and configure per-item-type field exclusions through a dedicated tree node
+**Depends on**: Phase 32
+**Requirements**: ITEM-01, ITEM-02, ITEM-03
+**Success Criteria** (what must be TRUE):
+  1. "Item Types" tree node appears under Serialize and lists all item types discovered in the system
+  2. Clicking an item type opens an edit screen showing all fields for that type as a CheckboxList where the user selects fields to exclude
+  3. Field exclusions are saved to config under `excludeFieldsByItemType` and applied during serialize/deserialize
+**Plans**: TBD
+**UI hint**: yes
+
+### Phase 36: Area Screens
+**Goal**: Users can browse all areas and configure per-area column exclusions through a dedicated tree node
+**Depends on**: Phase 32
+**Requirements**: AREA-06, AREA-07, AREA-08
+**Success Criteria** (what must be TRUE):
+  1. "Areas" tree node appears under Serialize and lists all areas in the system
+  2. Clicking an area opens an edit screen showing all area columns as a CheckboxList where the user selects columns to exclude
+  3. Column exclusions are saved to config and applied during serialize/deserialize
+**Plans**: TBD
+**UI hint**: yes
+
+### Phase 37: Predicate UI Polish
+**Goal**: Content predicate editing uses structured controls and links to related config screens instead of raw text fields
+**Depends on**: Phase 34, Phase 35
+**Requirements**: PRED-01, PRED-02, PRED-03
+**Success Criteria** (what must be TRUE):
+  1. Content predicate page exclusions use a multi-select page picker control instead of a free-text textarea
+  2. Predicate filtering section displays item field exclusions as a read-only summary with a clickable link navigating to the Item Types screen
+  3. Predicate filtering section displays XML element exclusions as a read-only summary with a clickable link navigating to the Embedded XML screen
+**Plans**: TBD
+**UI hint**: yes
+
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
@@ -104,3 +184,9 @@
 | 19-22 | v0.3.1 | 5/5 | Complete | 2026-04-03 |
 | 23-25 | v0.4.0 | 4/4 | Complete | 2026-04-03 |
 | 26-31 | v0.5.0 | 6/6 | Complete | 2026-04-09 |
+| 32. Config Schema Extension | v0.6.0 | 0/0 | Not started | - |
+| 33. SqlTable Column Pickers | v0.6.0 | 0/0 | Not started | - |
+| 34. Embedded XML Screens | v0.6.0 | 0/0 | Not started | - |
+| 35. Item Type Screens | v0.6.0 | 0/0 | Not started | - |
+| 36. Area Screens | v0.6.0 | 0/0 | Not started | - |
+| 37. Predicate UI Polish | v0.6.0 | 0/0 | Not started | - |
