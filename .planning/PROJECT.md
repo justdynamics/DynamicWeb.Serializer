@@ -8,16 +8,9 @@ A DynamicWeb AppStore app that serializes and deserializes database content to/f
 
 Developers can reliably move DynamicWeb database state between environments through source control, with serialized YAML files as the single source of truth.
 
-## Current Milestone: v0.5.0 Granular Serialization Control
+## Current Milestone: (planning next)
 
-**Goal:** Pretty-print embedded XML, consolidate areas into ContentProvider, and add field-level include/exclude filtering across all provider types with updated predicate UI.
-
-**Target features:**
-- Pretty-print embedded XML (moduleSettings, urlDataProviderParameters) in content YAML and SQL table YAML for readable git diffs
-- XML field blacklist — exclude specific XML elements per predicate
-- Merge full Area properties into ContentProvider (area.yml carries all 60+ columns + ItemType fields)
-- Area/page/paragraph/SQL field-level blacklist — exclude environment-specific or irrelevant columns per predicate
-- Enhanced predicate UI to configure field-level include/exclude visually
+v0.5.0 Granular Serialization Control shipped 2026-04-09.
 
 ## Requirements
 
@@ -72,11 +65,11 @@ Developers can reliably move DynamicWeb database state between environments thro
 - [x] Serialize Area-level ItemType fields (header/footer/master connections) — v0.4.0
 - [x] Handle EcomProductGroupField custom column schema sync — v0.4.0
 
-- [ ] Pretty-print embedded XML (moduleSettings, urlDataProviderParameters) in content and SQL YAML — v0.5.0
-- [ ] XML field blacklist per predicate — v0.5.0
-- [ ] Merge full Area properties into ContentProvider with field-level filtering — v0.5.0
-- [ ] Field-level blacklist for page/paragraph/SQL columns per predicate — v0.5.0
-- [ ] Enhanced predicate UI for field-level include/exclude configuration — v0.5.0
+- [x] Pretty-print embedded XML (moduleSettings, urlDataProviderParameters) in content and SQL YAML — v0.5.0
+- [x] XML field blacklist per predicate — v0.5.0
+- [x] Merge full Area properties into ContentProvider with field-level filtering — v0.5.0
+- [x] Field-level blacklist for page/paragraph/SQL columns per predicate — v0.5.0
+- [x] Enhanced predicate UI for field-level include/exclude configuration — v0.5.0
 
 ### Out of Scope
 
@@ -177,6 +170,10 @@ This document evolves at phase transitions and milestone boundaries.
 - **v1.1 Robustness** — Multi-column paragraphs, dry-run, validation (2026-03-20)
 - **v1.2 Admin UI** — Settings screen, predicate management, serialize action, API commands (2026-03-22)
 - **v1.3 Permissions** — Permission serialization/deserialization with safety fallback (2026-03-23)
+- **v2.0 DynamicWeb.Serializer** — Provider architecture, SqlTableProvider, ecommerce tables, admin UX rename (2026-03-24)
+- **v0.3.1 Internal Link Resolution** — Page ID references in ItemType fields (2026-04-03)
+- **v0.4.0 Full Page Fidelity** — All page properties, navigation settings, area ItemType, schema sync (2026-04-03)
+- **v0.5.0 Granular Serialization Control** — XML pretty-print, field-level filtering, area consolidation, predicate UI (2026-04-09)
 
 ---
-*Last updated: 2026-04-07 — milestone v0.5.0 started (granular serialization control)*
+*Last updated: 2026-04-09 after v0.5.0 milestone*
