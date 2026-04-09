@@ -114,7 +114,10 @@
   1. Config JSON accepts `excludeFieldsByItemType` as a dictionary mapping item type names to field lists, and `excludeXmlElementsByType` mapping XML type names to element lists
   2. Existing v0.5.0 configs with flat `excludeFields` and `excludeXmlElements` arrays load and function identically (no breaking change)
   3. Both flat arrays and typed dictionaries are applied during serialize/deserialize (additive merge)
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 32-01-PLAN.md -- Config model extension + backward compat tests
+- [ ] 32-02-PLAN.md -- ExclusionMerger helper + pipeline integration
 
 ### Phase 33: SqlTable Column Pickers
 **Goal**: SqlTable predicate editing uses auto-populated column selectors instead of free-text entry
@@ -124,7 +127,10 @@
   1. SqlTable predicate edit screen shows excludeFields as a CheckboxList populated from the table's actual SQL column schema
   2. SqlTable predicate edit screen shows xmlColumns as a CheckboxList populated from the table's actual SQL column schema
   3. Selections persist to config JSON and are applied during serialize/deserialize
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 32-01-PLAN.md -- Config model extension + backward compat tests
+- [ ] 32-02-PLAN.md -- ExclusionMerger helper + pipeline integration
 **UI hint**: yes
 
 ### Phase 34: Embedded XML Screens
@@ -136,7 +142,10 @@
   2. User can trigger a "Scan" action that queries the database for distinct moduleSystemName and urlDataProviderTypeName values and populates the list
   3. Clicking an XML type opens an edit screen showing all elements from that type as a CheckboxList for exclusion selection
   4. Element exclusions are saved to config under `excludeXmlElementsByType` and applied during serialization
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 32-01-PLAN.md -- Config model extension + backward compat tests
+- [ ] 32-02-PLAN.md -- ExclusionMerger helper + pipeline integration
 **UI hint**: yes
 
 ### Phase 35: Item Type Screens
@@ -147,7 +156,10 @@
   1. "Item Types" tree node appears under Serialize and lists all item types discovered in the system
   2. Clicking an item type opens an edit screen showing all fields for that type as a CheckboxList where the user selects fields to exclude
   3. Field exclusions are saved to config under `excludeFieldsByItemType` and applied during serialize/deserialize
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 32-01-PLAN.md -- Config model extension + backward compat tests
+- [ ] 32-02-PLAN.md -- ExclusionMerger helper + pipeline integration
 **UI hint**: yes
 
 ### Phase 36: Area Screens
@@ -158,7 +170,10 @@
   1. "Areas" tree node appears under Serialize and lists all areas in the system
   2. Clicking an area opens an edit screen showing all area columns as a CheckboxList where the user selects columns to exclude
   3. Column exclusions are saved to config and applied during serialize/deserialize
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 32-01-PLAN.md -- Config model extension + backward compat tests
+- [ ] 32-02-PLAN.md -- ExclusionMerger helper + pipeline integration
 **UI hint**: yes
 
 ### Phase 37: Predicate UI Polish
@@ -169,7 +184,10 @@
   1. Content predicate page exclusions use a multi-select page picker control instead of a free-text textarea
   2. Predicate filtering section displays item field exclusions as a read-only summary with a clickable link navigating to the Item Types screen
   3. Predicate filtering section displays XML element exclusions as a read-only summary with a clickable link navigating to the Embedded XML screen
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 32-01-PLAN.md -- Config model extension + backward compat tests
+- [ ] 32-02-PLAN.md -- ExclusionMerger helper + pipeline integration
 **UI hint**: yes
 
 ## Progress
@@ -184,7 +202,7 @@
 | 19-22 | v0.3.1 | 5/5 | Complete | 2026-04-03 |
 | 23-25 | v0.4.0 | 4/4 | Complete | 2026-04-03 |
 | 26-31 | v0.5.0 | 6/6 | Complete | 2026-04-09 |
-| 32. Config Schema Extension | v0.6.0 | 0/0 | Not started | - |
+| 32. Config Schema Extension | v0.6.0 | 0/2 | Planning | - |
 | 33. SqlTable Column Pickers | v0.6.0 | 0/0 | Not started | - |
 | 34. Embedded XML Screens | v0.6.0 | 0/0 | Not started | - |
 | 35. Item Type Screens | v0.6.0 | 0/0 | Not started | - |
