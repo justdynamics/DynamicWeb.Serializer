@@ -1,5 +1,6 @@
 using Dynamicweb.Content;
 using Dynamicweb.Data;
+using DynamicWeb.Serializer.Configuration;
 using DynamicWeb.Serializer.Infrastructure;
 using DynamicWeb.Serializer.Models;
 
@@ -21,8 +22,18 @@ public class ContentMapper
     /// <summary>
     /// Maps a DW Area to a SerializedArea DTO.
     /// </summary>
-    public SerializedArea MapArea(Area area, List<SerializedPage> pages, IReadOnlySet<string>? excludeFields = null)
+    public SerializedArea MapArea(Area area, List<SerializedPage> pages,
+        IReadOnlySet<string>? excludeFields = null,
+        IReadOnlyDictionary<string, List<string>>? excludeFieldsByItemType = null)
     {
+        // Merge flat predicate exclusions with per-item-type dictionary for this area's item type
+        var effectiveExcludeFields = excludeFieldsByItemType != null && !string.IsNullOrEmpty(area.ItemType)
+            ? ExclusionMerger.MergeFieldExclusions(
+                excludeFields?.ToList() ?? new List<string>(),
+                excludeFieldsByItemType,
+                area.ItemType)
+            : excludeFields;
+
         var itemFields = new Dictionary<string, object>();
         if (!string.IsNullOrEmpty(area.ItemType) && !string.IsNullOrEmpty(area.ItemId))
         {
@@ -33,7 +44,7 @@ public class ContentMapper
                 itemEntry.SerializeTo(dict);
                 foreach (var kvp in dict)
                 {
-                    if (kvp.Value != null && excludeFields?.Contains(kvp.Key) != true)
+                    if (kvp.Value != null && effectiveExcludeFields?.Contains(kvp.Key) != true)
                         itemFields[kvp.Key] = kvp.Value;
                 }
             }
@@ -46,7 +57,7 @@ public class ContentMapper
             SortOrder = area.Sort,
             ItemType = area.ItemType,
             ItemFields = itemFields,
-            Properties = ReadAreaProperties(area.ID, excludeFields),
+            Properties = ReadAreaProperties(area.ID, effectiveExcludeFields),
             Pages = pages
         };
     }
@@ -54,10 +65,28 @@ public class ContentMapper
     /// <summary>
     /// Maps a DW Page to a SerializedPage DTO.
     /// </summary>
-    public SerializedPage MapPage(Page page, List<SerializedGridRow> gridRows, List<SerializedPage> children, List<SerializedPermission> permissions, IReadOnlySet<string>? excludeFields = null, IReadOnlyList<string>? excludeXmlElements = null)
+    public SerializedPage MapPage(Page page, List<SerializedGridRow> gridRows, List<SerializedPage> children,
+        List<SerializedPermission> permissions,
+        IReadOnlySet<string>? excludeFields = null, IReadOnlyList<string>? excludeXmlElements = null,
+        IReadOnlyDictionary<string, List<string>>? excludeFieldsByItemType = null,
+        IReadOnlyDictionary<string, List<string>>? excludeXmlElementsByType = null)
     {
-        var fields = ExtractItemFields(page.Item, excludeFields);
-        var propertyFields = ExtractPropertyItemFields(page, excludeFields);
+        // Merge flat predicate exclusions with per-item-type dictionary for this page's item type
+        var effectiveExcludeFields = excludeFieldsByItemType != null
+            ? ExclusionMerger.MergeFieldExclusions(
+                excludeFields?.ToList() ?? new List<string>(),
+                excludeFieldsByItemType,
+                page.ItemType)
+            : excludeFields;
+        var effectiveXmlExclusions = excludeXmlElementsByType != null
+            ? ExclusionMerger.MergeXmlExclusions(
+                (IReadOnlyList<string>?)excludeXmlElements ?? Array.Empty<string>(),
+                excludeXmlElementsByType,
+                page.UrlDataProviderTypeName)
+            : excludeXmlElements;
+
+        var fields = ExtractItemFields(page.Item, effectiveExcludeFields);
+        var propertyFields = ExtractPropertyItemFields(page, effectiveExcludeFields);
 
         return new SerializedPage
         {
@@ -103,7 +132,7 @@ public class ContentMapper
             UrlSettings = new SerializedUrlSettings
             {
                 UrlDataProviderTypeName = page.UrlDataProviderTypeName,
-                UrlDataProviderParameters = ApplyXmlElementFilter(XmlFormatter.PrettyPrint(page.UrlDataProviderParameters), excludeXmlElements),
+                UrlDataProviderParameters = ApplyXmlElementFilter(XmlFormatter.PrettyPrint(page.UrlDataProviderParameters), effectiveXmlExclusions),
                 UrlIgnoreForChildren = page.UrlIgnoreForChildren,
                 UrlUseAsWritten = page.UrlUseAsWritten
             },
@@ -169,12 +198,29 @@ public class ContentMapper
     /// Maps a DW Paragraph to a SerializedParagraph DTO.
     /// Registers the paragraph with the ReferenceResolver and resolves known reference fields to GUIDs.
     /// </summary>
-    public SerializedParagraph MapParagraph(Paragraph paragraph, IReadOnlySet<string>? excludeFields = null, IReadOnlyList<string>? excludeXmlElements = null)
+    public SerializedParagraph MapParagraph(Paragraph paragraph,
+        IReadOnlySet<string>? excludeFields = null, IReadOnlyList<string>? excludeXmlElements = null,
+        IReadOnlyDictionary<string, List<string>>? excludeFieldsByItemType = null,
+        IReadOnlyDictionary<string, List<string>>? excludeXmlElementsByType = null)
     {
         // Register this paragraph so later cross-references to it can be resolved
         _resolver.RegisterParagraph(paragraph.ID, paragraph.UniqueId);
 
-        var fields = ExtractItemFields(paragraph.Item, excludeFields);
+        // Merge flat predicate exclusions with per-item-type dictionary for this paragraph's item type
+        var effectiveExcludeFields = excludeFieldsByItemType != null
+            ? ExclusionMerger.MergeFieldExclusions(
+                excludeFields?.ToList() ?? new List<string>(),
+                excludeFieldsByItemType,
+                paragraph.ItemType)
+            : excludeFields;
+        var effectiveXmlExclusions = excludeXmlElementsByType != null
+            ? ExclusionMerger.MergeXmlExclusions(
+                (IReadOnlyList<string>?)excludeXmlElements ?? Array.Empty<string>(),
+                excludeXmlElementsByType,
+                paragraph.ModuleSystemName)
+            : excludeXmlElements;
+
+        var fields = ExtractItemFields(paragraph.Item, effectiveExcludeFields);
 
         // Include paragraph body text if present
         if (!string.IsNullOrEmpty(paragraph.Text))
@@ -205,7 +251,7 @@ public class ContentMapper
             Template = paragraph.Template,
             ColorSchemeId = paragraph.ColorSchemeId,
             ModuleSystemName = paragraph.ModuleSystemName,
-            ModuleSettings = ApplyXmlElementFilter(XmlFormatter.PrettyPrint(paragraph.ModuleSettings), excludeXmlElements),
+            ModuleSettings = ApplyXmlElementFilter(XmlFormatter.PrettyPrint(paragraph.ModuleSettings), effectiveXmlExclusions),
             Fields = fields
         };
     }
@@ -214,7 +260,10 @@ public class ContentMapper
     /// Groups paragraphs by GridRowColumn to reconstruct column structure.
     /// Returns a single empty column if no paragraphs are provided.
     /// </summary>
-    public List<SerializedGridColumn> BuildColumns(IEnumerable<Paragraph> paragraphs, IReadOnlySet<string>? excludeFields = null, IReadOnlyList<string>? excludeXmlElements = null)
+    public List<SerializedGridColumn> BuildColumns(IEnumerable<Paragraph> paragraphs,
+        IReadOnlySet<string>? excludeFields = null, IReadOnlyList<string>? excludeXmlElements = null,
+        IReadOnlyDictionary<string, List<string>>? excludeFieldsByItemType = null,
+        IReadOnlyDictionary<string, List<string>>? excludeXmlElementsByType = null)
     {
         var paragraphList = paragraphs.ToList();
 
@@ -234,7 +283,7 @@ public class ContentMapper
                 Id = g.Key,
                 Width = 0, // Column width not available from Paragraph; GridRow definition has this
                 Paragraphs = g.OrderBy(p => p.Sort)
-                              .Select(p => MapParagraph(p, excludeFields, excludeXmlElements) with { ColumnId = g.Key })
+                              .Select(p => MapParagraph(p, excludeFields, excludeXmlElements, excludeFieldsByItemType, excludeXmlElementsByType) with { ColumnId = g.Key })
                               .ToList()
             })
             .ToList();

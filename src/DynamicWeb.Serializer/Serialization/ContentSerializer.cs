@@ -99,7 +99,8 @@ public class ContentSerializer
         }
 
         Log($"Serialized pages: {serializedPages.Count}");
-        var serializedArea = _mapper.MapArea(area, serializedPages, excludeFields);
+        var serializedArea = _mapper.MapArea(area, serializedPages, excludeFields,
+            _configuration.ExcludeFieldsByItemType);
         _store.WriteTree(serializedArea, _configuration.OutputDirectory);
         return serializedArea;
     }
@@ -130,7 +131,8 @@ public class ContentSerializer
                 .Where(p => p.GridRowId == gridRow.ID)
                 .ToList();
 
-            var columns = _mapper.BuildColumns(rowParagraphs, excludeFields, excludeXmlElements);
+            var columns = _mapper.BuildColumns(rowParagraphs, excludeFields, excludeXmlElements,
+                _configuration.ExcludeFieldsByItemType, _configuration.ExcludeXmlElementsByType);
             var serializedGridRow = _mapper.MapGridRow(gridRow, columns);
             serializedGridRows.Add(serializedGridRow);
         }
@@ -150,7 +152,8 @@ public class ContentSerializer
         }
 
         var permissions = _permissionMapper.MapPermissions(page.ID);
-        return _mapper.MapPage(page, serializedGridRows, serializedChildren, permissions, excludeFields, excludeXmlElements);
+        return _mapper.MapPage(page, serializedGridRows, serializedChildren, permissions, excludeFields, excludeXmlElements,
+            _configuration.ExcludeFieldsByItemType, _configuration.ExcludeXmlElementsByType);
     }
 
     private static void CountItems(IEnumerable<SerializedPage> pages, ref int pageCount, ref int gridRowCount, ref int paragraphCount)
