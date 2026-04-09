@@ -274,4 +274,59 @@ public class XmlFormatterTests
         Assert.DoesNotContain("<sort>", result);
         Assert.Contains("<group", result);
     }
+
+    // -----------------------------------------------------------------------
+    // CompactWithMerge — blind merge preserves absent elements from target
+    // -----------------------------------------------------------------------
+
+    [Fact]
+    public void CompactWithMerge_PreservesAbsentElementsFromExisting()
+    {
+        // Incoming XML (from YAML) is missing PageSize (stripped by excludeXmlElements or never serialized)
+        const string incoming = "<Settings><Template>List.cshtml</Template></Settings>";
+        // Existing XML (from target DB) has PageSize that should be preserved
+        const string existing = "<Settings><Template>Old.cshtml</Template><PageSize>10</PageSize></Settings>";
+
+        var result = XmlFormatter.CompactWithMerge(incoming, existing);
+
+        Assert.Contains("<Template>List.cshtml</Template>", result); // incoming wins
+        Assert.Contains("<PageSize>10</PageSize>", result); // preserved from existing (absent in incoming)
+        Assert.DoesNotContain("\n", result); // compacted to single line
+    }
+
+    [Fact]
+    public void CompactWithMerge_IncomingWinsForSharedElements()
+    {
+        const string incoming = "<Settings><Template>New.cshtml</Template><SortBy>Name</SortBy></Settings>";
+        const string existing = "<Settings><Template>Old.cshtml</Template><SortBy>Date</SortBy><PageSize>10</PageSize></Settings>";
+
+        var result = XmlFormatter.CompactWithMerge(incoming, existing);
+
+        Assert.Contains("<Template>New.cshtml</Template>", result); // incoming wins
+        Assert.Contains("<SortBy>Name</SortBy>", result); // incoming wins
+        Assert.Contains("<PageSize>10</PageSize>", result); // preserved (absent in incoming)
+    }
+
+    [Fact]
+    public void CompactWithMerge_NullExisting_BehavesLikeCompact()
+    {
+        const string incoming = "<Settings><Template>List.cshtml</Template></Settings>";
+
+        var result = XmlFormatter.CompactWithMerge(incoming, null);
+        var compactResult = XmlFormatter.Compact(incoming);
+
+        Assert.Equal(compactResult, result);
+    }
+
+    [Fact]
+    public void CompactWithMerge_PreservesDeclaration()
+    {
+        const string incoming = "<?xml version=\"1.0\" encoding=\"utf-8\"?><Settings><Template>List.cshtml</Template></Settings>";
+        const string existing = "<?xml version=\"1.0\" encoding=\"utf-8\"?><Settings><PageSize>10</PageSize></Settings>";
+
+        var result = XmlFormatter.CompactWithMerge(incoming, existing);
+
+        Assert.StartsWith("<?xml version=\"1.0\" encoding=\"utf-8\"?>", result);
+        Assert.Contains("<PageSize>10</PageSize>", result);
+    }
 }

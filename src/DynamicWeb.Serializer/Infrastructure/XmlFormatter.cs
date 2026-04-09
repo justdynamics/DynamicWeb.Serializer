@@ -85,6 +85,57 @@ public static class XmlFormatter
     }
 
     /// <summary>
+    /// Compacts incoming XML and merges in any root-level child elements from the existing XML
+    /// that are not present in the incoming XML. This is a "blind merge" — the target keeps any
+    /// elements the source didn't send, regardless of why they were absent (excludeXmlElements,
+    /// different source config, etc.). Incoming elements always win for elements present in both.
+    /// Returns compact single-line XML ready for DB storage.
+    /// </summary>
+    public static string? CompactWithMerge(string? incomingXml, string? existingXml)
+    {
+        if (string.IsNullOrWhiteSpace(incomingXml))
+            return Compact(incomingXml);
+
+        if (string.IsNullOrWhiteSpace(existingXml))
+            return Compact(incomingXml);
+
+        try
+        {
+            var incomingDoc = XDocument.Parse(incomingXml);
+            var existingDoc = XDocument.Parse(existingXml);
+
+            if (incomingDoc.Root == null || existingDoc.Root == null)
+                return Compact(incomingXml);
+
+            // Collect element names present in incoming (case-insensitive)
+            var incomingNames = new HashSet<string>(
+                incomingDoc.Root.Elements().Select(e => e.Name.LocalName),
+                StringComparer.OrdinalIgnoreCase);
+
+            // Preserve root-level children from existing that are absent in incoming
+            foreach (var el in existingDoc.Root.Elements())
+            {
+                if (!incomingNames.Contains(el.Name.LocalName))
+                    incomingDoc.Root.Add(new XElement(el));
+            }
+
+            var hadDeclaration = incomingXml.TrimStart().StartsWith("<?xml", StringComparison.OrdinalIgnoreCase);
+
+            string result;
+            if (hadDeclaration && incomingDoc.Declaration != null)
+                result = incomingDoc.Declaration.ToString() + incomingDoc.ToString(SaveOptions.DisableFormatting);
+            else
+                result = incomingDoc.ToString(SaveOptions.DisableFormatting);
+
+            return result;
+        }
+        catch (XmlException)
+        {
+            return Compact(incomingXml);
+        }
+    }
+
+    /// <summary>
     /// Compacts pretty-printed XML into a single-line form suitable for database storage.
     /// Preserves XML declaration when present in the original.
     /// Returns the original string unchanged for null, empty, whitespace, non-XML, or malformed XML.

@@ -840,7 +840,7 @@ public class ContentDeserializer
             existingForUpdate.ColorSchemeId = dto.ColorSchemeId;
             existingForUpdate.ItemType = dto.ItemType;
             existingForUpdate.ModuleSystemName = dto.ModuleSystemName ?? string.Empty;
-            existingForUpdate.ModuleSettings = XmlFormatter.Compact(dto.ModuleSettings) ?? string.Empty;
+            existingForUpdate.ModuleSettings = XmlFormatter.CompactWithMerge(dto.ModuleSettings, existingForUpdate.ModuleSettings) ?? string.Empty;
 
             Services.Paragraphs.SaveParagraph(existingForUpdate);
 
@@ -1088,7 +1088,7 @@ public class ContentDeserializer
         if (dto.UrlSettings != null)
         {
             page.UrlDataProviderTypeName = dto.UrlSettings.UrlDataProviderTypeName;
-            page.UrlDataProviderParameters = XmlFormatter.Compact(dto.UrlSettings.UrlDataProviderParameters);
+            page.UrlDataProviderParameters = XmlFormatter.CompactWithMerge(dto.UrlSettings.UrlDataProviderParameters, page.UrlDataProviderParameters);
             page.UrlIgnoreForChildren = dto.UrlSettings.UrlIgnoreForChildren;
             page.UrlUseAsWritten = dto.UrlSettings.UrlUseAsWritten;
         }
