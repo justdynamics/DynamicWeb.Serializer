@@ -1,217 +1,209 @@
-# Pitfalls Research: Granular Serialization Control (v0.5.0)
+# Pitfalls Research: UI Configuration Improvements (v0.6.0)
 
-**Domain:** Adding embedded XML handling, field-level filtering, and area consolidation to an existing YAML serializer for DynamicWeb
+**Domain:** Adding structured UI configuration to DynamicWeb.Serializer -- tab injection, config schema migration, auto-discovery, structured pickers
 **Researched:** 2026-04-07
-**Confidence:** HIGH (based on codebase analysis, YAML spec, .NET XML APIs, and existing patterns)
+**Confidence:** HIGH (verified against DW10 source code at C:\Projects\temp\dw10source\)
 
 ## Critical Pitfalls
 
-### Pitfall 1: YAML Literal Block Scalar + Pretty-Printed XML Indentation Interaction
+### Pitfall 1: EditScreenInjector Cannot Save Custom Properties to External Config
 
 **What goes wrong:**
-When you pretty-print XML and store it in a YAML literal block scalar (`|`), YamlDotNet handles the indentation correctly -- the library adds the required YAML indentation prefix to every line during emit, and strips it during parse. However, the risk is in MANUAL construction or post-processing. If code tries to manually build YAML strings with embedded pretty-printed XML, or applies regex-based transformations to the YAML output, the indentation context breaks and produces invalid YAML.
+The plan calls for a "Serialization" tab on PageEditScreen/ParagraphEditScreen for per-item-type field exclusion. The natural approach is `EditScreenInjector<PageEditScreen, PageDataModel>` to add a new tab with editors. However, **injectors can only add editors for properties already on the screen's DataModel**. `PageDataModel` is owned by DW's `Dynamicweb.Content.UI` assembly. The save command (`PageSaveCommand`) reads from `GetModel()` which only knows `PageDataModel` properties. Custom serializer config properties have nowhere to be persisted through the standard save flow.
 
-Additionally, YamlDotNet has a known issue (GitHub #523) where literal block scalars with inconsistent leading whitespace in the first content line throw `SemanticErrorException: "While scanning a literal block scalar, found extra spaces in first line"`. Pretty-printed XML naturally has the root element at column 0 and children indented -- this is fine. But if the pretty-print function accidentally adds leading whitespace to the root element, the scanner fails.
+Verified in DW10 source: `PageEditScreenInjector` (Dynamicweb.Global.UI) adds ecommerce navigation editors, but all those fields (`NavigationUseEcomGroups`, `NavigationProvider`, etc.) are properties already defined on `PageDataModel` itself. The injector pattern is designed for cross-module UI composition where the model already has the fields -- not for adding entirely new data stores.
+
+The `EditScreenInjector` interface provides:
+- `OnBuildEditScreen(EditScreenBuilder builder)` -- adds UI components
+- `GetEditor(string propertyName, TModel? model)` -- provides editor instances
+- `GetScreenActions()` -- adds action buttons/links
+
+There is NO save hook. No `OnSave`, `OnBeforeSave`, or `OnAfterSave`. The save is entirely handled by the screen's own `CommandBase<TModel>`.
 
 **Why it happens:**
-Developers unfamiliar with YAML block scalars try to "help" by manually indenting the XML to match the surrounding YAML structure, or they use string concatenation instead of letting the serializer handle it.
+The injector API surface (`builder.AddComponent`, `builder.AddComponents`) looks like it supports arbitrary tab/field injection. Without reading the save flow, it appears any editor added to the screen will be saved. In reality, `CommandBase<TModel>.GetModel()` only deserializes known `TModel` properties from the form submission.
 
 **How to avoid:**
-1. Pretty-print XML in the model layer (before YamlDotNet touches it). Set the string property to the pretty-printed XML. Let `ForceStringScalarEmitter` and YamlDotNet handle all YAML indentation.
-2. Ensure the pretty-printed XML string starts at column 0 (no leading whitespace on the first line).
-3. On deserialize, the YAML parser returns the clean XML string -- no post-processing needed.
-4. Write a round-trip test: original XML -> pretty-print -> YAML serialize -> YAML deserialize -> compare with pretty-printed version (not original compact version).
+Do NOT use a tab on PageEditScreen for per-item-type field exclusion. Instead:
+1. Create standalone screens accessible via tree nodes under Settings > Database > Serialize
+2. Use the injector's `GetScreenActions()` to add a navigation action (link/button) on PageEditScreen that opens the standalone screen -- this pattern is already proven by the existing `SerializerPageEditInjector` which adds "Serialize subtree"
+3. For the "Serialization" concept on Item Edit, use a dedicated screen at Serialize > Item Types > [TypeName] that edits serializer config.json directly
 
 **Warning signs:**
-- `SemanticErrorException` mentioning "block scalar" during deserialize
-- XML that looks correct in the `.yml` file but has extra/missing indentation after loading
-- Tests pass with flat XML (`<a/>`) but fail with nested XML
+- Editors appear on the injected tab but values are never saved
+- No errors thrown -- form submits successfully, but custom fields are silently ignored
+- Editors show default/empty values on every reload
 
 **Phase to address:**
-Phase 1 (XML pretty-print) -- validate with round-trip tests before building anything on top.
+Phase 1 (architecture decision) -- must be resolved before any UI work begins. The "Serialization tab on Item Edit" concept needs redesign as standalone screens.
 
 ---
 
-### Pitfall 2: Field-Level Blacklist Causes Null-Out of Excluded Fields on Deserialize
+### Pitfall 2: Config Schema Migration Breaks Existing Installations
 
 **What goes wrong:**
-The existing `SaveItemFields` method (ContentDeserializer.cs line 842-850) implements source-wins by nulling out any field present in the target's ItemType definition but ABSENT from the serialized YAML:
+Current config.json has `excludeFields` and `excludeXmlElements` as flat string arrays on each predicate. Moving to per-item-type exclusions changes the JSON structure fundamentally (from `"excludeFields": ["field1", "field2"]` to something like `"itemTypeExclusions": { "Swift_Article": ["field1"], "Swift_Poster": ["field2"] }`). Any existing config file will fail to deserialize if the schema changes without a migration path.
 
-```csharp
-// Source-wins: null out item fields not present in the serialized data.
-foreach (var fieldName in itemEntry.Names)
-{
-    if (!ItemSystemFields.Contains(fieldName) && !contentFields.ContainsKey(fieldName))
-    {
-        contentFields[fieldName] = null;
-    }
-}
+The `ConfigLoader` uses `System.Text.Json` with `PropertyNameCaseInsensitive = true`. Unknown properties in JSON are silently ignored (default STJ behavior). Missing properties become null/default. This means:
+- Adding new properties: safe (old configs just get defaults)
+- Removing/renaming properties: breaks (old configs have orphaned keys, new code gets null)
+- Changing property types: breaks (STJ throws on type mismatch)
+
+**Why it happens:**
+PROJECT.md notes this is a beta (0.x) product where "YAML format can change freely" (per memory `feedback_no_backcompat.md`). Developers may assume config.json gets the same treatment. However, config files contain manual user decisions that cannot be re-derived, unlike YAML output which is regenerated from the database.
+
+**How to avoid:**
+Use an **additive schema only** approach:
+1. Keep existing `excludeFields`/`excludeXmlElements` on predicates as "global exclusions" (apply to all types)
+2. Add NEW fields alongside: `itemTypeExclusions` (object map), `xmlTypeExclusions` (object map)
+3. At runtime, merge both: flat excludes apply globally, structured excludes apply per-type
+4. `ConfigLoader.BuildPredicate()` handles both formats: if only flat arrays exist, they become global; if structured sections exist, use those too
+5. STJ silently ignores unknown keys, so old configs with only flat arrays load fine into the new schema
+
+**Warning signs:**
+- `JsonSerializer.Deserialize` throws on existing config files after upgrade
+- Users report "Configuration is invalid" errors after updating the NuGet package
+- Config that worked in v0.5.0 stops working in v0.6.0
+
+**Phase to address:**
+Phase 1 (config schema design) -- new schema must be designed before UI screens are built, because screens depend on the data structure.
+
+---
+
+### Pitfall 3: Auto-Discovery of XML Types via Service API Loads All Paragraphs
+
+**What goes wrong:**
+Auto-discovering embedded XML types requires scanning paragraphs for distinct `ModuleSystemName` values. DW's content API (`Services.Paragraphs`) returns full `Paragraph` objects including all fields, module settings XML, and item data. Loading ~22K paragraphs into memory to extract one string column is wasteful -- each Paragraph object includes the full ModuleSettings XML blob.
+
+**Why it happens:**
+DW has no lightweight "get distinct column values" API for paragraphs. The service layer returns fully hydrated objects. Developers follow the "MUST use DW APIs, never SqlTable" guidance (from memory `feedback_content_not_sql.md`) and use `Services.Paragraphs.GetParagraphsByPageId()` in a loop.
+
+**How to avoid:**
+For read-only admin discovery queries, use `Dynamicweb.Data.Database.CreateDataReader()` with direct SQL:
+```sql
+SELECT DISTINCT ParagraphModuleSystemName 
+FROM Paragraph 
+WHERE ParagraphModuleSystemName != '' AND ParagraphModuleSystemName IS NOT NULL
 ```
 
-If you add a field blacklist that excludes fields during SERIALIZATION, those excluded fields will be absent from the YAML. On DESERIALIZE, this null-out loop sees them as "missing from source" and actively destroys the target's values.
+This is justified because:
+- The "use DW APIs" rule is about write operations that bypass critical side effects (cache invalidation, notifications, etc.)
+- DW itself uses `Database.CreateDataReader()` for admin read operations throughout its codebase
+- The query returns ~15 rows instantly vs loading 22K full paragraph objects
 
-**Why it happens:**
-The source-wins null-out was designed for a world where "absent from YAML" means "should be cleared." Field-level blacklisting introduces a third state: "intentionally not tracked." The deserializer cannot distinguish "missing because excluded" from "missing because should be empty."
-
-**How to avoid:**
-1. The blacklist config MUST be available at both serialize AND deserialize time. On deserialize, excluded fields must be SKIPPED entirely (not set, not nulled).
-2. Add an `excludeFields` parameter to `SaveItemFields`. In the null-out loop, skip any field in the exclude set.
-3. Apply the same fix to `SavePropertyItemFields` (line 775-779) which has identical null-out logic.
-4. For SQL tables: `SqlTableWriter.BuildMergeCommand` must exclude blacklisted columns from both the UPDATE SET clause and the INSERT column list. Otherwise MERGE will SET excluded columns to NULL.
+Cache the result per-request or with a short TTL. For `UrlDataProvider` types on pages, use a similar `SELECT DISTINCT PageUrlDataProviderType FROM Page WHERE PageUrlDataProviderType != ''`.
 
 **Warning signs:**
-- Fields that exist in the target but are absent from YAML get wiped to null after deserialize
-- Works correctly when blacklist is empty; breaks as soon as any field is excluded
-- Environment-specific settings (domains, API keys, connection strings) vanish after sync
+- Edit screen takes >2 seconds to load when auto-discovery runs
+- Memory spike in IIS worker process
+- Admin UI becomes sluggish after adding the auto-discovery feature
 
 **Phase to address:**
-Field blacklist phase -- this MUST be solved simultaneously with the serialize-side exclusion. Never ship serialize-side filtering without the corresponding deserialize-side skip guard.
+Phase 2 (Embedded XML screen) -- implement and benchmark the discovery query before building the UI.
 
 ---
 
-### Pitfall 3: CRLF Line Endings in XML Force DoubleQuoted YAML (Unreadable)
+### Pitfall 4: Multi-Select Page Picker Value Binding (String vs Int)
 
 **What goes wrong:**
-The existing `ForceStringScalarEmitter` (line 18) checks `value.Contains('\r')` and forces `ScalarStyle.DoubleQuoted` for any string with carriage returns. SQL Server on Windows stores XML with `\r\n` line endings. Pretty-printed XML from `XDocument.ToString()` uses `Environment.NewLine` which is `\r\n` on Windows. Result: the pretty-printed XML gets emitted as a single DoubleQuoted string with escape sequences: `"<settings>\r\n  <module/>\r\n</settings>"`. This defeats the entire purpose of pretty-printing.
+`SelectorBuilder.CreatePageSelector(multiselect: true)` exists and works (verified in DW10 source at `SelectorBuilder.cs` line 65). However, multi-select changes the value format. Single-select binds to an `int` (page ID). Multi-select returns a comma-separated string of IDs. If the model property is `int`, the framework cannot bind multi-select values.
+
+Additionally, from memory (`feedback_dw_patterns.md`): "DW Select dropdown values are strings. If the model property is an int, the framework can't match the selected value back on reload." This applies doubly to multi-select where the value is `"42,57,103"`.
 
 **Why it happens:**
-The CRLF guard in the emitter was designed to preserve exact line endings for general content. XML content does not need this preservation -- the XML spec (section 2.11) normalizes all line endings to `\n` during parsing.
+The current `PredicateEditModel.PageId` is an `int`. The existing `Excludes` is a textarea string (one path per line). Switching to a multi-select page picker requires understanding the value format change.
 
 **How to avoid:**
-1. Normalize XML line endings to LF-only BEFORE setting the model property: `xmlString.Replace("\r\n", "\n").Replace("\r", "\n")`.
-2. Apply normalization in the XML pretty-print function, NOT in the emitter (keep emitter general-purpose).
-3. This is safe per XML spec: all conformant XML parsers normalize `\r\n` to `\n`.
-4. On deserialize, the LF-only XML from YAML is functionally identical to the original CRLF XML.
+1. Add a NEW `string` property `ExcludePageIds` to `PredicateEditModel` (do not reuse `int PageId`)
+2. Store in config.json as an integer array: `"excludePageIds": [42, 57, 103]`
+3. In the query: convert `List<int>` from config to comma-separated string for the model property
+4. In the save command: parse comma-separated string back to `List<int>` for config persistence
+5. Keep existing path-based `Excludes` working as fallback (some users may have path-based excludes)
 
 **Warning signs:**
-- Pretty-printed XML appearing as a single long DoubleQuoted line in YAML files
-- YAML files that are LARGER after pretty-print than before
-- `moduleSettings` field showing escaped `\r\n` instead of actual newlines
+- Page selector appears but selected values lost on save/reload
+- "The selected option no longer exists" error on screen reload
+- Multi-select opens but only allows single selection (wrong editor type)
 
 **Phase to address:**
-Phase 1 (XML pretty-print) -- must be part of the core XML normalization step.
+Phase 3 (predicate page exclusion enhancement) -- after config schema is settled.
 
 ---
 
-### Pitfall 4: XML Declaration Lost on Round-Trip
+### Pitfall 5: Area Edit Screen Injection Has Same Save Limitation
 
 **What goes wrong:**
-Some DW XML blobs include `<?xml version="1.0" encoding="utf-8"?>` and some do not. `XDocument.ToString()` OMITS the XML declaration. If the original had a declaration and the round-tripped version does not, DW's XML parser may behave differently (unlikely but possible for encoding-sensitive content).
+Adding area column exclusions via `EditScreenInjector<AreaEditScreen, AreaDataModel>` hits the same wall as Pitfall 1. `AreaDataModel` is owned by `Dynamicweb.Content.UI`. The `AreaSaveCommand` only saves `AreaDataModel` properties. Serializer config properties cannot be persisted through this save flow.
+
+Verified: `AreaEditScreenInjector` (Dynamicweb.Global.UI) successfully adds an "Ecommerce" tab with 7 fields -- but all fields (`EcomShopId`, `EcomLanguageId`, `EcomCurrencyId`, etc.) are properties already on `AreaDataModel`.
 
 **Why it happens:**
-`XDocument.ToString()` returns only the root element and its children. The `Declaration` property is separate and must be explicitly included. `XDocument.Save(writer)` includes it based on `XmlWriterSettings.OmitXmlDeclaration`, but `ToString()` always omits it.
+Same root cause as Pitfall 1. Developers see the ecommerce tab working on AreaEditScreen and assume the same pattern works for serializer config with separate persistence.
 
 **How to avoid:**
-1. Before pretty-printing, check if the original string starts with `<?xml`.
-2. If yes, reconstruct: `xdoc.Declaration?.ToString() + "\n" + xdoc.ToString()`.
-3. If no declaration in original, emit without it.
-4. Test with actual DW data: `moduleSettings` and `urlDataProviderParameters` from the Swift test instances.
+Same strategy as Pitfall 1:
+- Use `GetScreenActions()` on an `AreaEditScreenInjector` to add a navigation link to a standalone serializer screen
+- OR place area column exclusion config on the predicate edit screen itself (as a "Content Settings > Area Columns" section when ProviderType is "Content"), avoiding injection entirely
+- The predicate-based approach is simpler because area config is already predicate-scoped (each content predicate targets a specific area)
 
 **Warning signs:**
-- XML strings that start with `<?xml` in the database lose that prefix after round-trip
-- Encoding attribute changes (e.g., `utf-16` to `utf-8` or vice versa)
+- Same as Pitfall 1: fields appear but never save
+- User confusion about where area config "lives" (AreaEditScreen vs predicate screen)
 
 **Phase to address:**
-Phase 1 (XML pretty-print).
+Phase 1 (architecture) -- decide whether area config goes on predicate screen or standalone screen before building.
 
 ---
 
-### Pitfall 5: Area Consolidation Creates Deserialize Ordering Dependency
+### Pitfall 6: Read-Only Summary on Predicate Screen Shows Stale Data
 
 **What goes wrong:**
-Currently, `ContentDeserializer.DeserializePredicate` does `Services.Areas.GetArea(predicate.AreaId)` and SKIPS the predicate if the area is null. It does NOT create areas. If you consolidate the Area SQL table into ContentProvider (removing the SqlTable predicate for Area), and the target database has no matching area, deserialization silently skips everything.
+The plan calls for a read-only "Filtering" section on predicate edit that aggregates per-item-type and per-XML-type exclusions (sourced from separate config sections). The `EditScreenBase` model pattern expects all displayed data from the screen's own `DataViewModelBase`. Showing computed data from a different config location requires the `PredicateEditModel` query to load and aggregate it.
 
-Additionally, the current `SerializedArea` model only has 5 properties: AreaId (GUID), Name, SortOrder, ItemType, ItemFields. The Area SQL table has 60+ columns including Domain, DefaultLanguageId, EcomLanguageId, MasterArea, PrimaryDomain, CdnDomain, Culture, TimeZone, MailServer, etc. Most of these are environment-specific -- exactly the kind of fields that need the blacklist feature.
+The problem: if a user edits item-type exclusions in Screen A, then navigates to the predicate screen, the predicate screen may show stale data because:
+- The aggregation happened at query time (when screen loaded)
+- DW's ShadowEdit system tracks unsaved changes for the current screen only
+- Cross-screen data freshness has no built-in mechanism
 
 **Why it happens:**
-The original design assumed areas pre-exist in target environments (they are typically created during DW setup). Area consolidation changes this assumption.
+DW edit screens are form-centric: one model, one save command. There is no built-in "subscribe to changes from another screen" mechanism.
 
 **How to avoid:**
-1. Expand `SerializedArea` to include the full set of Area SQL columns (60+ fields as nullable properties).
-2. Add area creation logic to `ContentDeserializer`: if `GetArea()` returns null, create the area from YAML data before processing pages.
-3. Must call `Services.Areas.ClearCache()` after area creation (documented in `project_dw_area_cache.md` memory).
-4. Apply field-level blacklist to area columns so environment-specific fields (Domain, MailServer, etc.) can be excluded.
-5. The expanded `SerializedArea` is backward-compatible with old YAML because `IgnoreUnmatchedProperties` is already configured in `YamlConfiguration.BuildDeserializer()`.
+1. Add computed read-only properties to `PredicateEditModel` (populated fresh in `PredicateByIndexQuery`, never saved by `SavePredicateCommand`)
+2. Use `CreateMapping(m => m.FilteringSummary) with { ReadOnly = true }` in `GetEditorMappings()`
+3. Accept that the summary is a point-in-time snapshot -- add a "Refresh" action button that reloads the screen
+4. For "link to edit" functionality, use action buttons (not editors) that navigate to the Item Type or Embedded XML screens
 
 **Warning signs:**
-- Deserialize silently skips with "Area with ID X not found" warning
-- Area properties (domain, language) not set because ContentProvider only handled ItemType fields
-- Cache staleness: new area created but `GetArea()` still returns null
+- Read-only fields show stale/outdated data after edits in other screens
+- Save command accidentally persists the aggregated summary back to config, corrupting the structure
 
 **Phase to address:**
-Area consolidation phase -- must be implemented after field blacklist is working (blacklist is needed for environment-specific area columns).
+Phase 4 (predicate screen enhancement) -- after item-type and XML-type screens exist and have stable data to aggregate.
 
 ---
 
-### Pitfall 6: Detecting Which SQL Columns Contain XML -- Heuristics Fail
+### Pitfall 7: Injector Class Discovery Requires Correct Visibility and Inheritance
 
 **What goes wrong:**
-To pretty-print XML in SQL table YAML files, you need to identify which columns contain XML. DW stores XML as `nvarchar(max)` or `ntext`, not as the SQL `xml` type. Heuristic detection (checking if value starts with `<`) false-positives on HTML content, partial XML fragments, and any text starting with angle brackets. Attempting `XDocument.Parse()` on non-XML data crashes or produces garbage.
+`ScreenInjectorHandler` discovers injectors via `AddInManager.GetInstances<ScreenInjector<T>>()` (verified in `ScreenInjectorHandler.cs` line 17). This uses reflection on loaded assemblies. If a new injector class is `internal` instead of `public`, abstract instead of concrete, or extends the wrong base class, it silently fails to register.
 
 **Why it happens:**
-DW's schema makes no distinction between XML columns and other string columns. The ~100 SQL YAML files with XML span 5+ different table patterns (DashboardWidget, EcomFeed, EcomShippings, PersonalSettings, ScheduledTask) with inconsistent column naming.
+`AddInManager` scans for concrete, public types. There are no compile-time errors or runtime warnings when an injector is not discovered -- it just does not appear.
 
 **How to avoid:**
-1. Use a CONFIG-DRIVEN known-columns approach, not heuristic detection.
-2. Add `xmlColumns` to the predicate config: `"xmlColumns": ["ShippingXml", "PaymentXml"]`.
-3. Content provider has KNOWN XML fields: `moduleSettings` on Paragraph, `urlDataProviderParameters` on Page -- hardcode these in ContentProvider.
-4. For SQL tables, require explicit declaration. As a discovery aid, log when a column contains a value that looks like XML but is not in the known list.
-5. NEVER try-parse arbitrary columns as XML during production serialization.
+- Always make injector classes `public sealed`
+- Extend `EditScreenInjector<TScreen, TModel>` (not `ScreenInjector<TScreen>` directly) for edit screen injection
+- Copy the exact class structure of the working `SerializerPageEditInjector`
+- Add a debug log in the injector constructor to verify it was instantiated
 
 **Warning signs:**
-- Serialize crashes on non-XML data that starts with `<`
-- HTML content in SQL columns getting reformatted (breaking the HTML)
-- Inconsistent: some XML columns pretty-printed, others left compact
+- Injected tabs/actions simply do not appear on the target screen
+- No errors in any logs -- just silent absence
+- Works in dev project but not in packaged NuGet deployment
 
 **Phase to address:**
-Phase 1 (XML pretty-print) -- the detection/configuration strategy must be decided before implementation.
-
----
-
-### Pitfall 7: Config Schema Change Silently Drops New Fields
-
-**What goes wrong:**
-`ConfigLoader` uses a three-class pattern: `RawPredicateDefinition` (JSON deserialization) -> `Validate()` -> `BuildPredicate()` -> `ProviderPredicateDefinition` (runtime model). Adding new fields like `excludeFields`, `xmlColumns`, `excludeXmlFields` to `ProviderPredicateDefinition` without ALSO adding them to `RawPredicateDefinition` and the `BuildPredicate()` mapping function causes the fields to be silently null/empty after config load.
-
-**Why it happens:**
-The three-class mapping is explicit (no reflection/AutoMapper). Every field added to the model requires changes in 3 places. It is easy to add the field to the record, write code that reads it, test with a manually constructed config object, and miss that the file-loaded config drops the field.
-
-**How to avoid:**
-1. When adding ANY field to `ProviderPredicateDefinition`, immediately update `RawPredicateDefinition` and `BuildPredicate()`.
-2. Write a config round-trip test: create JSON with all new fields populated -> `ConfigLoader.Load()` -> verify every field is present.
-3. Consider consolidating to 2 classes (eliminate Raw or use `JsonSerializer` directly to the model) since the beta product does not need forward/backward compat.
-
-**Warning signs:**
-- Config loads without error but field blacklists are empty
-- Admin UI shows blank exclude lists despite JSON file having values
-- Feature "does not work" but no errors logged (config field silently dropped)
-
-**Phase to address:**
-Every phase that adds config fields -- this is a process pitfall. The first phase should establish the pattern with a test.
-
----
-
-### Pitfall 8: Pretty-Print on Serialize Without Compact on Deserialize Creates Git Noise
-
-**What goes wrong:**
-If you pretty-print XML on serialize (for readable YAML) but write the pretty-printed XML directly to the database on deserialize, the database now contains pretty-printed XML. When the SAME environment re-serializes, the XML is already pretty-printed, so it gets pretty-printed AGAIN (double-indented) or matches (no change). But if a DIFFERENT serializer version (or DW itself) writes compact XML to the DB, the next serialize shows the entire XML blob as "changed" because compact != pretty-printed.
-
-**Why it happens:**
-The serializer is not the only thing that writes to these columns. DW admin UI, modules, and other tools write compact XML. If the serializer does not normalize on deserialize, the DB format is inconsistent.
-
-**How to avoid:**
-1. On SERIALIZE: pretty-print for YAML readability.
-2. On DESERIALIZE: compact the XML before writing to DB. Use `xdoc.ToString(SaveOptions.DisableFormatting)` to produce a canonical compact form.
-3. This makes the serialize->DB path idempotent: compact XML in DB -> pretty-print in YAML -> compact back to DB = original.
-4. Alternative: write pretty-printed XML to DB (DW does not care about XML whitespace). But this changes DB content unnecessarily and may conflict with DW's own writes.
-
-**Warning signs:**
-- Serialize -> deserialize -> serialize cycle shows XML diffs (not idempotent)
-- DB contains mix of compact and pretty-printed XML depending on how the data was last written
-- Checksum drift: `SqlTableReader.CalculateChecksum` produces different hashes for same logical data
-
-**Phase to address:**
-Phase 1 (XML pretty-print) -- decide the deserialize strategy upfront. Recommend: compact on deserialize for clean round-trips.
+Every phase that adds a new injector -- verify in a clean DW instance.
 
 ---
 
@@ -219,94 +211,97 @@ Phase 1 (XML pretty-print) -- decide the deserialize strategy upfront. Recommend
 
 | Shortcut | Immediate Benefit | Long-term Cost | When Acceptable |
 |----------|-------------------|----------------|-----------------|
-| Heuristic XML detection (try-parse) instead of config-driven known-columns | No config changes needed | False positives on HTML, crashes on malformed data, silent corruption | Never for serialize; acceptable only as a discovery logging aid |
-| Normalize XML on serialize only, skip deserialize compaction | Simpler code, one-way transform | DB accumulates pretty-printed XML, serialize becomes non-idempotent | Never -- always compact on deserialize |
-| Expanding SerializedArea with 60+ nullable properties | Directly maps to SQL schema | Massive model class, most fields unused | Acceptable for 0.x; can refactor to groups later |
-| Storing XML column list in code rather than config | No schema change needed | Adding a new XML column requires code change + rebuild | Never -- put in config from the start |
-| Skipping null-out guard for SqlTable field blacklist | SQL MERGE just sets all available columns | Excluded columns get SET to NULL/empty in target | Never -- must exclude from MERGE command |
+| Flat `excludeFields` on predicate (current) | Simple JSON, easy to understand | Cannot exclude field X only for item type Y | Acceptable until v0.6.0 |
+| Free-text textarea for excludes/fields | No complex UI work | Typos, no validation, no auto-completion | Never after v0.6.0 |
+| Loading all paragraphs for type discovery | Uses only DW service APIs | Memory waste, slow on large DBs | Never -- use direct SQL for read-only discovery |
+| Storing page exclusions as paths instead of IDs | Human-readable config | Breaks when pages move or are renamed | Acceptable as legacy fallback only |
+| Single standalone screen per config area | Consistent navigation, clear ownership | More tree nodes, more screens to maintain | Always -- this is the correct pattern for DW |
 
 ## Integration Gotchas
 
 | Integration | Common Mistake | Correct Approach |
 |-------------|----------------|------------------|
-| `ForceStringScalarEmitter` + XML with CRLF | Pretty-printed XML emitted as DoubleQuoted (unreadable) | Normalize to LF before setting model property; XML spec says this is safe |
-| `XDocument.Parse()` + `ToString()` | XML declaration (`<?xml ...?>`) silently dropped | Check and preserve `xdoc.Declaration` explicitly |
-| `SqlTableWriter.BuildMergeCommand` + field exclusion | Excluded columns still in MERGE UPDATE SET, setting them to NULL | Filter `updateColumns` and `insertColumns` to remove blacklisted columns |
-| `Services.Areas.GetArea()` after area creation | AreaService cache returns stale null | Call `Services.Areas.ClearCache()` after area insert (per `project_dw_area_cache.md`) |
-| `SaveItemFields` null-out + field blacklist | Excluded fields get nulled because absent from YAML | Add `excludeFields` set parameter; skip excluded fields in null-out loop |
-| `ConfigLoader.BuildPredicate()` + new fields | New fields on `ProviderPredicateDefinition` but not mapped from `RawPredicateDefinition` | Update all 3 locations: model record, raw class, mapping function |
-| `XDocument.Parse()` on non-XML data | Crash or mangled output on HTML/text columns | Config-driven known-columns list; never try-parse arbitrary columns |
+| DW AddInManager injector discovery | Making injector class `internal` or `abstract` | Must be `public sealed` class extending `EditScreenInjector<TScreen,TModel>` |
+| DW Select editor value binding | Using `int` model property with Select (values are strings) | Use `string` property for Select-bound fields, parse in save command |
+| DW SelectorBuilder.CreatePageSelector multiselect | Assuming multi-select returns `List<int>` | Returns comma-separated string; use string model property |
+| DW WithReloadOnChange in dialogs | Using ReloadOnChange inside PromptScreenBase | Only works in EditScreenBase; use NavigateScreenAction for dialogs |
+| DW config file path resolution | Using `Path.Combine(AppContext.BaseDirectory, ...)` | Use `SystemInformation.MapPath()` for DW virtual paths |
+| DW SelectorBuilder.CreateAreaSelector in dialogs | Selector panel goes behind dialog overlay | Use plain `Select` with `ListOption` from `Services.Areas.GetAreas()` |
+| EditScreenInjector save flow | Expecting injected fields to be included in save command | Injectors only add UI; save command only knows its own TModel properties |
 
 ## Performance Traps
 
 | Trap | Symptoms | Prevention | When It Breaks |
 |------|----------|------------|----------------|
-| XML parsing every cell in every SQL row during serialize | Serialize time 10x slower for large tables | Only parse columns explicitly listed as XML (known-list) | Tables with 1000+ rows and nvarchar(max) columns |
-| Pretty-printing XML during deserialize (unnecessary work) | Deserialize slower with no benefit -- DB stores compact XML | Only pretty-print on SERIALIZE; compact on DESERIALIZE | Always -- deserialize should never format XML |
-| Re-parsing XML that is already pretty-printed (double work) | XML parsed, formatted, parsed again on next serialize cycle | Check if XML is already formatted before re-formatting (or accept minor cost) | Only noticeable with very large XML blobs (>100KB) |
+| Loading all paragraphs for distinct ModuleSystemName | 2-5 sec delay, memory spike | Direct SQL `SELECT DISTINCT` query | >10K paragraphs |
+| Loading all pages for UrlDataProvider discovery | Similar to above | Direct SQL `SELECT DISTINCT PageUrlDataProviderType` | >500 pages |
+| Querying item type metadata for every field on every type | N+1 queries, slow screen load | Cache `MetadataManager.Current.GetItemType()` results | >20 item types |
+| Re-reading config.json on every screen load | Disk I/O per admin request | Cache parsed config with file watcher invalidation | High admin traffic |
+| Building content tree for page path display in selectors | Tree traversal per page | Use DW's built-in page selector which handles this | >500 pages |
 
 ## UX Pitfalls
 
 | Pitfall | User Impact | Better Approach |
 |---------|-------------|-----------------|
-| Massive git diff on first serialize after enabling pretty-print | User thinks something is wrong, reverts, re-runs | Log: "XML format migration: N files reformatted. One-time change." |
-| Field blacklist configured but no visual feedback | User cannot verify exclusion is working -- field simply absent | Log: "Excluded 3 fields from [entity]: [field1, field2, field3]" during serialize |
-| Area consolidation silently drops area properties | Area domain, language not synced because old area.yml lacks new fields | Validate at config load: warn if Area table has no SqlTable predicate AND ContentProvider area mapping is incomplete |
+| Splitting exclusion config across many screens without a summary view | User cannot see the full picture of what is excluded | Predicate screen shows aggregated read-only summary with links to source screens |
+| Auto-discovery showing ALL module types including unused ones | Overwhelming list of XML types to configure | Only show types that exist in paragraphs within the predicate's area/path scope |
+| No visual indicator of exclusion count per type | User must open each type to see what is excluded | Show count badges in tree/list (e.g., "Swift_Article (3 excluded)") |
+| Config changes take effect only after re-serialization | User expects immediate file changes | Show clear "pending changes" status and prompt to re-serialize |
+| Navigation action on Page Edit opens a screen outside the content tree | User loses context in the content tree | Open the serializer config in a slide-over or new browser tab, not as a tree navigation |
 
 ## "Looks Done But Isn't" Checklist
 
-- [ ] **XML pretty-print:** Round-trip test with CRLF line endings -- verify `\r\n` XML survives serialize-deserialize as LF
-- [ ] **XML pretty-print:** XML declaration preservation -- verify `<?xml ...?>` header survives round-trip when present in original
-- [ ] **XML pretty-print:** Empty/null XML handling -- verify null, empty string, and whitespace-only values do not crash the parser
-- [ ] **XML pretty-print:** Malformed XML fallback -- verify non-parseable XML is passed through as-is (not crashed, not corrupted)
-- [ ] **Field blacklist serialize:** Deserialize-side guard present -- verify excluded fields are NOT nulled on deserialize
-- [ ] **Field blacklist SQL:** MERGE command excludes blacklisted columns -- verify excluded columns not in UPDATE SET
-- [ ] **Field blacklist SQL:** INSERT command excludes blacklisted columns -- verify excluded columns not in INSERT INTO
-- [ ] **Area consolidation:** Area CREATION works (not just update) -- verify deserialize into DB with no matching area
-- [ ] **Area consolidation:** AreaService cache cleared after creation -- verify new area visible to subsequent ContentProvider calls
-- [ ] **Area consolidation:** Environment-specific fields blacklistable -- verify Domain, MailServer, etc. can be excluded
-- [ ] **Config schema:** `BuildPredicate()` maps all new fields -- verify config round-trips through load/save/load
-- [ ] **Config schema:** Admin UI reads/writes new fields -- verify predicate edit screen shows exclude lists
+- [ ] **Tab injection on Item Edit:** Editors appear but values do not persist after save -- verify by saving, navigating away, returning to the screen
+- [ ] **Multi-select page picker:** Selector opens in multi-select mode but verify selected values survive save-reload cycle (string vs int binding)
+- [ ] **Config migration:** Test loading a v0.5.0 config.json in v0.6.0 code -- verify no errors, flat excludes still work
+- [ ] **Auto-discovery performance:** Test on Swift 2.2 (22K paragraphs) -- verify screen loads in <500ms
+- [ ] **Auto-discovery empty state:** Test on a clean DW instance with no paragraphs -- verify graceful empty state, no crashes
+- [ ] **Read-only predicate summary:** Verify the summary updates when navigating back to predicate screen after editing item-type exclusions
+- [ ] **Injector discovery in NuGet:** Build NuGet package, install in fresh DW instance, verify all injected actions appear
+- [ ] **Additive config schema:** Verify that adding `itemTypeExclusions` to config does not break loading of predicates without it
+- [ ] **Area column config persistence:** Verify area-level exclusions save to config.json and survive app restart
 
 ## Recovery Strategies
 
 | Pitfall | Recovery Cost | Recovery Steps |
 |---------|---------------|----------------|
-| Null-out of excluded fields | MEDIUM | Re-serialize from source to regenerate complete YAML; re-deserialize. Target DB may need manual restore from backup for nulled values. |
-| XML declaration lost | LOW | Re-serialize to regenerate YAML. DW is likely tolerant of missing declarations. |
-| Area properties missing after consolidation | MEDIUM | Re-add SqlTable predicate for Area table temporarily. Or manually set area properties in DW admin. |
-| Config fields silently dropped | LOW | Fix mapping code, re-load config. No data loss -- feature just was not active. |
-| Pretty-printed XML corrupted in DB | HIGH | Restore from backup or re-serialize from clean source. Prevention much cheaper than recovery. |
-| CRLF XML in DoubleQuoted YAML (unreadable but functional) | LOW | Add LF normalization, re-serialize. Data is not corrupted, just ugly. |
+| Config schema break (Pitfall 2) | LOW | Add dual-path deserialization in ConfigLoader; existing configs work unchanged |
+| Tab injection save failure (Pitfall 1) | MEDIUM | Rewrite as standalone screen; requires new tree nodes, queries, commands |
+| Multi-select binding failure (Pitfall 4) | LOW | Change model property type from int to string; update save/load code |
+| Auto-discovery performance (Pitfall 3) | LOW | Replace service API call with direct SQL; isolated change |
+| Stale read-only summary (Pitfall 6) | LOW | Add refresh button; accept point-in-time nature |
+| Injector not discovered (Pitfall 7) | LOW | Fix class visibility/inheritance; no data loss |
+| Area injection save failure (Pitfall 5) | MEDIUM | Move config to predicate screen; requires UI rework |
 
 ## Pitfall-to-Phase Mapping
 
 | Pitfall | Prevention Phase | Verification |
 |---------|------------------|--------------|
-| Literal block indentation (P1) | XML pretty-print | Round-trip test: serialize -> file -> deserialize -> byte-compare XML string |
-| Null-out of excluded fields (P2) | Field blacklist | Test: exclude field X, serialize, deserialize, verify X unchanged in target |
-| CRLF -> DoubleQuoted (P3) | XML pretty-print | Test: Windows CRLF XML -> literal block in YAML (not DoubleQuoted) |
-| XML declaration lost (P4) | XML pretty-print | Test: XML with and without `<?xml` -> both preserved correctly |
-| Area ordering dependency (P5) | Area consolidation | Test: deserialize into empty DB -> area created -> pages created successfully |
-| XML column detection (P6) | XML pretty-print | Config-driven known-list with discovery logging; test: unknown column logged not crashed |
-| Config schema mapping (P7) | Every config-changing phase | Test: write JSON with new fields -> load -> verify fields non-null |
-| Serialize/deserialize format mismatch (P8) | XML pretty-print | Test: serialize -> deserialize -> serialize -> no diff in YAML files |
+| P1: Injector cannot save custom data | Phase 1 (architecture) | Standalone screen saves and loads config correctly |
+| P2: Config schema migration | Phase 1 (schema design) | v0.5.0 config loads without errors in v0.6.0 code |
+| P3: Auto-discovery performance | Phase 2 (XML type screen) | Discovery query returns in <100ms on 22K paragraph DB |
+| P4: Multi-select picker binding | Phase 3 (predicate enhancement) | Select 3 pages, save, reload -- all 3 still selected |
+| P5: Area injection save limits | Phase 1 (architecture) | Area config accessible and persistable via chosen approach |
+| P6: Stale read-only summary | Phase 4 (predicate enhancement) | Summary refreshes when screen reloads |
+| P7: Injector discovery | Every injector phase | Test in packaged NuGet on clean DW instance |
 
 ## Sources
 
-- **Codebase analysis (primary):**
-  - `ContentDeserializer.cs` lines 842-850: source-wins null-out logic for ItemFields
-  - `ContentDeserializer.cs` lines 775-779: source-wins null-out for PropertyItem fields
-  - `ForceStringScalarEmitter.cs` line 18: CRLF detection forcing DoubleQuoted style
-  - `ConfigLoader.cs` lines 79-92: three-class mapping pattern (Raw -> Build -> Model)
-  - `SqlTableWriter.cs` lines 48-52: MERGE UPDATE column list construction
-  - `SerializedArea.cs`: current 5-field model needing expansion to 60+ fields
-- [YamlDotNet literal block scalar issue #523](https://github.com/aaubry/YamlDotNet/issues/523) -- indentation errors
-- [YAML Multiline Strings reference](https://yaml-multiline.info/) -- chomp indicators and block scalar rules
-- [.NET XDocument whitespace preservation](https://learn.microsoft.com/en-us/dotnet/standard/linq/preserve-white-space-loading-parsing-xml)
-- [.NET XDocument serialization whitespace](https://learn.microsoft.com/en-us/dotnet/standard/linq/preserve-white-space-serializing)
-- Memory: `feedback_no_backcompat.md` (0.x beta, format changes OK), `project_dw_area_cache.md` (AreaService cache clearing required)
+- `C:\Projects\temp\dw10source\Dynamicweb.CoreUI\Screens\EditScreenBase.cs` -- line 65: `IEditScreenInjector` internal property; lines 104-113: injector invocation in `GetDefinitionInternal()` (injectors run AFTER `BuildEditScreen`, can add tabs/actions but NOT modify save behavior)
+- `C:\Projects\temp\dw10source\Dynamicweb.CoreUI\Screens\EditScreenInjector.cs` -- full interface: `OnBuildEditScreen`, `GetEditor`, `GetScreenActions`. No save hooks.
+- `C:\Projects\temp\dw10source\Dynamicweb.CoreUI\Screens\ScreenInjectorHandler.cs` -- line 17: discovery via `AddInManager.GetInstances<ScreenInjector<T>>()`
+- `C:\Projects\temp\dw10source\Dynamicweb.CoreUI\Screens\ScreenBuilders\EditScreenBuilder.cs` -- line 52: injectors filtered to `EditScreenInjector<TScreen, TModel>` type
+- `C:\Projects\temp\dw10source\Dynamicweb.Global.UI\Content\PageEditScreenInjector.cs` -- reference implementation: ecommerce fields are on `PageDataModel`, NOT external config
+- `C:\Projects\temp\dw10source\Dynamicweb.Global.UI\Content\AreaEditScreenInjector.cs` -- reference implementation: ecommerce fields on `AreaDataModel`
+- `C:\Projects\temp\dw10source\Dynamicweb.Content.UI\Screens\PageEditScreen.cs` -- 5 hardcoded tabs (General, Layout, SEO, Publication, Advanced)
+- `C:\Projects\temp\dw10source\Dynamicweb.Content.UI\Screens\AreaEditScreen.cs` -- 4 hardcoded tabs (General, Domain and URL, Layout, Advanced)
+- `C:\Projects\temp\dw10source\Dynamicweb.CoreUI\Editors\Selectors\SelectorBuilder.cs` -- line 65: `CreatePageSelector(multiselect: true)` confirmed
+- `C:\VibeCode\DynamicWeb.Serializer\src\DynamicWeb.Serializer\AdminUI\Injectors\SerializerPageEditInjector.cs` -- existing working action-only injector
+- `C:\VibeCode\DynamicWeb.Serializer\src\DynamicWeb.Serializer\Configuration\ConfigLoader.cs` -- current config schema with flat arrays
+- Memory: `feedback_dw_patterns.md` -- Select string value type, WithReloadOnChange dialog limitation, SelectorBuilder dialog issue
+- Memory: `feedback_content_not_sql.md` -- DW API vs SqlTable guidance (write-only restriction)
+- Memory: `feedback_no_backcompat.md` -- beta 0.x, format can change, but config.json is user-managed
 
 ---
-*Pitfalls research for: DynamicWeb.Serializer v0.5.0 -- granular serialization control*
+*Pitfalls research for: DynamicWeb.Serializer v0.6.0 -- UI Configuration Improvements*
 *Researched: 2026-04-07*

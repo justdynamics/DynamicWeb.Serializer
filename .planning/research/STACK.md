@@ -1,258 +1,312 @@
-# Stack Research: Granular Serialization Control
+# Technology Stack
 
-**Domain:** DynamicWeb content/SQL serialization -- embedded XML formatting, field-level filtering, area consolidation
+**Project:** DynamicWeb.Serializer v0.6.0 - UI Configuration Improvements
 **Researched:** 2026-04-07
-**Confidence:** HIGH (verified against existing codebase, .NET 8 BCL, YamlDotNet 13.7.1, DW 10.23.9 API docs)
+**Focus:** DW CoreUI APIs for tab injection, screen injection, item type field enumeration, SQL schema introspection, embedded XML type discovery
 
-## Recommended Stack
+## Core APIs Needed
 
-### Zero New NuGet Dependencies
+### 1. Tab Injection on Page/Item Edit Screens
 
-All three v0.5.0 features are achievable with APIs already available in the project:
+**Pattern:** `EditScreenInjector<TScreen, TModel>` with `OnBuildEditScreen`
+**Confidence:** HIGH (verified in DW10 source)
 
-| Technology | Version | Purpose | Status |
-|------------|---------|---------|--------|
-| System.Xml.Linq (XDocument) | .NET 8.0 BCL | Pretty-print embedded XML strings | **Already available** -- part of .NET BCL, no package needed |
-| YamlDotNet | 13.7.1 | YAML serialization with custom event emitters | **Already referenced** -- extend existing ForceStringScalarEmitter |
-| Dynamicweb.Content.Area | 10.23.9 | Read full Area properties (60+ columns) | **Already referenced** -- `Services.Areas.GetArea()` |
-| Dynamicweb.Data.Database | 10.23.9 | Direct SQL for Area columns not on C# API | **Already referenced** -- used by SqlTableReader |
+The `EditScreenInjector<TScreen, TModel>` base class provides an `OnBuildEditScreen(EditScreenBuilder builder)` method that is called during screen construction. The `EditScreenBuilder` exposes `AddComponent`, `AddComponents`, and `AddDynamicFields` methods that add tabs/groups to the screen.
 
-### Core Technologies (unchanged from v0.4.0)
+| Class | Namespace | Purpose |
+|-------|-----------|---------|
+| `EditScreenInjector<TScreen, TModel>` | `Dynamicweb.CoreUI.Screens` | Base class for injecting into edit screens |
+| `EditScreenBuilder` | `EditScreenBase<TModel>.EditScreenBuilder` (nested class) | Builder passed to `OnBuildEditScreen` |
+| `PageEditScreen` | `Dynamicweb.Content.UI.Screens` | The page edit screen to inject into |
+| `PageDataModel` | `Dynamicweb.Content.UI.Models` | Data model for page edit |
+| `ItemTypeEditScreen` | `Dynamicweb.Content.UI.Screens.Settings.ItemTypes` | The item type settings edit screen |
+| `ItemTypeDataModel` | `Dynamicweb.Content.UI.Models.Settings.ItemTypes` | Data model for item type |
 
+**How tabs are created:** `builder.AddComponents("TabName", "GroupHeading", components)` creates a tab named "TabName" with a group "GroupHeading". The first argument to `AddComponents` is the tab name. If the tab already exists, the group is added to it.
+
+**Existing DW examples verified in source:**
+- `AreaEditScreenInjector` adds "Ecommerce" tab with "Ecommerce settings" group to AreaEditScreen
+- `PageEditScreenInjector` adds "Ecommerce" tab with "Ecommerce navigation" group to PageEditScreen
+- Both use `builder.AddComponents(tabName, groupName, editorArray)` pattern
+
+**For "Serialization" tab on Item Type Edit screen:**
+```csharp
+public sealed class SerializerItemTypeEditInjector : EditScreenInjector<ItemTypeEditScreen, ItemTypeDataModel>
+{
+    public override void OnBuildEditScreen(EditScreenBase<ItemTypeDataModel>.EditScreenBuilder builder)
+    {
+        // This creates a "Serialization" tab on the Item Type Edit screen
+        builder.AddComponents("Serialization", "Field exclusions", new[]
+        {
+            // checkbox list of fields to exclude from serialization
+        });
+    }
+}
+```
+
+**Discovery:** Injectors are auto-discovered by `AddInManager.GetInstances<ScreenInjector<T>>()` in `ScreenInjectorHandler`. No registration needed.
+
+### 2. Screen Injection on Area Edit Screen
+
+**Pattern:** Same `EditScreenInjector<AreaEditScreen, AreaDataModel>`
+**Confidence:** HIGH (verified - AreaEditScreenInjector does exactly this)
+
+The existing `AreaEditScreenInjector` in `Dynamicweb.Global.UI.Content` adds an "Ecommerce" tab to the Area Edit screen. Our injector follows the identical pattern.
+
+| Class | Namespace | Purpose |
+|-------|-----------|---------|
+| `AreaEditScreen` | `Dynamicweb.Content.UI.Screens` | Area edit screen |
+| `AreaDataModel` | `Dynamicweb.Content.UI.Models` | Area data model |
+
+```csharp
+public sealed class SerializerAreaEditInjector : EditScreenInjector<AreaEditScreen, AreaDataModel>
+{
+    public override void OnBuildEditScreen(EditScreenBase<AreaDataModel>.EditScreenBuilder builder)
+    {
+        builder.AddComponents("Serialization", "Column exclusions", new[]
+        {
+            // Read-only display of area serialization exclusion settings
+        });
+    }
+}
+```
+
+### 3. Item Type Field Enumeration
+
+**Pattern:** `MetadataManager.Current.GetItemType(systemName)` then `ItemType.Fields` or `ItemType.GetAllFields()`
+**Confidence:** HIGH (verified in DW10 source)
+
+| Class | Namespace | Purpose |
+|-------|-----------|---------|
+| `MetadataManager` | `Dynamicweb.Content.Items.Metadata` | Singleton for item type metadata |
+| `ItemType` | `Dynamicweb.Content.Items.Metadata` | Item type definition with fields |
+| `ItemField` | `Dynamicweb.Content.Items.Metadata` | Individual field metadata |
+| `FieldMetadataCollection` | `Dynamicweb.Content.Items.Metadata` | Collection of ItemField |
+| `MetadataContainer` | `Dynamicweb.Content.Items.Metadata` | Container for all item types |
+
+**How to enumerate all item types:**
+```csharp
+var container = MetadataManager.Current.GetMetadata();
+// container.Items is ItemMetadataCollection containing all ItemType objects
+foreach (var itemType in container.Items)
+{
+    // itemType.SystemName, itemType.Name, itemType.Fields
+}
+```
+
+**How to get fields for a specific item type:**
+```csharp
+var itemType = MetadataManager.Current.GetItemType("MyItemType");
+if (itemType != null)
+{
+    // Direct fields only
+    var fields = itemType.Fields; // FieldMetadataCollection
+    
+    // Including inherited fields from base types
+    var allFields = itemType.GetAllFields(); // calls ItemManager.Metadata.GetItemFields(this)
+    // Or equivalently:
+    var allFields2 = MetadataManager.Current.GetItemFields(itemType); // includes inherited
+    
+    foreach (var field in allFields)
+    {
+        // field.SystemName - e.g., "Title", "Description"
+        // field.Name - display name
+        // field.Editor - editor metadata
+        // field.UnderlyingType - CLR type
+    }
+}
+```
+
+**Key `ItemField` properties for building checkbox UI:**
+- `SystemName` (string) - unique identifier within item type
+- `Name` (string) - user-friendly display name
+- `Description` (string) - help text
+- `Editor` (EditorMetadata) - editor type info
+- `UnderlyingType` (Type) - CLR type of value
+
+### 4. SQL Table Column Schema Introspection
+
+**Pattern:** `DatabaseSchema` and internal `SqlSchemaHelper`
+**Confidence:** HIGH (verified in DW10 source)
+
+| Class | Namespace | Purpose |
+|-------|-----------|---------|
+| `DatabaseSchema` | `Dynamicweb.Data` | Public API for DB schema queries |
+| `SqlSchemaHelper` | `Dynamicweb.Data.DataProviders` | Internal helper (not accessible) |
+| `Database` | `Dynamicweb.Data` | Connection factory |
+
+**`DatabaseSchema` is the public API.** It provides:
+- `GetTables()` - returns DataTable of all table names
+- `GetTableColumns(IDbConnection, tableName)` - returns DataTable with column schema (ColumnName, DataType, IsKey, IsIdentity, etc.)
+
+**How to get columns for a table:**
+```csharp
+using var connection = Database.CreateConnection();
+var schema = new DatabaseSchema();
+var schemaTable = schema.GetTableColumns(connection, "EcomShops");
+foreach (DataRow row in schemaTable.Rows)
+{
+    var columnName = (string)row["ColumnName"];
+    var dataType = (Type)row["DataType"];
+    var isKey = (bool)row["IsKey"];
+    // Use for building column picker UI
+}
+```
+
+**Note:** `SqlSchemaHelper` is `internal` to `Dynamicweb.Core`. We must use the public `DatabaseSchema` class directly and write our own column-name extraction from the DataTable result. This is straightforward but worth noting.
+
+### 5. Module/Content Module Type Discovery (moduleSystemName)
+
+**Pattern:** `ExtensibilityTypeSelect` with `BaseType = typeof(ContentModuleBaseAddIn)`
+**Confidence:** HIGH (verified in ParagraphEditScreen source)
+
+| Class | Namespace | Purpose |
+|-------|-----------|---------|
+| `ExtensibilityTypeSelect` | `Dynamicweb.CoreUI.Editors.Lists` | Select editor that auto-populates from AddIn types |
+| `ContentModuleBaseAddIn` | `Dynamicweb.Application.UI.ContentModules` | Base type for content modules |
+| `AddInManager` | `Dynamicweb.Extensibility.AddIns` | AddIn discovery/management |
+
+**How ParagraphEditScreen discovers content modules:**
+```csharp
+private static ExtensibilityTypeSelect CreateContentModuleTypeEditor() => new()
+{
+    BaseType = typeof(ContentModuleBaseAddIn),
+    ReloadOnChange = true,
+    ShowNothingSelectedOption = true,
+};
+```
+
+**To enumerate programmatically (for building auto-discovery lists):**
+```csharp
+var types = AddInManager.GetTypes(typeof(ContentModuleBaseAddIn));
+foreach (var type in types)
+{
+    if (!AddInManager.GetAddInActive(type)) continue;
+    if (AddInManager.GetAddInIgnore(type)) continue;
+    if (AddInManager.GetAddInDeprecated(type)) continue;
+    
+    var label = AddInManager.GetAddInName(type);
+    var typeName = type.GetTypeNameWithAssembly();
+}
+```
+
+### 6. URL Data Provider Type Discovery (urlDataProviderTypeName)
+
+**Pattern:** `ExtensibilityTypeSelect` with `BaseType = typeof(UrlDataProvider)`
+**Confidence:** HIGH (verified in PageEditScreen source)
+
+| Class | Namespace | Purpose |
+|-------|-----------|---------|
+| `UrlDataProvider` | `Dynamicweb.Frontend.UrlHandling` | Abstract base for URL data providers |
+
+**How PageEditScreen discovers URL data providers:**
+```csharp
+private static ExtensibilityTypeSelect CreateUrlDataProviderTypeEditor() => new()
+{
+    ReloadOnChange = true,
+    ShowNothingSelectedOption = true,
+    BaseType = typeof(UrlDataProvider)
+};
+```
+
+## Recommended Stack Additions
+
+### Core Framework (no new NuGet packages needed)
 | Technology | Version | Purpose | Why |
 |------------|---------|---------|-----|
-| .NET | 8.0 | Runtime | Already in use |
-| Dynamicweb | 10.23.9 | DW10 API surface | Already referenced |
-| YamlDotNet | 13.7.1 | YAML serialization | Already in use |
+| `Dynamicweb.CoreUI` | (existing) | EditScreenInjector, EditScreenBuilder | Already a dependency; all tab/screen injection APIs live here |
+| `Dynamicweb.Content.UI` | (existing) | PageEditScreen, AreaEditScreen, ItemTypeEditScreen, models | Already a dependency for existing injectors |
+| `Dynamicweb.Data` | (existing) | DatabaseSchema for SQL column introspection | Already a transitive dependency via Dynamicweb.Core |
+| `Dynamicweb.Content` | (existing) | MetadataManager, ItemType, ItemField for field enumeration | Already a transitive dependency |
+| `Dynamicweb.Application.UI` | (existing) | ContentModuleBaseAddIn for module discovery | Already a transitive dependency |
 
-## API Surface for v0.5.0 Features
+### No New Dependencies
+Everything needed for v0.6.0 is available through existing DW10 APIs. No additional NuGet packages are required.
 
-### 1. XML Pretty-Printing -- System.Xml.Linq
+## Key Integration Points
 
-**Use `XDocument.Parse()` + `SaveOptions.None` (indented output) for formatting.**
+### Existing Injector Pattern (already validated)
+The project already has two working injectors:
+1. `SerializerPageEditInjector` - extends `EditScreenInjector<PageEditScreen, PageDataModel>`, uses `GetScreenActions()` to add action menu items
+2. `SerializerFileOverviewInjector` - extends `ScreenInjector<FileOverviewScreen>`, uses `OnAfter()` to modify screen layout
 
-```csharp
-using System.Xml.Linq;
+### New Injectors Needed
+| Injector | Base Class | Target Screen | Method |
+|----------|-----------|---------------|--------|
+| `SerializerItemTypeEditInjector` | `EditScreenInjector<ItemTypeEditScreen, ItemTypeDataModel>` | Item type settings | `OnBuildEditScreen` (adds "Serialization" tab) |
+| `SerializerAreaEditInjector` | `EditScreenInjector<AreaEditScreen, AreaDataModel>` | Area edit | `OnBuildEditScreen` (adds "Serialization" tab) |
 
-public static string? PrettyPrintXml(string? rawXml)
-{
-    if (string.IsNullOrWhiteSpace(rawXml)) return rawXml;
-    try
-    {
-        var doc = XDocument.Parse(rawXml);
-        // SaveOptions.None = indented; SaveOptions.DisableFormatting = compact
-        return doc.ToString(SaveOptions.None);
-    }
-    catch (System.Xml.XmlException)
-    {
-        return rawXml; // Not valid XML, return as-is
-    }
-}
-```
+### Data Flow for Field Exclusion UI
+1. Injector's `OnBuildEditScreen` is called with `EditScreenBuilder`
+2. Use `Screen.Model.SystemName` (for ItemTypeEditScreen) to get the item type system name
+3. Call `MetadataManager.Current.GetItemType(systemName)` to get the ItemType
+4. Iterate `itemType.GetAllFields()` to build checkbox list
+5. Load current exclusion config from `ConfigLoader` to set checkbox states
+6. On save, update config file via existing `ConfigLoader` patterns
 
-**Why XDocument over XmlDocument:**
-- XDocument is the modern LINQ-to-XML API, part of .NET BCL since .NET 3.5
-- `ToString()` produces indented XML by default (no extra config needed)
-- Lighter weight -- no DOM overhead of XmlDocument
-- No namespace needed beyond `System.Xml.Linq` (already in BCL)
-- XmlDocument requires explicit `XmlWriterSettings { Indent = true }` and writing to a StringWriter -- more boilerplate
+### Data Flow for SQL Column Picker
+1. Use `DatabaseSchema.GetTableColumns()` to get column list
+2. Build multi-select or checkbox list from column names
+3. Load current exclusion config from `ConfigLoader`
+4. On save, update config file
 
-**Where XML appears in the current pipeline:**
-
-| Field | Model | Location in Pipeline |
-|-------|-------|---------------------|
-| `ModuleSettings` | `SerializedParagraph` | `ContentMapper.MapParagraph()` reads from `paragraph.ModuleSettings` |
-| `UrlDataProviderParameters` | `SerializedUrlSettings` | `ContentMapper.MapPage()` reads from `page.UrlDataProviderParameters` |
-| SQL column values | `FlatFileStore.WriteRow()` | Any `nvarchar`/`ntext`/`xml` column in SqlTable YAML |
-
-**Integration approach:** Create an `XmlFormatter` utility class. Call it in ContentMapper before assigning to DTO fields, and in FlatFileStore/SqlTableProvider before writing row YAML. On deserialization, the formatted XML is functionally identical (XML ignores whitespace between elements by default) -- no special handling needed on the read path.
-
-### 2. YamlDotNet -- Multi-line XML in YAML via Literal Block Scalars
-
-**Existing `ForceStringScalarEmitter` already handles this.** Pretty-printed XML contains `\n` (LF) line breaks (XDocument.ToString uses LF), so the existing emitter will automatically select `ScalarStyle.Literal` for formatted XML strings. No YamlDotNet changes needed.
-
-Current logic in `ForceStringScalarEmitter.Emit()`:
-```csharp
-if (value.Contains('\n') && !value.Contains('\r'))
-    eventInfo.Style = ScalarStyle.Literal;  // <-- Pretty-printed XML hits this path
-```
-
-**Result in YAML output:**
-```yaml
-moduleSettings: |
-  <settings>
-    <module systemName="Dynamicweb.Frontend.Navigation">
-      <param name="StartLevel">0</param>
-      <param name="EndLevel">5</param>
-    </module>
-  </settings>
-```
-
-This is the ideal format for git diffs -- each XML element on its own line, YAML literal block preserves it exactly.
-
-**FlatFileStore caveat:** The SQL-specific serializer in `FlatFileStore` does NOT use `ForceStringScalarEmitter` -- it uses a plain `SerializerBuilder`. XML values in SQL YAML files will be emitted as single-line strings. To get literal block scalars for SQL XML too, add the emitter to FlatFileStore's serializer:
-
-```csharp
-_serializer = new SerializerBuilder()
-    .WithNamingConvention(CamelCaseNamingConvention.Instance)
-    .WithEventEmitter(next => new ForceStringScalarEmitter(next))  // ADD THIS
-    .ConfigureDefaultValuesHandling(DefaultValuesHandling.Preserve)
-    .Build();
-```
-
-### 3. Field-Level Blacklist Filtering
-
-**No new libraries needed.** This is a configuration + runtime filtering concern.
-
-**Configuration model extension** -- add to `ProviderPredicateDefinition`:
-```csharp
-/// <summary>Fields/columns to exclude from serialization output.</summary>
-public List<string> ExcludeFields { get; init; } = new();
-
-/// <summary>XML elements to exclude from embedded XML values.</summary>
-public List<string> ExcludeXmlElements { get; init; } = new();
-```
-
-**Integration points for field filtering:**
-
-| Provider | Where to Filter | How |
-|----------|----------------|-----|
-| ContentProvider (pages) | `ContentMapper.MapPage()` | Remove keys from `Fields` and `PropertyFields` dicts before DTO creation |
-| ContentProvider (paragraphs) | `ContentMapper.MapParagraph()` | Remove keys from `Fields` dict |
-| ContentProvider (areas) | `ContentMapper.MapArea()` | Remove keys from `ItemFields` dict |
-| SqlTableProvider | `FlatFileStore.WriteRow()` or `SqlTableProvider.Serialize()` | Remove keys from row dict before writing YAML |
-
-**For XML element blacklisting** (removing specific `<param>` elements from moduleSettings):
-```csharp
-using System.Xml.Linq;
-
-public static string? FilterXmlElements(string? xml, IEnumerable<string> excludeElements)
-{
-    if (string.IsNullOrWhiteSpace(xml) || !excludeElements.Any()) return xml;
-    try
-    {
-        var doc = XDocument.Parse(xml);
-        doc.Descendants()
-           .Where(e => excludeElements.Contains(e.Name.LocalName, StringComparer.OrdinalIgnoreCase))
-           .Remove();
-        return doc.ToString(SaveOptions.None);
-    }
-    catch (XmlException) { return xml; }
-}
-```
-
-### 4. Area Property Consolidation into ContentProvider
-
-**Two-tier approach -- C# API properties + direct SQL for the rest.**
-
-**Tier 1: Properties available on `Dynamicweb.Content.Area` class (verified from DW 10.23.9 API docs):**
-
-| Category | Properties |
-|----------|-----------|
-| Identity | UniqueId, Name, Sort, IsMaster, IsLanguage, MasterAreaId |
-| Display | Domain, DomainLock, LockPagesToDomain, Culture, Codepage, Encoding, Dateformat |
-| Layout | LayoutTemplate, LayoutPhoneTemplate, LayoutTabletTemplate, MasterTemplate |
-| SEO | Noindex, Nofollow, RobotsTxt, RobotsTxtIncludeSitemap, IncludeProductsInSitemap |
-| Ecommerce | EcomShopId, EcomLanguageId, EcomCurrencyId, EcomCountryCode, EcomPricesWithVat, StockLocationID, ReverseChargeForVat |
-| SSL/Security | SslMode, PermissionTemplate |
-| Navigation | Frontpage, NotFound, RedirectFirstPage, UrlName, UrlIgnoreForChildren |
-| Items | ItemType, ItemId, ItemTypePageProperty, ItemTypeLayouts |
-| CDN | CdnHost, CdnImageHost, IsCdnActive |
-| Cookie | CookieWarningTemplate, CookieCustomNotifications |
-| State | Active, Published, CopyOf, LanguageDepth |
-
-**Tier 2: Columns NOT exposed on the C# API** (need direct SQL via `Dynamicweb.Data.Database`):
-
-The Area SQL table has ~60 columns. Most are accessible via the C# `Area` class. For any that are not (e.g., deprecated columns, or columns only accessible via reflection), use `Database.CreateDataReader()` to read the full row -- same pattern already used by `SqlTableReader`.
-
-**Recommendation:** Start with Tier 1 only (C# API properties). The Area class exposes the vast majority of meaningful columns. Only fall back to direct SQL if specific columns are identified as missing during implementation.
-
-**Extend `SerializedArea` model:**
-```csharp
-public record SerializedArea
-{
-    // Existing
-    public required Guid AreaId { get; init; }
-    public required string Name { get; init; }
-    public required int SortOrder { get; init; }
-    public string? ItemType { get; init; }
-    public Dictionary<string, object> ItemFields { get; init; } = new();
-    public List<SerializedPage> Pages { get; init; } = new();
-
-    // NEW -- full area properties
-    public string? Domain { get; init; }
-    public string? Culture { get; init; }
-    public string? LayoutTemplate { get; init; }
-    public string? MasterTemplate { get; init; }
-    public string? EcomShopId { get; init; }
-    public string? EcomLanguageId { get; init; }
-    public string? EcomCurrencyId { get; init; }
-    // ... etc. (full list determined during implementation)
-}
-```
+### Data Flow for Module/Provider Discovery
+1. Use `AddInManager.GetTypes(typeof(ContentModuleBaseAddIn))` for module system names
+2. Use `AddInManager.GetTypes(typeof(UrlDataProvider))` for URL data provider types
+3. Both can be rendered via `ExtensibilityTypeSelect` or manual Select population
 
 ## Alternatives Considered
 
-| Recommended | Alternative | Why Not |
-|-------------|-------------|---------|
-| `System.Xml.Linq.XDocument` | `System.Xml.XmlDocument` | XmlDocument requires more boilerplate (XmlWriterSettings + StringWriter) for pretty-printing. XDocument.ToString() does it in one call. |
-| `System.Xml.Linq.XDocument` | Third-party XML library (e.g., HtmlAgilityPack) | Overkill. The XML here is well-formed (DW module settings, URL provider params). No need for tolerant HTML parsing. |
-| Extend `ForceStringScalarEmitter` | YamlDotNet `ITypeConverter` | Type converters operate at the type level. We need string-level formatting decisions (is this string XML?). Event emitter is the right hook. |
-| Field blacklist on predicate config | Separate filter config file | Predicates already define scope. Adding field exclusions to the same predicate keeps configuration co-located. |
-| C# Area API properties | Full SQL `SELECT *` from Area table | API properties are type-safe and forward-compatible. Direct SQL risks breaking on DW schema changes. Use SQL only as fallback for missing properties. |
+| Category | Recommended | Alternative | Why Not |
+|----------|-------------|-------------|---------|
+| Tab injection | `EditScreenInjector.OnBuildEditScreen` | Custom standalone screen | Tab injection provides native UX integrated into existing screens |
+| SQL schema | `DatabaseSchema.GetTableColumns` | Direct SQL INFORMATION_SCHEMA query | DatabaseSchema is the official DW API; using raw SQL bypasses abstraction |
+| Field enumeration | `MetadataManager.Current.GetItemType` | Direct file parsing of /Files/System/Items/ | MetadataManager handles file+DB sources and caching; direct parsing is fragile |
+| Module discovery | `AddInManager.GetTypes(baseType)` | Hardcoded module list | AddInManager auto-discovers all installed modules; hardcoding breaks on new installations |
 
-## What NOT to Use
+## Important Notes
 
-| Avoid | Why | Use Instead |
-|-------|-----|-------------|
-| `System.Xml.XmlDocument` | Legacy DOM API, verbose for simple formatting | `System.Xml.Linq.XDocument` |
-| `XmlSerializer` | For object-to-XML mapping, not string reformatting | `XDocument.Parse()` for string-to-string reformatting |
-| New NuGet packages for XML | Adds dependency for something the BCL handles | `System.Xml.Linq` (BCL) |
-| YamlDotNet `IYamlTypeConverter` for XML | Wrong abstraction level -- converters handle type mapping, not string formatting | Apply XML formatting before YAML serialization |
-| `Regex` for XML formatting | Fragile, doesn't handle edge cases (CDATA, attributes, namespaces) | Proper XML parser (`XDocument`) |
-| `string.Replace()` for XML element removal | Fragile, can corrupt XML structure | `XDocument.Descendants().Remove()` |
+### SqlSchemaHelper is Internal
+The convenient `SqlSchemaHelper.GetColumns(tableName)` method is `internal` to `Dynamicweb.Core`. We must use the public `DatabaseSchema` class directly and write our own column-name extraction from the DataTable result. This is straightforward but worth noting.
 
-## Stack Patterns by Feature
+### EditScreenBuilder is Nested
+The `EditScreenBuilder` is a nested class within `EditScreenBase<TModel>`. The method signature for `OnBuildEditScreen` is:
+```csharp
+public virtual void OnBuildEditScreen(EditScreenBase<TModel>.EditScreenBuilder builder)
+```
+This is important for correct type references.
 
-**If pretty-printing XML in content YAML:**
-- Format in `ContentMapper` before assigning to DTO
-- `ForceStringScalarEmitter` automatically uses literal block scalar
-- No changes to deserialization (formatted XML is semantically identical)
+### Injector Auto-Discovery
+All injectors are discovered by `AddInManager.GetInstances<ScreenInjector<T>>()` during screen construction. No manual registration is needed -- just implement the correct base class and the DW AddIn system handles discovery.
 
-**If pretty-printing XML in SQL table YAML:**
-- Add `ForceStringScalarEmitter` to `FlatFileStore` serializer
-- Format XML values in `SqlTableProvider.Serialize()` before calling `WriteRow()`
-- Detect XML columns by attempting `XDocument.Parse()` -- if it succeeds, format it
+### Read-Only vs Editable Injected Content
+The `EditScreenBuilder` provides `EditorFor` (for model-bound editors) and `AddComponents` (for arbitrary UI components). Since our config lives in a separate JSON file (not the screen's model), we will likely use custom editors or read-only display components rather than model-bound editors. The `GetEditor` override on the injector can provide custom editors for specific property names.
 
-**If filtering fields from content YAML:**
-- Filter dictionaries (`Fields`, `PropertyFields`, `ItemFields`) in ContentMapper
-- Pass `ExcludeFields` from predicate through to mapper methods
+### Config Persistence Challenge
+The injected UI reads/writes to the serializer config file (JSON), not to DW's data model. This means:
+- Read: `ConfigLoader.Load()` at screen construction time
+- Write: Need a save mechanism -- either a custom command or hooking into the screen's save flow via the injector pattern
+- The `GetScreenActions()` method on EditScreenInjector can add action buttons (like "Save serialization config") to the screen
 
-**If filtering fields from SQL YAML:**
-- Filter row dictionary keys in `SqlTableProvider.Serialize()` before calling `FlatFileStore.WriteRow()`
-
-**If filtering XML elements from embedded XML:**
-- Apply after pretty-printing, before assigning to DTO
-- Chain: raw XML -> XDocument.Parse -> remove elements -> ToString -> assign
-
-## Version Compatibility
-
-| Component | Compatible With | Notes |
-|-----------|-----------------|-------|
-| System.Xml.Linq | .NET 8.0 | BCL, always available |
-| YamlDotNet 13.7.1 | .NET 8.0 | Already in use, no version change |
-| ForceStringScalarEmitter | YamlDotNet 13.7.1 | ChainedEventEmitter API stable since YamlDotNet 8.x |
-| Dynamicweb.Content.Area | 10.23.9 | 60+ properties verified in API docs |
+### ItemTypeEditScreen Tab Names
+The ItemTypeEditScreen already has "Settings" and "Restrictions" tabs. Our "Serialization" tab will appear after these, which is the desired position.
 
 ## Sources
 
-- [DW10 Area Class API](https://doc.dynamicweb.com/api/html/ba5b14ce-41df-687d-3d33-b006e231a86a.htm) -- full property list (HIGH confidence)
-- [DW10 AreaService API](https://doc.dynamicweb.com/api/html/02c7da84-1d1c-506d-0054-da04eaff373f.htm) -- GetArea, SaveArea methods (HIGH confidence)
-- [XDocument vs XmlDocument comparison](https://learn.microsoft.com/en-us/archive/technet-wiki/22352.system-xml-xmldocument-and-system-xml-linq-xdocument-comparison) -- Microsoft docs (HIGH confidence)
-- [YamlDotNet literal block scalar issue #391](https://github.com/aaubry/YamlDotNet/issues/391) -- confirms ChainedEventEmitter approach (HIGH confidence)
-- Existing codebase: `ForceStringScalarEmitter.cs`, `FlatFileStore.cs`, `ContentMapper.cs`, `YamlConfiguration.cs` (HIGH confidence)
-- Existing codebase: `ProviderPredicateDefinition.cs` -- current predicate model (HIGH confidence)
-
----
-*Stack research for: DynamicWeb.Serializer v0.5.0 -- Granular Serialization Control*
-*Researched: 2026-04-07*
+- DW10 source: `Dynamicweb.CoreUI\Screens\EditScreenInjector.cs`
+- DW10 source: `Dynamicweb.CoreUI\Screens\EditScreenBase.cs` (EditScreenBuilder nested class, AddComponents method)
+- DW10 source: `Dynamicweb.CoreUI\Screens\ScreenInjector.cs`
+- DW10 source: `Dynamicweb.CoreUI\Screens\ScreenInjectorHandler.cs` (auto-discovery via AddInManager)
+- DW10 source: `Dynamicweb.Global.UI\Content\AreaEditScreenInjector.cs` (reference implementation)
+- DW10 source: `Dynamicweb.Global.UI\Content\PageEditScreenInjector.cs` (reference implementation)
+- DW10 source: `Dynamicweb.Content.UI\Screens\AreaEditScreen.cs`
+- DW10 source: `Dynamicweb.Content.UI\Screens\PageEditScreen.cs`
+- DW10 source: `Dynamicweb.Content.UI\Screens\Settings\ItemTypes\ItemTypeEditScreen.cs`
+- DW10 source: `Dynamicweb.Content.Items.Metadata\MetadataManager.cs`
+- DW10 source: `Dynamicweb.Content.Items.Metadata\ItemType.cs`
+- DW10 source: `Dynamicweb.Content.Items.Metadata\ItemField.cs`
+- DW10 source: `Dynamicweb.Data\DatabaseSchema.cs`
+- DW10 source: `Dynamicweb.Data.DataProviders\SqlSchemaHelper.cs`
+- DW10 source: `Dynamicweb.CoreUI.Editors.Lists\ExtensibilityTypeSelect.cs`
+- DW10 source: `Dynamicweb.Content.UI\Screens\ParagraphEditScreen.cs` (module discovery)
+- DW10 source: `Dynamicweb.Frontend.UrlHandling\UrlDataProvider.cs`

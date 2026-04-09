@@ -1,158 +1,300 @@
-# Feature Research: Granular Serialization Control (v0.5.0)
+# Feature Research: Structured UI Configuration (v0.6.0)
 
-**Domain:** CMS content serialization -- embedded XML handling, field-level filtering, area consolidation
+**Domain:** Structured UI controls replacing free-text fields for DynamicWeb serialization exclusion configuration
 **Researched:** 2026-04-07
-**Confidence:** HIGH (established patterns from Sitecore Unicorn/Rainbow, well-understood XML/YAML mechanics)
+**Confidence:** HIGH (all CoreUI controls verified against DW10 source code)
 
 ## Feature Landscape
 
 ### Table Stakes (Users Expect These)
 
-Features that any serialization tool with "granular control" must have. Without these, the milestone feels incomplete.
+Features that replace existing free-text fields with structured alternatives. Without these, the v0.6 milestone delivers no value.
 
-| Feature | Why Expected | Complexity | Notes |
-|---------|--------------|------------|-------|
-| XML pretty-printing in content YAML | `moduleSettings` and `urlDataProviderParameters` are currently single-line escaped strings -- unreadable in git diffs, impossible to review in PRs | MEDIUM | Rainbow (Unicorn's YAML layer) pretty-prints XML fields via `XmlFieldFormatter` specifically because XML diffs are the #1 source of merge conflicts. Use `XDocument.Parse()` + `ToString()` to indent, then emit as YAML literal block scalar (`\|`). Depends on existing `ForceStringScalarEmitter`. |
-| XML pretty-printing in SQL table YAML | SQL tables like `EcomPayments`, `EcomShippings` store XML config blobs. Same readability problem as content XML. | MEDIUM | Same technique as content XML but applied in `FlatFileStore` serialization path. Must detect XML-shaped strings (starts with `<`) and format them. |
-| Field-level blacklist for pages/paragraphs | Environment-specific fields (timestamps, CreatedBy/UpdatedBy, SourcePageId) clutter diffs. Unicorn's `fieldFilter` excludes `__Updated`, `__Revision`, `__Owner` by default for exactly this reason. | MEDIUM | Needs per-predicate config (list of field names to exclude). Applied during serialization in `ContentMapper`. Unicorn learned the hard way that global-only filtering is insufficient -- they added per-configuration overrides in v4.0. |
-| Field-level blacklist for SQL columns | Same rationale as content fields. Some SQL columns are environment-specific (auto-increment IDs, timestamps, machine-specific paths). | LOW | Applied during `SqlTableReader.ReadAllRows()` post-processing or in `FlatFileStore.WriteRow()`. Simpler than content because columns are flat key-value, no nesting. |
-| Area property consolidation into ContentProvider | Currently `SerializedArea` only has 5 properties (AreaId, Name, SortOrder, ItemType, ItemFields). Real DW areas have 60+ columns (domain, culture, SSL, master page, layout, ecom settings). Incomplete area sync = broken websites. | HIGH | Must read all Area columns via DW `Services.Areas` API or direct SQL, add them to `SerializedArea`, serialize to `area.yml`. Deserialization must write them back. This is the largest single feature. |
-| Predicate UI for field blacklists | Users need to configure field exclusions without editing JSON config files. Current predicate edit screen has no field-level controls. | MEDIUM | Extend `PredicateEditScreen` with a textarea or multi-select for excluded fields. Must work for both Content and SqlTable predicates. |
+| Feature | Why Expected | Complexity | DW CoreUI Control | Notes |
+|---------|--------------|------------|-------------------|-------|
+| **Item Type field exclusion (Serialization tab)** | Currently free-text field names with no discoverability; users must guess field system names | MEDIUM | `CheckboxList` for <10 fields, `SelectMultiDual` for >10 | Inject tab via `EditScreenInjector<ItemTypeEditScreen, ItemTypeDataModel>`. Use `builder.AddComponents("Serialization", ...)`. Fields discovered from `ItemManager.Metadata.GetItemType(systemName).Fields`. Each field becomes a `ListOption` with `Value = field.SystemName, Label = field.Name`. Store excluded set in serializer config JSON keyed by ItemType systemName. |
+| **Content page exclusion via multi-select** | Free-text page paths are error-prone and undiscoverable | MEDIUM | `SelectorBuilder.CreatePageSelector(multiselect: true, areaId: model.AreaId)` | DW page selector already supports `multiselect: true` natively. Returns comma-separated page IDs. Need to resolve IDs to paths for config storage. Replace `Textarea` in PredicateEditScreen with `Selector`. |
+| **Read-only filtering summary on predicate screen** | Users need to see what is excluded without navigating away | LOW | `TextBlock` (read-only display) with `HtmlBlock` for formatted lists | Use `DisplayBase` components, not editors. `TextBlock` for labels, `Link` for clickable navigation to Item Edit / Embedded XML screens. Add as a new LayoutWrapper group "Active Filtering" below existing groups. |
+| **SqlTable column picker (excludeFields)** | Free-text column names require DB knowledge | MEDIUM | `CheckboxList` or `SelectMultiDual` with options from schema query | Query `INFORMATION_SCHEMA.COLUMNS` for the selected table. Populate options dynamically. Requires `ReloadOnChange` on Table field to refresh column lists when table changes. |
+| **SqlTable XML column picker** | Same discoverability problem as excludeFields | LOW | `CheckboxList` (typically <5 XML columns per table) | Subset of column picker: filter to columns likely containing XML content. Could auto-detect via content sampling or present full column list for manual selection. |
 
 ### Differentiators (Competitive Advantage)
 
-Features that go beyond what comparable tools offer, or solve DynamicWeb-specific problems elegantly.
+Features beyond basic replacement that add real UX value.
 
-| Feature | Value Proposition | Complexity | Notes |
-|---------|-------------------|------------|-------|
-| XML element-level blacklist | Exclude specific XML elements *within* a pretty-printed XML blob (e.g., remove `<cache>` settings from moduleSettings). No comparable tool does sub-field XML filtering -- Unicorn's fieldFilter works at the field level, not inside XML content. | MEDIUM | Parse XML, remove matching elements by XPath or element name, then pretty-print remainder. Applied after pretty-printing, before YAML emission. Powerful for stripping environment-specific XML settings without excluding the entire field. |
-| Blacklist-as-default with sensible presets | Ship default exclusion lists per entity type (e.g., always exclude `CreatedDate`, `UpdatedDate`, `CreatedBy`, `UpdatedBy` from pages/paragraphs unless overridden). Unicorn ships default field exclusions in `Unicorn.config` -- users expect sane defaults. | LOW | Hardcoded defaults in code, overridable per predicate in config. Reduces config burden for the 90% case. |
-| Area property field filtering | Apply the same field blacklist to area columns. Some area columns are environment-specific (domain names, SSL settings, analytics IDs). | LOW | Reuses the same blacklist mechanism as page/paragraph filtering, just applied to `SerializedArea` properties. |
-| Round-trip fidelity for pretty-printed XML | Pretty-printed XML must deserialize back to functionally identical XML (whitespace-insensitive comparison). DW may store XML with inconsistent formatting -- normalizing on serialize and comparing normalized on deserialize prevents false diffs. | LOW | `XDocument.Parse()` normalizes automatically. Store pretty-printed, compare normalized. No extra work beyond the pretty-print implementation. |
+| Feature | Value Proposition | Complexity | DW CoreUI Control | Notes |
+|---------|-------------------|------------|-------------------|-------|
+| **Embedded XML tree node with auto-discovery** | Zero-config discovery of XML element types across all predicates; no manual entry needed | HIGH | New `ListScreenBase` under Serialize tree + `CheckboxList` per XML type edit screen | Requires: (1) new tree node in `SerializerSettingsNodeProvider`, (2) XML type discovery by scanning serialized YAML or running sample serialization, (3) per-type element exclusion screen. Most complex feature in the milestone. |
+| **Area column exclusion on Area Edit screen** | Area-level field filtering configured where area is managed, not buried in predicate screen | MEDIUM | `EditScreenInjector<AreaEditScreen, AreaDataModel>` with `CheckboxList` | Inject "Serialization" group into Area Edit screen. Discover area-level columns from area properties schema. Read-only summary on predicate screen links back to Area Edit. |
+| **Clickable links from predicate read-only view** | Navigate directly to Item Type Edit or Embedded XML screen from predicate overview | LOW | `Link` display component + `NavigateScreenAction` | `Link` has `Text` and `Value` (URL target). Use `NavigateScreenAction.To<ItemTypeEditScreen>().With(query)` for internal navigation. Small effort, high polish. |
+| **Auto-populated defaults for new predicates** | When adding SqlTable predicate, auto-fill xmlColumns and excludeFields from known table schemas | LOW | No special control; logic in query/model | Pre-populate model fields based on table selection. Reduces manual configuration for the ~74 SQL tables. |
 
 ### Anti-Features (Commonly Requested, Often Problematic)
 
-Features that seem valuable but create more problems than they solve.
-
 | Feature | Why Requested | Why Problematic | Alternative |
 |---------|---------------|-----------------|-------------|
-| Field *whitelist* (include-only mode) | "I only want these 5 fields" | Brittle -- new fields added by DW upgrades silently excluded, causing data loss on deserialize. Sitecore Unicorn Issue #305 explicitly rejected per-config include-only filtering. | Use blacklist (exclude mode). New fields serialize by default, user explicitly opts out. Safe by default. |
-| XML schema validation on serialize | "Ensure XML is valid before writing" | DW stores invalid/partial XML in some fields. Validating would reject real data. ModuleSettings XML is not always well-formed (legacy modules). | Pretty-print with try/catch -- if XML parse fails, fall back to raw string. Log a warning. |
-| Automatic field discovery UI (introspect DB schema) | "Show me all available columns to exclude" | Requires live DB connection at config time, couples UI to specific environment's schema. Columns differ between DW versions. | Free-text field name entry (textarea, one per line). Users know their own fields. Optional: show column list as hint text from current environment. |
-| Merge/diff strategy for XML fields | "Smart merge of XML changes from two sources" | Massive complexity, XML merge is an unsolved problem. Source-wins strategy means no merging needed. | Stick with source-wins. Pretty-printed XML makes manual merge in git easier. |
-| Per-field conflict resolution | "Keep target value for field X, use source for field Y" | Breaks the simple source-wins mental model. Partial merges create inconsistent state. | Exclude environment-specific fields via blacklist instead. If a field is excluded, target keeps its value. |
-| Transform/rewrite rules for field values | Unicorn 4.1 added "field transforms" (replace value on deploy). | Significant complexity for niche use case. DW Serializer is not yet at the adoption level where transforms are needed. | Defer to future milestone. Field blacklist covers 90% of the use case (exclude env-specific fields). |
+| **Inline editing of exclusions on predicate screen** | "Edit everything in one place" | Predicate screen becomes overloaded; ItemType exclusions are per-type (global), not per-predicate. Mixing scopes creates confusion about what applies where. | Read-only summary with links to dedicated edit screens |
+| **Drag-and-drop field ordering** | "I want to control exclusion order" | Exclusions are a set (unordered); ordering adds false complexity and misleading UX | `CheckboxList` or `SelectMultiDual` without sorting |
+| **Real-time preview of exclusion impact** | "Show me what gets excluded live" | Requires running full serialization preview; expensive, slow, and DW has no incremental serialize API | Dry-run button on settings screen (already exists from v0.5.0) |
+| **Per-predicate ItemType exclusions** | "Different predicates need different field exclusions for the same ItemType" | ItemType is a global schema definition; per-predicate overrides create conflicting configs and confusing merge behavior | Global per-ItemType exclusion (matches Sitecore Unicorn model where fieldFilter is per-configuration, but field transforms apply per-include) |
+| **Full CRUD for XML types in Embedded XML screen** | "Let me manually add XML type definitions" | Auto-discovery is the whole point; manual entry defeats the purpose and re-creates the free-text problem | Auto-discover only; manual override via config file for edge cases |
+
+## DW CoreUI Control Reference (Verified Against Source)
+
+### Multi-Select Controls
+
+**CheckboxList** (`Dynamicweb.CoreUI.Editors.Lists.CheckboxList`)
+- Extends `ListBase`. Doc says: "For selecting multiple options. Use this when you have less than 10 options."
+- Value: array of selected option values (e.g., `new int[] { 1, 3 }` or `new string[] { "field1", "field2" }`).
+- Used in DW10: `ItemTypeEditScreen.CreateEnabledForEditor()` for "Enabled for" structure context types.
+- Best for: Item Type field exclusion (most types have <10 fields), XML column selection.
+
+**SelectMultiDual** (`Dynamicweb.CoreUI.Editors.Lists.SelectMultiDual`)
+- Dual-pane include/exclude with search. Properties: `EnableSorting`, `ForceEnableSearch`, `Groups`, `NoDataTextExcluded`, `NoDataTextIncluded`.
+- `ReloadOnChangeBehavior.HorizontalMovement` fires reload when items move between panes.
+- Best for: Large field lists (>10 fields), SQL table column selection where many columns exist.
+
+**SelectMulti** (`Dynamicweb.CoreUI.Editors.Lists.SelectMulti`)
+- Multi-select with all options visible. Supports `Groups` for categorized options.
+- Best for: Grouped selections where categories matter (e.g., columns grouped by data type).
+
+**Selector with multiselect** (`SelectorBuilder.CreatePageSelector(multiselect: true)`)
+- Full tree-based dialog selector. Already used in project for single-select page/area.
+- `SelectorBuilder.CreatePageSelector(multiselect: true, areaId: N)` returns multi-select page picker.
+- Best for: Page exclusion (replaces free-text path list). Native DW tree-browsing UX.
+
+### Read-Only Display Controls
+
+**TextBlock** (`Dynamicweb.CoreUI.Displays.Information.TextBlock`)
+- Read-only text display. Properties: `Bold`, `Italic`, `Alignment` (Left/Center/Right).
+- Extends `TextDisplayBase` which extends `DisplayBase<string>`.
+- Best for: Section labels and static text in read-only filtering summary.
+
+**Link** (`Dynamicweb.CoreUI.Displays.Information.Link`)
+- Clickable link display. Properties: `Text`, `Value` (URL target), `OpenInNewTab`.
+- Extends `TextDisplayBase`. `Text` defaults to `Value` if not set.
+- Best for: "Edit on Item Type screen" navigation links in predicate read-only view.
+
+**HtmlBlock** (`Dynamicweb.CoreUI.Displays.Information.HtmlBlock`)
+- Renders arbitrary HTML inline. Properties: `Inline`, `DisableValidation`.
+- Extends `DisplayBase<string>`.
+- Best for: Formatted exclusion summaries (bulleted lists of excluded fields/elements).
+
+### Injection Patterns
+
+**EditScreenInjector** (`Dynamicweb.CoreUI.Screens.EditScreenInjector<TScreen, TModel>`)
+- Injects UI into existing edit screens. Three override points:
+  - `OnBuildEditScreen(builder)` -- add components/tabs via `builder.AddComponents(tabName, heading, components)` or `builder.AddComponent(tabName, heading, component)`.
+  - `GetEditor(propertyName, model)` -- provide custom editors for model properties.
+  - `GetScreenActions()` -- add action buttons.
+- Auto-discovered by `AddInManager`. Zero registration required.
+- DW10 references: `PageEditScreenInjector` adds "Ecommerce" tab with 7 fields, `AreaEditScreenInjector` adds "Ecommerce settings" group with 7 fields.
+
+**NavigationNodeProvider** (existing: `SerializerSettingsNodeProvider`)
+- Adds tree nodes under Settings. `GetSubNodes(parentNodePath)` yields child nodes when parent is expanded.
+- Extend existing provider to add "Embedded XML" under "Serialize" node.
+
+### Tab Creation Pattern
+
+Tabs are created implicitly by using a new tab name in `AddComponents(tabName, ...)`. The `EditScreenBuilder` in injectors uses the same API. DW10 AreaEditScreen demonstrates 4 tabs: "General", "Domain and URL", "Layout", "Advanced" -- each a separate `AddComponents` call.
+
+For injectors: `builder.AddComponents("Serialization", "Field Exclusions", editors)` creates a "Serialization" tab if it does not already exist.
+
+### ReadOnly Patterns
+
+Two approaches verified in DW10 source:
+1. **Editor with `Readonly = true`**: via `GetEditorMappings()` returning `CreateMapping(m => m.Field) with { ReadOnly = true }`. Renders as grayed-out input.
+2. **Display components**: `TextBlock`, `Link`, `HtmlBlock` added directly via `builder.AddComponent()`. Not editable by design -- correct choice for the filtering summary.
 
 ## Feature Dependencies
 
 ```
-XML Pretty-Print (Content)
-    |-- depends on --> ForceStringScalarEmitter (existing, needs XML-aware branch)
-    |-- depends on --> System.Xml.Linq (XDocument.Parse + ToString)
+Page multi-select picker
+    (standalone, no dependencies on other v0.6 features)
 
-XML Pretty-Print (SQL Tables)
-    |-- depends on --> FlatFileStore (existing, needs XML detection)
-    |-- depends on --> System.Xml.Linq
+Item Type field exclusion (Serialization tab)
+    └──enables──> Read-only filtering display on predicate screen
+                      └──enhanced by──> Clickable links to Item Edit screen
 
-XML Element Blacklist
-    |-- depends on --> XML Pretty-Print (must parse XML first)
-    |-- depends on --> Predicate config (needs excludeXmlElements field)
+Embedded XML tree node
+    └──enables──> Read-only filtering display (XML exclusion section)
+    └──requires──> XML type auto-discovery logic (scan YAML output)
 
-Field Blacklist (Content)
-    |-- depends on --> ProviderPredicateDefinition (needs ExcludeFields property)
-    |-- depends on --> ContentMapper (apply filtering during map)
-    |-- depends on --> ContentSerializer (pass predicate context to mapper)
+Area column exclusion (on Area Edit screen)
+    └──enables──> Read-only filtering display (Area exclusion section)
 
-Field Blacklist (SQL Tables)
-    |-- depends on --> ProviderPredicateDefinition (same ExcludeFields property)
-    |-- depends on --> FlatFileStore or SqlTableProvider (apply filtering)
-
-Area Consolidation
-    |-- depends on --> SerializedArea model expansion (60+ new properties)
-    |-- depends on --> ContentMapper.MapArea() rewrite
-    |-- depends on --> ContentDeserializer area write-back
-    |-- depends on --> Field Blacklist (area columns need filtering too)
-
-Predicate UI Enhancement
-    |-- depends on --> ProviderPredicateDefinition schema (all new fields added first)
-    |-- depends on --> PredicateEditScreen (new UI controls)
-    |-- depends on --> ConfigWriter/ConfigLoader (persist new fields)
+SqlTable column picker
+    └──requires──> Table field ReloadOnChange wiring (partially exists)
+    └──enables──> SqlTable XML column picker (filtered subset)
 ```
 
 ### Dependency Notes
 
-- **XML Element Blacklist requires XML Pretty-Print:** You must parse the XML to remove elements. Pretty-print is the prerequisite.
-- **Area Consolidation benefits from Field Blacklist:** Area has 60+ columns, many environment-specific. Without blacklist, area.yml contains domain names, analytics IDs, etc. that differ between environments.
-- **Predicate UI must come last:** All config schema changes (ExcludeFields, ExcludeXmlElements) must be finalized before building UI.
-- **Content and SQL XML pretty-print are independent:** Can be built in parallel, different code paths.
+- **Read-only filtering display requires edit screens to exist first**: It reads stored exclusion config and links to Item Type Edit, Embedded XML, and Area Edit screens. Those screens must be built before the summary can reference them.
+- **SqlTable XML picker is a strict subset of column picker**: Build the general column picker first, then filter to XML-containing columns for the XML picker.
+- **Embedded XML auto-discovery is independent of other features**: Can scan existing serialized YAML files for XML content without depending on other v0.6 features.
+- **Page multi-select is fully standalone**: Direct replacement of an existing Textarea control in PredicateEditScreen.
 
 ## MVP Definition
 
-### Launch With (v0.5.0 core)
+### Phase 1: Foundation Controls (High Value, Independent)
 
-- [x] XML pretty-printing for content YAML (moduleSettings, urlDataProviderParameters) -- highest user-visible value, makes git diffs readable
-- [x] XML pretty-printing for SQL table YAML -- same technique, different code path
-- [x] Field-level blacklist config schema on ProviderPredicateDefinition -- ExcludeFields string list
-- [x] Field blacklist applied in ContentMapper and FlatFileStore -- actual filtering
-- [x] Area property consolidation -- full 60+ columns in area.yml
-- [x] Predicate UI for field blacklist configuration -- textarea for excluded field names
+- [ ] **Item Type field exclusion tab** -- highest user value, most-used free-text field, showcases structured approach
+- [ ] **Page exclusion multi-select** -- direct replacement using native DW selector, minimal new code
+- [ ] **SqlTable column/XML pickers** -- completes structured UI for SQL predicates, uses same control patterns
 
-### Add After Validation (v0.5.x)
+### Phase 2: Advanced Screens (Complex, Enable Polish)
 
-- [ ] XML element-level blacklist -- only if users report needing sub-field XML filtering
-- [ ] Default exclusion presets per entity type -- reduce config burden after patterns emerge from real usage
-- [ ] Column hint text in predicate UI -- show available columns from current environment as help text
+- [ ] **Embedded XML tree node + edit screen** -- most complex feature; needs auto-discovery, new tree node, list + edit screens
+- [ ] **Area column exclusion on Area Edit** -- injector pattern proven in Phase 1, apply to different screen
 
-### Future Consideration (v0.6+)
+### Phase 3: Polish & Integration
 
-- [ ] Field transforms (Unicorn 4.1 style value replacement on deploy) -- only when adoption justifies complexity
-- [ ] Schema-aware field validation -- verify excluded field names exist in target schema
-- [ ] Conditional field inclusion by environment tag -- "exclude AnalyticsId only in dev"
+- [ ] **Read-only filtering display on predicate screen** -- requires Phase 1+2 screens to exist for links
+- [ ] **Clickable navigation links** -- enhancement to read-only display
+- [ ] **Auto-populated defaults for SqlTable predicates** -- quality-of-life optimization
 
 ## Feature Prioritization Matrix
 
-| Feature | User Value | Implementation Cost | Priority |
-|---------|------------|---------------------|----------|
-| XML pretty-print (content) | HIGH | MEDIUM | P1 |
-| XML pretty-print (SQL) | HIGH | LOW | P1 |
-| Area consolidation (60+ columns) | HIGH | HIGH | P1 |
-| Field blacklist (content) | HIGH | MEDIUM | P1 |
-| Field blacklist (SQL) | MEDIUM | LOW | P1 |
-| Predicate UI enhancement | MEDIUM | MEDIUM | P1 |
-| XML element blacklist | MEDIUM | MEDIUM | P2 |
-| Default exclusion presets | LOW | LOW | P2 |
-| Area field blacklist | MEDIUM | LOW | P1 |
+| Feature | User Value | Implementation Cost | Priority | Phase |
+|---------|------------|---------------------|----------|-------|
+| Item Type field exclusion tab | HIGH | MEDIUM | P1 | 1 |
+| Page exclusion multi-select | HIGH | LOW | P1 | 1 |
+| SqlTable column picker | HIGH | MEDIUM | P1 | 1 |
+| SqlTable XML column picker | MEDIUM | LOW | P1 | 1 |
+| Embedded XML tree node | MEDIUM | HIGH | P2 | 2 |
+| Area column exclusion | MEDIUM | MEDIUM | P2 | 2 |
+| Read-only filtering display | MEDIUM | LOW | P2 | 3 |
+| Clickable links from predicate | LOW | LOW | P3 | 3 |
+| Auto-populated defaults | LOW | LOW | P3 | 3 |
 
-**Priority key:**
-- P1: Must have for v0.5.0 launch
-- P2: Should have, add if time permits or defer to v0.5.x
-- P3: Nice to have, future consideration
+## Implementation Sketches
+
+### 1. Item Type Field Exclusion (Serialization Tab)
+
+**New files:**
+- `AdminUI/Injectors/SerializerItemTypeEditInjector.cs`
+- `AdminUI/Commands/SaveItemTypeExclusionsCommand.cs` (or save via existing config mechanism)
+
+**Pattern (modeled on DW10 `PageEditScreenInjector`):**
+```csharp
+public class SerializerItemTypeEditInjector : EditScreenInjector<ItemTypeEditScreen, ItemTypeDataModel>
+{
+    public override void OnBuildEditScreen(EditScreenBase<ItemTypeDataModel>.EditScreenBuilder builder)
+    {
+        var systemName = Screen?.Model?.SystemName;
+        if (string.IsNullOrEmpty(systemName)) return;
+
+        var fields = ItemManager.Metadata.GetItemType(systemName)?.Fields;
+        if (fields == null || !fields.Any()) return;
+
+        var checkboxList = new CheckboxList
+        {
+            Label = "Exclude from serialization",
+            Name = "ExcludedFields",
+            Value = GetCurrentExclusions(systemName),
+            Explanation = "Checked fields will be omitted from serialized YAML output.",
+            Options = fields.Select(f => new ListOption
+            {
+                Value = f.SystemName,
+                Label = f.Name,
+                Hint = f.SystemName
+            }).ToList()
+        };
+
+        builder.AddComponent("Serialization", "Field Exclusions", checkboxList);
+    }
+}
+```
+
+**Storage:** Serializer config JSON, new `itemTypeExclusions` dictionary keyed by ItemType systemName.
+
+### 2. Page Exclusion Multi-Select
+
+**Change in `PredicateEditScreen.GetEditor`:**
+```csharp
+nameof(PredicateEditModel.Excludes) => SelectorBuilder.CreatePageSelector(
+    multiselect: true,
+    areaId: Model?.AreaId > 0 ? Model.AreaId : null,
+    hint: "Select pages to exclude from serialization"
+)
+```
+
+**Data conversion:** Selected page IDs must be converted to paths for portable config storage (IDs differ between environments). Resolve via `Services.Pages.GetPage(id)?.Path`.
+
+### 3. SqlTable Column Pickers
+
+**Change in `PredicateEditScreen.GetEditor`:**
+```csharp
+nameof(PredicateEditModel.ExcludeFields) => CreateColumnCheckboxList(Model?.Table, "Exclude Columns"),
+nameof(PredicateEditModel.XmlColumns) => CreateColumnCheckboxList(Model?.Table, "XML Columns"),
+```
+
+Where `CreateColumnCheckboxList` queries `INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = table` and returns `CheckboxList` or `SelectMultiDual` depending on column count.
+
+**Requires:** Table `Select` must use `ReloadOnChange = true` so column lists refresh when table changes.
+
+### 4. Embedded XML Tree Node
+
+**Extend `SerializerSettingsNodeProvider.GetSubNodes`:**
+```csharp
+yield return new NavigationNode
+{
+    Id = EmbeddedXmlNodeId,
+    Name = "Embedded XML",
+    Icon = Icon.Code,
+    Sort = 15,
+    HasSubNodes = false,
+    NodeAction = NavigateScreenAction.To<EmbeddedXmlListScreen>()
+        .With(new EmbeddedXmlListQuery())
+};
+```
+
+**New screens:** `EmbeddedXmlListScreen` (list of discovered XML types), `EmbeddedXmlEditScreen` (element exclusion per type).
+
+### 5. Read-Only Filtering Display
+
+**Add to `PredicateEditScreen.BuildEditScreen` after existing groups:**
+```csharp
+var filteringComponents = new List<UiComponentBase>();
+filteringComponents.Add(new TextBlock { Value = "Excluded Fields:", Bold = true });
+filteringComponents.Add(new HtmlBlock { Value = BuildExclusionHtml(Model) });
+filteringComponents.Add(new Link { Text = "Edit on Item Type screen", Value = itemTypeEditUrl });
+
+groups.Add(new("Active Filtering", filteringComponents));
+```
+
+### 6. Area Column Exclusion
+
+**New file: `AdminUI/Injectors/SerializerAreaEditInjector.cs`**
+
+Same pattern as Item Type injector, targeting `EditScreenInjector<AreaEditScreen, AreaDataModel>`. Area properties discovered from area schema. Injected as "Serialization" group under "Advanced" tab or as its own tab.
 
 ## Competitor Feature Analysis
 
-| Feature | Sitecore Unicorn/Rainbow | Sitecore SCS (native) | DW Serializer (our approach) |
-|---------|--------------------------|----------------------|------------------------------|
-| XML pretty-print | YES -- `XmlFieldFormatter` pretty-prints layout and rules XML in YAML output | Not documented | Implement via `XDocument.Parse()` + literal block scalar. Same approach as Rainbow. |
-| Field exclusion scope | Global `fieldFilter` in defaults; per-configuration override in v4.0+. Cannot scope to individual items. | Global `excludedFields` array. No per-module scoping. | Per-predicate `excludeFields` list. More granular than Unicorn (scoped to predicate, not just configuration). |
-| Field exclusion by | Field GUID (`fieldID` attribute) | Field GUID | Field name (string). Simpler, no GUID lookup needed. Works for both Content item fields and SQL columns. |
-| Sub-field filtering | Not supported. Field is all-or-nothing. | Not supported. | XML element blacklist (unique differentiator). |
-| Area/site-level properties | Not applicable (Sitecore sites are config-defined). | Not applicable. | Full 60+ column serialization with field blacklist. DW-specific need. |
-| Default exclusions | Ships with `__Updated`, `__Revision`, `__Owner`, `Last run` excluded. | Ships with Owner, Revision, Updated, UpdatedBy, Lock excluded. | Ship defaults for CreatedDate, UpdatedDate, CreatedBy, UpdatedBy. Same pattern. |
-| Field transforms | YES (v4.1) -- replace values on deploy per predicate/include. | Not supported. | Deferred. Blacklist covers 90% of use case. |
-| Multiline values | YES -- multilists stored multi-line for fewer conflicts. | YAML format with multiline. | Already handled by `ForceStringScalarEmitter` literal block scalar. |
+| Feature | Sitecore Unicorn | Sitecore TDS | Our Approach |
+|---------|------------------|--------------|--------------|
+| Field exclusion UI | Config XML (no UI) | VS project checkboxes | CheckboxList on ItemType Edit screen -- discoverable and in-context |
+| Path exclusion | Config XML predicates | Project item include/exclude | Multi-select page picker with tree browsing -- native DW UX |
+| XML element control | Not supported (no embedded XML) | Not supported | Auto-discovered XML types with element-level CheckboxList -- unique |
+| Configuration summary | Unicorn Control Panel (web page) | VS solution explorer | Read-only display with links embedded in predicate edit screen |
+| Column exclusion | N/A (field-based) | N/A | CheckboxList populated from INFORMATION_SCHEMA -- schema-aware |
 
 ## Sources
 
-- [Sitecore Unicorn Field Filter](https://www.flux-digital.com/blog/excluding-specific-fields-unicorn-serialisation-field-filter/) -- per-configuration field exclusion patterns
-- [Unicorn Issue #305: Sync only specific fields](https://github.com/SitecoreUnicorn/Unicorn/issues/305) -- why include-only was rejected
-- [Rainbow YAML serialization](https://kamsar.net/index.php/2015/07/Rethinking-the-Sitecore-Serialization-Format-Unicorn-3-Preview-part-1/) -- XML field formatting rationale
-- [Sitecore SCS excluded fields](https://doc.sitecore.com/xp/en/developers/latest/developer-tools/configure-excluded-fields.html) -- native Sitecore field exclusion
-- [Unicorn 4.1 Field Transforms](https://intothecloud.blog/2019/05/26/Rise-of-the-Unicorn-Transformers/) -- per-predicate/include field transform scoping
-- [Sitecore SCS configuration reference](https://doc.sitecore.com/xp/en/developers/latest/developer-tools/sitecore-content-serialization-configuration-reference.html) -- rules and scoping
-- [YamlDotNet literal block scalar](https://github.com/aaubry/YamlDotNet/issues/391) -- ScalarStyle.Literal for multiline strings
-- [YAML multiline reference](https://yaml-multiline.info/) -- literal vs folded block scalar semantics
-- [Rainbow GitHub](https://github.com/SitecoreUnicorn/Rainbow) -- XmlFieldFormatter and field formatting architecture
+- DW10 source: `C:\Projects\temp\dw10source\Dynamicweb.CoreUI\Editors\Lists\CheckboxList.cs` -- multi-select <10 options
+- DW10 source: `C:\Projects\temp\dw10source\Dynamicweb.CoreUI\Editors\Lists\SelectMultiDual.cs` -- dual-pane include/exclude
+- DW10 source: `C:\Projects\temp\dw10source\Dynamicweb.CoreUI\Editors\Lists\SelectMulti.cs` -- multi-select with groups
+- DW10 source: `C:\Projects\temp\dw10source\Dynamicweb.CoreUI\Editors\Selectors\SelectorBuilder.cs` -- `CreatePageSelector(multiselect: true)`
+- DW10 source: `C:\Projects\temp\dw10source\Dynamicweb.CoreUI\Screens\EditScreenInjector.cs` -- tab injection pattern
+- DW10 source: `C:\Projects\temp\dw10source\Dynamicweb.CoreUI\Screens\EditScreenBase.cs` -- `EditScreenBuilder` API
+- DW10 source: `C:\Projects\temp\dw10source\Dynamicweb.CoreUI\Displays\Information\TextBlock.cs` -- read-only text
+- DW10 source: `C:\Projects\temp\dw10source\Dynamicweb.CoreUI\Displays\Information\Link.cs` -- clickable links
+- DW10 source: `C:\Projects\temp\dw10source\Dynamicweb.CoreUI\Displays\Information\HtmlBlock.cs` -- HTML display
+- DW10 source: `C:\Projects\temp\dw10source\Dynamicweb.Global.UI\Content\PageEditScreenInjector.cs` -- reference injector adding "Ecommerce" tab
+- DW10 source: `C:\Projects\temp\dw10source\Dynamicweb.Global.UI\Content\AreaEditScreenInjector.cs` -- reference injector for area screen
+- DW10 source: `C:\Projects\temp\dw10source\Dynamicweb.Content.UI\Screens\Settings\ItemTypes\ItemTypeEditScreen.cs` -- CheckboxList usage example
 
 ---
-*Feature research for: DynamicWeb.Serializer v0.5.0 Granular Serialization Control*
+*Feature research for: DynamicWeb.Serializer v0.6.0 Structured UI Configuration*
 *Researched: 2026-04-07*
