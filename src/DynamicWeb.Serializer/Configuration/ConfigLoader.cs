@@ -37,7 +37,9 @@ public static class ConfigLoader
             LogLevel = string.IsNullOrWhiteSpace(raw.LogLevel) ? "info" : raw.LogLevel,
             DryRun = raw.DryRun ?? false,
             ConflictStrategy = ParseConflictStrategy(raw.ConflictStrategy),
-            Predicates = raw.Predicates!.Select(BuildPredicate).ToList()
+            Predicates = raw.Predicates!.Select(BuildPredicate).ToList(),
+            ExcludeFieldsByItemType = raw.ExcludeFieldsByItemType ?? new Dictionary<string, List<string>>(),
+            ExcludeXmlElementsByType = raw.ExcludeXmlElementsByType ?? new Dictionary<string, List<string>>()
         };
     }
 
@@ -103,6 +105,8 @@ public static class ConfigLoader
         public bool? DryRun { get; set; }
         public string? ConflictStrategy { get; set; }
         public List<RawPredicateDefinition>? Predicates { get; set; }
+        public Dictionary<string, List<string>>? ExcludeFieldsByItemType { get; set; }
+        public Dictionary<string, List<string>>? ExcludeXmlElementsByType { get; set; }
     }
 
     private sealed class RawPredicateDefinition
