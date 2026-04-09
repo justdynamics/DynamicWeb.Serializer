@@ -184,4 +184,4 @@ This document evolves at phase transitions and milestone boundaries.
 - **v0.5.0 Granular Serialization Control** — XML pretty-print, field-level filtering, area consolidation, predicate UI (2026-04-09)
 
 ---
-*Last updated: 2026-04-09 — milestone v0.6.0 started (UI configuration improvements)*
+*Last updated: 2026-04-09 — Phase 32 complete (config schema extension with typed exclusion dictionaries)*
