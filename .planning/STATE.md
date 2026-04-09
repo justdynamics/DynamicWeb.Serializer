@@ -4,14 +4,14 @@ milestone: v0.6.0
 milestone_name: UI Configuration Improvements
 status: executing
 stopped_at: Phase 32 context gathered
-last_updated: "2026-04-09T15:19:59.336Z"
-last_activity: 2026-04-09 -- Phase 32 planning complete
+last_updated: "2026-04-09T16:31:09.536Z"
+last_activity: 2026-04-09
 progress:
   total_phases: 6
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 2
-  completed_plans: 0
-  percent: 0
+  completed_plans: 2
+  percent: 100
 ---
 
 # Project State
@@ -25,16 +25,16 @@ See: .planning/PROJECT.md (updated 2026-04-09)
 
 ## Current Position
 
-Phase: 32 (first of 6 in v0.6.0 milestone)
-Plan: 0 of 0 in current phase (not yet planned)
+Phase: 33 of 6 (sqltable column pickers)
+Plan: Not started
 Status: Ready to execute
-Last activity: 2026-04-09 -- Phase 32 planning complete
+Last activity: 2026-04-09
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 26 (prior milestones)
+- Total plans completed: 28 (prior milestones)
 - Average duration: ~4min
 - Total execution time: ~1.7 hours
 
@@ -48,6 +48,7 @@ Last activity: 2026-04-09 -- Phase 32 planning complete
 | Phase 29 P01 | 1 | 5min | 5min |
 | Phase 30 P01 | 1 | 3min | 3min |
 | Phase 31 P01 | 1 | 2min | 2min |
+| 32 | 2 | - | - |
 
 **Recent Trend:**
 

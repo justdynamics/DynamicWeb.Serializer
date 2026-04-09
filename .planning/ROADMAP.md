@@ -97,7 +97,7 @@
 
 **Milestone Goal:** Replace all free-text configuration with structured, discoverable UI controls across item types, embedded XML definitions, predicates, area settings, and SQL tables.
 
-- [ ] **Phase 32: Config Schema Extension** - Add dictionary-based exclusion config alongside existing flat arrays
+- [x] **Phase 32: Config Schema Extension** - Add dictionary-based exclusion config alongside existing flat arrays (completed 2026-04-09)
 - [ ] **Phase 33: SqlTable Column Pickers** - Replace free-text excludeFields/xmlColumns with schema-driven CheckboxLists
 - [ ] **Phase 34: Embedded XML Screens** - New tree node with auto-discovery and element-level exclusion
 - [ ] **Phase 35: Item Type Screens** - New tree node with per-item-type field exclusion CheckboxList
@@ -116,8 +116,8 @@
   3. Both flat arrays and typed dictionaries are applied during serialize/deserialize (additive merge)
 **Plans**: 2 plans
 Plans:
-- [ ] 32-01-PLAN.md -- Config model extension + backward compat tests
-- [ ] 32-02-PLAN.md -- ExclusionMerger helper + pipeline integration
+- [x] 32-01-PLAN.md -- Config model extension + backward compat tests
+- [x] 32-02-PLAN.md -- ExclusionMerger helper + pipeline integration
 
 ### Phase 33: SqlTable Column Pickers
 **Goal**: SqlTable predicate editing uses auto-populated column selectors instead of free-text entry
@@ -129,8 +129,8 @@ Plans:
   3. Selections persist to config JSON and are applied during serialize/deserialize
 **Plans**: 2 plans
 Plans:
-- [ ] 32-01-PLAN.md -- Config model extension + backward compat tests
-- [ ] 32-02-PLAN.md -- ExclusionMerger helper + pipeline integration
+- [x] 32-01-PLAN.md -- Config model extension + backward compat tests
+- [x] 32-02-PLAN.md -- ExclusionMerger helper + pipeline integration
 **UI hint**: yes
 
 ### Phase 34: Embedded XML Screens
@@ -202,7 +202,7 @@ Plans:
 | 19-22 | v0.3.1 | 5/5 | Complete | 2026-04-03 |
 | 23-25 | v0.4.0 | 4/4 | Complete | 2026-04-03 |
 | 26-31 | v0.5.0 | 6/6 | Complete | 2026-04-09 |
-| 32. Config Schema Extension | v0.6.0 | 0/2 | Planning | - |
+| 32. Config Schema Extension | v0.6.0 | 2/2 | Complete    | 2026-04-09 |
 | 33. SqlTable Column Pickers | v0.6.0 | 0/0 | Not started | - |
 | 34. Embedded XML Screens | v0.6.0 | 0/0 | Not started | - |
 | 35. Item Type Screens | v0.6.0 | 0/0 | Not started | - |
