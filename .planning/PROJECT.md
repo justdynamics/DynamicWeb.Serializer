@@ -8,9 +8,17 @@ A DynamicWeb AppStore app that serializes and deserializes database content to/f
 
 Developers can reliably move DynamicWeb database state between environments through source control, with serialized YAML files as the single source of truth.
 
-## Current Milestone: (planning next)
+## Current Milestone: v0.6.0 UI Configuration Improvements
 
-v0.5.0 Granular Serialization Control shipped 2026-04-09.
+**Goal:** Replace all free-text configuration with structured, discoverable UI controls across item types, embedded XML definitions, predicates, area settings, and SQL tables.
+
+**Target features:**
+- "Serialization" tab on Item Edit screen for per-item-type field exclusion
+- Serialize > Embedded XML tree node with auto-discovered XML types and element-level exclusion
+- Content predicate page exclusions via multi-select page selector (replacing free text)
+- Predicate filtering section as read-only view with links to Item Edit and Embedded XML screens
+- Area column exclusions on Area Edit screen (read-only on predicate)
+- SqlTable structured column/XML pickers (auto-populated from table schema)
 
 ## Requirements
 
@@ -176,4 +184,4 @@ This document evolves at phase transitions and milestone boundaries.
 - **v0.5.0 Granular Serialization Control** — XML pretty-print, field-level filtering, area consolidation, predicate UI (2026-04-09)
 
 ---
-*Last updated: 2026-04-09 after v0.5.0 milestone*
+*Last updated: 2026-04-09 — milestone v0.6.0 started (UI configuration improvements)*
