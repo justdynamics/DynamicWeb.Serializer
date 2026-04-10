@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v0.6.0
 milestone_name: UI Configuration Improvements
 status: executing
-stopped_at: Phase 32 context gathered
-last_updated: "2026-04-09T16:31:09.536Z"
+stopped_at: Phase 33 context gathered
+last_updated: "2026-04-10T14:58:49.825Z"
 last_activity: 2026-04-09
 progress:
   total_phases: 6
@@ -80,6 +80,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-09T14:22:47.602Z
-Stopped at: Phase 32 context gathered
-Resume file: .planning/phases/32-config-schema-extension/32-CONTEXT.md
+Last session: 2026-04-10T14:58:49.789Z
+Stopped at: Phase 33 context gathered
+Resume file: .planning/phases/33-sqltable-column-pickers/33-CONTEXT.md
