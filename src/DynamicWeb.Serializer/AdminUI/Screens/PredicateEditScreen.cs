@@ -46,7 +46,7 @@ public sealed class PredicateEditScreen : EditScreenBase<PredicateEditModel>
         {
             groups.Add(new("SQL Table Settings", new List<EditorBase>
             {
-                EditorFor(m => m.Table),
+                EditorFor(m => m.Table).WithReloadOnChange(),
                 EditorFor(m => m.NameColumn),
                 EditorFor(m => m.CompareColumns),
                 EditorFor(m => m.ServiceCaches)
@@ -124,6 +124,13 @@ public sealed class PredicateEditScreen : EditScreenBase<PredicateEditModel>
             return editor;
         }
 
+        // Validate table name to prevent SQL injection via INFORMATION_SCHEMA queries
+        if (!System.Text.RegularExpressions.Regex.IsMatch(tableName, @"^[A-Za-z_][A-Za-z0-9_]*$"))
+        {
+            editor.Explanation = "Invalid table name format.";
+            return editor;
+        }
+
         try
         {
             var metadataReader = new DataGroupMetadataReader(new DwSqlExecutor());
@@ -150,9 +157,9 @@ public sealed class PredicateEditScreen : EditScreenBase<PredicateEditModel>
             if (selected.Count > 0)
                 editor.Value = selected;
         }
-        catch
+        catch (Exception ex)
         {
-            editor.Explanation = "Could not query database columns.";
+            editor.Explanation = $"Could not query database columns: {ex.Message}";
         }
 
         return editor;
