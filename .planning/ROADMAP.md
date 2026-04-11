@@ -98,7 +98,7 @@
 **Milestone Goal:** Replace all free-text configuration with structured, discoverable UI controls across item types, embedded XML definitions, predicates, area settings, and SQL tables.
 
 - [x] **Phase 32: Config Schema Extension** - Add dictionary-based exclusion config alongside existing flat arrays (completed 2026-04-09)
-- [ ] **Phase 33: SqlTable Column Pickers** - Replace free-text excludeFields/xmlColumns with schema-driven CheckboxLists
+- [x] **Phase 33: SqlTable Column Pickers** - Replace free-text excludeFields/xmlColumns with schema-driven CheckboxLists (completed 2026-04-11)
 - [ ] **Phase 34: Embedded XML Screens** - New tree node with auto-discovery and element-level exclusion
 - [ ] **Phase 35: Item Type Screens** - New tree node with per-item-type field exclusion CheckboxList
 - [ ] **Phase 36: Area Screens** - New tree node with per-area column exclusion CheckboxList
@@ -129,7 +129,7 @@ Plans:
   3. Selections persist to config JSON and are applied during serialize/deserialize
 **Plans**: 1 plan
 Plans:
-- [ ] 33-01-PLAN.md -- CheckboxList editors + round-trip tests
+- [x] 33-01-PLAN.md -- CheckboxList editors + round-trip tests
 **UI hint**: yes
 
 ### Phase 34: Embedded XML Screens
@@ -202,7 +202,7 @@ Plans:
 | 23-25 | v0.4.0 | 4/4 | Complete | 2026-04-03 |
 | 26-31 | v0.5.0 | 6/6 | Complete | 2026-04-09 |
 | 32. Config Schema Extension | v0.6.0 | 2/2 | Complete    | 2026-04-09 |
-| 33. SqlTable Column Pickers | v0.6.0 | 0/1 | Planning complete | - |
+| 33. SqlTable Column Pickers | v0.6.0 | 1/1 | Complete    | 2026-04-11 |
 | 34. Embedded XML Screens | v0.6.0 | 0/0 | Not started | - |
 | 35. Item Type Screens | v0.6.0 | 0/0 | Not started | - |
 | 36. Area Screens | v0.6.0 | 0/0 | Not started | - |
