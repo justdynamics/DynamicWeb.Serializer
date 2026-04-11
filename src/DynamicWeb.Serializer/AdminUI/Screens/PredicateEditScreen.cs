@@ -1,5 +1,6 @@
 using DynamicWeb.Serializer.AdminUI.Commands;
 using DynamicWeb.Serializer.AdminUI.Models;
+using DynamicWeb.Serializer.Providers.SqlTable;
 using Dynamicweb.CoreUI.Data;
 using Dynamicweb.CoreUI.Editors;
 using Dynamicweb.CoreUI.Editors.Inputs;
@@ -84,16 +85,22 @@ public sealed class PredicateEditScreen : EditScreenBase<PredicateEditModel>
             Label = "Service Caches",
             Explanation = "One fully-qualified DW cache type per line. Cleared after deserialization."
         },
-        nameof(PredicateEditModel.ExcludeFields) => new Textarea
-        {
-            Label = "Exclude Fields",
-            Explanation = "One field name per line. These fields will be omitted from serialization."
-        },
-        nameof(PredicateEditModel.XmlColumns) => new Textarea
-        {
-            Label = "XML Columns",
-            Explanation = "One column name per line. SQL table columns containing XML to pretty-print in YAML."
-        },
+        nameof(PredicateEditModel.ExcludeFields) => Model?.ProviderType == "SqlTable"
+            ? CreateColumnCheckboxList(Model?.Table, Model?.ExcludeFields,
+                "Exclude Fields", "Select columns to exclude from serialization.")
+            : new Textarea
+            {
+                Label = "Exclude Fields",
+                Explanation = "One field name per line. These fields will be omitted from serialization."
+            },
+        nameof(PredicateEditModel.XmlColumns) => Model?.ProviderType == "SqlTable"
+            ? CreateColumnCheckboxList(Model?.Table, Model?.XmlColumns,
+                "XML Columns", "Select columns containing XML to pretty-print in YAML.")
+            : new Textarea
+            {
+                Label = "XML Columns",
+                Explanation = "One column name per line. SQL table columns containing XML to pretty-print in YAML."
+            },
         nameof(PredicateEditModel.ExcludeXmlElements) => new Textarea
         {
             Label = "Exclude XML Elements",
@@ -101,6 +108,55 @@ public sealed class PredicateEditScreen : EditScreenBase<PredicateEditModel>
         },
         _ => null
     };
+
+    private CheckboxList CreateColumnCheckboxList(string? tableName, string? currentValue, string label, string explanation)
+    {
+        var editor = new CheckboxList
+        {
+            Label = label,
+            Explanation = explanation,
+            SortOrder = OrderBy.Default
+        };
+
+        if (string.IsNullOrWhiteSpace(tableName))
+        {
+            editor.Explanation = "Enter a table name to see available columns.";
+            return editor;
+        }
+
+        try
+        {
+            var metadataReader = new DataGroupMetadataReader(new DwSqlExecutor());
+            var columnTypes = metadataReader.GetColumnTypes(tableName);
+
+            if (columnTypes.Count == 0)
+            {
+                editor.Explanation = "Table not found in database. Verify the table name.";
+                return editor;
+            }
+
+            editor.Options = columnTypes.Keys
+                .OrderBy(c => c, StringComparer.OrdinalIgnoreCase)
+                .Select(c => new ListOption { Value = c, Label = c })
+                .ToList();
+
+            // Pre-check existing values
+            var selected = (currentValue ?? string.Empty)
+                .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(v => v.Trim())
+                .Where(v => v.Length > 0)
+                .ToList();
+
+            if (selected.Count > 0)
+                editor.Value = selected;
+        }
+        catch
+        {
+            editor.Explanation = "Could not query database columns.";
+        }
+
+        return editor;
+    }
 
     private Select CreateProviderTypeSelect()
     {
