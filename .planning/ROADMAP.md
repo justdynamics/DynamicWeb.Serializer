@@ -127,10 +127,9 @@ Plans:
   1. SqlTable predicate edit screen shows excludeFields as a CheckboxList populated from the table's actual SQL column schema
   2. SqlTable predicate edit screen shows xmlColumns as a CheckboxList populated from the table's actual SQL column schema
   3. Selections persist to config JSON and are applied during serialize/deserialize
-**Plans**: 2 plans
+**Plans**: 1 plan
 Plans:
-- [x] 32-01-PLAN.md -- Config model extension + backward compat tests
-- [x] 32-02-PLAN.md -- ExclusionMerger helper + pipeline integration
+- [ ] 33-01-PLAN.md -- CheckboxList editors + round-trip tests
 **UI hint**: yes
 
 ### Phase 34: Embedded XML Screens
@@ -203,7 +202,7 @@ Plans:
 | 23-25 | v0.4.0 | 4/4 | Complete | 2026-04-03 |
 | 26-31 | v0.5.0 | 6/6 | Complete | 2026-04-09 |
 | 32. Config Schema Extension | v0.6.0 | 2/2 | Complete    | 2026-04-09 |
-| 33. SqlTable Column Pickers | v0.6.0 | 0/0 | Not started | - |
+| 33. SqlTable Column Pickers | v0.6.0 | 0/1 | Planning complete | - |
 | 34. Embedded XML Screens | v0.6.0 | 0/0 | Not started | - |
 | 35. Item Type Screens | v0.6.0 | 0/0 | Not started | - |
 | 36. Area Screens | v0.6.0 | 0/0 | Not started | - |
