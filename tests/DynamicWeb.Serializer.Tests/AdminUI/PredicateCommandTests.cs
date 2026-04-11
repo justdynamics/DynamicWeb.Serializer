@@ -493,6 +493,162 @@ public class PredicateCommandTests : IDisposable
     }
 
     // -------------------------------------------------------------------------
+    // CheckboxList-style value round-trip tests (33-01)
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public void Save_SqlTable_ExcludeFields_RoundTrips()
+    {
+        CreateSeedConfig(new List<ProviderPredicateDefinition>());
+
+        var cmd = new SavePredicateCommand
+        {
+            ConfigPath = _configPath,
+            Model = new PredicateEditModel
+            {
+                Index = -1,
+                Name = "ExcludeFields RT",
+                ProviderType = "SqlTable",
+                Table = "EcomOrderFlow",
+                ExcludeFields = "OrderFlowID\nOrderFlowName\nOrderFlowOrderStateID"
+            }
+        };
+
+        var result = cmd.Handle();
+
+        Assert.Equal(CommandResult.ResultType.Ok, result.Status);
+        var config = ConfigLoader.Load(_configPath);
+        var pred = config.Predicates[0];
+        Assert.Equal(3, pred.ExcludeFields.Count);
+        Assert.Equal("OrderFlowID", pred.ExcludeFields[0]);
+        Assert.Equal("OrderFlowName", pred.ExcludeFields[1]);
+        Assert.Equal("OrderFlowOrderStateID", pred.ExcludeFields[2]);
+    }
+
+    [Fact]
+    public void Save_SqlTable_XmlColumns_RoundTrips()
+    {
+        CreateSeedConfig(new List<ProviderPredicateDefinition>());
+
+        var cmd = new SavePredicateCommand
+        {
+            ConfigPath = _configPath,
+            Model = new PredicateEditModel
+            {
+                Index = -1,
+                Name = "XmlColumns RT",
+                ProviderType = "SqlTable",
+                Table = "EcomOrderFlow",
+                XmlColumns = "SettingsXml\nConfigXml"
+            }
+        };
+
+        var result = cmd.Handle();
+
+        Assert.Equal(CommandResult.ResultType.Ok, result.Status);
+        var config = ConfigLoader.Load(_configPath);
+        var pred = config.Predicates[0];
+        Assert.Equal(2, pred.XmlColumns.Count);
+        Assert.Equal("SettingsXml", pred.XmlColumns[0]);
+        Assert.Equal("ConfigXml", pred.XmlColumns[1]);
+    }
+
+    [Fact]
+    public void Save_SqlTable_EmptyFilteringFields_PersistsAsEmptyLists()
+    {
+        CreateSeedConfig(new List<ProviderPredicateDefinition>());
+
+        var cmd = new SavePredicateCommand
+        {
+            ConfigPath = _configPath,
+            Model = new PredicateEditModel
+            {
+                Index = -1,
+                Name = "Empty Filtering",
+                ProviderType = "SqlTable",
+                Table = "EcomOrderFlow",
+                ExcludeFields = "",
+                XmlColumns = ""
+            }
+        };
+
+        var result = cmd.Handle();
+
+        Assert.Equal(CommandResult.ResultType.Ok, result.Status);
+        var config = ConfigLoader.Load(_configPath);
+        var pred = config.Predicates[0];
+        Assert.Empty(pred.ExcludeFields);
+        Assert.Empty(pred.XmlColumns);
+    }
+
+    [Fact]
+    public void Save_SqlTable_UpdateExisting_PreservesFilteringFields()
+    {
+        CreateSeedConfig(new List<ProviderPredicateDefinition>
+        {
+            new()
+            {
+                Name = "Updatable",
+                ProviderType = "SqlTable",
+                Table = "EcomOrderFlow",
+                ExcludeFields = new List<string> { "Col1" }
+            }
+        });
+
+        var cmd = new SavePredicateCommand
+        {
+            ConfigPath = _configPath,
+            Model = new PredicateEditModel
+            {
+                Index = 0,
+                Name = "Updatable",
+                ProviderType = "SqlTable",
+                Table = "EcomOrderFlow",
+                ExcludeFields = "Col1\nCol2\nCol3"
+            }
+        };
+
+        var result = cmd.Handle();
+
+        Assert.Equal(CommandResult.ResultType.Ok, result.Status);
+        var config = ConfigLoader.Load(_configPath);
+        var pred = config.Predicates[0];
+        Assert.Equal(3, pred.ExcludeFields.Count);
+        Assert.Contains("Col1", pred.ExcludeFields);
+        Assert.Contains("Col2", pred.ExcludeFields);
+        Assert.Contains("Col3", pred.ExcludeFields);
+    }
+
+    [Fact]
+    public void Save_Content_ExcludeFields_StillWorksWithNewlines()
+    {
+        CreateSeedConfig(new List<ProviderPredicateDefinition>());
+
+        var cmd = new SavePredicateCommand
+        {
+            ConfigPath = _configPath,
+            Model = new PredicateEditModel
+            {
+                Index = -1,
+                Name = "Content EF",
+                ProviderType = "Content",
+                AreaId = 1,
+                PageId = 10,
+                ExcludeFields = "Field1\r\nField2"
+            }
+        };
+
+        var result = cmd.Handle();
+
+        Assert.Equal(CommandResult.ResultType.Ok, result.Status);
+        var config = ConfigLoader.Load(_configPath);
+        var pred = config.Predicates[0];
+        Assert.Equal(2, pred.ExcludeFields.Count);
+        Assert.Equal("Field1", pred.ExcludeFields[0]);
+        Assert.Equal("Field2", pred.ExcludeFields[1]);
+    }
+
+    // -------------------------------------------------------------------------
     // DeletePredicateCommand tests
     // -------------------------------------------------------------------------
 
