@@ -14,6 +14,23 @@ public sealed class XmlTypeEditScreen : EditScreenBase<XmlTypeEditModel>
 {
     protected override void BuildEditScreen()
     {
+        if (Model is null)
+        {
+            AddComponents("Error", new List<LayoutWrapper>
+            {
+                new("Not Found", new List<EditorBase>
+                {
+                    new Dynamicweb.CoreUI.Editors.Inputs.Text
+                    {
+                        Label = "Type not found",
+                        Explanation = "This XML type no longer exists in configuration. Run 'Scan for XML types' to refresh.",
+                        Readonly = true
+                    }
+                })
+            });
+            return;
+        }
+
         var fields = new List<EditorBase>();
 
         // Type name as read-only label (not editable -- the type is the key)
