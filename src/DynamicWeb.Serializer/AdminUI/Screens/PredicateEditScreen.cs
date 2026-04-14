@@ -86,7 +86,7 @@ public sealed class PredicateEditScreen : EditScreenBase<PredicateEditModel>
             Explanation = "One fully-qualified DW cache type per line. Cleared after deserialization."
         },
         nameof(PredicateEditModel.ExcludeFields) => Model?.ProviderType == "SqlTable"
-            ? CreateColumnCheckboxList(Model?.Table, Model?.ExcludeFields,
+            ? CreateColumnSelectMultiDual(Model?.Table, Model?.ExcludeFields,
                 "Exclude Fields", "Select columns to exclude from serialization.")
             : new Textarea
             {
@@ -94,7 +94,7 @@ public sealed class PredicateEditScreen : EditScreenBase<PredicateEditModel>
                 Explanation = "One field name per line. These fields will be omitted from serialization."
             },
         nameof(PredicateEditModel.XmlColumns) => Model?.ProviderType == "SqlTable"
-            ? CreateColumnCheckboxList(Model?.Table, Model?.XmlColumns,
+            ? CreateColumnSelectMultiDual(Model?.Table, Model?.XmlColumns,
                 "XML Columns", "Select columns containing XML to pretty-print in YAML.")
             : new Textarea
             {
@@ -109,9 +109,9 @@ public sealed class PredicateEditScreen : EditScreenBase<PredicateEditModel>
         _ => null
     };
 
-    private CheckboxList CreateColumnCheckboxList(string? tableName, string? currentValue, string label, string explanation)
+    private SelectMultiDual CreateColumnSelectMultiDual(string? tableName, string? currentValue, string label, string explanation)
     {
-        var editor = new CheckboxList
+        var editor = new SelectMultiDual
         {
             Label = label,
             Explanation = explanation,
@@ -147,14 +147,14 @@ public sealed class PredicateEditScreen : EditScreenBase<PredicateEditModel>
                 .Select(c => new ListOption { Value = c, Label = c })
                 .ToList();
 
-            // Pre-check existing values
+            // SelectMultiDual.Value is object? — use .ToArray() per ScreenPresetEditScreen pattern
             var selected = (currentValue ?? string.Empty)
                 .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
                 .Select(v => v.Trim())
                 .Where(v => v.Length > 0)
-                .ToList();
+                .ToArray();
 
-            if (selected.Count > 0)
+            if (selected.Length > 0)
                 editor.Value = selected;
         }
         catch (Exception ex)
