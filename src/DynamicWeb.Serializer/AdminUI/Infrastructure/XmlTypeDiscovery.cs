@@ -1,6 +1,7 @@
 using System.Text.RegularExpressions;
 using System.Xml;
 using System.Xml.Linq;
+using DynamicWeb.Serializer.Infrastructure;
 using DynamicWeb.Serializer.Providers.SqlTable;
 using Dynamicweb.Data;
 
@@ -28,12 +29,12 @@ public class XmlTypeDiscovery
 
         // Page URL data provider types
         var cb1 = new CommandBuilder();
-        cb1.Add("SELECT DISTINCT PageUrlDataProviderType FROM Page WHERE PageUrlDataProviderType != '' AND PageUrlDataProviderType IS NOT NULL");
+        cb1.Add("SELECT DISTINCT PageUrlDataProvider FROM Page WHERE PageUrlDataProvider != '' AND PageUrlDataProvider IS NOT NULL");
         using (var reader = _sqlExecutor.ExecuteReader(cb1))
         {
             while (reader.Read())
             {
-                var typeName = reader["PageUrlDataProviderType"]?.ToString();
+                var typeName = reader["PageUrlDataProvider"]?.ToString();
                 if (!string.IsNullOrEmpty(typeName))
                     types.Add(typeName);
             }
@@ -65,12 +66,12 @@ public class XmlTypeDiscovery
 
         // Defense-in-depth: validate typeName to prevent SQL injection
         // CommandBuilder does not support parameterized queries, so we use regex validation
-        if (!Regex.IsMatch(typeName, @"^[A-Za-z0-9_.]+$"))
+        if (!Regex.IsMatch(typeName, @"^[A-Za-z0-9_., ]+$"))
             return elements;
 
         // Page URL data provider parameters
         var cb1 = new CommandBuilder();
-        cb1.Add($"SELECT TOP 50 PageUrlDataProviderParameters FROM Page WHERE PageUrlDataProviderType = '{typeName}' AND PageUrlDataProviderParameters IS NOT NULL AND PageUrlDataProviderParameters != ''");
+        cb1.Add($"SELECT TOP 50 PageUrlDataProviderParameters FROM Page WHERE PageUrlDataProvider = '{typeName}' AND PageUrlDataProviderParameters IS NOT NULL AND PageUrlDataProviderParameters != ''");
         using (var reader = _sqlExecutor.ExecuteReader(cb1))
         {
             while (reader.Read())
@@ -95,6 +96,47 @@ public class XmlTypeDiscovery
         return elements;
     }
 
+    /// <summary>
+    /// Returns a pretty-printed sample XML blob for a given type, or null if none found.
+    /// Queries Page first, then Paragraph.
+    /// </summary>
+    public string? GetSampleXml(string typeName)
+    {
+        if (string.IsNullOrWhiteSpace(typeName))
+            return null;
+
+        if (!Regex.IsMatch(typeName, @"^[A-Za-z0-9_., ]+$"))
+            return null;
+
+        // Try Page first
+        var cb1 = new CommandBuilder();
+        cb1.Add($"SELECT TOP 1 PageUrlDataProviderParameters FROM Page WHERE PageUrlDataProvider = '{typeName}' AND PageUrlDataProviderParameters IS NOT NULL AND PageUrlDataProviderParameters != ''");
+        using (var reader = _sqlExecutor.ExecuteReader(cb1))
+        {
+            if (reader.Read())
+            {
+                var xml = reader["PageUrlDataProviderParameters"]?.ToString();
+                if (!string.IsNullOrWhiteSpace(xml))
+                    return XmlFormatter.PrettyPrint(xml);
+            }
+        }
+
+        // Try Paragraph
+        var cb2 = new CommandBuilder();
+        cb2.Add($"SELECT TOP 1 ParagraphModuleSettings FROM Paragraph WHERE ParagraphModuleSystemName = '{typeName}' AND ParagraphModuleSettings IS NOT NULL AND ParagraphModuleSettings != ''");
+        using (var reader = _sqlExecutor.ExecuteReader(cb2))
+        {
+            if (reader.Read())
+            {
+                var xml = reader["ParagraphModuleSettings"]?.ToString();
+                if (!string.IsNullOrWhiteSpace(xml))
+                    return XmlFormatter.PrettyPrint(xml);
+            }
+        }
+
+        return null;
+    }
+
     private static void ParseXmlElements(string? xml, HashSet<string> elements)
     {
         if (string.IsNullOrWhiteSpace(xml))
@@ -103,9 +145,27 @@ public class XmlTypeDiscovery
         try
         {
             var doc = XDocument.Parse(xml);
-            if (doc.Root != null)
+            if (doc.Root == null)
+                return;
+
+            var children = doc.Root.Elements().ToList();
+            var distinctNames = children.Select(e => e.Name.LocalName).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+
+            if (distinctNames.Count <= 1 && children.Count > 0)
             {
-                foreach (var el in doc.Root.Elements())
+                // All children share one element name (e.g., <Parameter name="X">)
+                // Extract the "name" attribute values instead — these are the meaningful identifiers
+                foreach (var el in children)
+                {
+                    var nameAttr = el.Attribute("name")?.Value;
+                    if (!string.IsNullOrEmpty(nameAttr))
+                        elements.Add(nameAttr);
+                }
+            }
+            else
+            {
+                // Children have distinct element names (e.g., <IndexQuery>, <TrackQueries>)
+                foreach (var el in children)
                     elements.Add(el.Name.LocalName);
             }
         }

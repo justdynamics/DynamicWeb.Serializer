@@ -5,7 +5,7 @@ using Dynamicweb.CoreUI.Data;
 
 namespace DynamicWeb.Serializer.AdminUI.Commands;
 
-public sealed class ScanXmlTypesCommand : CommandBase<object>
+public sealed class ScanXmlTypesCommand : CommandBase
 {
     /// <summary>Optional test overrides</summary>
     public string? ConfigPath { get; set; }

@@ -43,6 +43,36 @@ public sealed class XmlTypeEditScreen : EditScreenBase<XmlTypeEditModel>
         {
             new("Element Exclusions", fields)
         });
+
+        // Show a raw XML sample so the user understands the structure
+        if (!string.IsNullOrWhiteSpace(Model?.TypeName))
+        {
+            try
+            {
+                var discovery = new XmlTypeDiscovery(new DwSqlExecutor());
+                var sample = discovery.GetSampleXml(Model.TypeName);
+                if (!string.IsNullOrWhiteSpace(sample))
+                {
+                    AddComponents("Reference", new List<LayoutWrapper>
+                    {
+                        new("XML Sample", new List<EditorBase>
+                        {
+                            new Dynamicweb.CoreUI.Editors.Inputs.Textarea
+                            {
+                                Label = "Sample XML from database",
+                                Explanation = "This is a sample of the raw XML found in the database for this type. The element or parameter names shown in the exclusion list above correspond to the structure you see here.",
+                                Value = sample,
+                                Readonly = true
+                            }
+                        })
+                    });
+                }
+            }
+            catch
+            {
+                // Non-critical — skip sample if it fails
+            }
+        }
     }
 
     protected override EditorBase? GetEditor(string property) => property switch

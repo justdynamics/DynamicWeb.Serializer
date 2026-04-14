@@ -30,14 +30,30 @@ public sealed class XmlTypeListScreen : ListScreenBase<XmlTypeListModel>
         NavigateScreenAction.To<XmlTypeEditScreen>()
             .With(new XmlTypeByNameQuery { ModelIdentifier = model.TypeName });
 
-    protected override IEnumerable<ActionNode>? GetToolbarActions() =>
+    protected override IEnumerable<ActionGroup>? GetScreenActions() =>
     [
+        new()
+        {
+            Name = "Actions",
+            Nodes =
+            [
+                new()
+                {
+                    Name = "Scan for XML types",
+                    Icon = Icon.Refresh,
+                    NodeAction = RunCommandAction.For<ScanXmlTypesCommand>()
+                        .WithReloadOnSuccess()
+                }
+            ]
+        }
+    ];
+
+    protected override ActionNode? GetItemCreateAction() =>
         new()
         {
             Name = "Scan for XML types",
             Icon = Icon.Refresh,
             NodeAction = RunCommandAction.For<ScanXmlTypesCommand>()
                 .WithReloadOnSuccess()
-        }
-    ];
+        };
 }

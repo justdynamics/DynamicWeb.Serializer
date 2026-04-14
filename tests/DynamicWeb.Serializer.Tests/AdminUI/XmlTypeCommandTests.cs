@@ -60,8 +60,8 @@ public class XmlTypeCommandTests : IDisposable
         });
 
         var executor = new FakeSqlExecutor();
-        executor.AddMapping("PageUrlDataProviderType",
-            TestTableHelper.CreateSingleColumnTable("PageUrlDataProviderType", "TypeA", "TypeB"));
+        executor.AddMapping("PageUrlDataProvider",
+            TestTableHelper.CreateSingleColumnTable("PageUrlDataProvider", "TypeA", "TypeB"));
         executor.AddMapping("ParagraphModuleSystemName",
             TestTableHelper.CreateSingleColumnTable("ParagraphModuleSystemName"));
 
@@ -90,8 +90,8 @@ public class XmlTypeCommandTests : IDisposable
         CreateSeedConfig();
 
         var executor = new FakeSqlExecutor();
-        executor.AddMapping("PageUrlDataProviderType",
-            TestTableHelper.CreateSingleColumnTable("PageUrlDataProviderType", "TypeA"));
+        executor.AddMapping("PageUrlDataProvider",
+            TestTableHelper.CreateSingleColumnTable("PageUrlDataProvider", "TypeA"));
         executor.AddMapping("ParagraphModuleSystemName",
             TestTableHelper.CreateSingleColumnTable("ParagraphModuleSystemName", "TypeB"));
 
@@ -120,8 +120,8 @@ public class XmlTypeCommandTests : IDisposable
         });
 
         var executor = new FakeSqlExecutor();
-        executor.AddMapping("PageUrlDataProviderType",
-            TestTableHelper.CreateSingleColumnTable("PageUrlDataProviderType", "TypeA"));
+        executor.AddMapping("PageUrlDataProvider",
+            TestTableHelper.CreateSingleColumnTable("PageUrlDataProvider", "TypeA"));
         executor.AddMapping("ParagraphModuleSystemName",
             TestTableHelper.CreateSingleColumnTable("ParagraphModuleSystemName"));
 

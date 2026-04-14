@@ -63,9 +63,12 @@ public static class XmlFormatter
             var xdoc = XDocument.Parse(xml);
             var hadDeclaration = xml.TrimStart().StartsWith("<?xml", StringComparison.OrdinalIgnoreCase);
 
-            // Remove all matching elements (collect first to avoid modifying during enumeration)
+            // Remove elements matching by element name OR by "name" attribute value.
+            // The attribute match handles <Parameter name="X"> patterns where all children
+            // share the same element name but differ by their "name" attribute.
             var toRemove = xdoc.Descendants()
-                .Where(e => nameSet.Contains(e.Name.LocalName))
+                .Where(e => nameSet.Contains(e.Name.LocalName)
+                    || (e.Attribute("name") is { } attr && nameSet.Contains(attr.Value)))
                 .ToList();
             foreach (var el in toRemove)
                 el.Remove();
@@ -107,15 +110,19 @@ public static class XmlFormatter
             if (incomingDoc.Root == null || existingDoc.Root == null)
                 return Compact(incomingXml);
 
-            // Collect element names present in incoming (case-insensitive)
-            var incomingNames = new HashSet<string>(
-                incomingDoc.Root.Elements().Select(e => e.Name.LocalName),
+            // Collect element identifiers present in incoming (case-insensitive).
+            // For elements with a "name" attribute (e.g., <Parameter name="X">), use the
+            // attribute value as the identity key. Otherwise use the element name.
+            var incomingKeys = new HashSet<string>(
+                incomingDoc.Root.Elements().Select(e =>
+                    e.Attribute("name")?.Value ?? e.Name.LocalName),
                 StringComparer.OrdinalIgnoreCase);
 
             // Preserve root-level children from existing that are absent in incoming
             foreach (var el in existingDoc.Root.Elements())
             {
-                if (!incomingNames.Contains(el.Name.LocalName))
+                var key = el.Attribute("name")?.Value ?? el.Name.LocalName;
+                if (!incomingKeys.Contains(key))
                     incomingDoc.Root.Add(new XElement(el));
             }
 

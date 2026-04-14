@@ -46,7 +46,7 @@ public sealed class SerializerSettingsNodeProvider : NavigationNodeProvider<Syst
                 Name = "Predicates",
                 Icon = Icon.Filter,
                 Sort = 10,
-                HasSubNodes = false,
+                HasSubNodes = true,
                 NodeAction = NavigateScreenAction.To<PredicateListScreen>()
                     .With(new PredicateListQuery())
             };
@@ -72,6 +72,28 @@ public sealed class SerializerSettingsNodeProvider : NavigationNodeProvider<Syst
                 NodeAction = NavigateScreenAction.To<LogViewerScreen>()
                     .With(new LogViewerQuery())
             };
+        }
+        else if (parentNodePath.Last == PredicatesNodeId)
+        {
+            var configPath = ConfigPathResolver.FindConfigFile();
+            if (configPath != null)
+            {
+                var config = ConfigLoader.Load(configPath);
+                for (var i = 0; i < config.Predicates.Count; i++)
+                {
+                    var pred = config.Predicates[i];
+                    yield return new NavigationNode
+                    {
+                        Id = $"Serializer_Predicate_{i}",
+                        Name = pred.Name,
+                        Icon = pred.ProviderType == "SqlTable" ? Icon.Table : Icon.FileAlt,
+                        Sort = i,
+                        HasSubNodes = false,
+                        NodeAction = NavigateScreenAction.To<PredicateEditScreen>()
+                            .With(new PredicateByIndexQuery { ModelIdentifier = (i + 1).ToString() })
+                    };
+                }
+            }
         }
         else if (parentNodePath.Last == EmbeddedXmlNodeId)
         {

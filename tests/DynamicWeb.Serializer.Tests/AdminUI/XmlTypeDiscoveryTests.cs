@@ -11,11 +11,11 @@ public class XmlTypeDiscoveryTests
     // -------------------------------------------------------------------------
 
     [Fact]
-    public void DiscoverXmlTypes_ReturnsPageUrlDataProviderTypes()
+    public void DiscoverXmlTypes_ReturnsPageUrlDataProviders()
     {
         var executor = new FakeSqlExecutor();
-        executor.AddMapping("PageUrlDataProviderType",
-            TestTableHelper.CreateSingleColumnTable("PageUrlDataProviderType",
+        executor.AddMapping("PageUrlDataProvider",
+            TestTableHelper.CreateSingleColumnTable("PageUrlDataProvider",
                 "Dynamicweb.Content.Items.Providers.UrlDataProvider.UrlDataProvider"));
         executor.AddMapping("ParagraphModuleSystemName",
             TestTableHelper.CreateSingleColumnTable("ParagraphModuleSystemName"));
@@ -30,8 +30,8 @@ public class XmlTypeDiscoveryTests
     public void DiscoverXmlTypes_ReturnsParagraphModuleTypes()
     {
         var executor = new FakeSqlExecutor();
-        executor.AddMapping("PageUrlDataProviderType",
-            TestTableHelper.CreateSingleColumnTable("PageUrlDataProviderType"));
+        executor.AddMapping("PageUrlDataProvider",
+            TestTableHelper.CreateSingleColumnTable("PageUrlDataProvider"));
         executor.AddMapping("ParagraphModuleSystemName",
             TestTableHelper.CreateSingleColumnTable("ParagraphModuleSystemName",
                 "Dynamicweb.UserManagement.UserManagementSearchModule"));
@@ -46,8 +46,8 @@ public class XmlTypeDiscoveryTests
     public void DiscoverXmlTypes_DeduplicatesAcrossTables()
     {
         var executor = new FakeSqlExecutor();
-        executor.AddMapping("PageUrlDataProviderType",
-            TestTableHelper.CreateSingleColumnTable("PageUrlDataProviderType", "SharedType"));
+        executor.AddMapping("PageUrlDataProvider",
+            TestTableHelper.CreateSingleColumnTable("PageUrlDataProvider", "SharedType"));
         executor.AddMapping("ParagraphModuleSystemName",
             TestTableHelper.CreateSingleColumnTable("ParagraphModuleSystemName", "SharedType"));
 
@@ -63,8 +63,8 @@ public class XmlTypeDiscoveryTests
     {
         var executor = new FakeSqlExecutor();
         // SQL WHERE clause filters empty/null, but just in case the DB returns them
-        executor.AddMapping("PageUrlDataProviderType",
-            TestTableHelper.CreateSingleColumnTable("PageUrlDataProviderType", "ValidType", ""));
+        executor.AddMapping("PageUrlDataProvider",
+            TestTableHelper.CreateSingleColumnTable("PageUrlDataProvider", "ValidType", ""));
         executor.AddMapping("ParagraphModuleSystemName",
             TestTableHelper.CreateSingleColumnTable("ParagraphModuleSystemName"));
 
