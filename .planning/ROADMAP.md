@@ -143,8 +143,8 @@ Plans:
   4. Element exclusions are saved to config under `excludeXmlElementsByType` and applied during serialization
 **Plans**: 2 plans
 Plans:
-- [ ] 32-01-PLAN.md -- Config model extension + backward compat tests
-- [ ] 32-02-PLAN.md -- ExclusionMerger helper + pipeline integration
+- [ ] 34-01-PLAN.md -- XmlTypeDiscovery service + models + SelectMultiDual retrofit
+- [ ] 34-02-PLAN.md -- Tree node + list/edit screens + commands
 **UI hint**: yes
 
 ### Phase 35: Item Type Screens
@@ -203,7 +203,7 @@ Plans:
 | 26-31 | v0.5.0 | 6/6 | Complete | 2026-04-09 |
 | 32. Config Schema Extension | v0.6.0 | 2/2 | Complete    | 2026-04-09 |
 | 33. SqlTable Column Pickers | v0.6.0 | 1/1 | Complete    | 2026-04-11 |
-| 34. Embedded XML Screens | v0.6.0 | 0/0 | Not started | - |
+| 34. Embedded XML Screens | v0.6.0 | 0/2 | Planned     | - |
 | 35. Item Type Screens | v0.6.0 | 0/0 | Not started | - |
 | 36. Area Screens | v0.6.0 | 0/0 | Not started | - |
 | 37. Predicate UI Polish | v0.6.0 | 0/0 | Not started | - |
