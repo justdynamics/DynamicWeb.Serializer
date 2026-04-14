@@ -99,7 +99,7 @@
 
 - [x] **Phase 32: Config Schema Extension** - Add dictionary-based exclusion config alongside existing flat arrays (completed 2026-04-09)
 - [x] **Phase 33: SqlTable Column Pickers** - Replace free-text excludeFields/xmlColumns with schema-driven CheckboxLists (completed 2026-04-11)
-- [ ] **Phase 34: Embedded XML Screens** - New tree node with auto-discovery and element-level exclusion
+- [x] **Phase 34: Embedded XML Screens** - New tree node with auto-discovery and element-level exclusion (completed 2026-04-14)
 - [ ] **Phase 35: Item Type Screens** - New tree node with per-item-type field exclusion CheckboxList
 - [ ] **Phase 36: Area Screens** - New tree node with per-area column exclusion CheckboxList
 - [ ] **Phase 37: Predicate UI Polish** - Page picker for exclusions, read-only summaries with cross-links
@@ -143,8 +143,8 @@ Plans:
   4. Element exclusions are saved to config under `excludeXmlElementsByType` and applied during serialization
 **Plans**: 2 plans
 Plans:
-- [ ] 34-01-PLAN.md -- XmlTypeDiscovery service + models + SelectMultiDual retrofit
-- [ ] 34-02-PLAN.md -- Tree node + list/edit screens + commands
+- [x] 34-01-PLAN.md -- XmlTypeDiscovery service + models + SelectMultiDual retrofit
+- [x] 34-02-PLAN.md -- Tree node + list/edit screens + commands
 **UI hint**: yes
 
 ### Phase 35: Item Type Screens
@@ -203,7 +203,7 @@ Plans:
 | 26-31 | v0.5.0 | 6/6 | Complete | 2026-04-09 |
 | 32. Config Schema Extension | v0.6.0 | 2/2 | Complete    | 2026-04-09 |
 | 33. SqlTable Column Pickers | v0.6.0 | 1/1 | Complete    | 2026-04-11 |
-| 34. Embedded XML Screens | v0.6.0 | 0/2 | Planned     | - |
+| 34. Embedded XML Screens | v0.6.0 | 2/2 | Complete    | 2026-04-14 |
 | 35. Item Type Screens | v0.6.0 | 0/0 | Not started | - |
 | 36. Area Screens | v0.6.0 | 0/0 | Not started | - |
 | 37. Predicate UI Polish | v0.6.0 | 0/0 | Not started | - |
