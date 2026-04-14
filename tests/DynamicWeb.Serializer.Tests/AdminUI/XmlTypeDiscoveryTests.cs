@@ -1,49 +1,11 @@
-using System.Data;
 using DynamicWeb.Serializer.AdminUI.Infrastructure;
-using DynamicWeb.Serializer.Providers.SqlTable;
-using Dynamicweb.Data;
+using DynamicWeb.Serializer.Tests.TestHelpers;
 using Xunit;
 
 namespace DynamicWeb.Serializer.Tests.AdminUI;
 
 public class XmlTypeDiscoveryTests
 {
-    /// <summary>
-    /// Minimal ISqlExecutor that maps SQL query substrings to canned DataTable results.
-    /// </summary>
-    private sealed class FakeSqlExecutor : ISqlExecutor
-    {
-        private readonly List<(string Substring, DataTable Result)> _mappings = new();
-
-        public void AddMapping(string querySubstring, DataTable result)
-        {
-            _mappings.Add((querySubstring, result));
-        }
-
-        public IDataReader ExecuteReader(CommandBuilder command)
-        {
-            var sql = command.ToString() ?? string.Empty;
-            foreach (var (substring, result) in _mappings)
-            {
-                if (sql.Contains(substring, StringComparison.OrdinalIgnoreCase))
-                    return result.CreateDataReader();
-            }
-            // Return empty reader for unmatched queries
-            return new DataTable().CreateDataReader();
-        }
-
-        public int ExecuteNonQuery(CommandBuilder command) => 0;
-    }
-
-    private static DataTable CreateSingleColumnTable(string columnName, params string[] values)
-    {
-        var dt = new DataTable();
-        dt.Columns.Add(columnName, typeof(string));
-        foreach (var v in values)
-            dt.Rows.Add(v);
-        return dt;
-    }
-
     // -------------------------------------------------------------------------
     // DiscoverXmlTypes tests
     // -------------------------------------------------------------------------
@@ -53,10 +15,10 @@ public class XmlTypeDiscoveryTests
     {
         var executor = new FakeSqlExecutor();
         executor.AddMapping("PageUrlDataProviderType",
-            CreateSingleColumnTable("PageUrlDataProviderType",
+            TestTableHelper.CreateSingleColumnTable("PageUrlDataProviderType",
                 "Dynamicweb.Content.Items.Providers.UrlDataProvider.UrlDataProvider"));
         executor.AddMapping("ParagraphModuleSystemName",
-            CreateSingleColumnTable("ParagraphModuleSystemName"));
+            TestTableHelper.CreateSingleColumnTable("ParagraphModuleSystemName"));
 
         var discovery = new XmlTypeDiscovery(executor);
         var types = discovery.DiscoverXmlTypes();
@@ -69,9 +31,9 @@ public class XmlTypeDiscoveryTests
     {
         var executor = new FakeSqlExecutor();
         executor.AddMapping("PageUrlDataProviderType",
-            CreateSingleColumnTable("PageUrlDataProviderType"));
+            TestTableHelper.CreateSingleColumnTable("PageUrlDataProviderType"));
         executor.AddMapping("ParagraphModuleSystemName",
-            CreateSingleColumnTable("ParagraphModuleSystemName",
+            TestTableHelper.CreateSingleColumnTable("ParagraphModuleSystemName",
                 "Dynamicweb.UserManagement.UserManagementSearchModule"));
 
         var discovery = new XmlTypeDiscovery(executor);
@@ -85,9 +47,9 @@ public class XmlTypeDiscoveryTests
     {
         var executor = new FakeSqlExecutor();
         executor.AddMapping("PageUrlDataProviderType",
-            CreateSingleColumnTable("PageUrlDataProviderType", "SharedType"));
+            TestTableHelper.CreateSingleColumnTable("PageUrlDataProviderType", "SharedType"));
         executor.AddMapping("ParagraphModuleSystemName",
-            CreateSingleColumnTable("ParagraphModuleSystemName", "SharedType"));
+            TestTableHelper.CreateSingleColumnTable("ParagraphModuleSystemName", "SharedType"));
 
         var discovery = new XmlTypeDiscovery(executor);
         var types = discovery.DiscoverXmlTypes();
@@ -102,9 +64,9 @@ public class XmlTypeDiscoveryTests
         var executor = new FakeSqlExecutor();
         // SQL WHERE clause filters empty/null, but just in case the DB returns them
         executor.AddMapping("PageUrlDataProviderType",
-            CreateSingleColumnTable("PageUrlDataProviderType", "ValidType", ""));
+            TestTableHelper.CreateSingleColumnTable("PageUrlDataProviderType", "ValidType", ""));
         executor.AddMapping("ParagraphModuleSystemName",
-            CreateSingleColumnTable("ParagraphModuleSystemName"));
+            TestTableHelper.CreateSingleColumnTable("ParagraphModuleSystemName"));
 
         var discovery = new XmlTypeDiscovery(executor);
         var types = discovery.DiscoverXmlTypes();
@@ -122,10 +84,10 @@ public class XmlTypeDiscoveryTests
     {
         var executor = new FakeSqlExecutor();
         executor.AddMapping("PageUrlDataProviderParameters",
-            CreateSingleColumnTable("PageUrlDataProviderParameters",
+            TestTableHelper.CreateSingleColumnTable("PageUrlDataProviderParameters",
                 "<settings><sort/><pagesize/><filtervalue/></settings>"));
         executor.AddMapping("ParagraphModuleSettings",
-            CreateSingleColumnTable("ParagraphModuleSettings"));
+            TestTableHelper.CreateSingleColumnTable("ParagraphModuleSettings"));
 
         var discovery = new XmlTypeDiscovery(executor);
         var elements = discovery.DiscoverElementsForType("SomeValidType");
@@ -140,11 +102,11 @@ public class XmlTypeDiscoveryTests
     {
         var executor = new FakeSqlExecutor();
         executor.AddMapping("PageUrlDataProviderParameters",
-            CreateSingleColumnTable("PageUrlDataProviderParameters",
+            TestTableHelper.CreateSingleColumnTable("PageUrlDataProviderParameters",
                 "NOT VALID XML <<>>",
                 "<settings><goodElement/></settings>"));
         executor.AddMapping("ParagraphModuleSettings",
-            CreateSingleColumnTable("ParagraphModuleSettings"));
+            TestTableHelper.CreateSingleColumnTable("ParagraphModuleSettings"));
 
         var discovery = new XmlTypeDiscovery(executor);
         var elements = discovery.DiscoverElementsForType("SomeValidType");
@@ -158,11 +120,11 @@ public class XmlTypeDiscoveryTests
     {
         var executor = new FakeSqlExecutor();
         executor.AddMapping("PageUrlDataProviderParameters",
-            CreateSingleColumnTable("PageUrlDataProviderParameters",
+            TestTableHelper.CreateSingleColumnTable("PageUrlDataProviderParameters",
                 "<settings><Sort/></settings>",
                 "<settings><sort/><extra/></settings>"));
         executor.AddMapping("ParagraphModuleSettings",
-            CreateSingleColumnTable("ParagraphModuleSettings"));
+            TestTableHelper.CreateSingleColumnTable("ParagraphModuleSettings"));
 
         var discovery = new XmlTypeDiscovery(executor);
         var elements = discovery.DiscoverElementsForType("SomeValidType");
@@ -176,9 +138,9 @@ public class XmlTypeDiscoveryTests
     {
         var executor = new FakeSqlExecutor();
         executor.AddMapping("PageUrlDataProviderParameters",
-            CreateSingleColumnTable("PageUrlDataProviderParameters"));
+            TestTableHelper.CreateSingleColumnTable("PageUrlDataProviderParameters"));
         executor.AddMapping("ParagraphModuleSettings",
-            CreateSingleColumnTable("ParagraphModuleSettings"));
+            TestTableHelper.CreateSingleColumnTable("ParagraphModuleSettings"));
 
         var discovery = new XmlTypeDiscovery(executor);
         var elements = discovery.DiscoverElementsForType("NonExistentType");

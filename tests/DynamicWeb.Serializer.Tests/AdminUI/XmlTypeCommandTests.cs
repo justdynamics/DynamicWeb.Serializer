@@ -1,12 +1,10 @@
-using System.Data;
 using DynamicWeb.Serializer.AdminUI.Commands;
 using DynamicWeb.Serializer.AdminUI.Infrastructure;
 using DynamicWeb.Serializer.AdminUI.Models;
 using DynamicWeb.Serializer.Configuration;
 using DynamicWeb.Serializer.Models;
-using DynamicWeb.Serializer.Providers.SqlTable;
+using DynamicWeb.Serializer.Tests.TestHelpers;
 using Dynamicweb.CoreUI.Data;
-using Dynamicweb.Data;
 using Xunit;
 
 namespace DynamicWeb.Serializer.Tests.AdminUI;
@@ -48,41 +46,6 @@ public class XmlTypeCommandTests : IDisposable
 
     private SerializerConfiguration LoadConfig() => ConfigLoader.Load(_configPath);
 
-    /// <summary>
-    /// Minimal ISqlExecutor that maps SQL query substrings to canned DataTable results.
-    /// </summary>
-    private sealed class FakeSqlExecutor : ISqlExecutor
-    {
-        private readonly List<(string Substring, DataTable Result)> _mappings = new();
-
-        public void AddMapping(string querySubstring, DataTable result)
-        {
-            _mappings.Add((querySubstring, result));
-        }
-
-        public IDataReader ExecuteReader(CommandBuilder command)
-        {
-            var sql = command.ToString() ?? string.Empty;
-            foreach (var (substring, result) in _mappings)
-            {
-                if (sql.Contains(substring, StringComparison.OrdinalIgnoreCase))
-                    return result.CreateDataReader();
-            }
-            return new DataTable().CreateDataReader();
-        }
-
-        public int ExecuteNonQuery(CommandBuilder command) => 0;
-    }
-
-    private static DataTable CreateSingleColumnTable(string columnName, params string[] values)
-    {
-        var dt = new DataTable();
-        dt.Columns.Add(columnName, typeof(string));
-        foreach (var v in values)
-            dt.Rows.Add(v);
-        return dt;
-    }
-
     // -------------------------------------------------------------------------
     // ScanXmlTypesCommand tests
     // -------------------------------------------------------------------------
@@ -98,9 +61,9 @@ public class XmlTypeCommandTests : IDisposable
 
         var executor = new FakeSqlExecutor();
         executor.AddMapping("PageUrlDataProviderType",
-            CreateSingleColumnTable("PageUrlDataProviderType", "TypeA", "TypeB"));
+            TestTableHelper.CreateSingleColumnTable("PageUrlDataProviderType", "TypeA", "TypeB"));
         executor.AddMapping("ParagraphModuleSystemName",
-            CreateSingleColumnTable("ParagraphModuleSystemName"));
+            TestTableHelper.CreateSingleColumnTable("ParagraphModuleSystemName"));
 
         var discovery = new XmlTypeDiscovery(executor);
         var cmd = new ScanXmlTypesCommand
@@ -128,9 +91,9 @@ public class XmlTypeCommandTests : IDisposable
 
         var executor = new FakeSqlExecutor();
         executor.AddMapping("PageUrlDataProviderType",
-            CreateSingleColumnTable("PageUrlDataProviderType", "TypeA"));
+            TestTableHelper.CreateSingleColumnTable("PageUrlDataProviderType", "TypeA"));
         executor.AddMapping("ParagraphModuleSystemName",
-            CreateSingleColumnTable("ParagraphModuleSystemName", "TypeB"));
+            TestTableHelper.CreateSingleColumnTable("ParagraphModuleSystemName", "TypeB"));
 
         var discovery = new XmlTypeDiscovery(executor);
         var cmd = new ScanXmlTypesCommand
@@ -158,9 +121,9 @@ public class XmlTypeCommandTests : IDisposable
 
         var executor = new FakeSqlExecutor();
         executor.AddMapping("PageUrlDataProviderType",
-            CreateSingleColumnTable("PageUrlDataProviderType", "TypeA"));
+            TestTableHelper.CreateSingleColumnTable("PageUrlDataProviderType", "TypeA"));
         executor.AddMapping("ParagraphModuleSystemName",
-            CreateSingleColumnTable("ParagraphModuleSystemName"));
+            TestTableHelper.CreateSingleColumnTable("ParagraphModuleSystemName"));
 
         var discovery = new XmlTypeDiscovery(executor);
         var cmd = new ScanXmlTypesCommand
