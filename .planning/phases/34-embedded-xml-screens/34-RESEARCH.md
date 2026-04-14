@@ -54,6 +54,7 @@ None
 | `Dynamicweb.CoreUI.Screens.EditScreenBase<T>` | Edit screen base class | Established pattern in codebase |
 | `Dynamicweb.CoreUI.Screens.ListScreenBase<T>` | List screen base class | Established pattern in codebase |
 | `Dynamicweb.CoreUI.Data.CommandBase<T>` | Save command pattern | Established pattern in codebase |
+| `Dynamicweb.CoreUI.Actions.Implementations.RunCommandAction` | Toolbar command execution | DW10 standard for toolbar buttons that run commands |
 | `Dynamicweb.Data.CommandBuilder` + `ISqlExecutor` | SQL query execution | Same pattern as `DataGroupMetadataReader` |
 | `System.Xml.Linq.XDocument` | XML parsing for element discovery | Already used in `XmlFormatter` |
 
@@ -236,10 +237,36 @@ private SelectMultiDual CreateColumnSelectMultiDual(string? tableName, string? c
 ```
 [VERIFIED: SelectMultiDual inherits from ListBase which has Options and Value properties]
 
+### Pattern 6: Toolbar Scan Button via RunCommandAction (D-05)
+
+**What:** "Scan for XML types" toolbar button on the list screen that executes `ScanXmlTypesCommand` and reloads the list.
+
+**Implementation:** Use `GetToolbarActions()` override on `ListScreenBase<T>` with `RunCommandAction.For<ScanXmlTypesCommand>().WithReloadOnSuccess()`.
+
+```csharp
+protected override IEnumerable<ActionNode>? GetToolbarActions() =>
+[
+    new()
+    {
+        Name = "Scan for XML types",
+        Icon = Icon.Refresh,
+        NodeAction = RunCommandAction.For<ScanXmlTypesCommand>()
+            .WithReloadOnSuccess()
+    }
+];
+```
+
+**Why `GetToolbarActions()` and not `GetItemCreateAction()`:** `GetItemCreateAction()` is specifically for the "create new item" button. The Scan button is a general toolbar action that runs a command. `GetToolbarActions()` returns `IEnumerable<ActionNode>?` and is rendered in the toolbar area of the list screen.
+
+**Why `RunCommandAction` and not `SubmitAction`:** There is no standalone `SubmitAction` class in DW10. `SubmitAction` is only a property on `Form` (for edit screen form submission). `RunCommandAction.For<TCommand>()` is the correct API for executing a command from any action context (toolbar, context menu, etc.). This pattern is used throughout DW10 -- see `CacheInformationListScreen`, `AddinListScreen`, `DatabaseTableListScreen` in the DW10 source.
+
+[VERIFIED: RunCommandAction.cs in Dynamicweb.CoreUI/Actions/Implementations/; ListScreenBase.cs line 326 defines `GetToolbarActions()`; no standalone SubmitAction class exists]
+
 ### Anti-Patterns to Avoid
 - **Using DW Content APIs for discovery:** `Services.Pages` / `Services.Paragraphs` loads full objects with all XML blobs into memory. Direct SQL via `ISqlExecutor` is correct for read-only admin queries. [VERIFIED: PITFALLS.md Pitfall 3]
 - **Creating a new config property for discovered types:** The `ExcludeXmlElementsByType` dictionary already exists. Store discovered types as keys with empty element lists until user configures exclusions.
 - **Grouping by source (page vs paragraph):** D-06 explicitly requires flat list, no grouping.
+- **Using `SubmitAction` for toolbar buttons:** `SubmitAction` is NOT a standalone action class. It is a property on `Form` for edit screen submission. Use `RunCommandAction.For<TCommand>()` instead. [VERIFIED: DW10 source]
 
 ## Don't Hand-Roll
 
@@ -249,6 +276,7 @@ private SelectMultiDual CreateColumnSelectMultiDual(string? tableName, string? c
 | Config persistence | Custom file I/O | `ConfigWriter.Save()` / `ConfigLoader.Load()` | Atomic writes, JSON serialization already configured |
 | XML parsing | Regex on XML strings | `XDocument.Parse()` | Handles namespaces, entities, malformed XML gracefully |
 | SQL execution | Raw ADO.NET | `ISqlExecutor` + `CommandBuilder` | Testable abstraction, DW connection management |
+| Toolbar command buttons | Custom action classes | `RunCommandAction.For<T>()` | DW10 standard pattern for command execution from UI |
 
 ## Common Pitfalls
 
@@ -286,6 +314,13 @@ private SelectMultiDual CreateColumnSelectMultiDual(string? tableName, string? c
 **How to avoid:** Scan command should load current config, merge new types (add missing keys, preserve existing exclusion lists), then save. Never overwrite existing entries.
 **Warning signs:** User's element exclusions disappearing after a rescan.
 [ASSUMED]
+
+### Pitfall 6: Using SubmitAction as a Standalone Action
+**What goes wrong:** Code references `new SubmitAction(command)` which does not compile -- `SubmitAction` is not a standalone action class.
+**Why it happens:** Confusing `Form.SubmitAction` property with a non-existent `SubmitAction` class.
+**How to avoid:** Use `RunCommandAction.For<TCommand>()` for toolbar buttons and command execution. Use `GetToolbarActions()` override on `ListScreenBase` for list screen toolbar buttons.
+**Warning signs:** Compilation error on `SubmitAction` reference.
+[VERIFIED: DW10 source -- SubmitAction is only a property on Form, not a class]
 
 ## Code Examples
 
@@ -457,17 +492,13 @@ public sealed class ScanXmlTypesCommand : CommandBase<object>
 | A3 | Config race condition during scan is a real concern | Pitfalls - Pitfall 5 | Merge-not-overwrite strategy handles this regardless |
 | A4 | DB column names are `PageUrlDataProviderType` and `ParagraphModuleSystemName` | Architecture Patterns | If wrong, SQL queries fail. Verified via PITFALLS.md research but not against live DB |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **Exact DB column names for type identifiers**
-   - What we know: PITFALLS.md research says `PageUrlDataProviderType` and `ParagraphModuleSystemName`. ContentMapper uses `page.UrlDataProviderTypeName` and `paragraph.ModuleSystemName` (C# property names, not SQL column names).
-   - What's unclear: Exact SQL column names may differ from C# property names.
-   - Recommendation: The PITFALLS.md SQL examples use `PageUrlDataProviderType` and `ParagraphModuleSystemName`. Treat as HIGH confidence -- verify at implementation time with a quick `SELECT TOP 1 * FROM Page` if needed.
+1. **Exact DB column names for type identifiers** (RESOLVED)
+   - **Resolution:** The SQL column names are `PageUrlDataProviderType` (Page table) and `ParagraphModuleSystemName` (Paragraph table). The XML blob columns are `PageUrlDataProviderParameters` (Page) and `ParagraphModuleSettings` (Paragraph). These are confirmed by: (a) PITFALLS.md research SQL examples, (b) ContentMapper.cs using `page.UrlDataProviderTypeName` and `paragraph.ModuleSystemName` C# properties which map to these columns, (c) consistent naming convention in DW10 where SQL column names match the C# model property names with table prefix (e.g., `Page` prefix for Page table columns). HIGH confidence -- verified against multiple sources.
 
-2. **Should "Scan" command be a toolbar action or a separate screen action?**
-   - What we know: D-05 says "Rescan button". The list screen pattern has `GetItemCreateAction()` for toolbar buttons.
-   - What's unclear: Whether DW's `ListScreenBase` supports custom toolbar actions beyond "create".
-   - Recommendation: Use `GetListActions()` override if available, or add as a toolbar action node. Worst case, expose as a separate command triggered from a toolbar button.
+2. **Scan button toolbar API** (RESOLVED)
+   - **Resolution:** Use `RunCommandAction.For<ScanXmlTypesCommand>().WithReloadOnSuccess()` via `GetToolbarActions()` override on `ListScreenBase<T>`. There is NO standalone `SubmitAction` class in DW10 -- `SubmitAction` is only a property on `Form` (for edit screen form submission). `RunCommandAction` (from `Dynamicweb.CoreUI.Actions.Implementations`) is the correct API for executing commands from toolbar buttons. `ListScreenBase` has `protected virtual IEnumerable<ActionNode>? GetToolbarActions() => null;` (line 326) which is called in the screen layout builder (line 133-135). This pattern is used throughout DW10 (e.g., `CacheInformationListScreen` uses `RunCommandAction.For(command).WithReloadOnSuccess()` for refresh buttons). VERIFIED in DW10 source: `RunCommandAction.cs`, `ListScreenBase.cs`.
 
 ## Sources
 
@@ -478,6 +509,9 @@ public sealed class ScanXmlTypesCommand : CommandBase<object>
 - `XmlFormatter.cs` -- XDocument.Parse with XmlException handling [VERIFIED]
 - `ScreenPresetEditScreen.cs` (DW10 source) -- SelectMultiDual usage [VERIFIED]
 - `SelectMultiDual.cs` / `ListBase.cs` (DW10 source) -- control API surface [VERIFIED]
+- `RunCommandAction.cs` (DW10 source) -- toolbar command execution API [VERIFIED]
+- `ListScreenBase.cs` (DW10 source) -- GetToolbarActions() virtual method [VERIFIED]
+- `DataQueryIdentifiableModelBase.cs` (DW10 source) -- ModelIdentifier -> SetKey wiring [VERIFIED]
 - `SerializerConfiguration.cs` -- ExcludeXmlElementsByType dictionary [VERIFIED]
 - `ExclusionMerger.cs` -- MergeXmlExclusions using type name key [VERIFIED]
 - `ContentMapper.cs` -- XML type key usage (UrlDataProviderTypeName, ModuleSystemName) [VERIFIED]
@@ -493,7 +527,7 @@ public sealed class ScanXmlTypesCommand : CommandBase<object>
 **Confidence breakdown:**
 - Standard stack: HIGH -- all libraries verified in DW10 source and existing codebase
 - Architecture: HIGH -- follows established patterns exactly, all referenced files verified
-- Pitfalls: HIGH -- Pitfall 1 and 2 verified; Pitfalls 3-5 based on code analysis
+- Pitfalls: HIGH -- Pitfall 1 and 2 verified; Pitfalls 3-6 based on code analysis
 
 **Research date:** 2026-04-14
 **Valid until:** 2026-05-14 (stable -- DW10 admin UI framework not fast-moving)
