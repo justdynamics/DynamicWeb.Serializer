@@ -1,4 +1,3 @@
-using System.Text.RegularExpressions;
 using System.Xml;
 using System.Xml.Linq;
 using DynamicWeb.Serializer.Providers.SqlTable;
@@ -63,13 +62,10 @@ public class XmlTypeDiscovery
     {
         var elements = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-        // Defense-in-depth: validate typeName to prevent SQL injection
-        if (!Regex.IsMatch(typeName, @"^[A-Za-z0-9_.]+$"))
-            return elements;
-
         // Page URL data provider parameters
         var cb1 = new CommandBuilder();
-        cb1.Add($"SELECT TOP 50 PageUrlDataProviderParameters FROM Page WHERE PageUrlDataProviderType = '{typeName}' AND PageUrlDataProviderParameters IS NOT NULL AND PageUrlDataProviderParameters != ''");
+        cb1.Add("SELECT TOP 50 PageUrlDataProviderParameters FROM Page WHERE PageUrlDataProviderType = @typeName AND PageUrlDataProviderParameters IS NOT NULL AND PageUrlDataProviderParameters != ''");
+        cb1.AddParameter("@typeName", typeName);
         using (var reader = _sqlExecutor.ExecuteReader(cb1))
         {
             while (reader.Read())
@@ -81,7 +77,8 @@ public class XmlTypeDiscovery
 
         // Paragraph module settings
         var cb2 = new CommandBuilder();
-        cb2.Add($"SELECT TOP 50 ParagraphModuleSettings FROM Paragraph WHERE ParagraphModuleSystemName = '{typeName}' AND ParagraphModuleSettings IS NOT NULL AND ParagraphModuleSettings != ''");
+        cb2.Add("SELECT TOP 50 ParagraphModuleSettings FROM Paragraph WHERE ParagraphModuleSystemName = @typeName AND ParagraphModuleSettings IS NOT NULL AND ParagraphModuleSettings != ''");
+        cb2.AddParameter("@typeName", typeName);
         using (var reader = _sqlExecutor.ExecuteReader(cb2))
         {
             while (reader.Read())
