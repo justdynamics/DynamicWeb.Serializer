@@ -1,6 +1,7 @@
 using Dynamicweb.Application.UI;
 using DynamicWeb.Serializer.AdminUI.Queries;
 using DynamicWeb.Serializer.AdminUI.Screens;
+using DynamicWeb.Serializer.Configuration;
 using Dynamicweb.CoreUI.Actions.Implementations;
 using Dynamicweb.CoreUI.Icons;
 using Dynamicweb.CoreUI.Navigation;
@@ -13,6 +14,7 @@ public sealed class SerializerSettingsNodeProvider : NavigationNodeProvider<Syst
     private const string DatabaseRootId = "Settings_Database";
     internal const string SerializeNodeId = "Serializer_Settings";
     internal const string PredicatesNodeId = "Serializer_Predicates";
+    internal const string EmbeddedXmlNodeId = "Serializer_EmbeddedXml";
     internal const string LogViewerNodeId = "Serializer_LogViewer";
 
     public override IEnumerable<NavigationNode> GetRootNodes()
@@ -51,6 +53,17 @@ public sealed class SerializerSettingsNodeProvider : NavigationNodeProvider<Syst
 
             yield return new NavigationNode
             {
+                Id = EmbeddedXmlNodeId,
+                Name = "Embedded XML",
+                Icon = Icon.BracketsCurly,
+                Sort = 15,
+                HasSubNodes = true,
+                NodeAction = NavigateScreenAction.To<XmlTypeListScreen>()
+                    .With(new XmlTypeListQuery())
+            };
+
+            yield return new NavigationNode
+            {
                 Id = LogViewerNodeId,
                 Name = "Log Viewer",
                 Icon = Icon.History,
@@ -59,6 +72,28 @@ public sealed class SerializerSettingsNodeProvider : NavigationNodeProvider<Syst
                 NodeAction = NavigateScreenAction.To<LogViewerScreen>()
                     .With(new LogViewerQuery())
             };
+        }
+        else if (parentNodePath.Last == EmbeddedXmlNodeId)
+        {
+            var configPath = ConfigPathResolver.FindConfigFile();
+            if (configPath != null)
+            {
+                var config = ConfigLoader.Load(configPath);
+                var sort = 0;
+                foreach (var typeName in config.ExcludeXmlElementsByType.Keys.OrderBy(k => k, StringComparer.OrdinalIgnoreCase))
+                {
+                    yield return new NavigationNode
+                    {
+                        Id = $"Serializer_XmlType_{typeName}",
+                        Name = typeName,
+                        Icon = Icon.BracketsCurly,
+                        Sort = sort++,
+                        HasSubNodes = false,
+                        NodeAction = NavigateScreenAction.To<XmlTypeEditScreen>()
+                            .With(new XmlTypeByNameQuery { ModelIdentifier = typeName })
+                    };
+                }
+            }
         }
     }
 }
