@@ -408,17 +408,17 @@ This avoids collisions and allows pattern matching in `GetSubNodes`. [ASSUMED]
 | A2 | Show "Name (SystemName)" format in SelectMultiDual labels | Discretion | Minor UX impact only |
 | A3 | GetMetadata().Items is called from admin UI without needing Initialize() first | Architecture Patterns | Items could be empty if metadata not initialized; DW likely auto-initializes in admin context |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Does GetMetadata().Items require ItemManager.Initialize() first in admin context?**
    - What we know: `Initialize()` is called during DW startup; admin UI typically runs after initialization.
    - What's unclear: Whether there's a race condition on first load.
-   - Recommendation: Assume DW initializes automatically in admin context. Add a null/empty check and return empty list gracefully.
+   - RESOLVED: Assume DW initializes automatically in admin context. Add a null/empty check and return empty list gracefully. Plans include graceful null handling.
 
 2. **Should item types with no fields be shown in the list?**
    - What we know: `IsEmpty` property exists on ItemType (true when no fields).
    - What's unclear: Whether showing empty types adds noise.
-   - Recommendation: Show all types -- user can see they have no fields and skip them.
+   - RESOLVED: Show all types — user can see they have no fields and skip them. Plans show all types regardless.
 
 ## Sources
 
