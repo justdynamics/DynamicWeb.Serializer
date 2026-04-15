@@ -1,64 +1,65 @@
 ---
 gsd_state_version: 1.0
-milestone: v0.6.0
-milestone_name: UI Configuration Improvements
-status: executing
-stopped_at: Phase 36 context gathered
-last_updated: "2026-04-15T11:57:46.373Z"
-last_activity: 2026-04-15 -- Phase 36 planning complete
+milestone: v0.4.0
+milestone_name: Full Page Fidelity
+status: complete
+stopped_at: Completed 25-01-PLAN.md
+last_updated: "2026-04-03T18:11:00.000Z"
+last_activity: 2026-04-03
 progress:
-  total_phases: 6
-  completed_phases: 4
-  total_plans: 9
-  completed_plans: 7
-  percent: 78
+  total_phases: 3
+  completed_phases: 3
+  total_plans: 4
+  completed_plans: 4
+  percent: 100
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-04-09)
+See: .planning/PROJECT.md (updated 2026-04-03)
 
 **Core value:** Developers can reliably move DynamicWeb database state between environments through source control, with serialized YAML files as the single source of truth.
-**Current focus:** Phase 32 - Config Schema Extension
+**Current focus:** Phase 23 - Full Page Properties + Navigation Settings
 
 ## Current Position
 
-Phase: 36 of 6 (area screens)
-Plan: Not started
-Status: Ready to execute
-Last activity: 2026-04-15 -- Phase 36 planning complete
+Phase: 25 (3 of 3 in v0.4.0 milestone)
+Plan: 1 of 1 in current phase
+Status: Milestone complete
+Last activity: 2026-04-03
+
+Progress: [██████████] 100% (v0.4.0)
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 33 (prior milestones)
-- Average duration: ~4min
-- Total execution time: ~1.7 hours
+- Total plans completed: 20 (prior milestones)
+- Average duration: 4min
+- Total execution time: ~1.4 hours
 
-**By Phase (v0.5.0):**
+**By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| Phase 26 P01 | 1 | 3min | 3min |
-| Phase 27 P01 | 1 | 5min | 5min |
-| Phase 28 P01 | 1 | 8min | 8min |
-| Phase 29 P01 | 1 | 5min | 5min |
-| Phase 30 P01 | 1 | 3min | 3min |
-| Phase 31 P01 | 1 | 2min | 2min |
-| 32 | 2 | - | - |
-| 33 | 1 | - | - |
-| 34 | 2 | - | - |
-| 35 | 2 | - | - |
+| (prior milestones) | 20 | ~80min | ~4min |
+| 19 | 1 | 3min | 3min |
+| 20 | 2 | 7min | 3.5min |
+| 21 | 1 | 3min | 3min |
+| 22 | 1 | 1min | 1min |
+| 23 | 1 | 3min | 3min |
 
 **Recent Trend:**
 
-- Last 6 plans: 3min, 5min, 8min, 5min, 3min, 2min
+- Last 5 plans: 5min, 2min, 3min, 1min, 3min
 - Trend: Stable
 
 *Updated after each plan completion*
+| Phase 23 P02 | 5min | 2 tasks | 1 files |
+| Phase 24 P01 | 2min | 2 tasks | 4 files |
+| Phase 25 P01 | 5min | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -67,11 +68,18 @@ Last activity: 2026-04-15 -- Phase 36 planning complete
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
-- [v0.6.0]: No EditScreenInjector tab injection -- all config editing on serializer-owned screens under Serialize tree
-- [v0.6.0]: Config schema additive (flat arrays stay, new dictionaries added alongside)
-- [v0.6.0]: Auto-discovery uses SQL not service APIs
-- [v0.6.0]: ItemFieldListScreen is ListScreenBase (use ListScreenInjector if injecting)
-- No backward compatibility needed (beta 0.x)
+- Sub-objects (Seo, UrlSettings, Visibility) always serialized; NavigationSettings only when UseEcomGroups=true
+- Allowclick/Allowsearch/ShowInSitemap/ShowInLegend default to true on DTO matching DW field initializers
+- ActiveFrom/ActiveTo as nullable DateTime to distinguish unset from explicit
+- All ~30 page properties have public setters, flow through SavePage -- no special API needed
+- PageNavigationSettings is inline columns on Page table, not separate entity
+- Area ItemType uses standard Item.SerializeTo()/DeserializeFrom() pattern
+- InternalLinkResolver already exists from v0.3.1 -- reuse for ShortCut and ProductPage links
+- Timestamps deferred to future milestone (requires direct SQL post-save)
+- No backward compatibility needed (beta)
+- Sub-object DTOs for logical groupings (SEO, URL settings, visibility, navigation) to keep YAML clean
+- [Phase 23]: EcommerceNavigationParentType enum is in Dynamicweb.Content namespace (not Ecommerce.Navigation)
+- [Phase 24]: Area ItemType uses standard Item.SerializeTo/DeserializeFrom pattern; ItemType not set on target (must be pre-configured)
 
 ### Pending Todos
 
@@ -83,6 +91,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-15T11:40:19.493Z
-Stopped at: Phase 36 context gathered
-Resume file: .planning/phases/36-area-screens/36-CONTEXT.md
+Last session: 2026-04-03T18:11:00.000Z
+Stopped at: Completed 25-01-PLAN.md
+Resume file: None
