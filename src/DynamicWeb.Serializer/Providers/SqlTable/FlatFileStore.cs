@@ -19,11 +19,8 @@ public class FlatFileStore
     public FlatFileStore()
     {
         // SQL-specific serializer: preserves null values as ~ (NOT OmitNull like content YAML)
-        // ForceStringScalarEmitter selects Literal block style for LF-only multiline strings
-        // (pretty-printed XML from XmlFormatter uses LF-only, so this emits readable YAML blocks)
         _serializer = new SerializerBuilder()
             .WithNamingConvention(CamelCaseNamingConvention.Instance)
-            .WithEventEmitter(next => new ForceStringScalarEmitter(next))
             .ConfigureDefaultValuesHandling(DefaultValuesHandling.Preserve)
             .Build();
         _deserializer = YamlConfiguration.BuildDeserializer();

@@ -1,7 +1,4 @@
 using Dynamicweb.Content;
-using Dynamicweb.Data;
-using DynamicWeb.Serializer.Configuration;
-using DynamicWeb.Serializer.Infrastructure;
 using DynamicWeb.Serializer.Models;
 
 namespace DynamicWeb.Serializer.Serialization;
@@ -22,18 +19,8 @@ public class ContentMapper
     /// <summary>
     /// Maps a DW Area to a SerializedArea DTO.
     /// </summary>
-    public SerializedArea MapArea(Area area, List<SerializedPage> pages,
-        IReadOnlySet<string>? excludeFields = null,
-        IReadOnlyDictionary<string, List<string>>? excludeFieldsByItemType = null)
+    public SerializedArea MapArea(Area area, List<SerializedPage> pages)
     {
-        // Merge flat predicate exclusions with per-item-type dictionary for this area's item type
-        var effectiveExcludeFields = excludeFieldsByItemType != null && !string.IsNullOrEmpty(area.ItemType)
-            ? ExclusionMerger.MergeFieldExclusions(
-                excludeFields?.ToList() ?? new List<string>(),
-                excludeFieldsByItemType,
-                area.ItemType)
-            : excludeFields;
-
         var itemFields = new Dictionary<string, object>();
         if (!string.IsNullOrEmpty(area.ItemType) && !string.IsNullOrEmpty(area.ItemId))
         {
@@ -44,7 +31,7 @@ public class ContentMapper
                 itemEntry.SerializeTo(dict);
                 foreach (var kvp in dict)
                 {
-                    if (kvp.Value != null && effectiveExcludeFields?.Contains(kvp.Key) != true)
+                    if (kvp.Value != null)
                         itemFields[kvp.Key] = kvp.Value;
                 }
             }
@@ -57,7 +44,6 @@ public class ContentMapper
             SortOrder = area.Sort,
             ItemType = area.ItemType,
             ItemFields = itemFields,
-            Properties = ReadAreaProperties(area.ID, effectiveExcludeFields),
             Pages = pages
         };
     }
@@ -65,28 +51,10 @@ public class ContentMapper
     /// <summary>
     /// Maps a DW Page to a SerializedPage DTO.
     /// </summary>
-    public SerializedPage MapPage(Page page, List<SerializedGridRow> gridRows, List<SerializedPage> children,
-        List<SerializedPermission> permissions,
-        IReadOnlySet<string>? excludeFields = null, IReadOnlyList<string>? excludeXmlElements = null,
-        IReadOnlyDictionary<string, List<string>>? excludeFieldsByItemType = null,
-        IReadOnlyDictionary<string, List<string>>? excludeXmlElementsByType = null)
+    public SerializedPage MapPage(Page page, List<SerializedGridRow> gridRows, List<SerializedPage> children, List<SerializedPermission> permissions)
     {
-        // Merge flat predicate exclusions with per-item-type dictionary for this page's item type
-        var effectiveExcludeFields = excludeFieldsByItemType != null
-            ? ExclusionMerger.MergeFieldExclusions(
-                excludeFields?.ToList() ?? new List<string>(),
-                excludeFieldsByItemType,
-                page.ItemType)
-            : excludeFields;
-        var effectiveXmlExclusions = excludeXmlElementsByType != null
-            ? ExclusionMerger.MergeXmlExclusions(
-                (IReadOnlyList<string>?)excludeXmlElements ?? Array.Empty<string>(),
-                excludeXmlElementsByType,
-                page.UrlDataProviderTypeName)
-            : excludeXmlElements;
-
-        var fields = ExtractItemFields(page.Item, effectiveExcludeFields);
-        var propertyFields = ExtractPropertyItemFields(page, effectiveExcludeFields);
+        var fields = ExtractItemFields(page.Item);
+        var propertyFields = ExtractPropertyItemFields(page);
 
         return new SerializedPage
         {
@@ -132,7 +100,7 @@ public class ContentMapper
             UrlSettings = new SerializedUrlSettings
             {
                 UrlDataProviderTypeName = page.UrlDataProviderTypeName,
-                UrlDataProviderParameters = ApplyXmlElementFilter(XmlFormatter.PrettyPrint(page.UrlDataProviderParameters), effectiveXmlExclusions),
+                UrlDataProviderParameters = page.UrlDataProviderParameters,
                 UrlIgnoreForChildren = page.UrlIgnoreForChildren,
                 UrlUseAsWritten = page.UrlUseAsWritten
             },
@@ -198,29 +166,12 @@ public class ContentMapper
     /// Maps a DW Paragraph to a SerializedParagraph DTO.
     /// Registers the paragraph with the ReferenceResolver and resolves known reference fields to GUIDs.
     /// </summary>
-    public SerializedParagraph MapParagraph(Paragraph paragraph,
-        IReadOnlySet<string>? excludeFields = null, IReadOnlyList<string>? excludeXmlElements = null,
-        IReadOnlyDictionary<string, List<string>>? excludeFieldsByItemType = null,
-        IReadOnlyDictionary<string, List<string>>? excludeXmlElementsByType = null)
+    public SerializedParagraph MapParagraph(Paragraph paragraph)
     {
         // Register this paragraph so later cross-references to it can be resolved
         _resolver.RegisterParagraph(paragraph.ID, paragraph.UniqueId);
 
-        // Merge flat predicate exclusions with per-item-type dictionary for this paragraph's item type
-        var effectiveExcludeFields = excludeFieldsByItemType != null
-            ? ExclusionMerger.MergeFieldExclusions(
-                excludeFields?.ToList() ?? new List<string>(),
-                excludeFieldsByItemType,
-                paragraph.ItemType)
-            : excludeFields;
-        var effectiveXmlExclusions = excludeXmlElementsByType != null
-            ? ExclusionMerger.MergeXmlExclusions(
-                (IReadOnlyList<string>?)excludeXmlElements ?? Array.Empty<string>(),
-                excludeXmlElementsByType,
-                paragraph.ModuleSystemName)
-            : excludeXmlElements;
-
-        var fields = ExtractItemFields(paragraph.Item, effectiveExcludeFields);
+        var fields = ExtractItemFields(paragraph.Item);
 
         // Include paragraph body text if present
         if (!string.IsNullOrEmpty(paragraph.Text))
@@ -251,7 +202,7 @@ public class ContentMapper
             Template = paragraph.Template,
             ColorSchemeId = paragraph.ColorSchemeId,
             ModuleSystemName = paragraph.ModuleSystemName,
-            ModuleSettings = ApplyXmlElementFilter(XmlFormatter.PrettyPrint(paragraph.ModuleSettings), effectiveXmlExclusions),
+            ModuleSettings = paragraph.ModuleSettings,
             Fields = fields
         };
     }
@@ -260,10 +211,7 @@ public class ContentMapper
     /// Groups paragraphs by GridRowColumn to reconstruct column structure.
     /// Returns a single empty column if no paragraphs are provided.
     /// </summary>
-    public List<SerializedGridColumn> BuildColumns(IEnumerable<Paragraph> paragraphs,
-        IReadOnlySet<string>? excludeFields = null, IReadOnlyList<string>? excludeXmlElements = null,
-        IReadOnlyDictionary<string, List<string>>? excludeFieldsByItemType = null,
-        IReadOnlyDictionary<string, List<string>>? excludeXmlElementsByType = null)
+    public List<SerializedGridColumn> BuildColumns(IEnumerable<Paragraph> paragraphs)
     {
         var paragraphList = paragraphs.ToList();
 
@@ -283,7 +231,7 @@ public class ContentMapper
                 Id = g.Key,
                 Width = 0, // Column width not available from Paragraph; GridRow definition has this
                 Paragraphs = g.OrderBy(p => p.Sort)
-                              .Select(p => MapParagraph(p, excludeFields, excludeXmlElements, excludeFieldsByItemType, excludeXmlElementsByType) with { ColumnId = g.Key })
+                              .Select(p => MapParagraph(p) with { ColumnId = g.Key })
                               .ToList()
             })
             .ToList();
@@ -315,46 +263,10 @@ public class ContentMapper
     }
 
     // -------------------------------------------------------------------------
-    // Area SQL property reading
-    // -------------------------------------------------------------------------
-
-    /// <summary>
-    /// Reads all columns from the [Area] SQL table for a given area.
-    /// The DW Area C# class does not expose all 60+ columns as properties,
-    /// so direct SQL is the only way to capture the full table state.
-    /// Columns already represented by named SerializedArea properties are removed to avoid duplication.
-    /// </summary>
-    private static Dictionary<string, object> ReadAreaProperties(int areaId, IReadOnlySet<string>? excludeFields)
-    {
-        var props = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
-        var cb = new CommandBuilder();
-        cb.Add("SELECT * FROM [Area] WHERE [AreaID] = {0}", areaId);
-        using var reader = Database.CreateDataReader(cb);
-        if (reader.Read())
-        {
-            for (int i = 0; i < reader.FieldCount; i++)
-            {
-                var name = reader.GetName(i);
-                var value = reader.GetValue(i);
-                if (value != DBNull.Value && excludeFields?.Contains(name) != true)
-                    props[name] = value;
-            }
-        }
-        // Remove columns already captured by named DTO properties to avoid duplication
-        props.Remove("AreaID");
-        props.Remove("AreaName");
-        props.Remove("AreaSort");
-        props.Remove("AreaItemType");
-        props.Remove("AreaItemId");
-        props.Remove("AreaUniqueId");
-        return props;
-    }
-
-    // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------
 
-    private static Dictionary<string, object> ExtractItemFields(Dynamicweb.Content.Items.Item? item, IReadOnlySet<string>? excludeFields = null)
+    private static Dictionary<string, object> ExtractItemFields(Dynamicweb.Content.Items.Item? item)
     {
         var fields = new Dictionary<string, object>();
 
@@ -363,9 +275,6 @@ public class ContentMapper
 
         foreach (var fieldName in item.Names)
         {
-            if (excludeFields?.Contains(fieldName) == true)
-                continue;
-
             var value = item[fieldName];
             if (value != null)
                 fields[fieldName] = value;
@@ -378,7 +287,7 @@ public class ContentMapper
     /// Extracts PropertyItem fields (e.g. Icon, SubmenuType) from a page's PropertyItem.
     /// These are separate from the page's own Item fields.
     /// </summary>
-    private static Dictionary<string, object> ExtractPropertyItemFields(Page page, IReadOnlySet<string>? excludeFields = null)
+    private static Dictionary<string, object> ExtractPropertyItemFields(Page page)
     {
         var fields = new Dictionary<string, object>();
 
@@ -393,22 +302,10 @@ public class ContentMapper
         propItem.SerializeTo(dict);
         foreach (var kvp in dict)
         {
-            if (kvp.Value != null && excludeFields?.Contains(kvp.Key) != true)
+            if (kvp.Value != null)
                 fields[kvp.Key] = kvp.Value;
         }
 
         return fields;
-    }
-
-    /// <summary>
-    /// Applies XML element filtering if excludeXmlElements is configured.
-    /// Returns the XML unchanged if no elements to exclude.
-    /// </summary>
-    private static string? ApplyXmlElementFilter(string? xml, IReadOnlyList<string>? excludeXmlElements)
-    {
-        if (excludeXmlElements == null || excludeXmlElements.Count == 0)
-            return xml;
-
-        return XmlFormatter.RemoveElements(xml, excludeXmlElements);
     }
 }

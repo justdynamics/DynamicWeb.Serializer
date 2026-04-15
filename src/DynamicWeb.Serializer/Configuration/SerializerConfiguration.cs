@@ -14,20 +14,6 @@ public record SerializerConfiguration
     public ConflictStrategy ConflictStrategy { get; init; } = ConflictStrategy.SourceWins;
     public required List<ProviderPredicateDefinition> Predicates { get; init; }
 
-    /// <summary>
-    /// Global field exclusions by item type name.
-    /// Keys are item type system names; values are field name lists.
-    /// Merged with per-predicate ExcludeFields at runtime (union).
-    /// </summary>
-    public Dictionary<string, List<string>> ExcludeFieldsByItemType { get; init; } = new();
-
-    /// <summary>
-    /// Global XML element exclusions by XML type name (module system name or URL provider type).
-    /// Keys are type names; values are element name lists.
-    /// Merged with per-predicate ExcludeXmlElements at runtime (union).
-    /// </summary>
-    public Dictionary<string, List<string>> ExcludeXmlElementsByType { get; init; } = new();
-
     /// <summary>Subfolder for YAML serialization files (scheduled tasks read/write here).</summary>
     public string SerializeRoot => Path.Combine(OutputDirectory, "SerializeRoot");
 

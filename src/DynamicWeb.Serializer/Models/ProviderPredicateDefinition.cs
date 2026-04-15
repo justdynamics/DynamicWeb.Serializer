@@ -46,12 +46,6 @@ public record ProviderPredicateDefinition
     /// </summary>
     public string? SchemaSync { get; init; }
 
-    /// <summary>Column names containing XML that should be pretty-printed in YAML. SqlTable predicates only.</summary>
-    public List<string> XmlColumns { get; init; } = new();
-
-    /// <summary>Field names to exclude from serialization. Content predicates: page/paragraph/area item fields. SqlTable predicates: column names.</summary>
-    public List<string> ExcludeFields { get; init; } = new();
-
-    /// <summary>XML element names to strip from embedded XML blobs (ModuleSettings, UrlDataProviderParameters) before serialization. Case-insensitive matching.</summary>
-    public List<string> ExcludeXmlElements { get; init; } = new();
+    /// <summary>Area SQL table column names to exclude from serialization. Content predicates only.</summary>
+    public List<string> ExcludeAreaColumns { get; init; } = new();
 }

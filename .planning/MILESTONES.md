@@ -1,19 +1,5 @@
 # Milestones
 
-## v0.5.0 Granular Serialization Control (Shipped: 2026-04-09)
-
-**Phases completed:** 6 phases, 6 plans, 11 tasks
-
-**Key accomplishments:**
-
-- XmlFormatter utility with XDocument-based PrettyPrint/Compact, integrated into ContentMapper (serialize) and ContentDeserializer (deserialize) for readable moduleSettings and urlDataProviderParameters in YAML
-- Config-driven xmlColumns on SqlTable predicates with XmlFormatter.PrettyPrint in serialize, XmlFormatter.Compact in deserialize, and ForceStringScalarEmitter in FlatFileStore for readable YAML literal block scalars
-- 1. [Rule 3 - Blocking] XmlFormatter.RemoveElements implemented in Task 1 instead of Task 3
-- 1. [Rule 3 - Blocking] Provider-level deserialize test replaced with YAML round-trip + SQL-level tests
-- 1. [Rule 3 - Blocking] Fixed CommandBuilder parameter syntax
-
----
-
 ## v1.3 Permissions (Shipped: 2026-03-23)
 
 **Phases completed:** 12 phases, 23 plans, 41 tasks

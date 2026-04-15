@@ -37,9 +37,7 @@ public static class ConfigLoader
             LogLevel = string.IsNullOrWhiteSpace(raw.LogLevel) ? "info" : raw.LogLevel,
             DryRun = raw.DryRun ?? false,
             ConflictStrategy = ParseConflictStrategy(raw.ConflictStrategy),
-            Predicates = raw.Predicates!.Select(BuildPredicate).ToList(),
-            ExcludeFieldsByItemType = raw.ExcludeFieldsByItemType ?? new Dictionary<string, List<string>>(),
-            ExcludeXmlElementsByType = raw.ExcludeXmlElementsByType ?? new Dictionary<string, List<string>>()
+            Predicates = raw.Predicates!.Select(BuildPredicate).ToList()
         };
     }
 
@@ -91,9 +89,7 @@ public static class ConfigLoader
         CompareColumns = raw.CompareColumns,
         ServiceCaches = raw.ServiceCaches ?? new List<string>(),
         SchemaSync = raw.SchemaSync,
-        XmlColumns = raw.XmlColumns ?? new List<string>(),
-        ExcludeFields = raw.ExcludeFields ?? new List<string>(),
-        ExcludeXmlElements = raw.ExcludeXmlElements ?? new List<string>()
+        ExcludeAreaColumns = raw.ExcludeAreaColumns ?? new List<string>()
     };
 
     // Raw (nullable) models for deserialization — no required constraints so we can produce clear validation errors
@@ -105,8 +101,6 @@ public static class ConfigLoader
         public bool? DryRun { get; set; }
         public string? ConflictStrategy { get; set; }
         public List<RawPredicateDefinition>? Predicates { get; set; }
-        public Dictionary<string, List<string>>? ExcludeFieldsByItemType { get; set; }
-        public Dictionary<string, List<string>>? ExcludeXmlElementsByType { get; set; }
     }
 
     private sealed class RawPredicateDefinition
@@ -122,8 +116,6 @@ public static class ConfigLoader
         public string? CompareColumns { get; set; }
         public List<string>? ServiceCaches { get; set; }
         public string? SchemaSync { get; set; }
-        public List<string>? XmlColumns { get; set; }
-        public List<string>? ExcludeFields { get; set; }
-        public List<string>? ExcludeXmlElements { get; set; }
+        public List<string>? ExcludeAreaColumns { get; set; }
     }
 }

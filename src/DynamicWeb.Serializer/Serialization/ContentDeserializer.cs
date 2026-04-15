@@ -1,5 +1,4 @@
 using Dynamicweb.Content;
-using Dynamicweb.Data;
 using DynamicWeb.Serializer.Configuration;
 using DynamicWeb.Serializer.Infrastructure;
 using DynamicWeb.Serializer.Models;
@@ -54,10 +53,6 @@ public class ContentDeserializer
         public int Updated { get; set; }
         public int Skipped { get; set; }
         public int Failed { get; set; }
-        /// <summary>Fields excluded from serialization — must NOT be nulled out during deserialization.</summary>
-        public IReadOnlySet<string>? ExcludeFields { get; set; }
-        /// <summary>Per-item-type field exclusions from config-level dictionary.</summary>
-        public IReadOnlyDictionary<string, List<string>>? ExcludeFieldsByItemType { get; set; }
     }
 
     // -------------------------------------------------------------------------
@@ -188,47 +183,11 @@ public class ContentDeserializer
     private DeserializeResult DeserializePredicate(ProviderPredicateDefinition predicate, SerializedArea area,
         Dictionary<Guid, int>? globalPageGuidCache = null, List<SerializedPage>? allAreaPages = null)
     {
-        // Build excludeFields set early — needed for area creation before WriteContext
-        var excludeFieldsSet = predicate.ExcludeFields.Count > 0
-            ? new HashSet<string>(predicate.ExcludeFields, StringComparer.OrdinalIgnoreCase)
-            : null;
-
         var targetArea = Services.Areas.GetArea(predicate.AreaId);
         if (targetArea == null)
         {
-            // AREA-04: Create the area if it doesn't exist on target
-            if (!_isDryRun && area.Properties.Count > 0)
-            {
-                Log($"Area with ID {predicate.AreaId} not found. Creating from YAML data.");
-                try
-                {
-                    var createAreaExclude = _configuration.ExcludeFieldsByItemType.Count > 0 && !string.IsNullOrEmpty(area.ItemType)
-                    ? ExclusionMerger.MergeFieldExclusions(
-                        excludeFieldsSet?.ToList() ?? new List<string>(),
-                        _configuration.ExcludeFieldsByItemType,
-                        area.ItemType)
-                    : excludeFieldsSet;
-                CreateAreaFromProperties(predicate.AreaId, area, createAreaExclude);
-                    Services.Areas.ClearCache(); // Critical: per project_dw_area_cache.md
-                    targetArea = Services.Areas.GetArea(predicate.AreaId);
-                    if (targetArea == null)
-                    {
-                        Log($"ERROR: Area creation succeeded but GetArea still returns null after cache clear. Skipping predicate '{predicate.Name}'.");
-                        return new DeserializeResult();
-                    }
-                    Log($"Area created: ID={predicate.AreaId}, Name={area.Name}");
-                }
-                catch (Exception ex)
-                {
-                    Log($"ERROR: Failed to create area {predicate.AreaId}: {ex.Message}. Skipping predicate '{predicate.Name}'.");
-                    return new DeserializeResult();
-                }
-            }
-            else
-            {
-                Log($"Warning: Area with ID {predicate.AreaId} not found. Skipping predicate '{predicate.Name}'.");
-                return new DeserializeResult();
-            }
+            Log($"Warning: Area with ID {predicate.AreaId} not found. Skipping predicate '{predicate.Name}'.");
+            return new DeserializeResult();
         }
 
         Log($"Deserializing predicate '{predicate.Name}' into area ID={predicate.AreaId}");
@@ -243,26 +202,8 @@ public class ContentDeserializer
         {
             TargetAreaId = predicate.AreaId,
             ParentPageId = 0,
-            PageGuidCache = pageGuidCache,
-            ExcludeFields = excludeFieldsSet,
-            ExcludeFieldsByItemType = _configuration.ExcludeFieldsByItemType.Count > 0
-                ? _configuration.ExcludeFieldsByItemType
-                : null
+            PageGuidCache = pageGuidCache
         };
-
-        // Write full area properties (AREA-04)
-        if (area.Properties.Count > 0 && !_isDryRun)
-        {
-            Log($"Writing {area.Properties.Count} area properties for area ID={predicate.AreaId}");
-            var areaPropsExclude = ctx.ExcludeFieldsByItemType != null && !string.IsNullOrEmpty(area.ItemType)
-                ? ExclusionMerger.MergeFieldExclusions(
-                    ctx.ExcludeFields?.ToList() ?? new List<string>(),
-                    ctx.ExcludeFieldsByItemType,
-                    area.ItemType)
-                : ctx.ExcludeFields;
-            WriteAreaProperties(predicate.AreaId, area.Properties, areaPropsExclude);
-            Services.Areas.ClearCache();
-        }
 
         // Save area-level ItemType fields (AREA-01)
         if (!string.IsNullOrEmpty(area.ItemType) && area.ItemFields.Count > 0 && !_isDryRun)
@@ -291,13 +232,7 @@ public class ContentDeserializer
             if (!string.IsNullOrEmpty(targetAreaItemId))
             {
                 Log($"Applying area ItemType fields: type={area.ItemType}, id={targetAreaItemId}, fields={area.ItemFields.Count}");
-                var effectiveExclude = ctx.ExcludeFieldsByItemType != null
-                    ? ExclusionMerger.MergeFieldExclusions(
-                        ctx.ExcludeFields?.ToList() ?? new List<string>(),
-                        ctx.ExcludeFieldsByItemType,
-                        area.ItemType)
-                    : ctx.ExcludeFields;
-                SaveItemFields(area.ItemType, targetAreaItemId, area.ItemFields, effectiveExclude);
+                SaveItemFields(area.ItemType, targetAreaItemId, area.ItemFields);
             }
         }
 
@@ -322,69 +257,6 @@ public class ContentDeserializer
             Failed = ctx.Failed,
             Errors = ctx.Errors
         };
-    }
-
-    // -------------------------------------------------------------------------
-    // Area SQL property write-back
-    // -------------------------------------------------------------------------
-
-    /// <summary>
-    /// Write area properties back to the [Area] table via SQL UPDATE.
-    /// Skips columns in excludeFields to preserve environment-specific values.
-    /// </summary>
-    private void WriteAreaProperties(int areaId, Dictionary<string, object> properties, IReadOnlySet<string>? excludeFields)
-    {
-        if (properties.Count == 0) return;
-
-        var cb = new CommandBuilder();
-        var first = true;
-        foreach (var kvp in properties)
-        {
-            // Skip excluded fields (per AREA-05)
-            if (excludeFields?.Contains(kvp.Key) == true) continue;
-
-            if (first)
-            {
-                cb.Add($"UPDATE [Area] SET [{kvp.Key}] = {{0}}", kvp.Value ?? DBNull.Value);
-                first = false;
-            }
-            else
-            {
-                cb.Add($", [{kvp.Key}] = {{0}}", kvp.Value ?? DBNull.Value);
-            }
-        }
-        // If all properties were excluded, nothing to update
-        if (first) return;
-
-        cb.Add(" WHERE [AreaID] = {0}", areaId);
-        Database.ExecuteNonQuery(cb);
-    }
-
-    /// <summary>
-    /// Create a new area row via SQL INSERT using serialized properties.
-    /// Called when the target area does not exist (AREA-04).
-    /// </summary>
-    private void CreateAreaFromProperties(int areaId, SerializedArea area, IReadOnlySet<string>? excludeFields)
-    {
-        var columns = new List<string> { "[AreaID]", "[AreaName]", "[AreaSort]", "[AreaUniqueId]" };
-        var values = new List<object> { areaId, area.Name, area.SortOrder, area.AreaId };
-
-        foreach (var kvp in area.Properties)
-        {
-            if (excludeFields?.Contains(kvp.Key) == true) continue;
-            columns.Add($"[{kvp.Key}]");
-            values.Add(kvp.Value ?? DBNull.Value);
-        }
-
-        var cb = new CommandBuilder();
-        cb.Add($"INSERT INTO [Area] ({string.Join(", ", columns)}) VALUES (");
-        for (int i = 0; i < values.Count; i++)
-        {
-            if (i > 0) cb.Add(", ");
-            cb.Add("{0}", values[i]);
-        }
-        cb.Add(")");
-        Database.ExecuteNonQuery(cb);
     }
 
     // -------------------------------------------------------------------------
@@ -503,13 +375,7 @@ public class ContentDeserializer
             var refetched = Services.Pages.GetPage(saved.ID);
             if (refetched != null)
             {
-                var pageExclude = ctx.ExcludeFieldsByItemType != null
-                    ? ExclusionMerger.MergeFieldExclusions(
-                        ctx.ExcludeFields?.ToList() ?? new List<string>(),
-                        ctx.ExcludeFieldsByItemType,
-                        dto.ItemType)
-                    : ctx.ExcludeFields;
-                SaveItemFields(refetched.ItemType, refetched.ItemId, dto.Fields, pageExclude);
+                SaveItemFields(refetched.ItemType, refetched.ItemId, dto.Fields);
 
                 // Re-apply LayoutTemplate if DW overwrote it during HandleItemStructure
                 // (DW sets it to the ItemType's default template on new pages)
@@ -521,7 +387,7 @@ public class ContentDeserializer
                 }
 
                 // Apply PropertyItem fields (e.g. Icon, SubmenuType)
-                SavePropertyItemFields(refetched, dto.PropertyFields, pageExclude);
+                SavePropertyItemFields(refetched, dto.PropertyFields);
             }
 
             ctx.Created++;
@@ -564,16 +430,10 @@ public class ContentDeserializer
             Services.Pages.SavePage(existingPage);
 
             // Apply ItemType fields via ItemService (source-wins)
-            var updatePageExclude = ctx.ExcludeFieldsByItemType != null
-                ? ExclusionMerger.MergeFieldExclusions(
-                    ctx.ExcludeFields?.ToList() ?? new List<string>(),
-                    ctx.ExcludeFieldsByItemType,
-                    dto.ItemType)
-                : ctx.ExcludeFields;
-            SaveItemFields(existingPage.ItemType, existingPage.ItemId, dto.Fields, updatePageExclude);
+            SaveItemFields(existingPage.ItemType, existingPage.ItemId, dto.Fields);
 
             // Apply PropertyItem fields (e.g. Icon, SubmenuType)
-            SavePropertyItemFields(existingPage, dto.PropertyFields, updatePageExclude);
+            SavePropertyItemFields(existingPage, dto.PropertyFields);
 
             ctx.Updated++;
             Log($"UPDATED page {dto.PageUniqueId} (ID={existingId})");
@@ -673,13 +533,7 @@ public class ContentDeserializer
                     Log($"  GridRow Item created: type={dto.ItemType}, id={item.Id}");
                     saved.ItemId = item.Id;
                     Services.Grids.SaveGridRow(saved);
-                    var gridRowExclude = ctx.ExcludeFieldsByItemType != null
-                        ? ExclusionMerger.MergeFieldExclusions(
-                            ctx.ExcludeFields?.ToList() ?? new List<string>(),
-                            ctx.ExcludeFieldsByItemType,
-                            dto.ItemType)
-                        : ctx.ExcludeFields;
-                    SaveItemFields(dto.ItemType, item.Id, dto.Fields, gridRowExclude);
+                    SaveItemFields(dto.ItemType, item.Id, dto.Fields);
                 }
                 catch (Exception ex)
                 {
@@ -688,13 +542,7 @@ public class ContentDeserializer
             }
             else if (!string.IsNullOrEmpty(saved.ItemId))
             {
-                var gridRowExclude2 = ctx.ExcludeFieldsByItemType != null
-                    ? ExclusionMerger.MergeFieldExclusions(
-                        ctx.ExcludeFields?.ToList() ?? new List<string>(),
-                        ctx.ExcludeFieldsByItemType,
-                        dto.ItemType)
-                    : ctx.ExcludeFields;
-                SaveItemFields(dto.ItemType, saved.ItemId, dto.Fields, gridRowExclude2);
+                SaveItemFields(dto.ItemType, saved.ItemId, dto.Fields);
             }
 
             var newGridRowId = saved.ID;
@@ -744,15 +592,7 @@ public class ContentDeserializer
 
             // Apply ItemType fields via ItemService
             if (!string.IsNullOrEmpty(existingRow2.ItemId))
-            {
-                var gridRowUpdateExclude = ctx.ExcludeFieldsByItemType != null
-                    ? ExclusionMerger.MergeFieldExclusions(
-                        ctx.ExcludeFields?.ToList() ?? new List<string>(),
-                        ctx.ExcludeFieldsByItemType,
-                        dto.ItemType)
-                    : ctx.ExcludeFields;
-                SaveItemFields(dto.ItemType, existingRow2.ItemId, dto.Fields, gridRowUpdateExclude);
-            }
+                SaveItemFields(dto.ItemType, existingRow2.ItemId, dto.Fields);
 
             ctx.Updated++;
             Log($"UPDATED grid row {dto.Id} (ID={existingGridRowId})");
@@ -818,7 +658,7 @@ public class ContentDeserializer
             para.ColorSchemeId = dto.ColorSchemeId;
             para.ItemType = dto.ItemType;
             para.ModuleSystemName = dto.ModuleSystemName ?? string.Empty;
-            para.ModuleSettings = XmlFormatter.Compact(dto.ModuleSettings) ?? string.Empty;
+            para.ModuleSettings = dto.ModuleSettings ?? string.Empty;
             // Do NOT set para.ID (insert path)
 
             Services.Paragraphs.SaveParagraph(para);
@@ -830,13 +670,7 @@ public class ContentDeserializer
             // Apply ItemType fields via ItemService using paragraph's ItemId (not paragraph ID)
             if (saved != null)
             {
-                var paraExclude = ctx.ExcludeFieldsByItemType != null
-                    ? ExclusionMerger.MergeFieldExclusions(
-                        ctx.ExcludeFields?.ToList() ?? new List<string>(),
-                        ctx.ExcludeFieldsByItemType,
-                        dto.ItemType)
-                    : ctx.ExcludeFields;
-                SaveItemFields(dto.ItemType, saved.ItemId, dto.Fields, paraExclude);
+                SaveItemFields(dto.ItemType, saved.ItemId, dto.Fields);
 
                 // Re-apply fields that DW may overwrite during HandleItemStructure:
                 // - Header: DW sets it to Item's title (template default)
@@ -850,7 +684,7 @@ public class ContentDeserializer
                 if (!string.IsNullOrEmpty(dto.ModuleSystemName) && saved.ModuleSystemName != dto.ModuleSystemName)
                 {
                     saved.ModuleSystemName = dto.ModuleSystemName;
-                    saved.ModuleSettings = XmlFormatter.Compact(dto.ModuleSettings) ?? string.Empty;
+                    saved.ModuleSettings = dto.ModuleSettings ?? string.Empty;
                     needsResave = true;
                 }
                 if (!string.IsNullOrEmpty(dto.Template) && saved.Template != dto.Template)
@@ -901,18 +735,12 @@ public class ContentDeserializer
             existingForUpdate.ColorSchemeId = dto.ColorSchemeId;
             existingForUpdate.ItemType = dto.ItemType;
             existingForUpdate.ModuleSystemName = dto.ModuleSystemName ?? string.Empty;
-            existingForUpdate.ModuleSettings = XmlFormatter.CompactWithMerge(dto.ModuleSettings, existingForUpdate.ModuleSettings) ?? string.Empty;
+            existingForUpdate.ModuleSettings = dto.ModuleSettings ?? string.Empty;
 
             Services.Paragraphs.SaveParagraph(existingForUpdate);
 
             // Apply ItemType fields via ItemService (source-wins)
-            var paraUpdateExclude = ctx.ExcludeFieldsByItemType != null
-                ? ExclusionMerger.MergeFieldExclusions(
-                    ctx.ExcludeFields?.ToList() ?? new List<string>(),
-                    ctx.ExcludeFieldsByItemType,
-                    dto.ItemType)
-                : ctx.ExcludeFields;
-            SaveItemFields(existingForUpdate.ItemType, existingForUpdate.ItemId, dto.Fields, paraUpdateExclude);
+            SaveItemFields(existingForUpdate.ItemType, existingForUpdate.ItemId, dto.Fields);
             ctx.Updated++;
             Log($"UPDATED paragraph {dto.ParagraphUniqueId} (ID={existingParagraphId})");
         }
@@ -922,7 +750,7 @@ public class ContentDeserializer
     // Page PropertyItem persistence (Icon, SubmenuType, etc.)
     // -------------------------------------------------------------------------
 
-    private void SavePropertyItemFields(Page page, Dictionary<string, object> propertyFields, IReadOnlySet<string>? excludeFields = null)
+    private void SavePropertyItemFields(Page page, Dictionary<string, object> propertyFields)
     {
         if (propertyFields.Count == 0)
             return;
@@ -948,12 +776,7 @@ public class ContentDeserializer
         foreach (var fieldName in propItem.Names)
         {
             if (!ItemSystemFields.Contains(fieldName) && !contentFields.ContainsKey(fieldName))
-            {
-                // Skip guard: do NOT null out fields that were intentionally excluded from serialization (FILT-03)
-                if (excludeFields != null && excludeFields.Contains(fieldName))
-                    continue;
                 contentFields[fieldName] = null;
-            }
         }
 
         if (contentFields.Count == 0)
@@ -1000,7 +823,7 @@ public class ContentDeserializer
     /// Implements source-wins: fields present in the item type definition but absent
     /// from the serialized YAML are explicitly set to null so stale target data is cleared.
     /// </summary>
-    private void SaveItemFields(string? itemType, string itemId, Dictionary<string, object> fields, IReadOnlySet<string>? excludeFields = null)
+    private void SaveItemFields(string? itemType, string itemId, Dictionary<string, object> fields)
     {
         if (string.IsNullOrEmpty(itemType))
             return;
@@ -1022,9 +845,6 @@ public class ContentDeserializer
         {
             if (!ItemSystemFields.Contains(fieldName) && !contentFields.ContainsKey(fieldName))
             {
-                // Skip guard: do NOT null out fields that were intentionally excluded from serialization (FILT-03)
-                if (excludeFields != null && excludeFields.Contains(fieldName))
-                    continue;
                 contentFields[fieldName] = null;
             }
         }
@@ -1155,7 +975,7 @@ public class ContentDeserializer
         if (dto.UrlSettings != null)
         {
             page.UrlDataProviderTypeName = dto.UrlSettings.UrlDataProviderTypeName;
-            page.UrlDataProviderParameters = XmlFormatter.CompactWithMerge(dto.UrlSettings.UrlDataProviderParameters, page.UrlDataProviderParameters);
+            page.UrlDataProviderParameters = dto.UrlSettings.UrlDataProviderParameters;
             page.UrlIgnoreForChildren = dto.UrlSettings.UrlIgnoreForChildren;
             page.UrlUseAsWritten = dto.UrlSettings.UrlUseAsWritten;
         }
