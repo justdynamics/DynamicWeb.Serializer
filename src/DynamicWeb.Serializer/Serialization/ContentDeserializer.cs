@@ -1,4 +1,5 @@
 using Dynamicweb.Content;
+using Dynamicweb.Data;
 using DynamicWeb.Serializer.Configuration;
 using DynamicWeb.Serializer.Infrastructure;
 using DynamicWeb.Serializer.Models;
@@ -192,6 +193,11 @@ public class ContentDeserializer
 
         Log($"Deserializing predicate '{predicate.Name}' into area ID={predicate.AreaId}");
 
+        // Build area column exclude set (separate from item field excludes, per D-02)
+        var excludeAreaColumnsSet = predicate.ExcludeAreaColumns.Count > 0
+            ? new HashSet<string>(predicate.ExcludeAreaColumns, StringComparer.OrdinalIgnoreCase)
+            : null;
+
         // Pre-build page GUID cache for the entire area (avoids per-item full table scans)
         var allPages = Services.Pages.GetPagesByAreaID(predicate.AreaId);
         var pageGuidCache = allPages
@@ -204,6 +210,14 @@ public class ContentDeserializer
             ParentPageId = 0,
             PageGuidCache = pageGuidCache
         };
+
+        // Write full area properties from YAML back to [Area] SQL table (AREA-04)
+        if (area.Properties.Count > 0 && !_isDryRun)
+        {
+            Log($"Writing {area.Properties.Count} area properties for area ID={predicate.AreaId}");
+            WriteAreaProperties(predicate.AreaId, area.Properties, excludeAreaColumnsSet);
+            Services.Areas.ClearCache();
+        }
 
         // Save area-level ItemType fields (AREA-01)
         if (!string.IsNullOrEmpty(area.ItemType) && area.ItemFields.Count > 0 && !_isDryRun)
@@ -1159,6 +1173,43 @@ public class ContentDeserializer
             propItem.DeserializeFrom(updatedFields);
             propItem.Save();
         }
+    }
+
+    // -------------------------------------------------------------------------
+    // Area property SQL operations
+    // -------------------------------------------------------------------------
+
+    /// <summary>
+    /// Writes area properties back to the [Area] SQL table via UPDATE.
+    /// ExcludeAreaColumns filtering is applied — excluded columns are not overwritten.
+    /// This is separate from item field processing (ExcludeAreaColumns != ExcludeFields).
+    /// </summary>
+    private void WriteAreaProperties(int areaId, Dictionary<string, object> properties, IReadOnlySet<string>? excludeAreaColumns)
+    {
+        if (properties.Count == 0) return;
+
+        var cb = new CommandBuilder();
+        var first = true;
+        foreach (var kvp in properties)
+        {
+            // Skip excluded area columns (per AREA-08)
+            if (excludeAreaColumns?.Contains(kvp.Key) == true) continue;
+
+            if (first)
+            {
+                cb.Add($"UPDATE [Area] SET [{kvp.Key}] = {{0}}", kvp.Value ?? DBNull.Value);
+                first = false;
+            }
+            else
+            {
+                cb.Add($", [{kvp.Key}] = {{0}}", kvp.Value ?? DBNull.Value);
+            }
+        }
+        // If all properties were excluded, nothing to update
+        if (first) return;
+
+        cb.Add(" WHERE [AreaID] = {0}", areaId);
+        Database.ExecuteNonQuery(cb);
     }
 
     // -------------------------------------------------------------------------
