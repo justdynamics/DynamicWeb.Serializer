@@ -7,6 +7,7 @@ using Dynamicweb.Content.Items.Metadata;
 using Dynamicweb.CoreUI.Actions.Implementations;
 using Dynamicweb.CoreUI.Icons;
 using Dynamicweb.CoreUI.Navigation;
+using Dynamicweb.Core.UI.Icons;
 
 namespace DynamicWeb.Serializer.AdminUI.Tree;
 
@@ -22,6 +23,9 @@ public sealed class SerializerSettingsNodeProvider : NavigationNodeProvider<Syst
 
     private const string ItemTypeCatPrefix = "Serializer_ItemType_Cat_";
     private const string ItemTypeLeafPrefix = "Serializer_ItemType_";
+    // Node IDs cannot contain '/' — DW NavigationNodePath splits on it.
+    // Use '~' as separator in node IDs and convert back to '/' for category matching.
+    private const char NodeIdCategorySeparator = '~';
 
     public override IEnumerable<NavigationNode> GetRootNodes()
     {
@@ -147,7 +151,8 @@ public sealed class SerializerSettingsNodeProvider : NavigationNodeProvider<Syst
         }
         else if (parentNodePath.Last.StartsWith(ItemTypeCatPrefix, StringComparison.Ordinal))
         {
-            var categoryPath = parentNodePath.Last[ItemTypeCatPrefix.Length..];
+            // Convert node ID separator (~) back to category separator (/)
+            var categoryPath = parentNodePath.Last[ItemTypeCatPrefix.Length..].Replace(NodeIdCategorySeparator, '/');
             foreach (var node in GetItemTypeCategoryNodes(categoryPath))
                 yield return node;
         }
@@ -182,7 +187,7 @@ public sealed class SerializerSettingsNodeProvider : NavigationNodeProvider<Syst
             {
                 yield return new NavigationNode
                 {
-                    Id = ItemTypeCatPrefix + group.Key,
+                    Id = ItemTypeCatPrefix + group.Key.Replace('/', NodeIdCategorySeparator),
                     Name = group.Key,
                     Icon = Icon.Folder,
                     Sort = sort++,
@@ -218,7 +223,7 @@ public sealed class SerializerSettingsNodeProvider : NavigationNodeProvider<Syst
                 var fullPath = parentCategory + "/" + subCat;
                 yield return new NavigationNode
                 {
-                    Id = ItemTypeCatPrefix + fullPath,
+                    Id = ItemTypeCatPrefix + fullPath.Replace('/', NodeIdCategorySeparator),
                     Name = subCat!,
                     Icon = Icon.Folder,
                     Sort = sort++,
@@ -235,11 +240,15 @@ public sealed class SerializerSettingsNodeProvider : NavigationNodeProvider<Syst
 
             foreach (var itemType in leafTypes)
             {
+                var icon = itemType.Icon != KnownIcon.None
+                    ? IconMapper.KnownIconToIcon(itemType.Icon)
+                    : Icon.FileAlt;
+
                 yield return new NavigationNode
                 {
                     Id = ItemTypeLeafPrefix + itemType.SystemName,
                     Name = itemType.Name,
-                    Icon = Icon.FileAlt,
+                    Icon = icon,
                     Sort = sort++,
                     HasSubNodes = false,
                     NodeAction = NavigateScreenAction.To<ItemTypeEditScreen>()
