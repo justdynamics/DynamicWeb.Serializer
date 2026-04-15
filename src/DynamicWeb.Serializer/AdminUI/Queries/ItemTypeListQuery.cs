@@ -20,11 +20,18 @@ public sealed class ItemTypeListQuery : DataQueryModelBase<DataListViewModel<Ite
         var configPath = ConfigPathResolver.FindConfigFile();
         if (configPath != null)
         {
-            var config = ConfigLoader.Load(configPath);
-            // Rebuild as case-insensitive for reliable lookups
-            excludeMap = new Dictionary<string, List<string>>(
-                config.ExcludeFieldsByItemType,
-                StringComparer.OrdinalIgnoreCase);
+            try
+            {
+                var config = ConfigLoader.Load(configPath);
+                // Rebuild as case-insensitive for reliable lookups
+                excludeMap = new Dictionary<string, List<string>>(
+                    config.ExcludeFieldsByItemType,
+                    StringComparer.OrdinalIgnoreCase);
+            }
+            catch
+            {
+                // Corrupt config -- show list without exclusion counts
+            }
         }
 
         var items = metadata.Items
@@ -33,6 +40,8 @@ public sealed class ItemTypeListQuery : DataQueryModelBase<DataListViewModel<Ite
                 SystemName = t.SystemName,
                 DisplayName = t.Name,
                 Category = t.Category?.FullName ?? "",
+                // Fields declared directly on this type only (not inherited).
+                // GetItemFields includes inherited fields and is too expensive per row.
                 FieldCount = t.Fields?.Count ?? 0,
                 ExcludedFieldCount = excludeMap != null
                     && excludeMap.TryGetValue(t.SystemName, out var excluded)
