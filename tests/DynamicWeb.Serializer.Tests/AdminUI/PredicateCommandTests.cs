@@ -473,4 +473,91 @@ public class PredicateCommandTests : IDisposable
         var config = ConfigLoader.Load(_configPath);
         Assert.Empty(config.Predicates);
     }
+
+    // -------------------------------------------------------------------------
+    // ExcludeAreaColumns round-trip tests (36-01)
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public void Save_Content_ExcludeAreaColumns_RoundTrips()
+    {
+        CreateSeedConfig(new List<ProviderPredicateDefinition>());
+
+        var cmd = new SavePredicateCommand
+        {
+            ConfigPath = _configPath,
+            Model = new PredicateEditModel
+            {
+                Index = -1,
+                Name = "Area Cols RT",
+                ProviderType = "Content",
+                AreaId = 1,
+                PageId = 10,
+                ExcludeAreaColumns = "AreaDomain\r\nAreaFirstPage\nAreaMasterPage"
+            }
+        };
+
+        var result = cmd.Handle();
+
+        Assert.Equal(CommandResult.ResultType.Ok, result.Status);
+        var config = ConfigLoader.Load(_configPath);
+        var pred = config.Predicates[0];
+        Assert.Equal(3, pred.ExcludeAreaColumns.Count);
+        Assert.Equal("AreaDomain", pred.ExcludeAreaColumns[0]);
+        Assert.Equal("AreaFirstPage", pred.ExcludeAreaColumns[1]);
+        Assert.Equal("AreaMasterPage", pred.ExcludeAreaColumns[2]);
+    }
+
+    [Fact]
+    public void Save_SqlTable_ExcludeAreaColumns_NotPersisted()
+    {
+        CreateSeedConfig(new List<ProviderPredicateDefinition>());
+
+        var cmd = new SavePredicateCommand
+        {
+            ConfigPath = _configPath,
+            Model = new PredicateEditModel
+            {
+                Index = -1,
+                Name = "SqlTable No AreaCols",
+                ProviderType = "SqlTable",
+                Table = "EcomOrderFlow",
+                ExcludeAreaColumns = "SomeColumn"
+            }
+        };
+
+        var result = cmd.Handle();
+
+        Assert.Equal(CommandResult.ResultType.Ok, result.Status);
+        var config = ConfigLoader.Load(_configPath);
+        var pred = config.Predicates[0];
+        Assert.Empty(pred.ExcludeAreaColumns);
+    }
+
+    [Fact]
+    public void Save_Content_EmptyExcludeAreaColumns_PersistsAsEmptyList()
+    {
+        CreateSeedConfig(new List<ProviderPredicateDefinition>());
+
+        var cmd = new SavePredicateCommand
+        {
+            ConfigPath = _configPath,
+            Model = new PredicateEditModel
+            {
+                Index = -1,
+                Name = "Empty AreaCols",
+                ProviderType = "Content",
+                AreaId = 1,
+                PageId = 10,
+                ExcludeAreaColumns = ""
+            }
+        };
+
+        var result = cmd.Handle();
+
+        Assert.Equal(CommandResult.ResultType.Ok, result.Status);
+        var config = ConfigLoader.Load(_configPath);
+        var pred = config.Predicates[0];
+        Assert.Empty(pred.ExcludeAreaColumns);
+    }
 }

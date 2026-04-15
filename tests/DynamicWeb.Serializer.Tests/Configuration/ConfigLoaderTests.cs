@@ -553,4 +553,32 @@ public class ConfigLoaderTests : IDisposable
         var config = ConfigLoader.Load(path);
         Assert.Single(config.Predicates);
     }
+
+    [Fact]
+    public void Load_PredicateWithExcludeAreaColumns_ParsesCorrectly()
+    {
+        var json = """
+            {
+              "outputDirectory": "/serialization",
+              "predicates": [
+                {
+                  "name": "Area Cols Test",
+                  "providerType": "Content",
+                  "path": "/test",
+                  "areaId": 1,
+                  "excludeAreaColumns": ["AreaDomain", "AreaFirstPage"]
+                }
+              ]
+            }
+            """;
+        var path = WriteConfigFile(json);
+
+        var config = ConfigLoader.Load(path);
+
+        Assert.Single(config.Predicates);
+        var pred = config.Predicates[0];
+        Assert.Equal(2, pred.ExcludeAreaColumns.Count);
+        Assert.Equal("AreaDomain", pred.ExcludeAreaColumns[0]);
+        Assert.Equal("AreaFirstPage", pred.ExcludeAreaColumns[1]);
+    }
 }
