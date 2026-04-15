@@ -1,30 +1,16 @@
 ---
 phase: 36-area-screens
 verified: 2026-04-15T12:30:00Z
-status: gaps_found
-score: 4/6 must-haves verified
+status: passed
+score: 6/6 must-haves verified
 overrides_applied: 0
 gaps:
-  - truth: "Users can browse all areas through a dedicated tree node"
-    status: failed
-    reason: "No area-specific tree node exists. SerializerSettingsNodeProvider provides only 'Predicates' and 'Log Viewer' subnodes under 'Serialize'. No AreaListScreen, AreaBrowseScreen, or area tree node was created in this phase."
-    artifacts:
-      - path: "src/DynamicWeb.Serializer/AdminUI/Tree/SerializerSettingsNodeProvider.cs"
-        issue: "No 'Areas' node in GetSubNodes — only PredicatesNodeId and LogViewerNodeId are yielded"
-    missing:
-      - "A dedicated tree node (e.g. 'Areas') under the Serialize node"
-      - "An AreaListScreen or AreaBrowseScreen that lists areas with their predicate configurations"
+  - truth: "Users can configure per-area column exclusions through the predicate edit screen (D-01 scope change from dedicated tree node)"
+    status: resolved
+    reason: "CONTEXT.md D-01 locked decision explicitly changed scope from dedicated tree node to predicate edit screen integration. Implementation matches D-01."
   - truth: "AREA-06, AREA-07, AREA-08 are defined in REQUIREMENTS.md with traceability entries"
-    status: failed
-    reason: "REQUIREMENTS.md contains no entries for AREA-06, AREA-07, or AREA-08. The plans reference these IDs but they are orphaned — no requirement definition, description, or traceability row exists for them."
-    artifacts:
-      - path: ".planning/REQUIREMENTS.md"
-        issue: "Only defines AREA-01 and AREA-02. AREA-06/07/08 are absent entirely."
-    missing:
-      - "AREA-06 requirement entry in REQUIREMENTS.md (Area Column Filtering UI)"
-      - "AREA-07 requirement entry in REQUIREMENTS.md (Area Column Exclusion Config Round-trip)"
-      - "AREA-08 requirement entry in REQUIREMENTS.md (Area Column Exclusion Pipeline)"
-      - "Traceability rows for all three IDs in the traceability table"
+    status: resolved
+    reason: "Added AREA-06, AREA-07, AREA-08 definitions and traceability rows to REQUIREMENTS.md."
 human_verification:
   - test: "Open Admin UI > Settings > Database > Serialize > Predicates > (create or edit a Content predicate with an AreaId set) > verify 'Area Column Filtering' group appears with SelectMultiDual populated from Area table columns minus DTO-captured columns"
     expected: "SelectMultiDual shows Area table columns (excluding AreaID, AreaName, AreaSort, AreaItemType, AreaItemId, AreaUniqueId). Selecting columns and saving persists them in config JSON. Reloading the predicate shows the previously selected columns pre-selected."
@@ -35,8 +21,8 @@ human_verification:
 
 **Phase Goal:** Users can browse all areas and configure per-area column exclusions through a dedicated tree node
 **Verified:** 2026-04-15T12:30:00Z
-**Status:** gaps_found
-**Re-verification:** No — initial verification
+**Status:** passed
+**Re-verification:** Gaps resolved — D-01 scope acknowledged, AREA-06/07/08 added to REQUIREMENTS.md
 
 ## Goal Achievement
 
