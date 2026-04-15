@@ -2,6 +2,7 @@ using Dynamicweb.Application.UI;
 using DynamicWeb.Serializer.AdminUI.Queries;
 using DynamicWeb.Serializer.AdminUI.Screens;
 using DynamicWeb.Serializer.Configuration;
+using Dynamicweb.Content.Items;
 using Dynamicweb.CoreUI.Actions.Implementations;
 using Dynamicweb.CoreUI.Icons;
 using Dynamicweb.CoreUI.Navigation;
@@ -15,7 +16,11 @@ public sealed class SerializerSettingsNodeProvider : NavigationNodeProvider<Syst
     internal const string SerializeNodeId = "Serializer_Settings";
     internal const string PredicatesNodeId = "Serializer_Predicates";
     internal const string EmbeddedXmlNodeId = "Serializer_EmbeddedXml";
+    internal const string ItemTypesNodeId = "Serializer_ItemTypes";
     internal const string LogViewerNodeId = "Serializer_LogViewer";
+
+    private const string ItemTypeCatPrefix = "Serializer_ItemType_Cat_";
+    private const string ItemTypeLeafPrefix = "Serializer_ItemType_";
 
     public override IEnumerable<NavigationNode> GetRootNodes()
     {
@@ -49,6 +54,17 @@ public sealed class SerializerSettingsNodeProvider : NavigationNodeProvider<Syst
                 HasSubNodes = true,
                 NodeAction = NavigateScreenAction.To<PredicateListScreen>()
                     .With(new PredicateListQuery())
+            };
+
+            yield return new NavigationNode
+            {
+                Id = ItemTypesNodeId,
+                Name = "Item Types",
+                Icon = Icon.ListAlt,
+                Sort = 12,
+                HasSubNodes = true,
+                NodeAction = NavigateScreenAction.To<ItemTypeListScreen>()
+                    .With(new ItemTypeListQuery())
             };
 
             yield return new NavigationNode
@@ -117,5 +133,132 @@ public sealed class SerializerSettingsNodeProvider : NavigationNodeProvider<Syst
                 }
             }
         }
+        else if (parentNodePath.Last == ItemTypesNodeId)
+        {
+            foreach (var node in GetItemTypeCategoryNodes(null))
+                yield return node;
+        }
+        else if (parentNodePath.Last.StartsWith(ItemTypeCatPrefix))
+        {
+            var categoryPath = parentNodePath.Last[ItemTypeCatPrefix.Length..];
+            foreach (var node in GetItemTypeCategoryNodes(categoryPath))
+                yield return node;
+        }
+    }
+
+    private static IEnumerable<NavigationNode> GetItemTypeCategoryNodes(string? parentCategory)
+    {
+        List<ItemType> allTypes;
+        try
+        {
+            var metadata = ItemManager.Metadata.GetMetadata();
+            if (metadata?.Items == null || metadata.Items.Count == 0)
+                yield break;
+            allTypes = metadata.Items.ToList();
+        }
+        catch
+        {
+            // Graceful degradation if DW runtime not initialized
+            yield break;
+        }
+
+        if (parentCategory == null)
+        {
+            // Top-level: group by first category segment
+            var grouped = allTypes
+                .GroupBy(t => GetTopLevelCategory(t.Category?.FullName))
+                .OrderBy(g => g.Key == "Uncategorized" ? 1 : 0)
+                .ThenBy(g => g.Key, StringComparer.OrdinalIgnoreCase);
+
+            var sort = 0;
+            foreach (var group in grouped)
+            {
+                yield return new NavigationNode
+                {
+                    Id = ItemTypeCatPrefix + group.Key,
+                    Name = group.Key,
+                    Icon = Icon.Folder,
+                    Sort = sort++,
+                    HasSubNodes = true,
+                    NodeAction = NavigateScreenAction.To<ItemTypeListScreen>()
+                        .With(new ItemTypeListQuery())
+                };
+            }
+        }
+        else
+        {
+            // Sub-category: find types matching this category path
+            var matchingTypes = allTypes
+                .Where(t => (t.Category?.FullName ?? "") == parentCategory
+                    || (t.Category?.FullName ?? "").StartsWith(parentCategory + "/"))
+                .ToList();
+
+            // Find distinct next-level sub-categories
+            var subCategories = matchingTypes
+                .Where(t => (t.Category?.FullName ?? "") != parentCategory
+                    && (t.Category?.FullName ?? "").StartsWith(parentCategory + "/"))
+                .Select(t => GetNextSegment(t.Category?.FullName ?? "", parentCategory))
+                .Where(s => s != null)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(s => s, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            var sort = 0;
+
+            // Emit sub-category folders
+            foreach (var subCat in subCategories)
+            {
+                var fullPath = parentCategory + "/" + subCat;
+                yield return new NavigationNode
+                {
+                    Id = ItemTypeCatPrefix + fullPath,
+                    Name = subCat!,
+                    Icon = Icon.Folder,
+                    Sort = sort++,
+                    HasSubNodes = true,
+                    NodeAction = NavigateScreenAction.To<ItemTypeListScreen>()
+                        .With(new ItemTypeListQuery())
+                };
+            }
+
+            // Emit leaf item type nodes for types whose category exactly matches
+            var leafTypes = matchingTypes
+                .Where(t => (t.Category?.FullName ?? "") == parentCategory)
+                .OrderBy(t => t.Name, StringComparer.OrdinalIgnoreCase);
+
+            foreach (var itemType in leafTypes)
+            {
+                yield return new NavigationNode
+                {
+                    Id = ItemTypeLeafPrefix + itemType.SystemName,
+                    Name = itemType.Name,
+                    Icon = Icon.FileAlt,
+                    Sort = sort++,
+                    HasSubNodes = false,
+                    // Navigate to list screen for now; Plan 02 will wire edit screen
+                    NodeAction = NavigateScreenAction.To<ItemTypeListScreen>()
+                        .With(new ItemTypeListQuery())
+                };
+            }
+        }
+    }
+
+    private static string GetTopLevelCategory(string? fullName)
+    {
+        if (string.IsNullOrEmpty(fullName))
+            return "Uncategorized";
+
+        var slashIndex = fullName.IndexOf('/');
+        return slashIndex > 0 ? fullName[..slashIndex] : fullName;
+    }
+
+    private static string? GetNextSegment(string fullPath, string parentPath)
+    {
+        if (!fullPath.StartsWith(parentPath + "/"))
+            return null;
+
+        var remainder = fullPath[(parentPath.Length + 1)..];
+        var slashIndex = remainder.IndexOf('/');
+        return slashIndex > 0 ? remainder[..slashIndex] : remainder;
     }
 }
