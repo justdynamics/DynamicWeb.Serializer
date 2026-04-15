@@ -1,4 +1,7 @@
 using DynamicWeb.Serializer.AdminUI.Models;
+using DynamicWeb.Serializer.AdminUI.Queries;
+using Dynamicweb.CoreUI.Actions;
+using Dynamicweb.CoreUI.Actions.Implementations;
 using Dynamicweb.CoreUI.Lists;
 using Dynamicweb.CoreUI.Lists.ViewMappings;
 using Dynamicweb.CoreUI.Screens;
@@ -23,4 +26,8 @@ public sealed class ItemTypeListScreen : ListScreenBase<ItemTypeListModel>
             ]
         }
     ];
+
+    protected override ActionBase GetListItemPrimaryAction(ItemTypeListModel model) =>
+        NavigateScreenAction.To<ItemTypeEditScreen>()
+            .With(new ItemTypeBySystemNameQuery { ModelIdentifier = model.SystemName });
 }

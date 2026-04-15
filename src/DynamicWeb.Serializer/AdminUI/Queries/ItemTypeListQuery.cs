@@ -1,6 +1,7 @@
 using DynamicWeb.Serializer.AdminUI.Models;
 using DynamicWeb.Serializer.Configuration;
 using Dynamicweb.Content.Items;
+using Dynamicweb.Content.Items.Metadata;
 using Dynamicweb.CoreUI.Data;
 using Dynamicweb.CoreUI.Lists;
 

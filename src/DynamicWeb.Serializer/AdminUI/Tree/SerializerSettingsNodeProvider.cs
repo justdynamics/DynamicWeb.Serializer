@@ -3,6 +3,7 @@ using DynamicWeb.Serializer.AdminUI.Queries;
 using DynamicWeb.Serializer.AdminUI.Screens;
 using DynamicWeb.Serializer.Configuration;
 using Dynamicweb.Content.Items;
+using Dynamicweb.Content.Items.Metadata;
 using Dynamicweb.CoreUI.Actions.Implementations;
 using Dynamicweb.CoreUI.Icons;
 using Dynamicweb.CoreUI.Navigation;
@@ -60,7 +61,7 @@ public sealed class SerializerSettingsNodeProvider : NavigationNodeProvider<Syst
             {
                 Id = ItemTypesNodeId,
                 Name = "Item Types",
-                Icon = Icon.ListAlt,
+                Icon = Icon.ListUl,
                 Sort = 12,
                 HasSubNodes = true,
                 NodeAction = NavigateScreenAction.To<ItemTypeListScreen>()
@@ -235,9 +236,8 @@ public sealed class SerializerSettingsNodeProvider : NavigationNodeProvider<Syst
                     Icon = Icon.FileAlt,
                     Sort = sort++,
                     HasSubNodes = false,
-                    // Navigate to list screen for now; Plan 02 will wire edit screen
-                    NodeAction = NavigateScreenAction.To<ItemTypeListScreen>()
-                        .With(new ItemTypeListQuery())
+                    NodeAction = NavigateScreenAction.To<ItemTypeEditScreen>()
+                        .With(new ItemTypeBySystemNameQuery { ModelIdentifier = itemType.SystemName })
                 };
             }
         }
