@@ -195,6 +195,70 @@ public class SqlTableProviderDeserializeTests
         Assert.Equal(0, result.Failed);
     }
 
+    [Fact]
+    [Trait("Category", "Phase29")]
+    public void ExcludedFields_YamlRoundTrip_ColumnsStayAbsent()
+    {
+        // Simulate YAML row that was serialized with excludeFields=["OrderFlowDescription"]
+        // -- the column is simply absent from the YAML file.
+        // This proves the skip guard chain: absent columns in YAML stay absent when read back,
+        // so BuildMergeCommand (tested separately) never includes them in the MERGE SQL.
+        var yamlRow = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["OrderFlowId"] = 99,
+            ["OrderFlowName"] = "Test"
+            // No OrderFlowDescription -- simulates excludeFields exclusion during serialize
+        };
+
+        var fileStore = new FlatFileStore();
+        var tempDir = Path.Combine(Path.GetTempPath(), $"contentsync_skipguard_{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+
+        try
+        {
+            // Write the partial row to YAML (as serialize would after excludeFields filtering)
+            var usedNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            fileStore.WriteRow(tempDir, TestMetadata.TableName, "99-Test", yamlRow, usedNames);
+
+            // Read it back (as deserialize would)
+            var readRows = fileStore.ReadAllRows(tempDir, TestMetadata.TableName).ToList();
+
+            Assert.Single(readRows);
+            Assert.False(readRows[0].ContainsKey("OrderFlowDescription"),
+                "Row read from YAML should NOT contain excluded column 'OrderFlowDescription'");
+            Assert.True(readRows[0].ContainsKey("OrderFlowId"));
+            Assert.True(readRows[0].ContainsKey("OrderFlowName"));
+        }
+        finally
+        {
+            Directory.Delete(tempDir, recursive: true);
+        }
+    }
+
+    [Fact]
+    [Trait("Category", "Phase29")]
+    public void BuildMergeCommand_OmitsColumnsNotInRow()
+    {
+        // Row missing OrderFlowDescription -- simulates excludeFields during serialize
+        var row = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["OrderFlowId"] = 99,
+            ["OrderFlowName"] = "Test"
+            // No OrderFlowDescription
+        };
+
+        var mockExecutor = new Mock<ISqlExecutor>();
+        var writer = new SqlTableWriter(mockExecutor.Object);
+
+        var command = writer.BuildMergeCommand(row, TestMetadata);
+
+        // The generated SQL should NOT reference OrderFlowDescription
+        var sql = command.ToString();
+        Assert.DoesNotContain("OrderFlowDescription", sql);
+        Assert.Contains("OrderFlowId", sql);
+        Assert.Contains("OrderFlowName", sql);
+    }
+
     #region Helper Methods
 
     /// <summary>

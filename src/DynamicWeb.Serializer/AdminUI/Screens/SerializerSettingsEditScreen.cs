@@ -1,8 +1,11 @@
 using DynamicWeb.Serializer.AdminUI.Commands;
 using DynamicWeb.Serializer.AdminUI.Models;
+using Dynamicweb.CoreUI.Actions;
+using Dynamicweb.CoreUI.Actions.Implementations;
 using Dynamicweb.CoreUI.Data;
 using Dynamicweb.CoreUI.Editors;
 using Dynamicweb.CoreUI.Editors.Lists;
+using Dynamicweb.CoreUI.Icons;
 using Dynamicweb.CoreUI.Screens;
 using static Dynamicweb.CoreUI.Editors.Inputs.ListBase;
 
@@ -27,6 +30,32 @@ public sealed class SerializerSettingsEditScreen : EditScreenBase<SerializerSett
                 EditorFor(m => m.PredicatesSummary)
             ])
         ]);
+    }
+
+    protected override IEnumerable<ActionGroup>? GetScreenActions()
+    {
+        return new[]
+        {
+            new ActionGroup
+            {
+                Name = "Actions",
+                Nodes = new List<ActionNode>
+                {
+                    new()
+                    {
+                        Name = "Serialize",
+                        Icon = Icon.DownloadAlt,
+                        NodeAction = RunCommandAction.For<SerializerSerializeCommand>().WithReloadOnSuccess()
+                    },
+                    new()
+                    {
+                        Name = "Deserialize",
+                        Icon = Icon.UploadAlt,
+                        NodeAction = RunCommandAction.For<SerializerDeserializeCommand>().WithReloadOnSuccess()
+                    }
+                }
+            }
+        };
     }
 
     protected override EditorBase? GetEditor(string property)
