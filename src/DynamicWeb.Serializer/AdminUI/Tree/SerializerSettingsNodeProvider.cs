@@ -95,7 +95,10 @@ public sealed class SerializerSettingsNodeProvider : NavigationNodeProvider<Syst
             var configPath = ConfigPathResolver.FindConfigFile();
             if (configPath != null)
             {
-                var config = ConfigLoader.Load(configPath);
+                SerializerConfiguration config;
+                try { config = ConfigLoader.Load(configPath); }
+                catch { yield break; }
+
                 for (var i = 0; i < config.Predicates.Count; i++)
                 {
                     var pred = config.Predicates[i];
@@ -117,7 +120,10 @@ public sealed class SerializerSettingsNodeProvider : NavigationNodeProvider<Syst
             var configPath = ConfigPathResolver.FindConfigFile();
             if (configPath != null)
             {
-                var config = ConfigLoader.Load(configPath);
+                SerializerConfiguration config;
+                try { config = ConfigLoader.Load(configPath); }
+                catch { yield break; }
+
                 var sort = 0;
                 foreach (var typeName in config.ExcludeXmlElementsByType.Keys.OrderBy(k => k, StringComparer.OrdinalIgnoreCase))
                 {
@@ -139,7 +145,7 @@ public sealed class SerializerSettingsNodeProvider : NavigationNodeProvider<Syst
             foreach (var node in GetItemTypeCategoryNodes(null))
                 yield return node;
         }
-        else if (parentNodePath.Last.StartsWith(ItemTypeCatPrefix))
+        else if (parentNodePath.Last.StartsWith(ItemTypeCatPrefix, StringComparison.Ordinal))
         {
             var categoryPath = parentNodePath.Last[ItemTypeCatPrefix.Length..];
             foreach (var node in GetItemTypeCategoryNodes(categoryPath))
