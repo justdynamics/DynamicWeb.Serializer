@@ -36,26 +36,20 @@ public sealed class PredicateEditScreen : EditScreenBase<PredicateEditModel>
                 EditorFor(m => m.PageId),
                 EditorFor(m => m.Excludes)
             }));
-            groups.Add(new("Filtering", new List<EditorBase>
+
+            groups.Add(new("Area Column Filtering", new List<EditorBase>
             {
-                EditorFor(m => m.ExcludeFields),
-                EditorFor(m => m.ExcludeXmlElements)
+                EditorFor(m => m.ExcludeAreaColumns)
             }));
         }
         else if (Model?.ProviderType == "SqlTable")
         {
             groups.Add(new("SQL Table Settings", new List<EditorBase>
             {
-                EditorFor(m => m.Table).WithReloadOnChange(),
+                EditorFor(m => m.Table),
                 EditorFor(m => m.NameColumn),
                 EditorFor(m => m.CompareColumns),
                 EditorFor(m => m.ServiceCaches)
-            }));
-            groups.Add(new("Filtering", new List<EditorBase>
-            {
-                EditorFor(m => m.XmlColumns),
-                EditorFor(m => m.ExcludeFields),
-                EditorFor(m => m.ExcludeXmlElements)
             }));
         }
         // else: no ProviderType selected — show nothing below Configuration (D-09)
@@ -85,85 +79,11 @@ public sealed class PredicateEditScreen : EditScreenBase<PredicateEditModel>
             Label = "Service Caches",
             Explanation = "One fully-qualified DW cache type per line. Cleared after deserialization."
         },
-        nameof(PredicateEditModel.ExcludeFields) => Model?.ProviderType == "SqlTable"
-            ? CreateColumnSelectMultiDual(Model?.Table, Model?.ExcludeFields,
-                "Exclude Fields", "Select columns to exclude from serialization.")
-            : new Textarea
-            {
-                Label = "Exclude Fields",
-                Explanation = "One field name per line. These fields will be omitted from serialization."
-            },
-        nameof(PredicateEditModel.XmlColumns) => Model?.ProviderType == "SqlTable"
-            ? CreateColumnSelectMultiDual(Model?.Table, Model?.XmlColumns,
-                "XML Columns", "Select columns containing XML to pretty-print in YAML.")
-            : new Textarea
-            {
-                Label = "XML Columns",
-                Explanation = "One column name per line. SQL table columns containing XML to pretty-print in YAML."
-            },
-        nameof(PredicateEditModel.ExcludeXmlElements) => new Textarea
-        {
-            Label = "Exclude XML Elements",
-            Explanation = "One element name per line. These XML elements will be stripped from embedded XML blobs."
-        },
+        nameof(PredicateEditModel.ExcludeAreaColumns) => CreateAreaColumnSelectMultiDual(
+            Model?.AreaId, Model?.ExcludeAreaColumns,
+            "Exclude Area Columns", "Select area table columns to exclude from serialization."),
         _ => null
     };
-
-    private SelectMultiDual CreateColumnSelectMultiDual(string? tableName, string? currentValue, string label, string explanation)
-    {
-        var editor = new SelectMultiDual
-        {
-            Label = label,
-            Explanation = explanation,
-            SortOrder = OrderBy.Default
-        };
-
-        if (string.IsNullOrWhiteSpace(tableName))
-        {
-            editor.Explanation = "Enter a table name to see available columns.";
-            return editor;
-        }
-
-        // Validate table name to prevent SQL injection via INFORMATION_SCHEMA queries
-        if (!System.Text.RegularExpressions.Regex.IsMatch(tableName, @"^[A-Za-z_][A-Za-z0-9_]*$"))
-        {
-            editor.Explanation = "Invalid table name format.";
-            return editor;
-        }
-
-        try
-        {
-            var metadataReader = new DataGroupMetadataReader(new DwSqlExecutor());
-            var columnTypes = metadataReader.GetColumnTypes(tableName);
-
-            if (columnTypes.Count == 0)
-            {
-                editor.Explanation = "Table not found in database. Verify the table name.";
-                return editor;
-            }
-
-            editor.Options = columnTypes.Keys
-                .OrderBy(c => c, StringComparer.OrdinalIgnoreCase)
-                .Select(c => new ListOption { Value = c, Label = c })
-                .ToList();
-
-            // SelectMultiDual.Value is object? — use .ToArray() per ScreenPresetEditScreen pattern
-            var selected = (currentValue ?? string.Empty)
-                .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
-                .Select(v => v.Trim())
-                .Where(v => v.Length > 0)
-                .ToArray();
-
-            if (selected.Length > 0)
-                editor.Value = selected;
-        }
-        catch (Exception ex)
-        {
-            editor.Explanation = $"Could not query database columns: {ex.Message}";
-        }
-
-        return editor;
-    }
 
     private Select CreateProviderTypeSelect()
     {
@@ -184,6 +104,61 @@ public sealed class PredicateEditScreen : EditScreenBase<PredicateEditModel>
         // For existing predicates, show current value but don't trigger reload
         // (SavePredicateCommand preserves original ProviderType on updates)
         return select;
+    }
+
+    private SelectMultiDual CreateAreaColumnSelectMultiDual(int? areaId, string? currentValue, string label, string explanation)
+    {
+        var editor = new SelectMultiDual
+        {
+            Label = label,
+            Explanation = explanation,
+            SortOrder = OrderBy.Default
+        };
+
+        if (areaId is null or <= 0)
+        {
+            editor.Explanation = "Select an area to see available columns.";
+            return editor;
+        }
+
+        try
+        {
+            var metadataReader = new DataGroupMetadataReader(new DwSqlExecutor());
+            var columnTypes = metadataReader.GetColumnTypes("Area");
+
+            if (columnTypes.Count == 0)
+            {
+                editor.Explanation = "Area table not found in database.";
+                return editor;
+            }
+
+            // Filter columns already captured by named DTO properties (per RESEARCH pitfall 4)
+            var dtoColumns = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                "AreaID", "AreaName", "AreaSort", "AreaItemType", "AreaItemId", "AreaUniqueId"
+            };
+
+            editor.Options = columnTypes.Keys
+                .Where(c => !dtoColumns.Contains(c))
+                .OrderBy(c => c, StringComparer.OrdinalIgnoreCase)
+                .Select(c => new ListOption { Value = c, Label = c })
+                .ToList();
+
+            var selected = (currentValue ?? string.Empty)
+                .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(v => v.Trim())
+                .Where(v => v.Length > 0)
+                .ToArray();
+
+            if (selected.Length > 0)
+                editor.Value = selected;
+        }
+        catch (Exception ex)
+        {
+            editor.Explanation = $"Could not query area columns: {ex.Message}";
+        }
+
+        return editor;
     }
 
     protected override string GetScreenName() =>

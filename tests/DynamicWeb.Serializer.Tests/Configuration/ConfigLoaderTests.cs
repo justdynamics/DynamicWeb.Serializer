@@ -554,76 +554,19 @@ public class ConfigLoaderTests : IDisposable
         Assert.Single(config.Predicates);
     }
 
-    // -------------------------------------------------------------------------
-    // XmlColumns config mapping (Phase 27 — Pitfall P7 three-class mapping)
-    // -------------------------------------------------------------------------
-
     [Fact]
-    public void Load_SqlTablePredicate_WithXmlColumns_DeserializesXmlColumns()
+    public void Load_PredicateWithExcludeAreaColumns_ParsesCorrectly()
     {
         var json = """
             {
               "outputDirectory": "/serialization",
               "predicates": [
                 {
-                  "name": "Shipping Methods",
-                  "providerType": "SqlTable",
-                  "table": "EcomShippings",
-                  "nameColumn": "ShippingName",
-                  "xmlColumns": ["ShippingXml", "SettingsXml"]
-                }
-              ]
-            }
-            """;
-        var path = WriteConfigFile(json);
-
-        var config = ConfigLoader.Load(path);
-
-        Assert.Equal(2, config.Predicates[0].XmlColumns.Count);
-        Assert.Equal("ShippingXml", config.Predicates[0].XmlColumns[0]);
-        Assert.Equal("SettingsXml", config.Predicates[0].XmlColumns[1]);
-    }
-
-    [Fact]
-    public void Load_SqlTablePredicate_WithoutXmlColumns_DefaultsToEmptyList()
-    {
-        var json = """
-            {
-              "outputDirectory": "/serialization",
-              "predicates": [
-                {
-                  "name": "Order Flows",
-                  "providerType": "SqlTable",
-                  "table": "EcomOrderFlow",
-                  "nameColumn": "OrderFlowName"
-                }
-              ]
-            }
-            """;
-        var path = WriteConfigFile(json);
-
-        var config = ConfigLoader.Load(path);
-
-        Assert.NotNull(config.Predicates[0].XmlColumns);
-        Assert.Empty(config.Predicates[0].XmlColumns);
-    }
-
-    // -------------------------------------------------------------------------
-    // ExcludeFields / ExcludeXmlElements config mapping (Phase 28 — Pitfall P7)
-    // -------------------------------------------------------------------------
-
-    [Fact]
-    public void Load_ContentPredicate_WithExcludeFields_DeserializesExcludeFields()
-    {
-        var json = """
-            {
-              "outputDirectory": "/serialization",
-              "predicates": [
-                {
-                  "name": "Customer Center",
-                  "path": "/Customer Center",
+                  "name": "Area Cols Test",
+                  "providerType": "Content",
+                  "path": "/test",
                   "areaId": 1,
-                  "excludeFields": ["NavigationTag", "AreaDomain"]
+                  "excludeAreaColumns": ["AreaDomain", "AreaFirstPage"]
                 }
               ]
             }
@@ -632,150 +575,10 @@ public class ConfigLoaderTests : IDisposable
 
         var config = ConfigLoader.Load(path);
 
-        Assert.Equal(2, config.Predicates[0].ExcludeFields.Count);
-        Assert.Equal("NavigationTag", config.Predicates[0].ExcludeFields[0]);
-        Assert.Equal("AreaDomain", config.Predicates[0].ExcludeFields[1]);
-    }
-
-    [Fact]
-    public void Load_ContentPredicate_WithExcludeXmlElements_DeserializesExcludeXmlElements()
-    {
-        var json = """
-            {
-              "outputDirectory": "/serialization",
-              "predicates": [
-                {
-                  "name": "Customer Center",
-                  "path": "/Customer Center",
-                  "areaId": 1,
-                  "excludeXmlElements": ["sort", "pagesize"]
-                }
-              ]
-            }
-            """;
-        var path = WriteConfigFile(json);
-
-        var config = ConfigLoader.Load(path);
-
-        Assert.Equal(2, config.Predicates[0].ExcludeXmlElements.Count);
-        Assert.Equal("sort", config.Predicates[0].ExcludeXmlElements[0]);
-        Assert.Equal("pagesize", config.Predicates[0].ExcludeXmlElements[1]);
-    }
-
-    [Fact]
-    public void Load_ContentPredicate_WithoutExcludeFields_DefaultsToEmptyLists()
-    {
-        var json = """
-            {
-              "outputDirectory": "/serialization",
-              "predicates": [
-                {
-                  "name": "Customer Center",
-                  "path": "/Customer Center",
-                  "areaId": 1
-                }
-              ]
-            }
-            """;
-        var path = WriteConfigFile(json);
-
-        var config = ConfigLoader.Load(path);
-
-        Assert.NotNull(config.Predicates[0].ExcludeFields);
-        Assert.Empty(config.Predicates[0].ExcludeFields);
-        Assert.NotNull(config.Predicates[0].ExcludeXmlElements);
-        Assert.Empty(config.Predicates[0].ExcludeXmlElements);
-    }
-
-    // -------------------------------------------------------------------------
-    // Typed exclusion dictionaries (Phase 32 — CFG-01, CFG-02)
-    // -------------------------------------------------------------------------
-
-    [Fact]
-    public void Load_ConfigWithExcludeFieldsByItemType_DeserializesDictionary()
-    {
-        var json = """
-            {
-              "outputDirectory": "/serialization",
-              "excludeFieldsByItemType": {
-                "Swift_PageItemType": ["NavigationTag", "AreaDomain"],
-                "Swift_ParagraphItemType": ["ModuleSettings"]
-              },
-              "predicates": []
-            }
-            """;
-        var path = WriteConfigFile(json);
-
-        var config = ConfigLoader.Load(path);
-
-        Assert.Equal(2, config.ExcludeFieldsByItemType.Count);
-        Assert.Equal(new List<string> { "NavigationTag", "AreaDomain" }, config.ExcludeFieldsByItemType["Swift_PageItemType"]);
-        Assert.Equal(new List<string> { "ModuleSettings" }, config.ExcludeFieldsByItemType["Swift_ParagraphItemType"]);
-    }
-
-    [Fact]
-    public void Load_ConfigWithExcludeXmlElementsByType_DeserializesDictionary()
-    {
-        var json = """
-            {
-              "outputDirectory": "/serialization",
-              "excludeXmlElementsByType": {
-                "Dynamicweb.Frontend.ContentPage": ["sort", "pagesize"]
-              },
-              "predicates": []
-            }
-            """;
-        var path = WriteConfigFile(json);
-
-        var config = ConfigLoader.Load(path);
-
-        Assert.Equal(1, config.ExcludeXmlElementsByType.Count);
-        Assert.Equal(new List<string> { "sort", "pagesize" }, config.ExcludeXmlElementsByType["Dynamicweb.Frontend.ContentPage"]);
-    }
-
-    [Fact]
-    public void Load_ConfigWithoutTypedDictionaries_DefaultsToEmptyDictionaries()
-    {
-        var json = """
-            {
-              "outputDirectory": "/serialization",
-              "predicates": []
-            }
-            """;
-        var path = WriteConfigFile(json);
-
-        var config = ConfigLoader.Load(path);
-
-        Assert.NotNull(config.ExcludeFieldsByItemType);
-        Assert.Empty(config.ExcludeFieldsByItemType);
-        Assert.NotNull(config.ExcludeXmlElementsByType);
-        Assert.Empty(config.ExcludeXmlElementsByType);
-    }
-
-    [Fact]
-    public void Save_ThenLoad_RoundTripsTypedDictionaries()
-    {
-        var config = new SerializerConfiguration
-        {
-            OutputDirectory = _tempDir,
-            Predicates = new List<ProviderPredicateDefinition>(),
-            ExcludeFieldsByItemType = new Dictionary<string, List<string>>
-            {
-                ["Swift_PageItemType"] = new List<string> { "NavigationTag" }
-            },
-            ExcludeXmlElementsByType = new Dictionary<string, List<string>>
-            {
-                ["Dynamicweb.Frontend.ContentPage"] = new List<string> { "sort" }
-            }
-        };
-        var path = Path.Combine(_tempDir, "roundtrip.json");
-        ConfigWriter.Save(config, path);
-
-        var reloaded = ConfigLoader.Load(path);
-
-        Assert.Single(reloaded.ExcludeFieldsByItemType);
-        Assert.Equal(new List<string> { "NavigationTag" }, reloaded.ExcludeFieldsByItemType["Swift_PageItemType"]);
-        Assert.Single(reloaded.ExcludeXmlElementsByType);
-        Assert.Equal(new List<string> { "sort" }, reloaded.ExcludeXmlElementsByType["Dynamicweb.Frontend.ContentPage"]);
+        Assert.Single(config.Predicates);
+        var pred = config.Predicates[0];
+        Assert.Equal(2, pred.ExcludeAreaColumns.Count);
+        Assert.Equal("AreaDomain", pred.ExcludeAreaColumns[0]);
+        Assert.Equal("AreaFirstPage", pred.ExcludeAreaColumns[1]);
     }
 }

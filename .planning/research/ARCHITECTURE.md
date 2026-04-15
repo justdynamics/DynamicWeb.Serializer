@@ -1,471 +1,576 @@
-# Architecture Patterns
+# Architecture: Full Page Fidelity Extension
 
-**Domain:** DynamicWeb Serializer v0.6.0 — Structured UI Integration
-**Researched:** 2026-04-07
-**Confidence:** HIGH (verified against DW10 source at C:\Projects\temp\dw10source\)
+**Domain:** DynamicWeb content serialization -- extending existing pipeline for ~30 missing page properties
+**Researched:** 2026-04-02
+**Overall confidence:** HIGH (verified via DW 10.23.9 DLL decompilation)
 
-## Recommended Architecture
+## Executive Summary
 
-The v0.6.0 UI features integrate into three distinct DW extension points, all auto-discovered by DW's AddInManager. No manual registration needed.
+The existing ContentMapper/ContentDeserializer/SerializedPage pipeline is well-structured and straightforward to extend. All ~30 missing page properties are simple scalar properties on the DW `Page` class that SavePage already persists. PageNavigationSettings is NOT a separate table -- it is columns on the Page table, saved inline by `SavePage` when `page.NavigationSettings != null`. Area ItemType connections use the existing `Area.ItemType`/`Area.Item`/`Area.ItemId` properties. Timestamp preservation requires a post-save SQL UPDATE because `new Page()` always sets `Audit = new AuditedEntity(DateTime.Now, userId)`, overwriting timestamps on INSERT.
 
-### Integration Point Summary
+## Question 1: DTO Structure -- Sub-Objects vs Flat Properties
 
-| Feature | DW Extension Point | Base Class | Target Screen | New/Modified |
-|---------|-------------------|------------|---------------|-------------|
-| Item Edit "Serialization" action | ListScreenInjector | `ListScreenInjector<ItemFieldListScreen, ItemFieldDataModel>` | Settings > Item Types > Fields | **NEW** injector |
-| Area Edit "Serialization" action | EditScreenInjector | `EditScreenInjector<AreaEditScreen, AreaDataModel>` | Content > Area > Edit | **NEW** injector |
-| Embedded XML tree node | NavigationNodeProvider | Extend existing `SerializerSettingsNodeProvider` | Settings > Database > Serialize | **MODIFY** existing |
-| Predicate read-only filtering | EditScreenBase | Modify existing `PredicateEditScreen` | Settings > Database > Serialize > Predicates | **MODIFY** existing |
-| SqlTable column pickers | EditScreenBase | Modify existing `PredicateEditScreen` | Settings > Database > Serialize > Predicates | **MODIFY** existing |
-| Embedded XML edit screen | EditScreenBase | `EditScreenBase<EmbeddedXmlEditModel>` | (new tree node) | **NEW** screen |
-| Item type serialization screen | EditScreenBase | `EditScreenBase<ItemTypeSerializationModel>` | (navigated from injector) | **NEW** screen |
+### Recommendation: Grouped sub-objects for readability, flat assignment for persistence
 
-## Critical Architectural Finding: ListScreenInjector vs EditScreenInjector
+Add properties to `SerializedPage` using **logical sub-records** to keep the DTO readable while maintaining simple assignment in the mapper/deserializer.
 
-**`ItemFieldListScreen` extends `ListScreenBase<ItemFieldListDataModel, ItemFieldDataModel>`, NOT `EditScreenBase`.** This is the single most important finding. Using `EditScreenInjector` would fail at compile time due to generic constraints.
+### Current SerializedPage (26 lines)
 
-The correct injection point is:
+The existing DTO has 16 properties plus 4 collections. Adding 30+ flat properties would make it unwieldy.
+
+### Recommended DTO Extension Strategy
 
 ```csharp
-public sealed class SerializerItemFieldListInjector
-    : ListScreenInjector<ItemFieldListScreen, ItemFieldDataModel>
-```
-
-`ListScreenInjector<TScreen, TRowModel>` provides three hooks:
-- `GetScreenActions()` — toolbar buttons (what we need)
-- `GetListItemActions(TRowModel model)` — per-row context menu items
-- `GetCell(string propertyName, TRowModel model)` — custom cell rendering
-
-By contrast, `AreaEditScreen` extends `EditScreenBase<AreaDataModel>`, so its injector correctly uses:
-
-```csharp
-public sealed class SerializerAreaEditInjector
-    : EditScreenInjector<AreaEditScreen, AreaDataModel>
-```
-
-## Component Boundaries
-
-### New Components
-
-| Component | Type | Responsibility | Communicates With |
-|-----------|------|---------------|-------------------|
-| `SerializerItemFieldListInjector` | ListScreenInjector | Adds "Serialization" toolbar action on ItemFieldListScreen | Screen.Model for ItemTypeSystemName |
-| `SerializerAreaEditInjector` | EditScreenInjector | Adds "Serialization" toolbar action on AreaEditScreen | Screen.Model for AreaId |
-| `ItemTypeSerializationScreen` | EditScreenBase | Per-item-type field exclusion checkboxes | ConfigLoader, ConfigWriter, ItemManager.Metadata |
-| `ItemTypeSerializationModel` | DataViewModelBase | Item type name + field exclusion state | N/A |
-| `ItemTypeSerializationQuery` | QueryBase | Carries ItemTypeSystemName + predicate index | N/A |
-| `SaveItemTypeSerializationCommand` | CommandBase | Writes `excludeFieldsByItemType` to config | ConfigLoader, ConfigWriter |
-| `AreaSerializationScreen` | EditScreenBase | Area column exclusion management | ConfigLoader, ConfigWriter, DataGroupMetadataReader |
-| `AreaSerializationModel` | DataViewModelBase | Area columns + exclusion state | N/A |
-| `AreaSerializationQuery` | QueryBase | Carries AreaId | N/A |
-| `SaveAreaSerializationCommand` | CommandBase | Writes area exclusions to matching predicate | ConfigLoader, ConfigWriter |
-| `EmbeddedXmlListScreen` | ListScreenBase | Lists discovered XML types across predicates | ConfigLoader |
-| `EmbeddedXmlListModel` | DataListViewModel | List of XML types with exclusion counts | N/A |
-| `EmbeddedXmlEditScreen` | EditScreenBase | Per-XML-type element exclusion management | ConfigLoader, ConfigWriter |
-| `EmbeddedXmlEditModel` | DataViewModelBase | XML type + excluded elements | N/A |
-| `SaveEmbeddedXmlCommand` | CommandBase | Writes `excludeXmlElementsByType` to config | ConfigLoader, ConfigWriter |
-
-### Modified Components
-
-| Component | Change | Why |
-|-----------|--------|-----|
-| `SerializerSettingsNodeProvider` | Add "Embedded XML" child node under "Serialize" (sort=15, between Predicates and Log Viewer) | New tree entry for XML management |
-| `PredicateEditScreen` | Replace ExcludeFields/ExcludeXmlElements textareas with read-only summaries + navigation links | Filtering moves to dedicated screens |
-| `ProviderPredicateDefinition` | Add `ExcludeFieldsByItemType` and `ExcludeXmlElementsByType` dictionaries | Per-item-type and per-XML-type exclusions |
-| `ConfigLoader` | Parse new dictionary fields from JSON | Read per-type exclusions |
-| `ConfigWriter` | No code change needed (System.Text.Json serializes dictionaries natively) | N/A |
-
-## Detailed Integration Patterns
-
-### 1. ItemFieldListScreen Injection (Toolbar Action)
-
-The `ItemFieldListDataModel` carries `ItemTypeSystemName` which is available via `Screen.Model`. The injector adds a toolbar action that navigates to a new serializer-owned screen.
-
-```csharp
-public sealed class SerializerItemFieldListInjector
-    : ListScreenInjector<ItemFieldListScreen, ItemFieldDataModel>
+public record SerializedPage
 {
-    public override IEnumerable<ActionGroup>? GetScreenActions()
+    // --- Existing properties (keep as-is) ---
+    public required Guid PageUniqueId { get; init; }
+    public int? SourcePageId { get; init; }
+    public required string Name { get; init; }
+    public required string MenuText { get; init; }
+    public required string UrlName { get; init; }
+    public required int SortOrder { get; init; }
+    public bool IsActive { get; init; }
+    public string? ItemType { get; init; }
+    public string? Layout { get; init; }
+    public bool LayoutApplyToSubPages { get; init; }
+    public bool IsFolder { get; init; }
+    public string? TreeSection { get; init; }
+
+    // --- NEW: Flat scalar properties (simple booleans/strings/ints) ---
+    // These map 1:1 to Page properties and are simple enough to stay flat.
+    public string? NavigationTag { get; init; }
+    public string? ShortCut { get; init; }
+    public bool Hidden { get; init; }
+    public bool Published { get; init; }
+    public bool Allowclick { get; init; } = true;
+    public bool Allowsearch { get; init; } = true;
+    public bool ShowInSitemap { get; init; } = true;
+    public bool ShowInMenu { get; init; } = true;
+    public bool ShowInLegend { get; init; } = true;
+    public int SslMode { get; init; }
+    public string? ColorSchemeId { get; init; }
+    public string? ExactUrl { get; init; }
+    public string? ContentType { get; init; }
+    public string? TopImage { get; init; }
+    public int DisplayMode { get; init; }
+
+    // --- NEW: URL settings sub-object ---
+    public SerializedUrlSettings? UrlSettings { get; init; }
+
+    // --- NEW: SEO settings sub-object ---
+    public SerializedSeoSettings? Seo { get; init; }
+
+    // --- NEW: Visibility settings sub-object ---
+    public SerializedVisibilitySettings? Visibility { get; init; }
+
+    // --- NEW: Navigation (ecommerce) settings sub-object ---
+    public SerializedNavigationSettings? NavigationSettings { get; init; }
+
+    // --- NEW: Timestamp/audit sub-object ---
+    public SerializedAudit? Audit { get; init; }
+
+    // --- NEW: Date range ---
+    public DateTime? ActiveFrom { get; init; }
+    public DateTime? ActiveTo { get; init; }
+
+    // --- Existing collections (keep as-is) ---
+    public Dictionary<string, object> Fields { get; init; } = new();
+    public Dictionary<string, object> PropertyFields { get; init; } = new();
+    public List<SerializedPermission> Permissions { get; init; } = new();
+    public List<SerializedGridRow> GridRows { get; init; } = new();
+    public List<SerializedPage> Children { get; init; } = new();
+}
+
+public record SerializedUrlSettings
+{
+    public string? UrlDataProviderTypeName { get; init; }
+    public string? UrlDataProviderParameters { get; init; }
+    public bool UrlIgnoreForChildren { get; init; }
+    public bool UrlUseAsWritten { get; init; }
+}
+
+public record SerializedSeoSettings
+{
+    public string? MetaTitle { get; init; }
+    public string? MetaCanonical { get; init; }
+    public string? Description { get; init; }
+    public string? Keywords { get; init; }
+    public bool Noindex { get; init; }
+    public bool Nofollow { get; init; }
+    public bool Robots404 { get; init; }
+}
+
+public record SerializedVisibilitySettings
+{
+    public bool HideForPhones { get; init; }
+    public bool HideForTablets { get; init; }
+    public bool HideForDesktops { get; init; }
+}
+
+public record SerializedNavigationSettings
+{
+    public bool UseEcomGroups { get; init; }
+    public string? ParentType { get; init; }  // "Groups" or "Shop"
+    public string? Groups { get; init; }
+    public string? ShopID { get; init; }
+    public int MaxLevels { get; init; }
+    public string? ProductPage { get; init; }
+    public string? NavigationProvider { get; init; }
+    public bool IncludeProducts { get; init; }
+}
+
+public record SerializedAudit
+{
+    public DateTime? CreatedDate { get; init; }
+    public DateTime? UpdatedDate { get; init; }
+    public string? CreatedBy { get; init; }
+    public string? UpdatedBy { get; init; }
+}
+```
+
+### Rationale
+
+- **Sub-objects for SEO, URL, Visibility, NavigationSettings, Audit**: These are logical groupings in the DW admin UI and produce cleaner YAML:
+  ```yaml
+  seo:
+    metaTitle: "Page Title"
+    noindex: true
+  urlSettings:
+    urlDataProviderTypeName: "Dynamicweb.Ecommerce..."
+  ```
+- **Flat for simple booleans**: `NavigationTag`, `ShortCut`, `Hidden` etc. are standalone concepts, not worth wrapping.
+- **Remove old CreatedDate/UpdatedDate/CreatedBy/UpdatedBy from top level**: Move into `Audit` sub-object. The existing fields on SerializedPage were never populated anyway.
+- **YAML backward compatibility**: New optional properties with defaults won't break existing YAML files. Missing properties deserialize as null/false/0 which is correct behavior.
+
+### Confidence: HIGH
+Verified by decompiling `Dynamicweb.Content.Page` from the 10.23.9 NuGet -- every property listed above has a public getter and setter on the Page class.
+
+---
+
+## Question 2: PageNavigationSettings -- Child Object or Separate API?
+
+### Answer: It is columns on the Page table, saved inline by SavePage
+
+**Verified by decompilation (HIGH confidence):**
+
+PageNavigationSettings is NOT a separate database table. The settings are stored as columns directly on the `[Page]` table:
+
+| DB Column | PageNavigationSettings Property |
+|-----------|-------------------------------|
+| `PageNavigation_UseEcomGroups` | `UseEcomGroups` |
+| `PageNavigationParentType` | `ParentType` (enum: Groups=1, Shop=2) |
+| `PageNavigationGroupSelector` | `Groups` |
+| `PageNavigationShopSelector` | `ShopID` |
+| `PageNavigationMaxLevels` | `MaxLevels` (>10 stored as "AllLevels") |
+| `PageNavigationProductPage` | `ProductPage` |
+| `PageNavigationIncludeProducts` | `IncludeProducts` |
+| `PageNavigationProvider` | `NavigationProvider` |
+
+### How it works in DW internals
+
+**Serialization (read):** `PageRowExtractor.ExtractPage()` checks `PageNavigation_UseEcomGroups`. If true, creates a `PageNavigationSettings` object and calls `Fill(dataReader)` to populate from the same row.
+
+**Deserialization (write):** `PageRepository.UpdatePage()` calls `AddNavigationSettingsUpdateStatement()` which writes the columns inline in the UPDATE if `page.NavigationSettings != null`. Same for INSERT.
+
+### Integration approach
+
+```csharp
+// In ContentMapper.MapPage():
+var navSettings = page.NavigationSettings;
+SerializedNavigationSettings? serializedNav = null;
+if (navSettings != null && navSettings.UseEcomGroups)
+{
+    serializedNav = new SerializedNavigationSettings
     {
-        var model = Screen?.Model;
-        if (model is null || string.IsNullOrEmpty(model.ItemTypeSystemName))
-            return null;
-
-        return new[]
-        {
-            new ActionGroup
-            {
-                Nodes = new List<ActionNode>
-                {
-                    new()
-                    {
-                        Name = "Serialization",
-                        Icon = Icon.Exchange,
-                        NodeAction = NavigateScreenAction
-                            .To<ItemTypeSerializationScreen>()
-                            .With(new ItemTypeSerializationQuery
-                            {
-                                ItemTypeSystemName = model.ItemTypeSystemName
-                            })
-                    }
-                }
-            }
-        };
-    }
+        UseEcomGroups = navSettings.UseEcomGroups,
+        ParentType = navSettings.ParentType.ToString(),
+        Groups = navSettings.Groups,
+        ShopID = navSettings.ShopID,
+        MaxLevels = navSettings.MaxLevels,
+        ProductPage = navSettings.ProductPage,
+        NavigationProvider = navSettings.NavigationProvider,
+        IncludeProducts = navSettings.IncludeProducts
+    };
 }
-```
 
-**ItemTypeSerializationScreen** responsibilities:
-1. Load item type fields via `ItemManager.Metadata.GetItemType(systemName)` — returns field names, types, groups
-2. Load all predicates from config; find any that have this item type in `ExcludeFieldsByItemType`
-3. Render a `CheckboxList` of field names — checked = excluded from serialization
-4. `SaveItemTypeSerializationCommand` writes updated `ExcludeFieldsByItemType` across all relevant predicates
-
-**Which predicates?** The screen must show which predicates this item type is relevant to. For Content predicates, any predicate whose area uses this item type (check via DW's `ItemHelper.GetAllowedItemsForAreaProperties()`). For simplicity in v0.6.0, the screen could apply exclusions globally to all predicates or let the user pick a predicate.
-
-### 2. AreaEditScreen Injection (Toolbar Action)
-
-**Why toolbar action, not tab:** `AreaDataModel` is a DW framework class. We cannot add properties to it. The `EditScreenInjector.OnBuildEditScreen(builder)` can call `builder.AddComponents("Serialization", ...)` which creates a tab, BUT `builder.EditorFor()` only works for properties that exist on `AreaDataModel`. Our serializer data (excluded columns) lives in our config JSON, not on the DW model.
-
-**Solution:** Follow the same pattern as `SerializerPageEditInjector` — add a toolbar action via `GetScreenActions()` that navigates to a serializer-owned screen.
-
-```csharp
-public sealed class SerializerAreaEditInjector
-    : EditScreenInjector<AreaEditScreen, AreaDataModel>
+// In ContentDeserializer.DeserializePage():
+if (dto.NavigationSettings != null && dto.NavigationSettings.UseEcomGroups)
 {
-    public override IEnumerable<ActionGroup>? GetScreenActions()
+    page.NavigationSettings = new PageNavigationSettings
     {
-        var model = Screen?.Model;
-        if (model is null || model.Id <= 0)
-            return null;
+        UseEcomGroups = dto.NavigationSettings.UseEcomGroups,
+        Groups = dto.NavigationSettings.Groups,
+        ShopID = dto.NavigationSettings.ShopID,
+        MaxLevels = dto.NavigationSettings.MaxLevels,
+        ProductPage = dto.NavigationSettings.ProductPage,
+        NavigationProvider = dto.NavigationSettings.NavigationProvider,
+        IncludeProducts = dto.NavigationSettings.IncludeProducts
+    };
+    // ParentType needs enum parse
+    if (Enum.TryParse<EcommerceNavigationParentType>(
+        dto.NavigationSettings.ParentType, true, out var pt))
+        page.NavigationSettings.ParentType = pt;
+}
+```
 
-        return new[]
+No separate API call needed. `Services.Pages.SavePage(page)` handles it.
+
+### Confidence: HIGH
+Verified by decompiling `PageRepository.Save()`, `PageRepository.UpdatePage()`, `PageRowExtractor.ExtractPage()`, and `PageNavigationSettings.Fill()`.
+
+---
+
+## Question 3: Area ItemType -- New Provider or Extend ContentProvider?
+
+### Answer: Extend ContentProvider (specifically SerializedArea + ContentMapper)
+
+The Area class has these relevant properties:
+- `Area.ItemType` (string) -- the ItemType system name
+- `Area.ItemId` (string) -- the Item instance ID
+- `Area.Item` (Item) -- the associated Item object (has header/footer/master connections as item fields)
+- `Area.ItemTypePageProperty` (string) -- ItemType for page-level properties
+
+### Why NOT a new provider
+
+Area ItemType fields are conceptually part of the content tree. They define website-level settings (header page, footer page, master layout) that belong to the area being serialized. The existing ContentSerializer already receives the Area and already serializes `SerializedArea`.
+
+### Integration approach
+
+Extend `SerializedArea` to include ItemType fields:
+
+```csharp
+public record SerializedArea
+{
+    public required Guid AreaId { get; init; }
+    public required string Name { get; init; }
+    public required int SortOrder { get; init; }
+
+    // NEW: Area-level ItemType data
+    public string? ItemType { get; init; }
+    public Dictionary<string, object> ItemFields { get; init; } = new();
+
+    public List<SerializedPage> Pages { get; init; } = new();
+}
+```
+
+In `ContentMapper.MapArea()`:
+
+```csharp
+public SerializedArea MapArea(Area area, List<SerializedPage> pages)
+{
+    var itemFields = new Dictionary<string, object>();
+    if (!string.IsNullOrEmpty(area.ItemType) && area.Item != null)
+    {
+        var dict = new Dictionary<string, object?>();
+        area.Item.SerializeTo(dict);
+        foreach (var kvp in dict)
         {
-            new ActionGroup
-            {
-                Nodes = new List<ActionNode>
-                {
-                    new()
-                    {
-                        Name = "Serialization",
-                        Icon = Icon.Exchange,
-                        NodeAction = NavigateScreenAction
-                            .To<AreaSerializationScreen>()
-                            .With(new AreaSerializationQuery { AreaId = model.Id })
-                    }
-                }
-            }
-        };
+            if (kvp.Value != null)
+                itemFields[kvp.Key] = kvp.Value;
+        }
     }
+
+    return new SerializedArea
+    {
+        AreaId = area.UniqueId,
+        Name = area.Name ?? string.Empty,
+        SortOrder = area.Sort,
+        ItemType = area.ItemType,
+        ItemFields = itemFields,
+        Pages = pages
+    };
 }
 ```
 
-**AreaSerializationScreen** responsibilities:
-1. Find Content predicates matching this AreaId from config
-2. Load Area table columns via `DataGroupMetadataReader` (reuse existing `INFORMATION_SCHEMA` queries)
-3. Render CheckboxList of column names — checked = excluded
-4. Save back to the matching predicate's `ExcludeFields` list
+In `ContentDeserializer`, after resolving the target area, apply item fields via the same `SaveItemFields` pattern already used for pages.
 
-### 3. Embedded XML Tree Node
+### Note on internal link resolution
 
-Modify `SerializerSettingsNodeProvider.GetSubNodes()` to add a new node:
+Area ItemType fields may contain page references (e.g., header page = `Default.aspx?ID=123`). The existing `InternalLinkResolver` phase should also scan Area item fields. This is a straightforward extension of `ResolveLinksInArea()`.
 
+### Confidence: HIGH
+Verified by decompiling `Dynamicweb.Content.Area` -- ItemType/ItemId/Item are standard public properties. The Item uses the same `SerializeTo`/`DeserializeFrom` pattern as page items.
+
+---
+
+## Question 4: Save Order for Timestamp Preservation
+
+### Answer: SavePage ALWAYS overwrites timestamps. Use post-save SQL UPDATE.
+
+**Critical finding from decompilation:**
+
+The `Page()` constructor (used for new pages) sets:
 ```csharp
-// New constant:
-internal const string EmbeddedXmlNodeId = "Serializer_EmbeddedXml";
-
-// In GetSubNodes, under the SerializeNodeId branch, add:
-yield return new NavigationNode
-{
-    Id = EmbeddedXmlNodeId,
-    Name = "Embedded XML",
-    Icon = Icon.Code,
-    Sort = 15, // between Predicates (10) and Log Viewer (20)
-    HasSubNodes = false,
-    NodeAction = NavigateScreenAction.To<EmbeddedXmlListScreen>()
-        .With(new EmbeddedXmlListQuery())
-};
+base.Audit = new AuditedEntity(DateTime.Now, userId.ToString());
 ```
 
-**EmbeddedXmlListScreen** discovers XML types:
-- For Content predicates: known XML-bearing fields are `ModuleSettings`, `UrlDataProviderParameters`
-- For SqlTable predicates: configured `XmlColumns` list on each predicate
-- Aggregates into a list of XML type names with current exclusion counts
+The `AuditedEntity` constructor sets BOTH `CreatedAt` AND `LastModifiedAt` to `DateTime.Now`.
 
-Clicking a type navigates to `EmbeddedXmlEditScreen` where individual element names can be toggled.
-
-### 4. Predicate Read-Only Filtering View
-
-Replace the "Filtering" group in `PredicateEditScreen.BuildEditScreen()`:
-
-**Before (current):**
-```csharp
-groups.Add(new("Filtering", new List<EditorBase>
-{
-    EditorFor(m => m.ExcludeFields),      // Textarea
-    EditorFor(m => m.ExcludeXmlElements)   // Textarea
-}));
+For the INSERT path, the SQL writes:
+```sql
+INSERT INTO [Page] (..., [PageCreatedDate], [PageUpdatedDate], ..., [PageUserCreate], [PageUserEdit], ...)
+VALUES (..., page.Audit.CreatedAt, page.Audit.LastModifiedAt, ..., page.Audit.CreatedBy, page.Audit.LastModifiedBy, ...)
 ```
 
-**After (v0.6.0):**
-Display a read-only summary showing "3 fields excluded across 2 item types" with navigation links to the ItemTypeSerializationScreen and EmbeddedXmlListScreen. Implementation options:
+For the UPDATE path, when loading an existing page via `GetPage()`, the `PageRowExtractor` correctly restores the original Audit from the DB. So updates preserve the original CreatedAt. However, the `LastModifiedAt` will be updated to `DateTime.Now` if any code calls `MarkAsUpdated()`.
 
-1. Use `Text` editor with `ReadOnly = true` showing a summary string
-2. Use `InfoBar` or `Widget` to display counts with action links
-3. Keep fields as `ReadOnly` textareas showing current exclusion values (simplest)
+### Timestamp preservation strategy
 
-The third option (read-only textareas) is simplest and still communicates the data. Add `NavigateScreenAction` links in the `GetScreenActions()` or as action nodes in the filtering group.
+**For INSERT (new pages):** There is no way to set the Audit via public API before the constructor runs. The `internal Page(AuditedEntity audit, ...)` constructor is not accessible. Solution: **Post-save SQL UPDATE**.
 
-### 5. SqlTable Column Pickers
+**For UPDATE (existing pages):** The existing Audit is loaded from DB by `PageRowExtractor`. When we load via `Services.Pages.GetPage(id)` and re-save, the original `CreatedAt` is preserved and `LastModifiedAt` reflects the actual update time. If we want to preserve the ORIGINAL `LastModifiedAt`, we need a post-save SQL UPDATE.
 
-Replace free-text textareas with `CheckboxList` editors populated from INFORMATION_SCHEMA:
+### Recommended save order
 
-```csharp
-// In PredicateEditScreen.GetEditor():
-nameof(PredicateEditModel.Table) => CreateTableSelect(),  // Add ReloadOnChange
-nameof(PredicateEditModel.ExcludeFields) => Model?.ProviderType == "SqlTable"
-    ? CreateColumnCheckboxList(Model?.Table, "Exclude Fields")
-    : new Textarea { ... },  // Keep textarea for Content predicates
-nameof(PredicateEditModel.XmlColumns) => CreateColumnCheckboxList(Model?.Table, "XML Columns"),
+```
+1. SavePage(page)                    // Normal DW save (creates/updates page, assigns ID)
+2. SaveItemFields(...)               // Item fields via ItemService
+3. SavePropertyItemFields(...)       // PropertyItem fields
+4. SQL UPDATE timestamps             // Post-save direct SQL to restore original timestamps
 ```
 
-Column discovery reuses `DataGroupMetadataReader.QueryAllColumns(tableName)` pattern — `SELECT TOP 0 * FROM [tableName]` then read field names from the reader.
+### SQL UPDATE for timestamp restoration
 
-**ReloadOnChange:** The `Table` field's Select editor gets `ReloadOnChange = true`. When the user picks a table, the screen reloads, and `Model.Table` is populated for the `CreateColumnCheckboxList` calls.
-
-### 6. Config Storage Changes
-
-**Current JSON structure:**
-```json
+```csharp
+private void RestoreTimestamps(int pageId, SerializedAudit? audit)
 {
-  "predicates": [{
-    "excludeFields": ["field1", "field2"],
-    "excludeXmlElements": ["elem1"]
-  }]
+    if (audit == null) return;
+
+    var cb = new CommandBuilder();
+    cb.Add("UPDATE [Page] SET ", Array.Empty<object>());
+
+    var setClauses = new List<string>();
+    if (audit.CreatedDate.HasValue)
+        cb.Add<DateTime>("[PageCreatedDate]={0}", audit.CreatedDate.Value);
+    if (audit.UpdatedDate.HasValue)
+        cb.Add<DateTime>(",[PageUpdatedDate]={0}", audit.UpdatedDate.Value);
+    if (!string.IsNullOrEmpty(audit.CreatedBy))
+        cb.Add<string>(",[PageUserCreate]={0}", audit.CreatedBy);
+    if (!string.IsNullOrEmpty(audit.UpdatedBy))
+        cb.Add<string>(",[PageUserEdit]={0}", audit.UpdatedBy);
+
+    cb.Add<int>(" WHERE [PageID]={0}", pageId);
+    Database.ExecuteNonQuery(cb);
 }
 ```
 
-**Proposed JSON structure (additive):**
-```json
+This pattern is consistent with the existing `SqlTableProvider` which already uses `Dynamicweb.Data.Database` for direct SQL. The `DwSqlExecutor` provides the abstraction.
+
+### Important: Audit data in ContentMapper
+
+The mapper currently does NOT extract audit data. Extension needed:
+
+```csharp
+// In ContentMapper.MapPage():
+Audit = new SerializedAudit
 {
-  "predicates": [{
-    "excludeFields": ["field1"],
-    "excludeFieldsByItemType": {
-      "Swift_Footer": ["FooterColumn3", "FooterColumn4"],
-      "Swift_Header": ["HeaderSearch"]
-    },
-    "excludeXmlElements": ["elem1"],
-    "excludeXmlElementsByType": {
-      "ModuleSettings": ["SomeModule"],
-      "UrlDataProviderParameters": ["SomeParam"]
-    }
-  }]
+    CreatedDate = page.Audit?.CreatedAt,      // from Entity<int>.Audit
+    UpdatedDate = page.Audit?.LastModifiedAt,
+    CreatedBy = page.Audit?.CreatedBy,
+    UpdatedBy = page.Audit?.LastModifiedBy
 }
 ```
 
-**Changes to ProviderPredicateDefinition:**
+Note: `page.Audit` is accessed via the `Entity<int>` base class. Since `Page : Entity<int>`, it is directly accessible. The cast `((Dynamicweb.Core.Entity<int>)page).Audit` may be needed if the compiler does not resolve it implicitly. The `Audit` property is public on `Entity<T>`.
+
+### Confidence: HIGH
+Verified via decompilation of `PageRepository.InsertPage()`, `PageRepository.UpdatePage()`, `PageRowExtractor.ExtractPage()`, and `AuditedEntity` constructors.
+
+---
+
+## Question 5: Properties Requiring Special DW API Calls
+
+### UrlDataProvider
+
+**No special API needed.** UrlDataProviderTypeName and UrlDataProviderParameters are plain string properties on Page, persisted by SavePage. They just store the .NET type name and its serialized parameters.
+
 ```csharp
-public Dictionary<string, List<string>> ExcludeFieldsByItemType { get; init; } = new();
-public Dictionary<string, List<string>> ExcludeXmlElementsByType { get; init; } = new();
+page.UrlDataProviderTypeName = dto.UrlSettings?.UrlDataProviderTypeName;
+page.UrlDataProviderParameters = dto.UrlSettings?.UrlDataProviderParameters;
 ```
 
-**Changes to ConfigLoader:** Add dictionary parsing in `RawPredicateDefinition` and `BuildPredicate()`. System.Text.Json handles `Dictionary<string, List<string>>` natively — just add nullable properties to the raw model.
+Caveat: The UrlDataProviderTypeName contains a fully-qualified .NET type name (e.g., `Dynamicweb.Ecommerce.Frontend.EcommerceUrlDataProvider`). This is environment-safe because it references the class name, not an instance. It will only work if the target environment has the same DW modules installed.
 
-**Changes to serialization logic:** During content serialization, merge flat `ExcludeFields` with item-type-specific `ExcludeFieldsByItemType[currentItemType]` to get the effective exclusion set.
+### NavigationSettings
+
+As documented in Question 2, handled inline by SavePage. Set `page.NavigationSettings = new PageNavigationSettings { ... }` before calling SavePage.
+
+### Permissions
+
+Already handled by existing `PermissionMapper.ApplyPermissions()`. No change needed.
+
+### Properties that are truly read-only or not settable
+
+| Property | Settable? | Notes |
+|----------|-----------|-------|
+| `Level` | Read-only | Computed from tree depth, not serializable |
+| `IsMaster` | Read-only | Computed from `Area.IsMaster` |
+| `IsLanguage` | Read-only | Computed from `Area.IsLanguage` |
+| `Parent` | Read-only navigation | Set via `ParentPageId` |
+| `MasterPage` | Read-only navigation | Set via `MasterPageId` |
+| `Layout` (object) | Read-only | Computed from `LayoutLocator.FindLayout(this)`. Use `LayoutTemplate` string. |
+| `ShowInMenu` | Writable | Standard bool property, persisted by SavePage |
+| `Published` | Writable | Standard bool property, persisted by SavePage |
+
+### Confidence: HIGH
+Verified via decompilation -- all writable properties confirmed to have public setters.
+
+---
+
+## Complete Property Mapping Reference
+
+This table maps every DW Page property to the DTO location. Properties already serialized are marked with [EXISTING].
+
+| DW Page Property | DTO Location | Type | Default |
+|-----------------|-------------|------|---------|
+| UniqueId | PageUniqueId [EXISTING] | Guid | required |
+| ID | SourcePageId [EXISTING] | int? | - |
+| MenuText | MenuText [EXISTING] | string | required |
+| UrlName | UrlName [EXISTING] | string | required |
+| Sort | SortOrder [EXISTING] | int | required |
+| Active | IsActive [EXISTING] | bool | false |
+| ItemType | ItemType [EXISTING] | string? | null |
+| LayoutTemplate | Layout [EXISTING] | string? | null |
+| LayoutApplyToSubPages | LayoutApplyToSubPages [EXISTING] | bool | false |
+| IsFolder | IsFolder [EXISTING] | bool | false |
+| TreeSection | TreeSection [EXISTING] | string? | null |
+| NavigationTag | NavigationTag (flat) | string? | null |
+| ShortCut | ShortCut (flat) | string? | null |
+| Hidden | Hidden (flat) | bool | false |
+| Allowclick | Allowclick (flat) | bool | true |
+| Allowsearch | Allowsearch (flat) | bool | true |
+| ShowInSitemap | ShowInSitemap (flat) | bool | true |
+| ShowInLegend | ShowInLegend (flat) | bool | true |
+| ShowInMenu | ShowInMenu (flat) | bool | true |
+| SslMode | SslMode (flat) | int | 0 |
+| ColorSchemeId | ColorSchemeId (flat) | string? | null |
+| ExactUrl | ExactUrl (flat) | string? | null |
+| ContentType | ContentType (flat) | string? | null |
+| TopImage | TopImage (flat) | string? | null |
+| DisplayMode | DisplayMode (flat) | int | 0 |
+| ActiveFrom | ActiveFrom (flat) | DateTime? | null |
+| ActiveTo | ActiveTo (flat) | DateTime? | null |
+| UrlDataProviderTypeName | UrlSettings.UrlDataProviderTypeName | string? | null |
+| UrlDataProviderParameters | UrlSettings.UrlDataProviderParameters | string? | null |
+| UrlIgnoreForChildren | UrlSettings.UrlIgnoreForChildren | bool | false |
+| UrlUseAsWritten | UrlSettings.UrlUseAsWritten | bool | false |
+| MetaTitle | Seo.MetaTitle | string? | null |
+| MetaCanonical | Seo.MetaCanonical | string? | null |
+| Description | Seo.Description | string? | null |
+| Keywords | Seo.Keywords | string? | null |
+| Noindex | Seo.Noindex | bool | false |
+| Nofollow | Seo.Nofollow | bool | false |
+| Robots404 | Seo.Robots404 | bool | false |
+| HideForPhones | Visibility.HideForPhones | bool | false |
+| HideForTablets | Visibility.HideForTablets | bool | false |
+| HideForDesktops | Visibility.HideForDesktops | bool | false |
+| NavigationSettings.* | NavigationSettings.* | sub-object | null |
+| Audit.CreatedAt | Audit.CreatedDate | DateTime? | null |
+| Audit.LastModifiedAt | Audit.UpdatedDate | DateTime? | null |
+| Audit.CreatedBy | Audit.CreatedBy | string? | null |
+| Audit.LastModifiedBy | Audit.UpdatedBy | string? | null |
+
+### Properties explicitly NOT serialized (computed/internal)
+
+| Property | Reason |
+|----------|--------|
+| Level | Computed from tree depth |
+| IsMaster / IsLanguage | Computed from Area |
+| Parent / MasterPage | Navigation properties |
+| Layout (object) | Computed; use LayoutTemplate string |
+| Languages | Separate area concept |
+| Item / PropertyItem | Serialized via Fields/PropertyFields dictionaries |
+| CreationRules | Internal template creation rules |
+| ApprovalType/State/Step | Workflow state, not content |
+| PermissionType/Template | Handled by PermissionMapper |
+| CopyOf / MasterPageId / MasterType | Template/language system internals |
+
+---
+
+## Component Modification Map
+
+### Files to modify
+
+| File | Change | Complexity |
+|------|--------|-----------|
+| `Models/SerializedPage.cs` | Add ~15 flat properties, 5 sub-object properties | Low |
+| `Models/SerializedArea.cs` | Add ItemType + ItemFields | Low |
+| `Models/` (new files) | Create 5 sub-record types | Low |
+| `Serialization/ContentMapper.cs` | Extend `MapPage()` and `MapArea()` | Low-Med |
+| `Serialization/ContentDeserializer.cs` | Extend `DeserializePage()` (both INSERT and UPDATE paths), add `RestoreTimestamps()` | Medium |
+| `Serialization/ContentSerializer.cs` | No change needed (mapper handles it) | None |
+
+### Files NOT modified
+
+| File | Reason |
+|------|--------|
+| `Providers/Content/ContentProvider.cs` | Wrapper only, delegates to ContentSerializer/ContentDeserializer |
+| `Providers/ISerializationProvider.cs` | Interface unchanged |
+| `Infrastructure/FileSystemStore.cs` | YAML serialization handles new properties automatically |
+
+---
 
 ## Data Flow
 
-### Field Exclusion Configuration Flow
+### Serialization (read from DW, write to YAML)
 
 ```
-User opens Settings > Item Types > [Type] > Fields
-  -> ItemFieldListScreen renders field list
-  -> SerializerItemFieldListInjector adds "Serialization" toolbar button
-  -> User clicks "Serialization"
-  -> NavigateScreenAction to ItemTypeSerializationScreen
-  -> Screen loads fields from ItemManager.Metadata.GetItemType(systemName)
-  -> Screen loads exclusions from ConfigLoader (all predicates' excludeFieldsByItemType)
-  -> User toggles field checkboxes
-  -> SaveItemTypeSerializationCommand writes to config JSON via ConfigWriter
+DW Page (with Audit, NavigationSettings, all properties)
+  |
+  v
+ContentMapper.MapPage()  -- reads page.NavigationTag, page.Seo, page.Audit, etc.
+  |                         creates sub-objects (SerializedSeoSettings, etc.)
+  |
+  v
+SerializedPage DTO (with sub-objects)
+  |
+  v
+YamlDotNet serialization --> .yml file on disk
 ```
 
-### Predicate SqlTable Column Picker Flow
+### Deserialization (read from YAML, write to DW)
 
 ```
-User opens Serialize > Predicates > [SqlTable predicate]
-  -> PredicateEditScreen renders with Model.Table populated
-  -> Table Select has ReloadOnChange = true
-  -> ExcludeFields editor calls DataGroupMetadataReader for column list
-  -> CheckboxList populated with all table columns
-  -> User checks columns to exclude
-  -> SavePredicateCommand persists as excludeFields list
+.yml file on disk
+  |
+  v
+YamlDotNet deserialization --> SerializedPage DTO
+  |
+  v
+ContentDeserializer.DeserializePage()
+  |
+  +-- Step 1: Set all scalar properties on Page object
+  +-- Step 2: Set NavigationSettings sub-object if present
+  +-- Step 3: Services.Pages.SavePage(page)
+  +-- Step 4: SaveItemFields() / SavePropertyItemFields()
+  +-- Step 5: RestoreTimestamps() via direct SQL
+  +-- Step 6: PermissionMapper.ApplyPermissions()
+  |
+  v
+DW Database (page with all properties preserved)
 ```
 
-## Patterns to Follow
-
-### Pattern 1: ListScreenInjector for Toolbar Actions on List Screens
-**What:** Add toolbar actions to DW list screens without modifying DW source
-**When:** Target screen extends `ListScreenBase` (ItemFieldListScreen)
-**Key:** Override `GetScreenActions()`, access `Screen.Model` for context data
-**Example:** `SerializerItemFieldListInjector` — verified via `Dynamicweb.CoreUI\Screens\ListScreenInjector.cs`
-
-### Pattern 2: EditScreenInjector GetScreenActions for Action Buttons
-**What:** Add toolbar actions to DW edit screens
-**When:** Target screen extends `EditScreenBase` but you cannot add properties to its model
-**Key:** Override `GetScreenActions()` (not `OnBuildEditScreen`). Navigate to serializer-owned screen.
-**Example:** Existing `SerializerPageEditInjector` in codebase; `AreaEditScreenInjector` in DW source
-
-### Pattern 3: EditScreenInjector OnBuildEditScreen for New Tabs
-**What:** Add entire tab sections to DW edit screens
-**When:** You can bind to properties on the existing model
-**Key:** `builder.AddComponents("TabName", "Heading", editors)` — each unique tabName creates a tab automatically
-**Example:** `AreaEditScreenInjector` (Ecommerce tab) in `Dynamicweb.Global.UI`
-**Why NOT used here:** We cannot add properties to AreaDataModel, so EditorFor() has nothing to bind to
-
-### Pattern 4: ReloadOnChange for Dependent Fields
-**What:** Trigger screen reload when a field value changes to populate dependent fields
-**When:** One field determines another's options (table name -> column list)
-**Key:** Set `ReloadOnChange = true` on driving editor; check `Model?.Property` in dependent editor builder
-**Example:** `AreaEditScreen.CreateAreaItemSelect()` — reloads to show/hide WebsiteItem fields
-
-### Pattern 5: NavigationNode Extension
-**What:** Add tree nodes under existing tree structure
-**When:** Need new entries in the Settings tree
-**Key:** Match `parentNodePath.Last` against known node IDs, yield new NavigationNode
-**Example:** Existing `SerializerSettingsNodeProvider` — add another yield return in SerializeNodeId branch
-
-## Anti-Patterns to Avoid
-
-### Anti-Pattern 1: EditScreenInjector on a ListScreenBase
-**What:** Using `EditScreenInjector<ItemFieldListScreen, ItemFieldListDataModel>` 
-**Why bad:** `ItemFieldListScreen` extends `ListScreenBase`, not `EditScreenBase`. Generic constraint `where TScreen : EditScreenBase<TModel>` would fail at compile time.
-**Instead:** Use `ListScreenInjector<ItemFieldListScreen, ItemFieldDataModel>`
-
-### Anti-Pattern 2: Adding Properties to DW Framework Models
-**What:** Trying to extend `AreaDataModel` or `PageDataModel` with serializer properties
-**Why bad:** These are compiled into DW NuGet packages — not our code
-**Instead:** Use toolbar actions that navigate to serializer-owned screens with their own models
-
-### Anti-Pattern 3: Direct SQL in UI Screen Classes
-**What:** Running INFORMATION_SCHEMA queries directly in screen/editor builder methods
-**Why bad:** Tight coupling, harder to test, mixes concerns
-**Instead:** Reuse `DataGroupMetadataReader` which already has INFORMATION_SCHEMA queries with ISqlExecutor abstraction for testability
-
-### Anti-Pattern 4: Storing Per-Item-Type Exclusions Outside Predicates
-**What:** Creating a separate config section for item type exclusions
-**Why bad:** Exclusions are predicate-scoped — different predicates may exclude different fields for the same item type
-**Instead:** Store `excludeFieldsByItemType` inside each predicate definition
-
-## Build Order (Dependency-Aware)
-
-### Phase 1: Config Schema Extension (foundation)
-1. Add `ExcludeFieldsByItemType` and `ExcludeXmlElementsByType` dictionaries to `ProviderPredicateDefinition`
-2. Add nullable dictionary properties to `ConfigLoader.RawPredicateDefinition`
-3. Update `ConfigLoader.BuildPredicate()` to map new dictionaries
-4. Wire dictionaries through to serialization logic (merge with flat lists during serialize)
-
-**Rationale:** Every UI feature depends on config being able to store per-type exclusions.
-
-### Phase 2: SqlTable Column Pickers (predicate screen enhancement)
-1. Add `ReloadOnChange` to Table Select in `PredicateEditScreen`
-2. Create `CreateColumnCheckboxList(tableName)` helper reusing `DataGroupMetadataReader` pattern
-3. Replace ExcludeFields textarea with CheckboxList for SqlTable predicates
-4. Replace XmlColumns textarea with CheckboxList for SqlTable predicates
-
-**Rationale:** Enhances existing screen with minimal new code. Good warmup for DW UI patterns.
-
-### Phase 3: Embedded XML Tree Node + Screens
-1. Add `EmbeddedXmlNodeId` constant and node to `SerializerSettingsNodeProvider.GetSubNodes()`
-2. Create `EmbeddedXmlListScreen` + query + model (lists XML types from config)
-3. Create `EmbeddedXmlEditScreen` + query + model + save command (per-type element exclusion)
-4. Save command writes `ExcludeXmlElementsByType` to config
-
-**Rationale:** Self-contained feature under existing Serialize tree. No external injection needed.
-
-### Phase 4: Item Type Serialization Screen + Injector
-1. Create `ItemTypeSerializationScreen` + query + model (field checkbox list using `ItemManager.Metadata`)
-2. Create `SaveItemTypeSerializationCommand` (writes `ExcludeFieldsByItemType`)
-3. Create `SerializerItemFieldListInjector` (ListScreenInjector — toolbar action)
-
-**Rationale:** Most complex new screen. Depends on Phase 1 config. Uses `ItemManager.Metadata` API.
-
-### Phase 5: Area Edit Injection
-1. Create `AreaSerializationScreen` + query + model (area column checkboxes via INFORMATION_SCHEMA)
-2. Create `SaveAreaSerializationCommand` (writes to matching predicate's `ExcludeFields`)
-3. Create `SerializerAreaEditInjector` (EditScreenInjector — toolbar action)
-
-**Rationale:** Similar to Phase 4 but for area columns. Reuses `DataGroupMetadataReader`.
-
-### Phase 6: Predicate Read-Only Filtering View
-1. Modify `PredicateEditScreen` "Filtering" section to read-only display of current exclusions
-2. Add navigation links to ItemTypeSerializationScreen and EmbeddedXmlListScreen
-3. Show summary counts: "X fields excluded across Y item types", "Z XML elements excluded"
-
-**Rationale:** Last because it links to screens built in Phases 3-5. Cannot add links until targets exist.
-
-### Dependency Graph
+### Area ItemType deserialization
 
 ```
-Phase 1: Config Schema
-    |
-    +---> Phase 2: SqlTable Column Pickers
-    |
-    +---> Phase 3: Embedded XML Screens
-    |
-    +---> Phase 4: Item Type Serialization
-    |         |
-    |         +---> Phase 6: Predicate Read-Only
-    |
-    +---> Phase 5: Area Edit Injection
-              |
-              +---> Phase 6: Predicate Read-Only
+SerializedArea with ItemType + ItemFields
+  |
+  v
+ContentDeserializer.DeserializePredicate()
+  +-- Load target Area via Services.Areas.GetArea()
+  +-- If area.ItemType matches dto.ItemType:
+  |     SaveItemFields(area.ItemType, area.ItemId, dto.ItemFields)
+  +-- Run InternalLinkResolver on Area item fields too
 ```
 
-Phases 2-5 all depend on Phase 1 but are independent of each other.
-Phase 6 depends on Phases 3, 4, and 5 (links to their screens).
-
-## DW Screen Class Verification
-
-All class names verified against DW10 source at `C:\Projects\temp\dw10source\`:
-
-| Class | Base | Namespace |
-|-------|------|-----------|
-| `ItemFieldListScreen` | `ListScreenBase<ItemFieldListDataModel, ItemFieldDataModel>` | `Dynamicweb.Content.UI.Screens.Settings.ItemTypes` |
-| `ItemFieldDataModel` | `DataViewModelBase` | `Dynamicweb.Content.UI.Models.Settings.ItemTypes` |
-| `ItemFieldListDataModel` | `DataListViewModel<ItemFieldDataModel>` | `Dynamicweb.Content.UI.Models.Settings.ItemTypes` |
-| `AreaEditScreen` | `EditScreenBase<AreaDataModel>` | `Dynamicweb.Content.UI.Screens` |
-| `AreaDataModel` | (DW model) | `Dynamicweb.Content.UI.Models` |
-| `EditScreenInjector<T,M>` | `ScreenInjector<T>` | `Dynamicweb.CoreUI.Screens` |
-| `ListScreenInjector<T,R>` | `ScreenInjector<T>` | `Dynamicweb.CoreUI.Screens` |
-| `ItemTypeEditScreen` | `EditScreenBase<ItemTypeDataModel>` (has tab: RestrictionsTabName) | `Dynamicweb.Content.UI.Screens.Settings.ItemTypes` |
-
-**Key APIs confirmed:**
-- `ItemFieldListDataModel.ItemTypeSystemName` — available for injector context
-- `AreaDataModel.Id` — available for injector context (confirmed AreaEditScreen uses `Model.Id`)
-- `ItemManager.Metadata.GetItemType(systemName)` — returns field metadata for checkbox list
-- `builder.AddComponents(tabName, heading, editors)` — creates tabs in EditScreenInjector
-- `ListScreenInjector.GetScreenActions()` — adds toolbar actions to list screens
-
-## NuGet Reference Requirements
-
-No new NuGet dependencies needed. All required packages already referenced:
-- `Dynamicweb.Content.UI` — ItemFieldListScreen, AreaEditScreen, data models
-- `Dynamicweb.CoreUI` — ListScreenInjector, EditScreenInjector, editors
-- `Dynamicweb.Content` — ItemManager.Metadata for field discovery
+---
 
 ## Sources
 
-- DW10 source: `Dynamicweb.CoreUI\Screens\EditScreenInjector.cs` — EditScreenInjector pattern with OnBuildEditScreen, GetEditor, GetScreenActions
-- DW10 source: `Dynamicweb.CoreUI\Screens\ListScreenInjector.cs` — ListScreenInjector pattern with GetScreenActions, GetListItemActions, GetCell
-- DW10 source: `Dynamicweb.CoreUI\Screens\EditScreenBase.cs` — EditScreenBuilder.AddComponents creates tabs, injector lifecycle at lines 104-113
-- DW10 source: `Dynamicweb.Global.UI\Content\AreaEditScreenInjector.cs` — Reference implementation adding "Ecommerce" tab via builder.AddComponents
-- DW10 source: `Dynamicweb.Global.UI\Content\PageEditScreenInjector.cs` — Reference implementation adding "Ecommerce navigation" fields
-- DW10 source: `Dynamicweb.Content.UI\Screens\Settings\ItemTypes\ItemFieldListScreen.cs` — Confirmed ListScreenBase<ItemFieldListDataModel, ItemFieldDataModel>
-- DW10 source: `Dynamicweb.Content.UI\Screens\AreaEditScreen.cs` — Confirmed EditScreenBase<AreaDataModel>
-- Existing codebase: `SerializerPageEditInjector.cs` — Existing EditScreenInjector toolbar action pattern
-- Existing codebase: `SerializerFileOverviewInjector.cs` — Existing ScreenInjector OnAfter pattern
-- Existing codebase: `DataGroupMetadataReader.cs` — INFORMATION_SCHEMA queries for column discovery
-
----
-*Architecture research for: DynamicWeb.Serializer v0.6.0 structured UI integration*
-*Researched: 2026-04-07*
+- DW 10.23.9 DLL decompilation (Dynamicweb.dll, Dynamicweb.Core.dll) -- PRIMARY SOURCE for all findings
+- [Page Class Properties](https://doc.dynamicweb.dev/api/Dynamicweb.Content.Page.html)
+- [PageNavigationSettings](https://doc.dynamicweb.com/api/html/b9de46f1-8065-0ba0-6c5b-4fa01d90de7e.htm)
+- [Area ItemTypes manual](https://doc.dynamicweb.dev/manual/dynamicweb10/settings/areas/content/itemtypes.html)
+- [Area Class API](https://doc.dynamicweb.dev/api/Dynamicweb.Content.Area.html)
+- [PageService API](https://doc.dynamicweb.dev/api/Dynamicweb.Content.PageService.html)
