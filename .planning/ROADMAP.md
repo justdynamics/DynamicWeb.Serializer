@@ -101,7 +101,7 @@
 - [x] **Phase 33: SqlTable Column Pickers** - Replace free-text excludeFields/xmlColumns with schema-driven CheckboxLists (completed 2026-04-11)
 - [x] **Phase 34: Embedded XML Screens** - New tree node with auto-discovery and element-level exclusion (completed 2026-04-14)
 - [x] **Phase 35: Item Type Screens** - New tree node with per-item-type field exclusion CheckboxList (completed 2026-04-15)
-- [ ] **Phase 36: Area Screens** - New tree node with per-area column exclusion CheckboxList
+- [ ] **Phase 36: Area Screens** - Per-predicate area column exclusion via SelectMultiDual on Content predicate edit screen
 - [ ] **Phase 37: Predicate UI Polish** - Page picker for exclusions, read-only summaries with cross-links
 
 ## Phase Details
@@ -162,17 +162,17 @@ Plans:
 **UI hint**: yes
 
 ### Phase 36: Area Screens
-**Goal**: Users can browse all areas and configure per-area column exclusions through a dedicated tree node
+**Goal**: Content predicates support per-predicate area column exclusions via SelectMultiDual on the predicate edit screen
 **Depends on**: Phase 32
 **Requirements**: AREA-06, AREA-07, AREA-08
 **Success Criteria** (what must be TRUE):
-  1. "Areas" tree node appears under Serialize and lists all areas in the system
-  2. Clicking an area opens an edit screen showing all area columns as a CheckboxList where the user selects columns to exclude
-  3. Column exclusions are saved to config and applied during serialize/deserialize
+  1. Content predicate edit screen shows a SelectMultiDual section for area column exclusions when AreaId is set
+  2. SelectMultiDual is populated from Area table INFORMATION_SCHEMA columns (minus 6 DTO-captured columns)
+  3. Column exclusions are saved to config per-predicate and applied during serialize/deserialize
 **Plans**: 2 plans
 Plans:
-- [ ] 32-01-PLAN.md -- Config model extension + backward compat tests
-- [ ] 32-02-PLAN.md -- ExclusionMerger helper + pipeline integration
+- [ ] 36-01-PLAN.md -- Model + config + UI + save/load + unit tests
+- [ ] 36-02-PLAN.md -- Serialization + deserialization pipeline integration
 **UI hint**: yes
 
 ### Phase 37: Predicate UI Polish
@@ -205,5 +205,5 @@ Plans:
 | 33. SqlTable Column Pickers | v0.6.0 | 1/1 | Complete    | 2026-04-11 |
 | 34. Embedded XML Screens | v0.6.0 | 2/2 | Complete    | 2026-04-14 |
 | 35. Item Type Screens | v0.6.0 | 2/2 | Complete    | 2026-04-15 |
-| 36. Area Screens | v0.6.0 | 0/0 | Not started | - |
+| 36. Area Screens | v0.6.0 | 0/2 | Not started | - |
 | 37. Predicate UI Polish | v0.6.0 | 0/0 | Not started | - |
