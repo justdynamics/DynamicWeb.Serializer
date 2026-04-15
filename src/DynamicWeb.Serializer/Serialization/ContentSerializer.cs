@@ -90,8 +90,13 @@ public class ContentSerializer
                 Log($"  -> Skipped (predicate excluded or null)");
         }
 
+        // Build area column exclude set (separate from item field excludes, per D-02)
+        var excludeAreaColumns = predicate.ExcludeAreaColumns.Count > 0
+            ? new HashSet<string>(predicate.ExcludeAreaColumns, StringComparer.OrdinalIgnoreCase)
+            : null;
+
         Log($"Serialized pages: {serializedPages.Count}");
-        var serializedArea = _mapper.MapArea(area, serializedPages);
+        var serializedArea = _mapper.MapArea(area, serializedPages, excludeAreaColumns);
         _store.WriteTree(serializedArea, _configuration.OutputDirectory);
         return serializedArea;
     }

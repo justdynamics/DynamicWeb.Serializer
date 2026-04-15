@@ -1,4 +1,5 @@
 using Dynamicweb.Content;
+using Dynamicweb.Data;
 using DynamicWeb.Serializer.Models;
 
 namespace DynamicWeb.Serializer.Serialization;
@@ -19,7 +20,9 @@ public class ContentMapper
     /// <summary>
     /// Maps a DW Area to a SerializedArea DTO.
     /// </summary>
-    public SerializedArea MapArea(Area area, List<SerializedPage> pages)
+    /// <param name="excludeAreaColumns">Area SQL table column names to exclude (separate from item field excludes).</param>
+    public SerializedArea MapArea(Area area, List<SerializedPage> pages,
+        IReadOnlySet<string>? excludeAreaColumns = null)
     {
         var itemFields = new Dictionary<string, object>();
         if (!string.IsNullOrEmpty(area.ItemType) && !string.IsNullOrEmpty(area.ItemId))
@@ -44,6 +47,7 @@ public class ContentMapper
             SortOrder = area.Sort,
             ItemType = area.ItemType,
             ItemFields = itemFields,
+            Properties = ReadAreaProperties(area.ID, excludeAreaColumns),
             Pages = pages
         };
     }
@@ -281,6 +285,37 @@ public class ContentMapper
         }
 
         return fields;
+    }
+
+    /// <summary>
+    /// Reads all columns from the [Area] SQL table row via SELECT *, filtering out
+    /// excluded columns and columns already captured by named DTO properties.
+    /// ExcludeAreaColumns is separate from ExcludeFields — it applies ONLY to area SQL columns.
+    /// </summary>
+    private static Dictionary<string, object> ReadAreaProperties(int areaId, IReadOnlySet<string>? excludeAreaColumns)
+    {
+        var props = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
+        var cb = new CommandBuilder();
+        cb.Add("SELECT * FROM [Area] WHERE [AreaID] = {0}", areaId);
+        using var reader = Database.CreateDataReader(cb);
+        if (reader.Read())
+        {
+            for (int i = 0; i < reader.FieldCount; i++)
+            {
+                var name = reader.GetName(i);
+                var value = reader.GetValue(i);
+                if (value != DBNull.Value && excludeAreaColumns?.Contains(name) != true)
+                    props[name] = value;
+            }
+        }
+        // Remove columns already captured by named DTO properties to avoid duplication
+        props.Remove("AreaID");
+        props.Remove("AreaName");
+        props.Remove("AreaSort");
+        props.Remove("AreaItemType");
+        props.Remove("AreaItemId");
+        props.Remove("AreaUniqueId");
+        return props;
     }
 
     /// <summary>
