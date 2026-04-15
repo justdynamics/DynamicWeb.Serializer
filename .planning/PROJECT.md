@@ -184,4 +184,4 @@ This document evolves at phase transitions and milestone boundaries.
 - **v0.5.0 Granular Serialization Control** — XML pretty-print, field-level filtering, area consolidation, predicate UI (2026-04-09)
 
 ---
-*Last updated: 2026-04-14 — Phase 34 complete (Embedded XML screens with SelectMultiDual, retroactive CheckboxList replacement)*
+*Last updated: 2026-04-15 — Phase 35 complete (Item Type screens with category tree nesting, live DW API discovery, SelectMultiDual field exclusions)*
