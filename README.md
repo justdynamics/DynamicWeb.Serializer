@@ -2,8 +2,6 @@
 
 A DynamicWeb AppStore app that serializes and deserializes database state to/from YAML files on disk, enabling full database content to be version-controlled and deployed alongside code.
 
-The DynamicWeb equivalent of **Sitecore Unicorn** -- replacing manual content sync with automated, developer-friendly database serialization.
-
 ## How It Works
 
 DynamicWeb.Serializer uses **predicates** to define which data to synchronize. Predicates can target content trees (pages, grids, paragraphs), SQL tables (ecommerce settings, users, etc.), or other data groups. Data is serialized to YAML files in a mirror-tree folder layout.
