@@ -78,6 +78,14 @@
 - [x] **Phase 24: Area ItemType Fields** - Serialize and deserialize Area-level ItemType connections with page ID resolution (completed 2026-04-03)
 - [x] **Phase 25: Ecommerce Schema Sync** - Ensure EcomProductGroupField custom columns exist before data import (completed 2026-04-03)
 
+### v0.5.0 Production-Ready Baseline (Planned)
+
+**Milestone Goal:** Make the serializer safe to wire into a real Azure dev→test→QA→prod deployment pipeline. Today's `source-wins` model cannot coexist with live customer-edited content; today's fragility to schema drift, contamination, and env-specific credentials makes a prod rollout risky. This milestone closes those gaps.
+
+**Source of findings:** Autonomous baseline test on Swift 2.2 → CleanDB round-trip, documented in `.planning/sessions/2026-04-17-baseline-test/FINDINGS.md` (F-01..F-19).
+
+- [ ] **Phase 37: Production-Ready Baseline** - Seed-content mode, row filtering, schema/type resilience broadening, credential safety, cache invalidation rework, template manifest, strict mode, and baseline diff summary. Planned 2026-04-17 from baseline-test findings.
+
 ## Phase Details
 
 ### Phase 23: Full Page Properties + Navigation Settings
@@ -117,6 +125,39 @@ Plans:
 **Plans:** 1 plan
 Plans:
 - [x] 25-01-PLAN.md — EcomGroupFieldSchemaSync + orchestrator integration + tests
+
+### Phase 37: Production-Ready Baseline
+**Goal**: The serializer becomes safe to run in an automated Azure deployment pipeline without overwriting customer-edited content, leaking credentials, silently corrupting FK integrity, or breaking on env schema drift.
+**Depends on**: v0.4.0 phases (Phase 23 page properties, Phase 24 area item types, Phase 25 schema sync)
+**Findings addressed**: F-01, F-02, F-04..F-10, F-12, F-14, F-15, F-17, F-18, F-19 (see `.planning/sessions/2026-04-17-baseline-test/FINDINGS.md`)
+**Seeds promoted**: SEED-001 (strict mode), SEED-002 (SQL identifier whitelist)
+**Requirements** (to add to REQUIREMENTS.md when milestone opens):
+  - `SEED-01`: Content predicates support per-subtree `deserializeMode: source-wins | if-absent | skip`
+  - `SEED-02`: SqlTable predicates support `deserializeMode: source-wins | if-absent | skip` keyed on the predicate's natural key
+  - `FILTER-01`: SqlTable predicates accept a `where` clause, parameterized values, column names validated against INFORMATION_SCHEMA
+  - `SCHEMA-02`: Raw-SQL write paths for Page, Paragraph, GridRow, and ItemType_* tolerate missing target columns with a WARNING (extending the Area-level fix from `f0bfbba`)
+  - `CLEANUP-01`: Serialize writes to a temp tree and swaps on success OR tracks a files-written manifest and deletes stale files post-run
+  - `RUNTIME-COLS-01`: A well-known registry of runtime-only columns (UrlPathVisitsCount, EcomShops index columns, etc.) is auto-excluded by SqlTable predicates
+  - `CRED-01`: A well-known registry of credential columns (PaymentMerchantNum, PaymentGatewayMD5Key, etc.) is auto-excluded by SqlTable predicates
+  - `CACHE-01`: Cache invalidation resolves service types via a curated name registry, not AddInManager; unresolved names are ERROR (not silent skip)
+  - `STRICT-01`: A `--strict` flag (and config key) converts all deserialize warnings into a non-zero exit and aborts on first
+  - `TEMPLATE-01`: Serialize records a template-asset manifest (cshtml / grid-row json paths referenced); deserialize validates each exists and WARNs with remediation
+  - `LINK-02`: SqlTable string columns participate in InternalLinkResolver (at minimum for `Default.aspx?ID=N` patterns)
+  - `DIFF-01`: Serialize can produce a human-readable `BASELINE-DIFF.md` summarizing row-level changes per predicate
+**Success Criteria** (what must be TRUE):
+  1. A baseline deserialized twice onto the same target is idempotent AND does not overwrite rows that fall under `if-absent` mode after the first apply
+  2. Swift 2.2 → baseline → CleanDB round-trip runs with zero ERROR lines and no silent skip of cache invalidation
+  3. A baseline containing SQL identifiers from an attacker-crafted config is rejected before any query runs (F-02 / SEED-002)
+  4. Default serialize of EcomPayments / EcomShops from a real storefront excludes credential columns without the user listing them manually
+  5. Missing template files are surfaced pre-write, not silently producing broken-looking pages
+  6. Strict mode run on a baseline with any unresolved page link exits non-zero
+  7. PR reviewer can read `BASELINE-DIFF.md` and understand a baseline change without opening raw YAML
+**Plans:** 4 plans planned
+Plans:
+- [ ] 37-01-PLAN.md — Seed content mode + SqlTable row filtering + cross-env link audit (F-01, F-02, F-08, F-17)
+- [ ] 37-02-PLAN.md — Schema/type resilience broadened + stale cleanup + runtime-column registry (F-04, F-06, F-07, F-12, F-14, F-18)
+- [ ] 37-03-PLAN.md — Credential registry + SQL identifier whitelist + payment/shipping secret hygiene (F-05, SEED-002)
+- [ ] 37-04-PLAN.md — Cache invalidation rewrite + template asset manifest + strict mode + baseline diff (F-10, F-15, F-17, F-19, SEED-001)
 
 ## Progress
 

@@ -1,17 +1,17 @@
 ---
 gsd_state_version: 1.0
-milestone: v0.4.0
-milestone_name: Full Page Fidelity
-status: completed
-stopped_at: Completed 25-01-PLAN.md
-last_updated: "2026-04-15T12:57:54.737Z"
-last_activity: 2026-04-15
+milestone: v0.5.0
+milestone_name: Production-Ready Baseline
+status: planned
+stopped_at: Phase 37 planned, 0 plans executed
+last_updated: "2026-04-17T01:45:00.000Z"
+last_activity: 2026-04-17
 progress:
-  total_phases: 3
-  completed_phases: 3
+  total_phases: 1
+  completed_phases: 0
   total_plans: 4
-  completed_plans: 4
-  percent: 100
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -21,14 +21,59 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-03)
 
 **Core value:** Developers can reliably move DynamicWeb database state between environments through source control, with serialized YAML files as the single source of truth.
-**Current focus:** Phase 23 - Full Page Properties + Navigation Settings
+**Current focus:** Phase 37 - Production-Ready Baseline (v0.5.0, planned)
 
 ## Current Position
 
-Phase: 36 of 3 (3 of 3 in v0.4.0 milestone)
-Plan: Not started
-Status: Milestone complete
-Last activity: 2026-04-15
+Phase: 37 of 37 (1 of 1 in v0.5.0 milestone)
+Plan: 37-01-PLAN.md (not started)
+Status: Plans ready, awaiting user review before execute
+Last activity: 2026-04-17 (autonomous baseline test + D2 planning)
+
+## Recent Session — 2026-04-17 Autonomous Baseline Test
+
+**Deliverables produced:**
+
+- **D1 — Swift 2.2 baseline** (commits `9aa8421`, `f14f5ad`-adjacent):
+  - `src/DynamicWeb.Serializer/Configuration/swift2.2-baseline.json` — 17-predicate
+    deployment config
+  - `docs/baselines/Swift2.2-baseline.md` — reasoning doc with the
+    DEPLOYMENT / SEED / ENVIRONMENT three-bucket split
+  - `baselines/Swift2.2/` — 1570 YAML files from live serialize run
+  - Verified via full round-trip: Swift 2.2 → YAML → CleanDB, frontend renders
+    correctly at `https://localhost:58217/Default.aspx?ID=9643` (Sign in page)
+
+- **D2 — Improvement phase plan** (commits `a5d3738`, this commit):
+  - Milestone v0.5.0 "Production-Ready Baseline" added to ROADMAP.md
+  - Phase 37 with 4 plans covering findings F-01 through F-19
+  - `.planning/phases/37-production-ready-baseline/37-0{1..4}-PLAN.md`
+  - Promotes SEED-001 (strict mode) and SEED-002 (SQL identifier whitelist)
+
+**Bugs fixed in-flight** (per `4C` authority):
+
+- `a3d3140` — orchestrator warns when CacheInvalidator is missing but predicate
+  declares service caches (no longer silent skip)
+- `f0bfbba` — Area table schema-tolerance + datetime/bool/int type coercion
+  (prevents "Invalid column name" and "Conversion failed" on cross-env deploys).
+  Plan 37-02 broadens this to all raw-SQL write paths.
+
+**Findings accumulated:** `.planning/sessions/2026-04-17-baseline-test/FINDINGS.md`
+(F-01..F-19). Headline: seed-content vs deployment-data split — the serializer's
+`source-wins` default cannot coexist with customer-edited content on a live prod
+deploy.
+
+**Test env state left behind:**
+
+- Swift 2.2 config at `wwwroot/Files/Serializer.config.json` = baseline config;
+  original at `Serializer.config.json.pre-baseline-test`
+- CleanDB has baseline YAML deserialized; frontend verified working
+- Both hosts are stopped at end of session
+
+**Open questions for user on wake:**
+
+- Approve Phase 37 plan shape before executing, or want to split / re-scope?
+- Restore Swift 2.2's original Serializer.config.json or leave as baseline?
+- Execute plans autonomously (via /gsd-execute-phase) or review each plan first?
 
 Progress: [██████████] 100% (v0.4.0)
 
