@@ -123,6 +123,14 @@ Generic provider reads all rows, serializes to YAML, deserializes back by matchi
 - **Sync model**: Full sync only for v1 (no incremental/delta sync)
 - **Conflict resolution**: Source (files) always wins — no merge logic in v1
 
+## Coding Conventions
+
+- **Docstring nibble rule**: Early code (built by Claude 4.6) has verbose XML docstrings on
+  trivial helpers — restating what the code already says. Do NOT sweep-refactor. When you
+  touch a file for a real change, if its docstrings look excessive, trim them in the same
+  commit. Rule going forward: no comment unless removing it would confuse a future reader.
+  Apply opportunistically during normal work; never as a dedicated cleanup phase.
+
 ## Key Decisions
 
 | Decision | Rationale | Outcome |
