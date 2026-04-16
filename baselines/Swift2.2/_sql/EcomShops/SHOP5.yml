@@ -1,0 +1,28 @@
+﻿"ShopId": "SHOP5"
+"ShopName": "Product category"
+"ShopDefault": false
+"ShopIcon": ""
+"ShopOrderFlowId": 
+"ShopStockStateId": ""
+"ShopOrderContextId": ""
+"ShopStockLocationID": 0
+"ShopDefaultPrintTemplate": ""
+"ShopUseAlternativeImages": false
+"ShopImageFolder": ""
+"ShopImagePatternSmall": ""
+"ShopImagePatternMedium": ""
+"ShopImagePatternLarge": ""
+"ShopAlternativeImagePatterns": "[{\"isdefault\":false,\"name\":\"Alt_1\",\"pattern\":\"\\/{ProductNumber}_a.jpg\"},{\"isdefault\":false,\"name\":\"Alt_2\",\"pattern\":\"\\/{ProductNumber}_b.jpg\"},{\"isdefault\":false,\"name\":\"Alt_3\",\"pattern\":\"\\/{ProductNumber}_c.jpg\"},{\"isdefault\":false,\"name\":\"Alt_4\",\"pattern\":\"\\/{ProductNumber}_d.jpg\"},{\"isdefault\":false,\"name\":\"Alt_5\",\"pattern\":\"\\/{ProductNumber}_e.jpg\"},{\"isdefault\":false,\"name\":\"Alt_6\",\"pattern\":\"\\/{ProductNumber}_f.jpg\"},{\"isdefault\":false,\"name\":\"Alt_7\",\"pattern\":\"\\/{ProductNumber}_g.jpg\"}]"
+"ShopProductWarehouse": false
+"ShopProductPrimaryPageId": 
+"ShopAutoBuildIndex": true
+"ShopIndexRepository": "ProductsBackend"
+"ShopIndexName": "Products.index"
+"ShopImageSearchInSubFolders": false
+"ShopImageUploadFolder": ""
+"ShopAutoCreateUploadFolderPerProduct": false
+"ShopType": 4
+"ShopCompletionRules": ""
+"ShopCompletionLanguageIds": "ENU"
+"ShopImagePatternMain": "/{ProductNumber}.jpg"
+"ShopImagePatternVariant": "/{ProductNumber}{VariantOptionLevel1}.jpg"

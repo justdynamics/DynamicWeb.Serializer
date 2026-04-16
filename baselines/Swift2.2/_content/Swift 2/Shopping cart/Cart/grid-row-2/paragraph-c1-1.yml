@@ -1,0 +1,68 @@
+﻿"paragraphUniqueId": ac845051-5b0f-442b-b894-05cdf548bb4c
+"sourceParagraphId": 9693
+"sortOrder": 1
+"itemType": "Swift-v2_CartApp"
+"header": "Cart"
+"template": ""
+"colorSchemeId": ""
+"moduleSystemName": "eCom_CartV2"
+"moduleSettings": |-
+  <?xml version="1.0" encoding="utf-8"?>
+  <Settings>
+    <ShopSelector></ShopSelector>
+    <CartSelector></CartSelector>
+    <CheckoutToQuote>0</CheckoutToQuote>
+    <DoValidateCustomerAccepted>1</DoValidateCustomerAccepted>
+    <CustomerAcceptedErrorMessage>Please accept the terms and conditions</CustomerAcceptedErrorMessage>
+    <DoValidateStockStatus>0</DoValidateStockStatus>
+    <StockStatusErrorMessage>The quantity of products in cart exceeds the stock quantity ({ProductName}).</StockStatusErrorMessage>
+    <UseNewsletterSubscription>0</UseNewsletterSubscription>
+    <EmptyCartRadio>EmptyCartRadioRedirect</EmptyCartRadio>
+    <EmptyCartTemplate></EmptyCartTemplate>
+    <EmptyCartTemplate_path></EmptyCartTemplate_path>
+    <SetUserDetailsRadio>SetUserDetailsRadioTrue</SetUserDetailsRadio>
+    <DoCreateUserInCheckout>0</DoCreateUserInCheckout>
+    <CreateNewUserGroupsHidden></CreateNewUserGroupsHidden>
+    <DoUpdateUsersByEmail>0</DoUpdateUsersByEmail>
+    <ErrorEmtyUsername>The username cannot be empty</ErrorEmtyUsername>
+    <ErrorUsernameTaken>This username is already taken</ErrorUsernameTaken>
+    <ErrorEmtyPassword>The password cannot be empty</ErrorEmtyPassword>
+    <ErrorPasswordsNotMatch>The passwords do not match</ErrorPasswordsNotMatch>
+    <ErrorPasswordLength>The length of the password cannot be 32</ErrorPasswordLength>
+    <ErrorIllegalPasswordCharacters>Your password contains system reserved characters. Please choose another password</ErrorIllegalPasswordCharacters>
+    <PaymetTypes></PaymetTypes>
+    <SelectAllPayments>1</SelectAllPayments>
+    <DeliveryTypes></DeliveryTypes>
+    <SelectAllDeliveries>1</SelectAllDeliveries>
+    <OnReEnterRadio>OnReEnterRadioFirstStep</OnReEnterRadio>
+    <CountryForShippingRadio>CountryForShippingRadioBoth</CountryForShippingRadio>
+    <CountryForPaymentRadio>CountryForPaymentRadioCustomer</CountryForPaymentRadio>
+    <RemoveNoneExistingProductsRadio>RemoveNoneExistingProductsRadioTrue</RemoveNoneExistingProductsRadio>
+    <DefaultPaymentId></DefaultPaymentId>
+    <DefaultShippingId></DefaultShippingId>
+    <Step1Name>Cart</Step1Name>
+    <Step1Template>eCom7/CartV2/Step/Cart.cshtml</Step1Template>
+    <Step1Template_path></Step1Template_path>
+    <Step1IsCheckout>false</Step1IsCheckout>
+    <Step2Name>Checkout</Step2Name>
+    <Step2Template></Step2Template>
+    <Step2Template_path></Step2Template_path>
+    <Step2IsCheckout>true</Step2IsCheckout>
+    <ErrorMessage_VALIDATION1>Missing billing address</ErrorMessage_VALIDATION1>
+    <ErrorMessage_VALIDATION2>Missing billing city</ErrorMessage_VALIDATION2>
+    <ErrorMessage_VALIDATION4>Missing billing zip</ErrorMessage_VALIDATION4>
+    <ValidationGroups>VALIDATIONGROUP1</ValidationGroups>
+    <SelectedValidations>VALIDATION1,VALIDATION2,VALIDATION4</SelectedValidations>
+  </Settings>
+"fields":
+  "CheckoutAnonymousPageLink": "1844"
+  "CheckoutSignedInPageLink": "1846"
+  "DisableVouchers": true
+  "GlobalRecordPageGuid": "76fe2459-c681-4e70-bc7b-efb19ba184d4"
+  "Id": "15"
+  "ItemInstanceType": ""
+  "QuoteCheckoutPageLink": "1848"
+  "ShopPageLink": "5862"
+  "Sort": 0
+  "Title": "Cart"
+"columnId": 1

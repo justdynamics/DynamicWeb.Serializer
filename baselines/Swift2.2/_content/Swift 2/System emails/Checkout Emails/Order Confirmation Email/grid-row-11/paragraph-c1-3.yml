@@ -1,0 +1,22 @@
+﻿"paragraphUniqueId": 531671e1-c355-4ce8-8c57-25a886f1aa57
+"sourceParagraphId": 8852
+"sortOrder": 3
+"itemType": "Swift-v2_EmailText"
+"header": "New column"
+"template": ""
+"colorSchemeId": ""
+"moduleSystemName": ""
+"moduleSettings": ""
+"fields":
+  "Align": "left"
+  "BorderThicknes": "1"
+  "Borders": "none"
+  "GlobalRecordPageGuid": "29d6b442-6011-4315-9d5c-326759221023"
+  "Id": "86"
+  "ItemInstanceType": ""
+  "LineHeight": "1"
+  "Padding": "16"
+  "Sort": 0
+  "Text": "<p><strong>Order date</strong></p><p>{{Ecom:Order.Completed}}</p>"
+  "Title": "New column"
+"columnId": 1

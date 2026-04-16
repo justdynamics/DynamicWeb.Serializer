@@ -1,0 +1,23 @@
+﻿"OrderStateId": "OS2"
+"OrderStateName": "Completed"
+"OrderStateDescription": "Completed orders"
+"OrderStateIsDefault": false
+"OrderStateDontUseInstatistics": false
+"OrderStateIsDeleted": false
+"OrderStateMailTemplate": ""
+"OrderFlowId": 1
+"OrderStateMailSender": ""
+"OrderStateMailSenderName": ""
+"OrderStateMailSubject": ""
+"OrderStateAutoId": 2
+"OrderStateSendToCustomer": false
+"OrderStateOthersMailTemplate": ""
+"OrderStateOthersRecipients": ""
+"OrderStateSortOrder": 2
+"OrderStateOrderType": 0
+"OrderStateAllowOrder": true
+"OrderStateSendToDeliveryEmail": false
+"OrderStateSendToField": false
+"OrderStateCustomRecipientField": ""
+"OrderStateAllowEdit": false
+"OrderStateColor": "#10B981"

@@ -1,0 +1,18 @@
+﻿"paragraphUniqueId": a4559c5a-8028-4576-b562-19f85b0355fc
+"sourceParagraphId": 4039
+"sortOrder": 4
+"itemType": "Swift-v2_Text"
+"header": "Privacy questions"
+"template": "TextLeft.cshtml"
+"colorSchemeId": ""
+"moduleSystemName": ""
+"moduleSettings": ""
+"fields":
+  "GlobalRecordPageGuid": "7c888265-1f39-497b-af3b-70e3c63f95f9"
+  "Id": "288"
+  "ItemInstanceType": ""
+  "Sort": 0
+  "Subtitle": ""
+  "Text": "<p>If you have any questions or concerns about the Privacy Policy or data processing or if you would like to make a complaint about a possible breach of local privacy laws, please contact us.</p><p class=\"dw-h5\"><strong>+451234567</strong></p>"
+  "Title": "<h2 class=\"dw-h4\">Privacy questions</h2>"
+"columnId": 1

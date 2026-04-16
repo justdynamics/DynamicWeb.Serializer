@@ -1,0 +1,18 @@
+﻿"paragraphUniqueId": e4b2f21f-81e4-4b01-88a3-543f42545044
+"sourceParagraphId": 21935
+"sortOrder": 2
+"itemType": "Swift-v2_Text"
+"header": "Create user profile"
+"template": "TextCenter.cshtml"
+"colorSchemeId": ""
+"moduleSystemName": ""
+"moduleSettings": ""
+"fields":
+  "GlobalRecordPageGuid": "20b868eb-f125-455a-8693-734de4abe17d"
+  "Id": "1398"
+  "ItemInstanceType": ""
+  "Sort": 0
+  "Subtitle": ""
+  "Text": "<div>Already have a user profile? <a href=\"Default.aspx?ID=8284\">Sign in here</a></div><div></div><p></p>"
+  "Title": "<h2 class=\"dw-h2\">Create user profile</h2>"
+"columnId": 1

@@ -1,0 +1,22 @@
+﻿"paragraphUniqueId": 92415b61-eb66-4d3c-ae1b-cfb0bfe3a4a9
+"sourceParagraphId": 8854
+"sortOrder": 4
+"itemType": "Swift-v2_EmailText"
+"header": "New column"
+"template": ""
+"colorSchemeId": ""
+"moduleSystemName": ""
+"moduleSettings": ""
+"fields":
+  "Align": "left"
+  "BorderThicknes": "1"
+  "Borders": "none"
+  "GlobalRecordPageGuid": "29d6b442-6011-4315-9d5c-326759221023"
+  "Id": "88"
+  "ItemInstanceType": ""
+  "LineHeight": "1"
+  "Padding": "16"
+  "Sort": 0
+  "Text": "<p><strong>Delivery address</strong></p><p>{{Ecom:Order.Delivery.Name}}, {{Ecom:Order.Delivery.Address}},{{Ecom:Order.Delivery.Zip}} {{Ecom:Order.Delivery.City}}, {{Ecom:Order.Delivery.Region}},{{Ecom:Order.Delivery.Country}}</p>"
+  "Title": "New column"
+"columnId": 1

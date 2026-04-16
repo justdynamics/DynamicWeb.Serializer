@@ -1,0 +1,49 @@
+﻿"tableName": "EcomOrderFlow"
+"nameColumn": "OrderFlowName"
+"compareColumns": ""
+"keyColumns":
+- "OrderFlowId"
+"identityColumns":
+- "OrderFlowId"
+"allColumns":
+- "OrderFlowId"
+- "OrderFlowIsDefault"
+- "OrderFlowName"
+- "OrderFlowDescription"
+- "OrderFlowOrderType"
+"columnDefinitions":
+- "name": "OrderFlowId"
+  "dataType": "int"
+  "maxLength": 0
+  "precision": 10
+  "scale": 0
+  "isNullable": false
+  "isIdentity": true
+- "name": "OrderFlowIsDefault"
+  "dataType": "bit"
+  "maxLength": 0
+  "precision": 0
+  "scale": 0
+  "isNullable": false
+  "isIdentity": false
+- "name": "OrderFlowName"
+  "dataType": "nvarchar"
+  "maxLength": 255
+  "precision": 0
+  "scale": 0
+  "isNullable": false
+  "isIdentity": false
+- "name": "OrderFlowDescription"
+  "dataType": "nvarchar"
+  "maxLength": -1
+  "precision": 0
+  "scale": 0
+  "isNullable": true
+  "isIdentity": false
+- "name": "OrderFlowOrderType"
+  "dataType": "int"
+  "maxLength": 0
+  "precision": 10
+  "scale": 0
+  "isNullable": false
+  "isIdentity": false

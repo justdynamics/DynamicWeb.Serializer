@@ -1,0 +1,18 @@
+﻿"paragraphUniqueId": 02e01d4b-06b0-4df4-b9fc-bb48a015ee30
+"sourceParagraphId": 21211
+"sortOrder": 26
+"itemType": "Swift-v2_Navigation"
+"header": "Help &amp; Info"
+"template": "Vertical.cshtml"
+"colorSchemeId": ""
+"moduleSystemName": ""
+"moduleSettings": ""
+"fields":
+  "GlobalRecordPageGuid": "19459bdb-c656-4fbc-ba77-c455858a5497"
+  "Id": "310"
+  "ItemInstanceType": ""
+  "NavigationRoot": "Default.aspx?Id=1451"
+  "ShowOnlyFirstNavLevel": false
+  "Sort": 0
+  "Title": "<p class=\"dw-h6\">Help &amp; Info"
+"columnId": 3

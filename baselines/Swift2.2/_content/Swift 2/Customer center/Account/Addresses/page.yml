@@ -1,0 +1,41 @@
+﻿"pageUniqueId": c1a954f6-bec3-41be-9849-90da0ff533cd
+"sourcePageId": 8392
+"name": "Addresses"
+"menuText": "Addresses"
+"sortOrder": 6
+"isActive": true
+"itemType": "Swift-v2_Page"
+"layoutApplyToSubPages": false
+"isFolder": false
+"hidden": false
+"allowclick": true
+"allowsearch": true
+"showInSitemap": true
+"showInLegend": true
+"sslMode": 0
+"displayMode": "Normal"
+"activeFrom": 2025-08-27T14:48:00.0000000
+"activeTo": 2999-12-31T23:59:59.0000000
+"permissionType": 2
+"seo":
+  "noindex": false
+  "nofollow": false
+  "robots404": false
+"urlSettings":
+  "urlIgnoreForChildren": false
+  "urlUseAsWritten": false
+"visibility":
+  "hideForPhones": false
+  "hideForTablets": false
+  "hideForDesktops": false
+"fields":
+  "Id": "1077"
+  "ItemInstanceType": ""
+  "Sort": 6
+  "Title": "Addresses"
+"propertyFields":
+  "Id": "2691"
+  "Sort": 0
+  "ItemInstanceType": ""
+  "Icon": "/Files/Images/Icons/location-pin.svg"
+  "SubmenuType": "auto"

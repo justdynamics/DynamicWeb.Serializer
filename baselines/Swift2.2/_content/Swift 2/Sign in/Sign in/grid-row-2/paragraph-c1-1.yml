@@ -1,0 +1,34 @@
+﻿"paragraphUniqueId": 2b08318d-f92f-40ad-9fc7-2754f4b11ac8
+"sourceParagraphId": 21773
+"sortOrder": 1
+"itemType": "Swift-v2_App"
+"header": "App"
+"template": ""
+"colorSchemeId": ""
+"moduleSystemName": "UserAuthentication"
+"moduleSettings": |-
+  <?xml version="1.0" encoding="utf-8"?>
+  <Settings>
+    <LoginTemplate>Login.cshtml</LoginTemplate>
+    <RedirectToSpecificPage>Default.aspx?Id=8446</RedirectToSpecificPage>
+    <RedirectToReferrer>0</RedirectToReferrer>
+    <CreatePasswordPageId>Default.aspx?Id=7165</CreatePasswordPageId>
+    <CreateUserPageId>Default.aspx?Id=8285</CreateUserPageId>
+    <ListUserProfiles>0</ListUserProfiles>
+    <UserProfilesTemplate></UserProfilesTemplate>
+    <OneTimeCodeSenderName></OneTimeCodeSenderName>
+    <OneTimeCodeSenderEmail></OneTimeCodeSenderEmail>
+    <OneTimeCodeEmailSubject></OneTimeCodeEmailSubject>
+    <OneTimeCodeTemplate></OneTimeCodeTemplate>
+    <MagicLinkSenderName></MagicLinkSenderName>
+    <MagicLinkSenderEmail></MagicLinkSenderEmail>
+    <MagicLinkEmailSubject></MagicLinkEmailSubject>
+    <MagicLinkTemplate></MagicLinkTemplate>
+  </Settings>
+"fields":
+  "GlobalRecordPageGuid": "f214c484-4592-43ac-a6c8-d967b853ffe1"
+  "Id": "336"
+  "ItemInstanceType": ""
+  "Sort": 0
+  "Title": "App"
+"columnId": 1

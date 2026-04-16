@@ -1,0 +1,80 @@
+﻿"paragraphUniqueId": 3d063dc7-4ed1-44ee-a98b-beab9664acb7
+"sourceParagraphId": 22210
+"sortOrder": 1
+"itemType": "Swift-v2_App"
+"header": "Add credit cart"
+"template": ""
+"colorSchemeId": ""
+"moduleSystemName": "eCom_CartV2"
+"moduleSettings": |-
+  <?xml version="1.0" encoding="utf-8"?>
+  <Settings>
+    <ShopSelector></ShopSelector>
+    <CartSelector></CartSelector>
+    <CheckoutToQuote>0</CheckoutToQuote>
+    <DoValidateCustomerAccepted>0</DoValidateCustomerAccepted>
+    <CustomerAcceptedErrorMessage>Please accept the terms and conditions</CustomerAcceptedErrorMessage>
+    <DoValidateStockStatus>0</DoValidateStockStatus>
+    <StockStatusErrorMessage>The quantity of products in cart exceeds the stock quantity ({ProductName})</StockStatusErrorMessage>
+    <UseNewsletterSubscription>0</UseNewsletterSubscription>
+    <EmptyCartRadio>EmptyCartRadioNothing</EmptyCartRadio>
+    <EmptyCartTemplate></EmptyCartTemplate>
+    <EmptyCartTemplate_path></EmptyCartTemplate_path>
+    <SetUserDetailsRadio>SetUserDetailsRadioTrue</SetUserDetailsRadio>
+    <DoCreateUserInCheckout>0</DoCreateUserInCheckout>
+    <CreateNewUserGroupsHidden></CreateNewUserGroupsHidden>
+    <DoUpdateUsersByEmail>0</DoUpdateUsersByEmail>
+    <ErrorEmtyUsername>The username cannot be empty</ErrorEmtyUsername>
+    <ErrorUsernameTaken>This username is already taken</ErrorUsernameTaken>
+    <ErrorEmtyPassword>The password cannot be empty</ErrorEmtyPassword>
+    <ErrorPasswordsNotMatch>The passwords do not match</ErrorPasswordsNotMatch>
+    <ErrorPasswordLength>The length of the password cannot be 32</ErrorPasswordLength>
+    <ErrorIllegalPasswordCharacters>Your password contains system reserved characters. Please choose another password</ErrorIllegalPasswordCharacters>
+    <PaymetTypes>PAY1</PaymetTypes>
+    <SelectAllPayments>0</SelectAllPayments>
+    <DeliveryTypes></DeliveryTypes>
+    <SelectAllDeliveries>1</SelectAllDeliveries>
+    <OnReEnterRadio>OnReEnterRadioFirstStep</OnReEnterRadio>
+    <CountryForShippingRadio>CountryForShippingRadioBoth</CountryForShippingRadio>
+    <CountryForPaymentRadio>CountryForPaymentRadioCustomer</CountryForPaymentRadio>
+    <RemoveNoneExistingProductsRadio>RemoveNoneExistingProductsRadioFalse</RemoveNoneExistingProductsRadio>
+    <DefaultPaymentId>PAY1</DefaultPaymentId>
+    <DefaultShippingId></DefaultShippingId>
+    <IncludeDeliveryAddressesFromUsersWithSameCustomerNumber>0</IncludeDeliveryAddressesFromUsersWithSameCustomerNumber>
+    <Step1Name>Set card name</Step1Name>
+    <Step1Template>eCom7/CartV2/Step/AddCreditCard_CardName.cshtml</Step1Template>
+    <Step1Template_path></Step1Template_path>
+    <Step1IsCheckout>false</Step1IsCheckout>
+    <Step2Name>Payment</Step2Name>
+    <Step2Template></Step2Template>
+    <Step2Template_path></Step2Template_path>
+    <Step2IsCheckout>true</Step2IsCheckout>
+    <Step3Name>Receipt</Step3Name>
+    <Step3Template>eCom7/CartV2/Step/AddCreditCard_ReceiptRedirect.cshtml</Step3Template>
+    <Step3Template_path></Step3Template_path>
+    <Step3IsCheckout>false</Step3IsCheckout>
+    <Mail1Recipient></Mail1Recipient>
+    <Mail1Subject></Mail1Subject>
+    <Mail1Template>eCom7/CartV2/Mail/Invoice_PaymentConfirmation.cshtml</Mail1Template>
+    <Mail1Template_path></Mail1Template_path>
+    <Mail1SenderName>Swift</Mail1SenderName>
+    <Mail1SenderEmail>noreply@dynamicweb.com</Mail1SenderEmail>
+    <Mail1IsCustomer>true</Mail1IsCustomer>
+    <Mail1IsDelivery>true</Mail1IsDelivery>
+    <Mail1EncodingCodePage>65001</Mail1EncodingCodePage>
+    <Mail1Attachment></Mail1Attachment>
+    <Mail1Attachment_path></Mail1Attachment_path>
+    <Mail1IsCustomField>false</Mail1IsCustomField>
+    <Mail1RecipientCustomField></Mail1RecipientCustomField>
+    <Mail1RedirectType>Template</Mail1RedirectType>
+    <Mail1RedirectPage></Mail1RedirectPage>
+    <ValidationGroups></ValidationGroups>
+    <SelectedValidations></SelectedValidations>
+  </Settings>
+"fields":
+  "GlobalRecordPageGuid": "2b5b23fc-90d9-4ae1-9121-ec773cc495c3"
+  "Id": "394"
+  "ItemInstanceType": ""
+  "Sort": 0
+  "Title": "Add credit cart"
+"columnId": 1

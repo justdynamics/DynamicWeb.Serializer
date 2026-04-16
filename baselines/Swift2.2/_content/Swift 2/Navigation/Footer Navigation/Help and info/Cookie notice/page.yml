@@ -1,0 +1,42 @@
+﻿"pageUniqueId": 7c888265-1f39-497b-af3b-70e3c63f95f9
+"sourcePageId": 740
+"name": "Cookie notice"
+"menuText": "Cookie notice"
+"sortOrder": 3
+"isActive": true
+"itemType": "Swift-v2_Page"
+"layoutApplyToSubPages": false
+"isFolder": false
+"hidden": false
+"allowclick": true
+"allowsearch": true
+"showInSitemap": true
+"showInLegend": true
+"sslMode": 0
+"displayMode": "Normal"
+"activeFrom": 2021-05-20T15:39:00.0000000
+"activeTo": 2999-12-31T00:00:00.0000000
+"permissionType": 2
+"seo":
+  "description": "What you need to know about the Cookie notice."
+  "noindex": false
+  "nofollow": false
+  "robots404": false
+"urlSettings":
+  "urlIgnoreForChildren": false
+  "urlUseAsWritten": false
+"visibility":
+  "hideForPhones": false
+  "hideForTablets": false
+  "hideForDesktops": false
+"fields":
+  "Id": "410"
+  "ItemInstanceType": ""
+  "Sort": 3
+  "Title": "Cookie notice"
+"propertyFields":
+  "Id": "974"
+  "Sort": 0
+  "ItemInstanceType": ""
+  "Icon": "/Files/Icons/1_none.svg"
+  "SubmenuType": "auto"

@@ -1,0 +1,22 @@
+﻿"paragraphUniqueId": 06fd1361-0de5-4a12-8516-89d9a812a01b
+"sourceParagraphId": 8860
+"sortOrder": 7
+"itemType": "Swift-v2_EmailText"
+"header": "New column"
+"template": ""
+"colorSchemeId": ""
+"moduleSystemName": ""
+"moduleSettings": ""
+"fields":
+  "Align": "left"
+  "BorderThicknes": "1"
+  "Borders": "none"
+  "GlobalRecordPageGuid": "29d6b442-6011-4315-9d5c-326759221023"
+  "Id": "94"
+  "ItemInstanceType": ""
+  "LineHeight": "1"
+  "Padding": "16"
+  "Sort": 0
+  "Text": "<p><strong>Payment method</strong></p><p>{{Ecom:Order.PaymentMethod}}</p>"
+  "Title": "New column"
+"columnId": 1

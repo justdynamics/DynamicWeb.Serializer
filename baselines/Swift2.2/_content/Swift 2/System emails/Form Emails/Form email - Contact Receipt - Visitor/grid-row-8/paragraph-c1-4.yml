@@ -1,0 +1,22 @@
+﻿"paragraphUniqueId": 8ff06b86-10b5-4bd2-8e6f-7f41a7bdd179
+"sourceParagraphId": 9763
+"sortOrder": 4
+"itemType": "Swift-v2_EmailText"
+"header": "New column"
+"template": ""
+"colorSchemeId": ""
+"moduleSystemName": ""
+"moduleSettings": ""
+"fields":
+  "Align": "center"
+  "BorderThicknes": "1"
+  "Borders": "top"
+  "GlobalRecordPageGuid": "a65aa8c9-49a7-4013-94a3-751eef5aafa3"
+  "Id": "170"
+  "ItemInstanceType": ""
+  "LineHeight": "1.5"
+  "Padding": "40"
+  "Sort": 0
+  "Text": "<p>Hi and welcome,</p><p>Thank you for contacting us, on our website <strong>{{Global:Request.Host}}<br></strong>we are always glad to hear from you.</p><p>We will strive to make a reply as quick as possible.</p><p> </p><p>You can also make a call.<br>Our number is +45 70252090</p>"
+  "Title": "New column"
+"columnId": 1

@@ -1,0 +1,29 @@
+﻿"ShippingId": "SHIP12"
+"ShippingLanguageId": "DAN"
+"ShippingName": "GLS Pakkeshop"
+"ShippingDescription": "Dansk pakkeshop"
+"ShippingPriceOverMaxWeight": 0
+"ShippingFreeFeeAmount": 0
+"ShippingServiceSystemName": ""
+"ShippingServiceParameters": ""
+"ShippingSorting": 3
+"ShippingFeeSelection": "high"
+"ShippingIcon": "/Files/Images/Shipping/gls_logo.svg"
+"ShippingLimitsUseLogic": 1
+"ShippingFeeRulesSource": 2
+"ShippingTakeDiscountIntoAccount": true
+"ShippingEligibleForFreeShipping": false
+"ShippingActive": true
+"ShippingUserGroups": ""
+"ShippingAllowAnonymousUsers": false
+"ShippingCode": ""
+"ShippingAgentCode": ""
+"ShippingAgentName": ""
+"ShippingAgentServiceCode": ""
+"ShippingAgentServiceDescription": ""
+"ShippingUsePriceWithVat": false
+"ShippingMinWeight": 
+"ShippingMaxWeight": 
+"ShippingProductIds": ""
+"ShippingProductGroupIds": ""
+"ShippingProductFilterMode": 0

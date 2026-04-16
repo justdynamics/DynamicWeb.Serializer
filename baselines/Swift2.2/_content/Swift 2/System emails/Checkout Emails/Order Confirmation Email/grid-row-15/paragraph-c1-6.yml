@@ -1,0 +1,22 @@
+﻿"paragraphUniqueId": b987d3e8-b049-48d5-8327-2bc9f75e7d01
+"sourceParagraphId": 8858
+"sortOrder": 6
+"itemType": "Swift-v2_EmailText"
+"header": "New column"
+"template": ""
+"colorSchemeId": ""
+"moduleSystemName": ""
+"moduleSettings": ""
+"fields":
+  "Align": "left"
+  "BorderThicknes": "1"
+  "Borders": "none"
+  "GlobalRecordPageGuid": "29d6b442-6011-4315-9d5c-326759221023"
+  "Id": "92"
+  "ItemInstanceType": ""
+  "LineHeight": "1"
+  "Padding": "16"
+  "Sort": 0
+  "Text": "<p><strong>Delivery method</strong></p><p>{{Ecom:Order.ShippingMethod}}</p>"
+  "Title": "New column"
+"columnId": 1

@@ -1,0 +1,26 @@
+﻿"id": fff68da9-6cf1-49e3-bf49-75face2b50ea
+"sortOrder": 3
+"definitionId": "6ColumnsFlex"
+"itemType": "Swift-v2_RowFlex"
+"container": "Grid"
+"containerWidth": 3
+"colorSchemeId": "light"
+"topSpacing": 3
+"bottomSpacing": 1
+"gapX": 3
+"gapY": 3
+"verticalAlignment": "Center"
+"flexibleColumns": "0,1,1,1,1,1"
+"fields":
+  "Id": "58"
+  "Sort": 0
+  "ItemInstanceType": ""
+"columns":
+- "id": 1
+  "width": 0
+- "id": 4
+  "width": 0
+- "id": 5
+  "width": 0
+- "id": 6
+  "width": 0

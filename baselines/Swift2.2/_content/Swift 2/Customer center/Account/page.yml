@@ -1,0 +1,60 @@
+﻿"pageUniqueId": 2af5ba2c-b912-4b2d-97b2-f9df77f9e45d
+"sourcePageId": 8411
+"name": "Account"
+"menuText": "Account"
+"sortOrder": 3
+"isActive": true
+"itemType": "Swift-v2_Page"
+"layoutApplyToSubPages": false
+"isFolder": false
+"hidden": false
+"allowclick": false
+"allowsearch": true
+"showInSitemap": true
+"showInLegend": true
+"sslMode": 0
+"displayMode": "Normal"
+"activeFrom": 2025-12-12T11:29:00.0000000
+"activeTo": 2999-12-31T23:59:59.0000000
+"permissionType": 2
+"seo":
+  "noindex": false
+  "nofollow": false
+  "robots404": false
+"urlSettings":
+  "urlIgnoreForChildren": false
+  "urlUseAsWritten": false
+"visibility":
+  "hideForPhones": false
+  "hideForTablets": false
+  "hideForDesktops": false
+"fields":
+  "Id": "1093"
+  "ItemInstanceType": ""
+  "Sort": 3
+  "Title": "Account"
+"propertyFields":
+  "Id": "2710"
+  "Sort": 0
+  "ItemInstanceType": ""
+  "SubmenuType": "auto"
+"permissions":
+- "owner": "Account Admin"
+  "ownerType": "group"
+  "ownerId": "1270"
+  "level": "all"
+  "levelValue": 1364
+- "owner": "CSR"
+  "ownerType": "group"
+  "ownerId": "1292"
+  "level": "none"
+  "levelValue": 1
+- "owner": "Customers"
+  "ownerType": "group"
+  "ownerId": "1325"
+  "level": "none"
+  "levelValue": 1
+- "owner": "Anonymous"
+  "ownerType": "role"
+  "level": "none"
+  "levelValue": 1

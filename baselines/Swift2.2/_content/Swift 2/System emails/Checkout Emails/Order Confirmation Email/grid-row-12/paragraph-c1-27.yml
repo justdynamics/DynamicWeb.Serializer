@@ -1,0 +1,22 @@
+﻿"paragraphUniqueId": 44395d01-a82e-4d3b-a994-c5668047b5c2
+"sourceParagraphId": 8902
+"sortOrder": 27
+"itemType": "Swift-v2_EmailText"
+"header": "New column"
+"template": ""
+"colorSchemeId": ""
+"moduleSystemName": ""
+"moduleSettings": ""
+"fields":
+  "Align": "left"
+  "BorderThicknes": "1"
+  "Borders": "none"
+  "GlobalRecordPageGuid": "29d6b442-6011-4315-9d5c-326759221023"
+  "Id": "120"
+  "ItemInstanceType": ""
+  "LineHeight": "1"
+  "Padding": "16"
+  "Sort": 0
+  "Text": "<p><strong>Contact</strong></p><p>{{Ecom:Order.Customer.Email}}, {{Ecom:Order.Customer.Phone}}</p>"
+  "Title": "New column"
+"columnId": 1

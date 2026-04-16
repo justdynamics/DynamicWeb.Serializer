@@ -1,0 +1,28 @@
+﻿"ShopId": "SHOP28"
+"ShopName": "EU Packaging"
+"ShopDefault": false
+"ShopIcon": ""
+"ShopOrderFlowId": 
+"ShopStockStateId": ""
+"ShopOrderContextId": ""
+"ShopStockLocationID": 0
+"ShopDefaultPrintTemplate": ""
+"ShopUseAlternativeImages": false
+"ShopImageFolder": ""
+"ShopImagePatternSmall": ""
+"ShopImagePatternMedium": ""
+"ShopImagePatternLarge": ""
+"ShopAlternativeImagePatterns": 
+"ShopProductWarehouse": false
+"ShopProductPrimaryPageId": 
+"ShopAutoBuildIndex": true
+"ShopIndexRepository": ""
+"ShopIndexName": ""
+"ShopImageSearchInSubFolders": false
+"ShopImageUploadFolder": 
+"ShopAutoCreateUploadFolderPerProduct": false
+"ShopType": 4
+"ShopCompletionRules": ""
+"ShopCompletionLanguageIds": ""
+"ShopImagePatternMain": ""
+"ShopImagePatternVariant": ""

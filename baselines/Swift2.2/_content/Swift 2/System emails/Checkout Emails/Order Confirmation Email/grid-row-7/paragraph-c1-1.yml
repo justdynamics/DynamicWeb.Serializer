@@ -1,0 +1,22 @@
+﻿"paragraphUniqueId": f7d184e4-0f83-40bf-96ef-b8ef6f2b3885
+"sourceParagraphId": 8848
+"sortOrder": 1
+"itemType": "Swift-v2_EmailText"
+"header": "New column"
+"template": ""
+"colorSchemeId": ""
+"moduleSystemName": ""
+"moduleSettings": ""
+"fields":
+  "Align": "center"
+  "BorderThicknes": "1"
+  "Borders": "none"
+  "GlobalRecordPageGuid": "29d6b442-6011-4315-9d5c-326759221023"
+  "Id": "82"
+  "ItemInstanceType": ""
+  "LineHeight": "1.5"
+  "Padding": "16"
+  "Sort": 0
+  "Text": "<p>We are processing your order now. Here are the details.</p>"
+  "Title": "New column"
+"columnId": 1

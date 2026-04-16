@@ -1,0 +1,113 @@
+﻿"tableName": "EcomCountries"
+"nameColumn": ""
+"compareColumns": ""
+"keyColumns":
+- "CountryCode2"
+- "CountryRegionCode"
+"identityColumns": []
+"allColumns":
+- "CountryCode2"
+- "CountryCode3"
+- "CountryCurrencyCode"
+- "CountryNumber"
+- "CountryVAT"
+- "CountryCultureInfo"
+- "CountryRegionCode"
+- "CountryAddressDisplayFormatMode"
+- "CountryAddressDisplayFormat"
+- "CountryAddressEditFormatMode"
+- "CountryAddressEditFormat"
+- "CountryReverseChargeForVAT"
+- "CountryVatPostingGroup"
+"columnDefinitions":
+- "name": "CountryCode2"
+  "dataType": "nchar"
+  "maxLength": 2
+  "precision": 0
+  "scale": 0
+  "isNullable": false
+  "isIdentity": false
+- "name": "CountryCode3"
+  "dataType": "nvarchar"
+  "maxLength": 3
+  "precision": 0
+  "scale": 0
+  "isNullable": true
+  "isIdentity": false
+- "name": "CountryCurrencyCode"
+  "dataType": "nvarchar"
+  "maxLength": 3
+  "precision": 0
+  "scale": 0
+  "isNullable": true
+  "isIdentity": false
+- "name": "CountryNumber"
+  "dataType": "nvarchar"
+  "maxLength": 4
+  "precision": 0
+  "scale": 0
+  "isNullable": true
+  "isIdentity": false
+- "name": "CountryVAT"
+  "dataType": "float"
+  "maxLength": 0
+  "precision": 53
+  "scale": 0
+  "isNullable": true
+  "isIdentity": false
+- "name": "CountryCultureInfo"
+  "dataType": "nvarchar"
+  "maxLength": 15
+  "precision": 0
+  "scale": 0
+  "isNullable": false
+  "isIdentity": false
+- "name": "CountryRegionCode"
+  "dataType": "nvarchar"
+  "maxLength": 3
+  "precision": 0
+  "scale": 0
+  "isNullable": false
+  "isIdentity": false
+- "name": "CountryAddressDisplayFormatMode"
+  "dataType": "int"
+  "maxLength": 0
+  "precision": 10
+  "scale": 0
+  "isNullable": true
+  "isIdentity": false
+- "name": "CountryAddressDisplayFormat"
+  "dataType": "nvarchar"
+  "maxLength": -1
+  "precision": 0
+  "scale": 0
+  "isNullable": true
+  "isIdentity": false
+- "name": "CountryAddressEditFormatMode"
+  "dataType": "int"
+  "maxLength": 0
+  "precision": 10
+  "scale": 0
+  "isNullable": true
+  "isIdentity": false
+- "name": "CountryAddressEditFormat"
+  "dataType": "nvarchar"
+  "maxLength": -1
+  "precision": 0
+  "scale": 0
+  "isNullable": true
+  "isIdentity": false
+- "name": "CountryReverseChargeForVAT"
+  "dataType": "bit"
+  "maxLength": 0
+  "precision": 0
+  "scale": 0
+  "isNullable": false
+  "isIdentity": false
+- "name": "CountryVatPostingGroup"
+  "dataType": "nvarchar"
+  "maxLength": 20
+  "precision": 0
+  "scale": 0
+  "isNullable": true
+  "isIdentity": false

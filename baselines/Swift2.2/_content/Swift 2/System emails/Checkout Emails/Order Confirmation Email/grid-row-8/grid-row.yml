@@ -1,0 +1,13 @@
+﻿"id": eec7b0a6-f0b7-4028-8fa3-abfe11382691
+"sortOrder": 8
+"definitionId": "1ColumnEmail"
+"itemType": "Swift-v2_EmailRow"
+"container": "Grid"
+"verticalAlignment": "None"
+"fields":
+  "Id": "569"
+  "Sort": 0
+  "ItemInstanceType": ""
+"columns":
+- "id": 1
+  "width": 0

@@ -1,0 +1,18 @@
+﻿"paragraphUniqueId": 44a0e139-7dcc-41d5-9dc4-2911a99f90c8
+"sourceParagraphId": 21212
+"sortOrder": 27
+"itemType": "Swift-v2_Navigation"
+"header": "About"
+"template": "Vertical.cshtml"
+"colorSchemeId": ""
+"moduleSystemName": ""
+"moduleSettings": ""
+"fields":
+  "GlobalRecordPageGuid": "19459bdb-c656-4fbc-ba77-c455858a5497"
+  "Id": "311"
+  "ItemInstanceType": ""
+  "NavigationRoot": "Default.aspx?ID=114"
+  "ShowOnlyFirstNavLevel": false
+  "Sort": 0
+  "Title": "<p class=\"dw-h6\">About</p>"
+"columnId": 4

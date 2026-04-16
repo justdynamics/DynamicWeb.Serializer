@@ -1,0 +1,21 @@
+﻿"paragraphUniqueId": 3d7a9b3f-3f51-4e0d-b6c8-1fdd71fb18f9
+"sourceParagraphId": 22192
+"sortOrder": 1
+"itemType": "Swift-v2_App"
+"header": ""
+"template": ""
+"colorSchemeId": ""
+"moduleSystemName": "UserEdit"
+"moduleSettings": |-
+  <?xml version="1.0" encoding="utf-8"?>
+  <Settings>
+    <EditUserTemplate>UserEdit.cshtml</EditUserTemplate>
+    <UserSelectableGroups></UserSelectableGroups>
+  </Settings>
+"fields":
+  "GlobalRecordPageGuid": "b19f5878-592e-4fde-b7c3-ee0ecb36555d"
+  "Id": "384"
+  "ItemInstanceType": ""
+  "Sort": 0
+  "Title": ""
+"columnId": 1

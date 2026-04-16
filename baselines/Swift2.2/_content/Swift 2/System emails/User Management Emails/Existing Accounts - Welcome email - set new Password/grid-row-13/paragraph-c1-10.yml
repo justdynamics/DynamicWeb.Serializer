@@ -1,0 +1,22 @@
+﻿"paragraphUniqueId": 90850f20-d58c-476e-a3c2-6082de2f4414
+"sourceParagraphId": 9215
+"sortOrder": 10
+"itemType": "Swift-v2_EmailText"
+"header": "Do you have questions"
+"template": ""
+"colorSchemeId": ""
+"moduleSystemName": ""
+"moduleSettings": ""
+"fields":
+  "Align": "center"
+  "BorderThicknes": "1"
+  "Borders": "top"
+  "GlobalRecordPageGuid": "7afd5939-fbe1-4d71-8b81-5f9db7e59cb3"
+  "Id": "156"
+  "ItemInstanceType": ""
+  "LineHeight": "1.25"
+  "Padding": "32"
+  "Sort": 0
+  "Text": "<p>If you have any questions or need assistance, please contact us at our support.</p><p>Thank you!</p><p>SWIFT</p>"
+  "Title": "Do you have questions"
+"columnId": 1

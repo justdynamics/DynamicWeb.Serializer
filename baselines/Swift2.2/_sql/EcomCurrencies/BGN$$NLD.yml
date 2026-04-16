@@ -1,0 +1,14 @@
+﻿"CurrencyCode": "BGN"
+"CurrencyLanguageId": "NLD"
+"CurrencySymbol": "лв."
+"CurrencyName": "Bulgarian Lev"
+"CurrencyRate": 380
+"CurrencyIsDefault": false
+"CurrencyCultureInfo": "bg-BG"
+"CurrencyPayGatewayCode": 100
+"CurrencyRoundingId": ""
+"CurrencySymbolPlace": 0
+"CurrencyAutoId": 109
+"CurrencyPositivePattern": 2
+"CurrencyNegativePattern": -1
+"CurrencyUseCurrencyCodeForFormat": false

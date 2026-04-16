@@ -1,0 +1,21 @@
+﻿"paragraphUniqueId": dda9e58e-68b5-4c5f-81e7-652d8678a245
+"sourceParagraphId": 19177
+"sortOrder": 3
+"itemType": "Swift-v2_ProductDefaultImage"
+"header": ""
+"template": ""
+"colorSchemeId": ""
+"moduleSystemName": ""
+"moduleSettings": ""
+"fields":
+  "GetAlternativeImageFrom": "Images"
+  "GlobalRecordPageGuid": "041cd1f0-1117-4ffc-9100-71a11d6f7ac2"
+  "Id": "44"
+  "ImageAspectRatio": "100%"
+  "ImageObjectFit": "contain"
+  "ItemInstanceType": ""
+  "ShowAddToFavorites": false
+  "ShowAlternativeImageOnHover": true
+  "Sort": 0
+  "Width": "auto"
+"columnId": 1

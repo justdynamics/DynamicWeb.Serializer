@@ -1,0 +1,41 @@
+﻿"pageUniqueId": 57bb9971-26ea-4867-80e7-6316314f9c79
+"sourcePageId": 8390
+"name": "Carts"
+"menuText": "Carts"
+"sortOrder": 2
+"isActive": true
+"itemType": "Swift-v2_Page"
+"layoutApplyToSubPages": false
+"isFolder": false
+"hidden": false
+"allowclick": true
+"allowsearch": true
+"showInSitemap": true
+"showInLegend": true
+"sslMode": 0
+"displayMode": "Normal"
+"activeFrom": 2025-08-27T14:47:00.0000000
+"activeTo": 2999-12-31T23:59:59.0000000
+"permissionType": 2
+"seo":
+  "noindex": false
+  "nofollow": false
+  "robots404": false
+"urlSettings":
+  "urlIgnoreForChildren": false
+  "urlUseAsWritten": false
+"visibility":
+  "hideForPhones": false
+  "hideForTablets": false
+  "hideForDesktops": false
+"fields":
+  "Id": "1075"
+  "ItemInstanceType": ""
+  "Sort": 2
+  "Title": "Carts"
+"propertyFields":
+  "Id": "2689"
+  "Sort": 0
+  "ItemInstanceType": ""
+  "Icon": "/Files/Images/Icons/cart-shopping.svg"
+  "SubmenuType": "auto"

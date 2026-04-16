@@ -1,0 +1,42 @@
+﻿"pageUniqueId": b19f5878-592e-4fde-b7c3-ee0ecb36555d
+"sourcePageId": 8432
+"name": "Edit profile"
+"menuText": "Edit profile"
+"sortOrder": 1
+"isActive": false
+"itemType": "Swift-v2_Page"
+"layoutApplyToSubPages": false
+"isFolder": false
+"navigationTag": "EditProfile"
+"hidden": false
+"allowclick": true
+"allowsearch": true
+"showInSitemap": true
+"showInLegend": true
+"sslMode": 0
+"displayMode": "Normal"
+"activeFrom": 2026-01-08T12:24:00.0000000
+"activeTo": 2999-12-31T23:59:59.0000000
+"permissionType": 2
+"seo":
+  "noindex": false
+  "nofollow": false
+  "robots404": false
+"urlSettings":
+  "urlIgnoreForChildren": false
+  "urlUseAsWritten": false
+"visibility":
+  "hideForPhones": false
+  "hideForTablets": false
+  "hideForDesktops": false
+"fields":
+  "Id": "1107"
+  "ItemInstanceType": ""
+  "Sort": 0
+  "Title": "Edit profile"
+"propertyFields":
+  "Id": "2731"
+  "Sort": 0
+  "ItemInstanceType": ""
+  "Icon": "/Files/Images/Icons/pen.svg"
+  "SubmenuType": "auto"

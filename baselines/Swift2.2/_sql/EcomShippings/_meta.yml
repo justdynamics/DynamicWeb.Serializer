@@ -1,0 +1,250 @@
+﻿"tableName": "EcomShippings"
+"nameColumn": ""
+"compareColumns": ""
+"keyColumns":
+- "ShippingId"
+- "ShippingLanguageId"
+"identityColumns":
+- "ShippingAutoId"
+"allColumns":
+- "ShippingId"
+- "ShippingLanguageId"
+- "ShippingName"
+- "ShippingDescription"
+- "ShippingPriceOverMaxWeight"
+- "ShippingFreeFeeAmount"
+- "ShippingServiceSystemName"
+- "ShippingServiceParameters"
+- "ShippingSorting"
+- "ShippingAutoId"
+- "ShippingFeeSelection"
+- "ShippingIcon"
+- "ShippingLimitsUseLogic"
+- "ShippingFeeRulesSource"
+- "ShippingTakeDiscountIntoAccount"
+- "ShippingEligibleForFreeShipping"
+- "ShippingActive"
+- "ShippingUserGroups"
+- "ShippingAllowAnonymousUsers"
+- "ShippingCode"
+- "ShippingAgentCode"
+- "ShippingAgentName"
+- "ShippingAgentServiceCode"
+- "ShippingAgentServiceDescription"
+- "ShippingUsePriceWithVat"
+- "ShippingMinWeight"
+- "ShippingMaxWeight"
+- "ShippingProductIds"
+- "ShippingProductGroupIds"
+- "ShippingProductFilterMode"
+"columnDefinitions":
+- "name": "ShippingId"
+  "dataType": "nvarchar"
+  "maxLength": 50
+  "precision": 0
+  "scale": 0
+  "isNullable": false
+  "isIdentity": false
+- "name": "ShippingLanguageId"
+  "dataType": "nvarchar"
+  "maxLength": 50
+  "precision": 0
+  "scale": 0
+  "isNullable": false
+  "isIdentity": false
+- "name": "ShippingName"
+  "dataType": "nvarchar"
+  "maxLength": 255
+  "precision": 0
+  "scale": 0
+  "isNullable": true
+  "isIdentity": false
+- "name": "ShippingDescription"
+  "dataType": "nvarchar"
+  "maxLength": -1
+  "precision": 0
+  "scale": 0
+  "isNullable": true
+  "isIdentity": false
+- "name": "ShippingPriceOverMaxWeight"
+  "dataType": "float"
+  "maxLength": 0
+  "precision": 53
+  "scale": 0
+  "isNullable": true
+  "isIdentity": false
+- "name": "ShippingFreeFeeAmount"
+  "dataType": "float"
+  "maxLength": 0
+  "precision": 53
+  "scale": 0
+  "isNullable": true
+  "isIdentity": false
+- "name": "ShippingServiceSystemName"
+  "dataType": "nvarchar"
+  "maxLength": -1
+  "precision": 0
+  "scale": 0
+  "isNullable": true
+  "isIdentity": false
+- "name": "ShippingServiceParameters"
+  "dataType": "nvarchar"
+  "maxLength": -1
+  "precision": 0
+  "scale": 0
+  "isNullable": true
+  "isIdentity": false
+- "name": "ShippingSorting"
+  "dataType": "int"
+  "maxLength": 0
+  "precision": 10
+  "scale": 0
+  "isNullable": true
+  "isIdentity": false
+- "name": "ShippingAutoId"
+  "dataType": "int"
+  "maxLength": 0
+  "precision": 10
+  "scale": 0
+  "isNullable": false
+  "isIdentity": true
+- "name": "ShippingFeeSelection"
+  "dataType": "nvarchar"
+  "maxLength": 10
+  "precision": 0
+  "scale": 0
+  "isNullable": true
+  "isIdentity": false
+- "name": "ShippingIcon"
+  "dataType": "nvarchar"
+  "maxLength": 255
+  "precision": 0
+  "scale": 0
+  "isNullable": true
+  "isIdentity": false
+- "name": "ShippingLimitsUseLogic"
+  "dataType": "int"
+  "maxLength": 0
+  "precision": 10
+  "scale": 0
+  "isNullable": false
+  "isIdentity": false
+- "name": "ShippingFeeRulesSource"
+  "dataType": "int"
+  "maxLength": 0
+  "precision": 10
+  "scale": 0
+  "isNullable": false
+  "isIdentity": false
+- "name": "ShippingTakeDiscountIntoAccount"
+  "dataType": "bit"
+  "maxLength": 0
+  "precision": 0
+  "scale": 0
+  "isNullable": false
+  "isIdentity": false
+- "name": "ShippingEligibleForFreeShipping"
+  "dataType": "bit"
+  "maxLength": 0
+  "precision": 0
+  "scale": 0
+  "isNullable": false
+  "isIdentity": false
+- "name": "ShippingActive"
+  "dataType": "bit"
+  "maxLength": 0
+  "precision": 0
+  "scale": 0
+  "isNullable": false
+  "isIdentity": false
+- "name": "ShippingUserGroups"
+  "dataType": "nvarchar"
+  "maxLength": -1
+  "precision": 0
+  "scale": 0
+  "isNullable": true
+  "isIdentity": false
+- "name": "ShippingAllowAnonymousUsers"
+  "dataType": "bit"
+  "maxLength": 0
+  "precision": 0
+  "scale": 0
+  "isNullable": false
+  "isIdentity": false
+- "name": "ShippingCode"
+  "dataType": "nvarchar"
+  "maxLength": 25
+  "precision": 0
+  "scale": 0
+  "isNullable": true
+  "isIdentity": false
+- "name": "ShippingAgentCode"
+  "dataType": "nvarchar"
+  "maxLength": 25
+  "precision": 0
+  "scale": 0
+  "isNullable": true
+  "isIdentity": false
+- "name": "ShippingAgentName"
+  "dataType": "nvarchar"
+  "maxLength": 255
+  "precision": 0
+  "scale": 0
+  "isNullable": true
+  "isIdentity": false
+- "name": "ShippingAgentServiceCode"
+  "dataType": "nvarchar"
+  "maxLength": 25
+  "precision": 0
+  "scale": 0
+  "isNullable": true
+  "isIdentity": false
+- "name": "ShippingAgentServiceDescription"
+  "dataType": "nvarchar"
+  "maxLength": 255
+  "precision": 0
+  "scale": 0
+  "isNullable": true
+  "isIdentity": false
+- "name": "ShippingUsePriceWithVat"
+  "dataType": "bit"
+  "maxLength": 0
+  "precision": 0
+  "scale": 0
+  "isNullable": false
+  "isIdentity": false
+- "name": "ShippingMinWeight"
+  "dataType": "float"
+  "maxLength": 0
+  "precision": 53
+  "scale": 0
+  "isNullable": true
+  "isIdentity": false
+- "name": "ShippingMaxWeight"
+  "dataType": "float"
+  "maxLength": 0
+  "precision": 53
+  "scale": 0
+  "isNullable": true
+  "isIdentity": false
+- "name": "ShippingProductIds"
+  "dataType": "nvarchar"
+  "maxLength": -1
+  "precision": 0
+  "scale": 0
+  "isNullable": true
+  "isIdentity": false
+- "name": "ShippingProductGroupIds"
+  "dataType": "nvarchar"
+  "maxLength": -1
+  "precision": 0
+  "scale": 0
+  "isNullable": true
+  "isIdentity": false
+- "name": "ShippingProductFilterMode"
+  "dataType": "int"
+  "maxLength": 0
+  "precision": 10
+  "scale": 0
+  "isNullable": false
+  "isIdentity": false

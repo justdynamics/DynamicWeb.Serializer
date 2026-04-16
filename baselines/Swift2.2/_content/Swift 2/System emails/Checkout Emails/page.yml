@@ -1,0 +1,35 @@
+﻿"pageUniqueId": 6a94580e-4de4-4707-9a77-bb04150d7ddf
+"sourcePageId": 7834
+"name": "Checkout Emails"
+"menuText": "Checkout Emails"
+"sortOrder": 2
+"isActive": true
+"layoutApplyToSubPages": false
+"isFolder": true
+"hidden": false
+"allowclick": false
+"allowsearch": false
+"showInSitemap": false
+"showInLegend": false
+"sslMode": 0
+"displayMode": "Normal"
+"activeFrom": 2025-04-22T14:12:55.8430000
+"activeTo": 2999-12-31T23:59:59.0000000
+"permissionType": 2
+"seo":
+  "noindex": false
+  "nofollow": false
+  "robots404": false
+"urlSettings":
+  "urlIgnoreForChildren": true
+  "urlUseAsWritten": false
+"visibility":
+  "hideForPhones": true
+  "hideForTablets": true
+  "hideForDesktops": true
+"propertyFields":
+  "Id": "2484"
+  "Sort": 0
+  "ItemInstanceType": ""
+  "Icon": ""
+  "SubmenuType": "auto"

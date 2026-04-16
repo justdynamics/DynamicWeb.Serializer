@@ -1,0 +1,28 @@
+﻿"ShopId": "SHOP6"
+"ShopName": "Partner - data distribution"
+"ShopDefault": false
+"ShopIcon": ""
+"ShopOrderFlowId": 
+"ShopStockStateId": ""
+"ShopOrderContextId": ""
+"ShopStockLocationID": 0
+"ShopDefaultPrintTemplate": ""
+"ShopUseAlternativeImages": false
+"ShopImageFolder": ""
+"ShopImagePatternSmall": ""
+"ShopImagePatternMedium": ""
+"ShopImagePatternLarge": ""
+"ShopAlternativeImagePatterns": "[]"
+"ShopProductWarehouse": false
+"ShopProductPrimaryPageId": 
+"ShopAutoBuildIndex": true
+"ShopIndexRepository": "ProductsBackend"
+"ShopIndexName": "Products.index"
+"ShopImageSearchInSubFolders": false
+"ShopImageUploadFolder": ""
+"ShopAutoCreateUploadFolderPerProduct": false
+"ShopType": 3
+"ShopCompletionRules": "2"
+"ShopCompletionLanguageIds": "DAN,ENU"
+"ShopImagePatternMain": "/{ProductNumber}.jpg"
+"ShopImagePatternVariant": "/{ProductNumber}{VariantOptionLevel1}.jpg"

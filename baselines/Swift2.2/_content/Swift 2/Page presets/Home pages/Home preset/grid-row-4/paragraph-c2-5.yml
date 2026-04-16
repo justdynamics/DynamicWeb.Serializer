@@ -1,0 +1,19 @@
+﻿"paragraphUniqueId": 5abfe6f4-7784-4e76-b019-606394c48e10
+"sourceParagraphId": 22142
+"sortOrder": 5
+"itemType": "Swift-v2_Text"
+"header": "Do you want to go faster and further?"
+"template": "TextCenter.cshtml"
+"colorSchemeId": "lightgrey2"
+"moduleSystemName": ""
+"moduleSettings": ""
+"fields":
+  "FirstButton": "{\r\n  \"SelectedValue\": \"5862\",\r\n  \"Label\": \"Discover more\",\r\n  \"Link\": \"Default.aspx?ID=5862\",\r\n  \"LinkType\": \"page\",\r\n  \"Style\": \"primary\"\r\n}"
+  "GlobalRecordPageGuid": "5c47a52a-4a24-449e-8df9-563f03afe297"
+  "Id": "1424"
+  "ItemInstanceType": ""
+  "Sort": 0
+  "Subtitle": "<p class=\"dw-paragraph-1\">Electric bikes are here to stay, and their popularity is through the roof.</p>"
+  "Text": ""
+  "Title": "<h2 class=\"dw-h3\">Do you want to go faster and further?</h2>"
+"columnId": 2

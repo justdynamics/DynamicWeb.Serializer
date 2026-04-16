@@ -1,0 +1,18 @@
+﻿"paragraphUniqueId": 1296c4ba-c7bc-4d9e-ac47-afdeb3834f08
+"sourceParagraphId": 2775
+"sortOrder": 3
+"itemType": "Swift-v2_Feature"
+"header": "Feature"
+"template": "IconBoxLeft.cshtml"
+"colorSchemeId": ""
+"moduleSystemName": ""
+"moduleSettings": ""
+"fields":
+  "GlobalRecordPageGuid": "d88f09e2-1a31-48df-9d76-6596282a1f1c"
+  "Icon": "/Files/Images/Icons/arrow-up-right.svg"
+  "Id": "760"
+  "ItemInstanceType": ""
+  "Sort": 0
+  "Text": "<p><strong>Send an email</strong><br>noreply@noreply.com<br></p>"
+  "Title": ""
+"columnId": 1

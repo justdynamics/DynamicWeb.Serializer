@@ -1,0 +1,20 @@
+﻿"paragraphUniqueId": 37cc22a2-99b6-4188-8f2a-8afcdbc617e6
+"sourceParagraphId": 6035
+"sortOrder": 1
+"itemType": "Swift-v2_LocationsMap"
+"header": "Find dealer"
+"template": ""
+"colorSchemeId": ""
+"moduleSystemName": ""
+"moduleSettings": ""
+"fields":
+  "DefaultMapCenter": "{\r\n  \"Lat\": 51.594135,\r\n  \"Lng\": -0.098878,\r\n  \"IsCustom\": true\r\n}"
+  "GlobalRecordPageGuid": "bba2a305-ffc3-427d-a0e3-99bb19977072"
+  "Id": "1"
+  "InitialZoomLevel": 4
+  "ItemInstanceType": ""
+  "RegionCode": "UK"
+  "Sort": 0
+  "Title": "Find dealer"
+  "UserGroup": "95"
+"columnId": 1

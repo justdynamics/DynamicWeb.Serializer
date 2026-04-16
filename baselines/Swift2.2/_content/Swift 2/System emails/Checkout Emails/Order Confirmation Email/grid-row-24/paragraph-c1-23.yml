@@ -1,0 +1,22 @@
+﻿"paragraphUniqueId": 6a0c11f0-7c0e-4c6e-ba19-3e4fbd001a05
+"sourceParagraphId": 8894
+"sortOrder": 23
+"itemType": "Swift-v2_EmailText"
+"header": "New column"
+"template": ""
+"colorSchemeId": ""
+"moduleSystemName": ""
+"moduleSettings": ""
+"fields":
+  "Align": "left"
+  "BorderThicknes": "1"
+  "Borders": "none"
+  "GlobalRecordPageGuid": "29d6b442-6011-4315-9d5c-326759221023"
+  "Id": "118"
+  "ItemInstanceType": ""
+  "LineHeight": "1.25"
+  "Padding": "32"
+  "Sort": 0
+  "Text": "<p>We will send you shipping confirmation when your item(s) are on the way. We appreciate your business, and hope you enjoy your purchase.</p><p>If you have any questions or need assistance, please contact us at our support or call at +45 8877 6655.</p><p>Thank you!</p><p>SWIFT</p>"
+  "Title": "New column"
+"columnId": 1

@@ -1,0 +1,26 @@
+﻿"paragraphUniqueId": de46430f-1e7c-4190-ba6c-3241aaf38598
+"sourceParagraphId": 22162
+"sortOrder": 1
+"itemType": "Swift-v2_App"
+"header": "Addresses"
+"template": ""
+"colorSchemeId": ""
+"moduleSystemName": "UserAddresses"
+"moduleSettings": |-
+  <?xml version="1.0" encoding="utf-8"?>
+  <Settings>
+    <ListTemplate>ListAddressesCards.cshtml</ListTemplate>
+    <EditTemplate>EditAddresses.cshtml</EditTemplate>
+    <PageSize>10</PageSize>
+    <SortBy>Id</SortBy>
+    <SortOrder>Descending</SortOrder>
+    <Source>OwnAddresses</Source>
+    <AllowEditAddress>True</AllowEditAddress>
+  </Settings>
+"fields":
+  "GlobalRecordPageGuid": "2edc1388-5634-4fbe-8509-3553cb126cfb"
+  "Id": "366"
+  "ItemInstanceType": ""
+  "Sort": 0
+  "Title": "Addresses"
+"columnId": 1

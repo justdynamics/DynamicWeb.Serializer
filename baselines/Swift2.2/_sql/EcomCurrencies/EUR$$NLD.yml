@@ -1,0 +1,14 @@
+﻿"CurrencyCode": "EUR"
+"CurrencyLanguageId": "NLD"
+"CurrencySymbol": "€"
+"CurrencyName": "Euro"
+"CurrencyRate": 100
+"CurrencyIsDefault": true
+"CurrencyCultureInfo": "de-DE"
+"CurrencyPayGatewayCode": 978
+"CurrencyRoundingId": ""
+"CurrencySymbolPlace": 0
+"CurrencyAutoId": 28
+"CurrencyPositivePattern": 2
+"CurrencyNegativePattern": 9
+"CurrencyUseCurrencyCodeForFormat": false

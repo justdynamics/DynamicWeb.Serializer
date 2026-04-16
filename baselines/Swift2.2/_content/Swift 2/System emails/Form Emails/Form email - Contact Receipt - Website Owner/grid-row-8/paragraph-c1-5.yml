@@ -1,0 +1,22 @@
+﻿"paragraphUniqueId": 1e0c16db-3640-427a-aa4e-9a5ee4d92d27
+"sourceParagraphId": 9755
+"sortOrder": 5
+"itemType": "Swift-v2_EmailText"
+"header": "New column"
+"template": ""
+"colorSchemeId": ""
+"moduleSystemName": ""
+"moduleSettings": ""
+"fields":
+  "Align": "center"
+  "BorderThicknes": "1"
+  "Borders": "top"
+  "GlobalRecordPageGuid": "d64e3ca2-b3f8-43c6-af45-165daad9e16b"
+  "Id": "166"
+  "ItemInstanceType": ""
+  "LineHeight": "1.5"
+  "Padding": "40"
+  "Sort": 0
+  "Text": "<p>Hi and welcome,</p><p>Your visitor has filled in the contact form,<br>on the website <strong>{{Global:Request.Host}}<br></strong><br>Please strive to make a reply within 24 hours</p>"
+  "Title": "New column"
+"columnId": 1

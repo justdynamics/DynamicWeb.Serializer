@@ -1,0 +1,29 @@
+﻿"pageUniqueId": 1a94ff9d-c446-4bb1-9219-82a4205de2d6
+"sourcePageId": 114
+"name": "About the shop"
+"menuText": "About the shop"
+"sortOrder": 1
+"isActive": true
+"layoutApplyToSubPages": false
+"isFolder": true
+"hidden": false
+"allowclick": false
+"allowsearch": false
+"showInSitemap": false
+"showInLegend": false
+"sslMode": 0
+"displayMode": "Normal"
+"activeFrom": 2020-12-07T15:21:48.6900000
+"activeTo": 2999-12-31T00:00:00.0000000
+"permissionType": 2
+"seo":
+  "noindex": false
+  "nofollow": false
+  "robots404": false
+"urlSettings":
+  "urlIgnoreForChildren": true
+  "urlUseAsWritten": false
+"visibility":
+  "hideForPhones": true
+  "hideForTablets": true
+  "hideForDesktops": true

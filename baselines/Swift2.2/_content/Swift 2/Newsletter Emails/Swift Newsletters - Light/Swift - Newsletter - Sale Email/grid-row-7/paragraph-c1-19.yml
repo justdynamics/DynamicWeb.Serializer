@@ -1,0 +1,22 @@
+﻿"paragraphUniqueId": c9360ebf-12a3-4da6-b008-80fde7d7bbfe
+"sourceParagraphId": 21730
+"sortOrder": 19
+"itemType": "Swift-v2_EmailImage"
+"header": ""
+"template": ""
+"colorSchemeId": ""
+"moduleSystemName": ""
+"moduleSettings": ""
+"fields":
+  "GlobalRecordPageGuid": "4081a661-c987-4804-897d-5a1a6b500f10"
+  "Id": "136"
+  "Image": "/Files/Images/Demo/Environment/dark-bike-closeup.jpg"
+  "ImageAltText": "Bike"
+  "ItemInstanceType": ""
+  "LinkType": "page"
+  "Padding": "16"
+  "PageLink": "Default.aspx?ID=6869"
+  "ProductGroupLink": ""
+  "ProductLink": ""
+  "Sort": 0
+"columnId": 1

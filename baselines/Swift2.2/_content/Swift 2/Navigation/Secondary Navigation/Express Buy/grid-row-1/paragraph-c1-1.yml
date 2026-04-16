@@ -1,0 +1,47 @@
+﻿"paragraphUniqueId": 1f233003-fba5-42e6-863a-9847f60993f5
+"sourceParagraphId": 6273
+"sortOrder": 1
+"itemType": "Swift-v2_ExpressBuyApp"
+"header": "Express Buy"
+"template": ""
+"colorSchemeId": ""
+"moduleSystemName": "eCom_ProductCatalog"
+"moduleSettings": |-
+  <?xml version="1.0" encoding="utf-8"?>
+  <Settings>
+    <IndexQuery>/Files/System/Repositories/ProductsFrontend/Products.query</IndexQuery>
+    <TrackQueries>0</TrackQueries>
+    <FacetGroups></FacetGroups>
+    <ShowFacetOptionsWithNoResults>0</ShowFacetOptionsWithNoResults>
+    <QueryConditions>[]</QueryConditions>
+    <QuerySortByParams>[]</QuerySortByParams>
+    <UseGroupSortInGroupContext>0</UseGroupSortInGroupContext>
+    <FieldToSpellCheck></FieldToSpellCheck>
+    <ParameterToSpellCheck></ParameterToSpellCheck>
+    <PageSize>500</PageSize>
+    <ProductListTemplate>ExpressBuySearchResponse.cshtml</ProductListTemplate>
+    <ProductTemplate></ProductTemplate>
+    <CompareTemplate></CompareTemplate>
+    <FeedTemplate></FeedTemplate>
+    <SelectedPriceProperties></SelectedPriceProperties>
+    <SelectedProductProperties></SelectedProductProperties>
+    <SelectedProductListProperties></SelectedProductListProperties>
+    <SelectedAssetCategories></SelectedAssetCategories>
+    <SelectedAssets></SelectedAssets>
+    <SelectedVariantInfo></SelectedVariantInfo>
+    <SelectedStockUnits></SelectedStockUnits>
+    <SelectedProductFields></SelectedProductFields>
+    <SelectedProductCategoryFields></SelectedProductCategoryFields>
+  </Settings>
+"fields":
+  "CheckoutAnonymousPageLink": "Default.aspx?Id=1844"
+  "CheckoutUserPageLink": "Default.aspx?Id=1846"
+  "DefaultQuantityAsZero": false
+  "GlobalRecordPageGuid": "a1318bd9-7e53-47ea-8c95-6bff8680ea5e"
+  "Id": "1"
+  "ItemInstanceType": ""
+  "ProductListPage": "5862"
+  "QuoteCheckoutPageLink": "1848"
+  "Sort": 0
+  "Title": "Express Buy"
+"columnId": 1

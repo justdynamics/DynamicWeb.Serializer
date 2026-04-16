@@ -1,0 +1,23 @@
+﻿"paragraphUniqueId": 6c9f5924-e091-4460-aa31-b0b56ac2d918
+"sourceParagraphId": 22138
+"sortOrder": 1
+"itemType": "Swift-v2_Poster"
+"header": ""
+"template": "TextMiddleLeft.cshtml"
+"colorSchemeId": "dark"
+"moduleSystemName": ""
+"moduleSettings": ""
+"fields":
+  "AltText": ""
+  "Eyebrow": "<p class=\"dw-paragraph\">Built for Performance, Backed by Reputation</p>"
+  "FirstButton": "{\r\n  \"SelectedValue\": \"5862\",\r\n  \"Label\": \"Explore\",\r\n  \"Link\": \"Default.aspx?ID=5862\",\r\n  \"LinkType\": \"page\",\r\n  \"Style\": \"primary\"\r\n}"
+  "GlobalRecordPageGuid": "5c47a52a-4a24-449e-8df9-563f03afe297"
+  "Height": "4"
+  "Id": "762"
+  "Image": "/Files/Images/Content/Environment/environment-2.jpg"
+  "ItemInstanceType": ""
+  "SecondButton": "{\r\n  \"SelectedValue\": \"107\",\r\n  \"Label\": \"Become a partner\",\r\n  \"Link\": \"Default.aspx?ID=107\",\r\n  \"LinkType\": \"page\",\r\n  \"Style\": \"outline-primary\"\r\n}"
+  "Sort": 0
+  "Text": "<p>From Road to Trail - Products Your Customers Can Rely On</p>"
+  "Title": "<h1 class=\"dw-h1\">High Quality Bikes &amp; Parts for Retailers and Distributors</h1>"
+"columnId": 1

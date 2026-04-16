@@ -1,0 +1,18 @@
+﻿"paragraphUniqueId": 2047210b-6144-4915-9bc0-c79d3beaf155
+"sourceParagraphId": 22224
+"sortOrder": 2
+"itemType": "Swift-v2_Text"
+"header": ""
+"template": "TextLeft.cshtml"
+"colorSchemeId": ""
+"moduleSystemName": ""
+"moduleSettings": ""
+"fields":
+  "GlobalRecordPageGuid": "621cb250-a28d-45ac-bef2-893e0536078b"
+  "Id": "1442"
+  "ItemInstanceType": ""
+  "Sort": 0
+  "Subtitle": "<p class=\"dw-paragraph-1\">Welcome back</p>"
+  "Text": "<p class=\"dw-paragraph\">This is your Customer Center, where you can easily manage your orders and personal information. From here, you can review past and current orders, manage your carts and quotes, save your favorite items, and keep your profile and addresses up to date</p><p></p>"
+  "Title": ""
+"columnId": 1

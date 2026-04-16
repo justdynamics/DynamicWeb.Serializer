@@ -1,0 +1,34 @@
+﻿"pageUniqueId": 6b916e24-d71c-404f-b6c4-ce10323ccc1d
+"sourcePageId": 1451
+"name": "Help and info"
+"menuText": "Help and info"
+"sortOrder": 4
+"isActive": true
+"layoutApplyToSubPages": false
+"isFolder": true
+"hidden": false
+"allowclick": false
+"allowsearch": false
+"showInSitemap": false
+"showInLegend": false
+"sslMode": 0
+"displayMode": "Normal"
+"activeFrom": 2022-04-09T13:45:15.5500000
+"activeTo": 2999-12-31T00:00:00.0000000
+"permissionType": 2
+"seo":
+  "noindex": false
+  "nofollow": false
+  "robots404": false
+"urlSettings":
+  "urlIgnoreForChildren": true
+  "urlUseAsWritten": false
+"visibility":
+  "hideForPhones": true
+  "hideForTablets": true
+  "hideForDesktops": true
+"propertyFields":
+  "Id": "706"
+  "Sort": 0
+  "ItemInstanceType": ""
+  "SubmenuType": "auto"

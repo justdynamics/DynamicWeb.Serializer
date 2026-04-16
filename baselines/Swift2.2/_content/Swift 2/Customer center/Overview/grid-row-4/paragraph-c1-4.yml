@@ -1,0 +1,18 @@
+﻿"paragraphUniqueId": 47047105-19cb-4b3e-916e-abd3cbe79fae
+"sourceParagraphId": 22226
+"sortOrder": 4
+"itemType": "Swift-v2_Text"
+"header": ""
+"template": "TextLeft.cshtml"
+"colorSchemeId": ""
+"moduleSystemName": ""
+"moduleSettings": ""
+"fields":
+  "GlobalRecordPageGuid": "621cb250-a28d-45ac-bef2-893e0536078b"
+  "Id": "1443"
+  "ItemInstanceType": ""
+  "Sort": 0
+  "Subtitle": "<p class=\"dw-paragraph-1\">Welcome back, you are logged in as a CSR</p>"
+  "Text": "<p class=\"dw-paragraph\">Get an overview over your Accounts and users. Impersonate a user to help them with their invoices, issues or follow up on their carts and orders<br></p><p></p>"
+  "Title": ""
+"columnId": 1

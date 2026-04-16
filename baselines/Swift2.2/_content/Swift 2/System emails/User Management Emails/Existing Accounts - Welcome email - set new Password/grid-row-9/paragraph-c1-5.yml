@@ -1,0 +1,24 @@
+﻿"paragraphUniqueId": 63072ba3-2fe4-4ed7-a5b3-7f847c1a0e65
+"sourceParagraphId": 9205
+"sortOrder": 5
+"itemType": "Swift-v2_EmailButton"
+"header": "Click here to create a password"
+"template": ""
+"colorSchemeId": ""
+"moduleSystemName": ""
+"moduleSettings": ""
+"fields":
+  "Align": "center"
+  "BorderThicknes": "1"
+  "Borders": "none"
+  "GlobalRecordPageGuid": "7afd5939-fbe1-4d71-8b81-5f9db7e59cb3"
+  "Id": "52"
+  "ItemInstanceType": ""
+  "LinkType": "page"
+  "Padding": "0"
+  "PageLink": "Default.aspx?ID=7165"
+  "ProductGroupLink": ""
+  "ProductLink": ""
+  "Sort": 0
+  "Title": "Click here to create a password"
+"columnId": 1

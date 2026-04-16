@@ -1,0 +1,42 @@
+﻿"tableName": "EcomShopGroupRelation"
+"nameColumn": ""
+"compareColumns": ""
+"keyColumns":
+- "ShopGroupGroupId"
+- "ShopGroupShopId"
+"identityColumns":
+- "ShopGroupRelationAutoId"
+"allColumns":
+- "ShopGroupShopId"
+- "ShopGroupGroupId"
+- "ShopGroupRelationsSorting"
+- "ShopGroupRelationAutoId"
+"columnDefinitions":
+- "name": "ShopGroupShopId"
+  "dataType": "nvarchar"
+  "maxLength": 255
+  "precision": 0
+  "scale": 0
+  "isNullable": false
+  "isIdentity": false
+- "name": "ShopGroupGroupId"
+  "dataType": "nvarchar"
+  "maxLength": 255
+  "precision": 0
+  "scale": 0
+  "isNullable": false
+  "isIdentity": false
+- "name": "ShopGroupRelationsSorting"
+  "dataType": "int"
+  "maxLength": 0
+  "precision": 10
+  "scale": 0
+  "isNullable": true
+  "isIdentity": false
+- "name": "ShopGroupRelationAutoId"
+  "dataType": "int"
+  "maxLength": 0
+  "precision": 10
+  "scale": 0
+  "isNullable": false
+  "isIdentity": true

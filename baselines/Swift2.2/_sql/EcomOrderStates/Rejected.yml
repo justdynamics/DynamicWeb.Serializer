@@ -1,0 +1,23 @@
+﻿"OrderStateId": "OS3"
+"OrderStateName": "Rejected"
+"OrderStateDescription": "Rejected orders"
+"OrderStateIsDefault": false
+"OrderStateDontUseInstatistics": true
+"OrderStateIsDeleted": false
+"OrderStateMailTemplate": ""
+"OrderFlowId": 1
+"OrderStateMailSender": ""
+"OrderStateMailSenderName": ""
+"OrderStateMailSubject": ""
+"OrderStateAutoId": 3
+"OrderStateSendToCustomer": false
+"OrderStateOthersMailTemplate": ""
+"OrderStateOthersRecipients": ""
+"OrderStateSortOrder": 1
+"OrderStateOrderType": 0
+"OrderStateAllowOrder": true
+"OrderStateSendToDeliveryEmail": false
+"OrderStateSendToField": false
+"OrderStateCustomRecipientField": ""
+"OrderStateAllowEdit": false
+"OrderStateColor": "#f58f00"

@@ -1,0 +1,18 @@
+﻿"paragraphUniqueId": a3c1483c-9b2e-4e16-b8a1-14aebdc66ad8
+"sourceParagraphId": 4037
+"sortOrder": 2
+"itemType": "Swift-v2_Text"
+"header": "What are cookies?"
+"template": "TextLeft.cshtml"
+"colorSchemeId": ""
+"moduleSystemName": ""
+"moduleSettings": ""
+"fields":
+  "GlobalRecordPageGuid": "7c888265-1f39-497b-af3b-70e3c63f95f9"
+  "Id": "286"
+  "ItemInstanceType": ""
+  "Sort": 0
+  "Subtitle": ""
+  "Text": "<p>A cookie is a small text file which is stored on your computer. Cookies can contain text and numbers such as for example dates. Cookies are not applications and do not contain viruses or equally harmful codes. Cookies serve the purpose of storing specific information about the users on a website so that the website later on will be able to recognise the user and load this stored information. This could be e.g. login information, information about previous visits and which areas of the website the user has visited.</p><p>A cookie can only be loaded from the URL (website) it has been stored in. Regular cookies which are stored from a website, are typically stored from the address you see in the address line in the browser. But a website may also contain fragments and information which is downloaded from other addresses than the one shown in the address line of the browser. That could be for example a banner advert or analysis tools, but also regular content. This way, cookies could also be store from other addresses via the website you are actually visiting - so-called third party cookies.</p><p>Some cookies (so-called session cookies) are only stored during one browser session and deleted when the browser is closed. Other cookies (so-called persistent cookies are stored for a set period of time, and is not deleted until the expiry of this period of time. </p>"
+  "Title": "<h2 class=\"dw-h4\">What are cookies?</h2>"
+"columnId": 1

@@ -1,0 +1,42 @@
+﻿"pageUniqueId": a11d8da1-b82f-4347-ab45-d7dc737666d9
+"sourcePageId": 116
+"name": "About us"
+"menuText": "About us"
+"sortOrder": 1
+"isActive": true
+"itemType": "Swift-v2_Page"
+"layoutApplyToSubPages": false
+"isFolder": false
+"shortCut": "Default.aspx?Id=107"
+"hidden": false
+"allowclick": true
+"allowsearch": true
+"showInSitemap": true
+"showInLegend": true
+"sslMode": 0
+"displayMode": "Normal"
+"activeFrom": 2020-12-14T15:30:00.0000000
+"activeTo": 2999-12-31T23:59:59.0000000
+"permissionType": 2
+"seo":
+  "description": "We are a among the founders of online bike shops. We have more than 20 years experience with selling professional bikes online. Landings are getting a little rotted but the overall condition is good. Lots of branches. Removable by hand saw."
+  "noindex": false
+  "nofollow": false
+  "robots404": false
+"urlSettings":
+  "urlIgnoreForChildren": false
+  "urlUseAsWritten": false
+"visibility":
+  "hideForPhones": false
+  "hideForTablets": false
+  "hideForDesktops": false
+"fields":
+  "Id": "66"
+  "ItemInstanceType": ""
+  "Sort": 1
+  "Title": "About us"
+"propertyFields":
+  "Id": "480"
+  "Sort": 0
+  "ItemInstanceType": ""
+  "SubmenuType": "auto"

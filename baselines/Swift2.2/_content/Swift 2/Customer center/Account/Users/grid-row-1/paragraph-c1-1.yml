@@ -1,0 +1,37 @@
+﻿"paragraphUniqueId": aaaae7a0-f0ef-4cee-bedc-a671671c84b4
+"sourceParagraphId": 22195
+"sortOrder": 1
+"itemType": "Swift-v2_App"
+"header": "Users"
+"template": ""
+"colorSchemeId": ""
+"moduleSystemName": "UserView"
+"moduleSettings": |-
+  <?xml version="1.0" encoding="utf-8"?>
+  <Settings>
+    <ListTemplate>Users_ListImpersonation.cshtml</ListTemplate>
+    <DetailTemplate>UserDetail.cshtml</DetailTemplate>
+    <Source>ListOfUsersByCustomerNumber</Source>
+    <ChosenUser></ChosenUser>
+    <ListUsers></ListUsers>
+    <ListUserGroups></ListUserGroups>
+    <ShowInactiveUsers>0</ShowInactiveUsers>
+    <PageSize>10</PageSize>
+    <SortBy>Id</SortBy>
+    <SortOrder>Ascending</SortOrder>
+    <EmailTemplate></EmailTemplate>
+    <SenderName></SenderName>
+    <SenderEmail></SenderEmail>
+    <EmailSubject>Confirm your account</EmailSubject>
+    <EditUserPageId></EditUserPageId>
+    <CreateUserPageId></CreateUserPageId>
+    <CreatePasswordPageId></CreatePasswordPageId>
+    <RedirectAfterImpersonation>Default.aspx?Id=8446</RedirectAfterImpersonation>
+  </Settings>
+"fields":
+  "GlobalRecordPageGuid": "08760875-44fa-4c8a-9839-cbd6d1db14b1"
+  "Id": "386"
+  "ItemInstanceType": ""
+  "Sort": 0
+  "Title": "Users"
+"columnId": 1

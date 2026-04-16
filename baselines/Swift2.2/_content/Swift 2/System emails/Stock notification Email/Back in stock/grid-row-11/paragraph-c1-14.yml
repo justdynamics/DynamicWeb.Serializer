@@ -1,0 +1,22 @@
+﻿"paragraphUniqueId": d846bfaf-2933-4336-9542-83e7e0650c18
+"sourceParagraphId": 21978
+"sortOrder": 14
+"itemType": "Swift-v2_EmailText"
+"header": "New column"
+"template": ""
+"colorSchemeId": ""
+"moduleSystemName": ""
+"moduleSettings": ""
+"fields":
+  "Align": "center"
+  "BorderThicknes": "1"
+  "Borders": "top"
+  "GlobalRecordPageGuid": "14ba3ff7-6f6f-45a1-b178-d8fec858c859"
+  "Id": "550"
+  "ItemInstanceType": ""
+  "LineHeight": "1"
+  "Padding": "32"
+  "Sort": 0
+  "Text": "<p>If you have any questions or need assistance, please contact us at our support.</p><p>Thank you!</p><p>SWIFT</p>"
+  "Title": "New column"
+"columnId": 1

@@ -1,0 +1,16 @@
+﻿"paragraphUniqueId": ac4065ca-b4bc-4c86-81da-8f3200129d5e
+"sourceParagraphId": 22152
+"sortOrder": 15
+"itemType": "Swift-v2_Button"
+"header": "Button"
+"template": "ButtonCenter.cshtml"
+"colorSchemeId": ""
+"moduleSystemName": ""
+"moduleSettings": ""
+"fields":
+  "FirstButton": "{\r\n  \"SelectedValue\": \"107\",\r\n  \"Label\": \"Join now\",\r\n  \"Link\": \"Default.aspx?ID=107\",\r\n  \"LinkType\": \"page\",\r\n  \"Style\": \"primary\"\r\n}"
+  "GlobalRecordPageGuid": "5c47a52a-4a24-449e-8df9-563f03afe297"
+  "Id": "37"
+  "ItemInstanceType": ""
+  "Sort": 0
+"columnId": 1

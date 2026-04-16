@@ -1,0 +1,23 @@
+﻿"PaymentId": "PAY1"
+"PaymentLanguageId": "ENU"
+"PaymentName": "Creditcard"
+"PaymentDescription": "Creditcard"
+"PaymentIcon": "/Images/Payment/quickpay_logo.svg"
+"PaymentGatewayId": ""
+"PaymentGatewayTemplate": 
+"PaymentMerchantNum": 
+"PaymentGatewayMD5Key": 
+"PaymentCCITemplate": 
+"PaymentGatewayParameters": ""
+"PaymentIconOrderList": ""
+"PaymentAddInType": "None"
+"PaymentCheckoutSystemName": ""
+"PaymentCheckoutParameters": ""
+"PaymentSorting": 1
+"PaymentActive": true
+"PaymentUserGroups": ""
+"PaymentAllowAnonymousUsers": false
+"PaymentCode": ""
+"PaymentTermsCode": ""
+"PaymentTermsDescription": ""
+"PaymentDisableSavedCards": false

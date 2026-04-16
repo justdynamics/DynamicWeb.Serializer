@@ -1,0 +1,42 @@
+﻿"pageUniqueId": 3449adb7-4555-458c-b5b6-722588792055
+"sourcePageId": 1287
+"name": "Favorites list service"
+"menuText": "Favorites list service"
+"sortOrder": 8
+"isActive": false
+"itemType": "Swift-v2_Page"
+"layoutApplyToSubPages": false
+"isFolder": false
+"navigationTag": "FavoriteServicePage"
+"hidden": false
+"allowclick": true
+"allowsearch": false
+"showInSitemap": false
+"showInLegend": false
+"sslMode": 0
+"displayMode": "Normal"
+"activeFrom": 2021-10-25T09:29:00.0000000
+"activeTo": 2999-12-31T00:00:00.0000000
+"permissionType": 2
+"seo":
+  "noindex": false
+  "nofollow": false
+  "robots404": false
+"urlSettings":
+  "urlIgnoreForChildren": false
+  "urlUseAsWritten": false
+"visibility":
+  "hideForPhones": false
+  "hideForTablets": false
+  "hideForDesktops": false
+"fields":
+  "Id": "548"
+  "ItemInstanceType": ""
+  "Sort": 8
+  "Title": "Favorites list service"
+"propertyFields":
+  "Id": "534"
+  "Sort": 0
+  "ItemInstanceType": ""
+  "Icon": "/Files/Icons/1_none.svg"
+  "SubmenuType": "auto"

@@ -1,0 +1,51 @@
+﻿"tableName": "EcomCountryText"
+"nameColumn": ""
+"compareColumns": ""
+"keyColumns":
+- "CountryTextCode2"
+- "CountryTextLanguageId"
+- "CountryTextRegionCode"
+"identityColumns":
+- "CountryTextAutoId"
+"allColumns":
+- "CountryTextCode2"
+- "CountryTextLanguageId"
+- "CountryTextName"
+- "CountryTextRegionCode"
+- "CountryTextAutoId"
+"columnDefinitions":
+- "name": "CountryTextCode2"
+  "dataType": "nchar"
+  "maxLength": 2
+  "precision": 0
+  "scale": 0
+  "isNullable": false
+  "isIdentity": false
+- "name": "CountryTextLanguageId"
+  "dataType": "nvarchar"
+  "maxLength": 50
+  "precision": 0
+  "scale": 0
+  "isNullable": false
+  "isIdentity": false
+- "name": "CountryTextName"
+  "dataType": "nvarchar"
+  "maxLength": 255
+  "precision": 0
+  "scale": 0
+  "isNullable": true
+  "isIdentity": false
+- "name": "CountryTextRegionCode"
+  "dataType": "nvarchar"
+  "maxLength": 3
+  "precision": 0
+  "scale": 0
+  "isNullable": false
+  "isIdentity": false
+- "name": "CountryTextAutoId"
+  "dataType": "int"
+  "maxLength": 0
+  "precision": 10
+  "scale": 0
+  "isNullable": false
+  "isIdentity": true

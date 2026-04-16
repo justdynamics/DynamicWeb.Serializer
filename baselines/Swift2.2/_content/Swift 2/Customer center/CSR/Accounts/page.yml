@@ -1,0 +1,41 @@
+﻿"pageUniqueId": be656b29-646b-43c3-80a5-19fc553ab6d5
+"sourcePageId": 8422
+"name": "Accounts"
+"menuText": "Accounts"
+"sortOrder": 4
+"isActive": true
+"itemType": "Swift-v2_Page"
+"layoutApplyToSubPages": false
+"isFolder": false
+"hidden": false
+"allowclick": true
+"allowsearch": true
+"showInSitemap": true
+"showInLegend": true
+"sslMode": 0
+"displayMode": "Normal"
+"activeFrom": 2025-12-15T14:01:00.0000000
+"activeTo": 2999-12-31T23:59:59.0000000
+"permissionType": 2
+"seo":
+  "noindex": false
+  "nofollow": false
+  "robots404": false
+"urlSettings":
+  "urlIgnoreForChildren": false
+  "urlUseAsWritten": false
+"visibility":
+  "hideForPhones": false
+  "hideForTablets": false
+  "hideForDesktops": false
+"fields":
+  "Id": "1103"
+  "ItemInstanceType": ""
+  "Sort": 4
+  "Title": "Accounts"
+"propertyFields":
+  "Id": "2721"
+  "Sort": 0
+  "ItemInstanceType": ""
+  "Icon": "/Files/Images/Icons/users.svg"
+  "SubmenuType": "auto"

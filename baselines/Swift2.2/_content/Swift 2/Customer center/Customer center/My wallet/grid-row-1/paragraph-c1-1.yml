@@ -1,0 +1,24 @@
+﻿"paragraphUniqueId": 7135d123-f15b-462c-a44b-0b0a3565d20f
+"sourceParagraphId": 22209
+"sortOrder": 1
+"itemType": "Swift-v2_App"
+"header": "Wallet"
+"template": ""
+"colorSchemeId": ""
+"moduleSystemName": "eCom_CustomerExperienceCenterSavedCards"
+"moduleSettings": |-
+  <?xml version="1.0" encoding="utf-8"?>
+  <Settings>
+    <PageSize>25</PageSize>
+    <SortByField>Name</SortByField>
+    <SortOrder>Asc</SortOrder>
+    <SavedCardListTemplate>SavedCards_List.cshtml</SavedCardListTemplate>
+    <SavedCardLogTemplate></SavedCardLogTemplate>
+  </Settings>
+"fields":
+  "GlobalRecordPageGuid": "e90a2405-d549-4acc-8f76-c7988354be89"
+  "Id": "393"
+  "ItemInstanceType": ""
+  "Sort": 0
+  "Title": "Wallet"
+"columnId": 1

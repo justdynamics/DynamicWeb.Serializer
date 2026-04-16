@@ -1,0 +1,51 @@
+﻿"ShippingId": "SHIP13"
+"ShippingLanguageId": "DAN"
+"ShippingName": "PostNord Pakkeshop"
+"ShippingDescription": "Dansk pakkeshop"
+"ShippingPriceOverMaxWeight": 0
+"ShippingFreeFeeAmount": 0
+"ShippingServiceSystemName": "Dynamicweb.Ecommerce.ShippingProviders.Shipmondo.Shipmondo"
+"ShippingServiceParameters": |-
+  <?xml version="1.0" encoding="utf-8"?>
+  <Parameters addin="Dynamicweb.Ecommerce.ShippingProviders.Shipmondo.Shipmondo">
+    <Parameter addin="Dynamicweb.Ecommerce.ShippingProviders.Shipmondo.Shipmondo" name="API User" value="" />
+    <Parameter addin="Dynamicweb.Ecommerce.ShippingProviders.Shipmondo.Shipmondo" name="API Key" value="" />
+    <Parameter addin="Dynamicweb.Ecommerce.ShippingProviders.Shipmondo.Shipmondo" name="Carriers" value="" />
+    <Parameter addin="Dynamicweb.Ecommerce.ShippingProviders.Shipmondo.Shipmondo" name="Products" value="" />
+    <Parameter addin="Dynamicweb.Ecommerce.ShippingProviders.Shipmondo.Shipmondo" name="Sender email" value="" />
+    <Parameter addin="Dynamicweb.Ecommerce.ShippingProviders.Shipmondo.Shipmondo" name="Sender name" value="" />
+    <Parameter addin="Dynamicweb.Ecommerce.ShippingProviders.Shipmondo.Shipmondo" name="Sender address" value="" />
+    <Parameter addin="Dynamicweb.Ecommerce.ShippingProviders.Shipmondo.Shipmondo" name="Sender zipcode" value="" />
+    <Parameter addin="Dynamicweb.Ecommerce.ShippingProviders.Shipmondo.Shipmondo" name="Sender city" value="" />
+    <Parameter addin="Dynamicweb.Ecommerce.ShippingProviders.Shipmondo.Shipmondo" name="Sender country code" value="" />
+    <Parameter addin="Dynamicweb.Ecommerce.ShippingProviders.Shipmondo.Shipmondo" name="Use customer address if specified" value="False" />
+    <Parameter addin="Dynamicweb.Ecommerce.ShippingProviders.Shipmondo.Shipmondo" name="Default package weight in grams" value="100" />
+    <Parameter addin="Dynamicweb.Ecommerce.ShippingProviders.Shipmondo.Shipmondo" name="Default package volume in cubic metres" value="0.1" />
+    <Parameter addin="Dynamicweb.Ecommerce.ShippingProviders.Shipmondo.Shipmondo" name="ShippingProviderTemplate" value="" />
+    <Parameter addin="Dynamicweb.Ecommerce.ShippingProviders.Shipmondo.Shipmondo" name="DeliveryLocationType" value="private_and_buisness_location" />
+    <Parameter addin="Dynamicweb.Ecommerce.ShippingProviders.Shipmondo.Shipmondo" name="DropPointMax" value="5" />
+    <Parameter addin="Dynamicweb.Ecommerce.ShippingProviders.Shipmondo.Shipmondo" name="SaveParcelShopAddressInDeliveryAddress" value="False" />
+    <Parameter addin="Dynamicweb.Ecommerce.ShippingProviders.Shipmondo.Shipmondo" name="UseOwnAgreement" value="False" />
+    <Parameter addin="Dynamicweb.Ecommerce.ShippingProviders.Shipmondo.Shipmondo" name="TestMode" value="False" />
+  </Parameters>
+"ShippingSorting": 4
+"ShippingFeeSelection": "high"
+"ShippingIcon": "/Images/Shipping/PostNord.svg"
+"ShippingLimitsUseLogic": 1
+"ShippingFeeRulesSource": 2
+"ShippingTakeDiscountIntoAccount": true
+"ShippingEligibleForFreeShipping": false
+"ShippingActive": true
+"ShippingUserGroups": ""
+"ShippingAllowAnonymousUsers": false
+"ShippingCode": ""
+"ShippingAgentCode": ""
+"ShippingAgentName": ""
+"ShippingAgentServiceCode": ""
+"ShippingAgentServiceDescription": ""
+"ShippingUsePriceWithVat": false
+"ShippingMinWeight": 
+"ShippingMaxWeight": 
+"ShippingProductIds": ""
+"ShippingProductGroupIds": ""
+"ShippingProductFilterMode": 0

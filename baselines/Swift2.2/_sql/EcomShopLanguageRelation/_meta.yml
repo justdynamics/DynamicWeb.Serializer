@@ -1,0 +1,41 @@
+﻿"tableName": "EcomShopLanguageRelation"
+"nameColumn": ""
+"compareColumns": ""
+"keyColumns":
+- "Id"
+"identityColumns":
+- "Id"
+"allColumns":
+- "ShopId"
+- "LanguageId"
+- "Id"
+- "IsDefault"
+"columnDefinitions":
+- "name": "ShopId"
+  "dataType": "nvarchar"
+  "maxLength": 255
+  "precision": 0
+  "scale": 0
+  "isNullable": false
+  "isIdentity": false
+- "name": "LanguageId"
+  "dataType": "nvarchar"
+  "maxLength": 50
+  "precision": 0
+  "scale": 0
+  "isNullable": false
+  "isIdentity": false
+- "name": "Id"
+  "dataType": "int"
+  "maxLength": 0
+  "precision": 10
+  "scale": 0
+  "isNullable": false
+  "isIdentity": true
+- "name": "IsDefault"
+  "dataType": "bit"
+  "maxLength": 0
+  "precision": 0
+  "scale": 0
+  "isNullable": false
+  "isIdentity": false

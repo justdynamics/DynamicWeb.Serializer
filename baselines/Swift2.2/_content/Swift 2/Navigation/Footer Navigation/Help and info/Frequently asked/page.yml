@@ -1,0 +1,42 @@
+﻿"pageUniqueId": a8ff170e-57d1-4837-ba2e-b90fa6ed6c32
+"sourcePageId": 1127
+"name": "Frequently asked"
+"menuText": "Frequently asked"
+"sortOrder": 1
+"isActive": true
+"itemType": "Swift-v2_Page"
+"layoutApplyToSubPages": false
+"isFolder": false
+"hidden": false
+"allowclick": true
+"allowsearch": true
+"showInSitemap": true
+"showInLegend": true
+"sslMode": 0
+"displayMode": "Normal"
+"activeFrom": 2021-08-31T12:32:00.0000000
+"activeTo": 2999-12-31T23:59:59.0000000
+"permissionType": 2
+"seo":
+  "description": "Find answers to frequently asked questions in our FAQ."
+  "noindex": false
+  "nofollow": false
+  "robots404": false
+"urlSettings":
+  "urlIgnoreForChildren": false
+  "urlUseAsWritten": false
+"visibility":
+  "hideForPhones": false
+  "hideForTablets": false
+  "hideForDesktops": false
+"fields":
+  "Id": "505"
+  "ItemInstanceType": ""
+  "Sort": 1
+  "Title": "Frequently asked"
+"propertyFields":
+  "Id": "369"
+  "Sort": 0
+  "ItemInstanceType": ""
+  "Icon": "/Files/Icons/1_none.svg"
+  "SubmenuType": "auto"

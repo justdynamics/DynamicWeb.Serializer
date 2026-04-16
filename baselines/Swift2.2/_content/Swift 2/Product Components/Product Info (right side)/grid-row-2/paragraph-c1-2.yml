@@ -1,0 +1,21 @@
+﻿"paragraphUniqueId": e6edb1fd-ec94-4ecf-b74e-8f9a35c4e0cc
+"sourceParagraphId": 20192
+"sortOrder": 2
+"itemType": "Swift-v2_ProductPrice"
+"header": ""
+"template": ""
+"colorSchemeId": ""
+"moduleSystemName": ""
+"moduleSettings": ""
+"fields":
+  "DoNotShowPriceIfProductIsDiscontinued": false
+  "GlobalRecordPageGuid": "fb23f239-6758-47a7-ae31-fbed98fdedfa"
+  "HorizontalAlignment": "start"
+  "Id": "53"
+  "ItemInstanceType": ""
+  "Layout": "horizontal"
+  "PriceSize": "fs-5"
+  "ShowInformativePrice": false
+  "Sort": 0
+  "Title": ""
+"columnId": 1

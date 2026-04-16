@@ -1,0 +1,22 @@
+﻿"paragraphUniqueId": 67c9b68d-ed7f-41c7-86aa-3bbcc9ff78c1
+"sourceParagraphId": 8850
+"sortOrder": 2
+"itemType": "Swift-v2_EmailText"
+"header": "Order number"
+"template": ""
+"colorSchemeId": ""
+"moduleSystemName": ""
+"moduleSettings": ""
+"fields":
+  "Align": "center"
+  "BorderThicknes": "1"
+  "Borders": "top-bottom"
+  "GlobalRecordPageGuid": "29d6b442-6011-4315-9d5c-326759221023"
+  "Id": "84"
+  "ItemInstanceType": ""
+  "LineHeight": "1.5"
+  "Padding": "16"
+  "Sort": 0
+  "Text": "<p><strong>Order number: {{Ecom:Order.ID}}</strong></p>"
+  "Title": "Order number"
+"columnId": 1

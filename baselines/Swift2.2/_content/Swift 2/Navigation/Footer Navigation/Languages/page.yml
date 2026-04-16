@@ -1,0 +1,34 @@
+﻿"pageUniqueId": 572ca3d3-ec42-4905-a4b7-afa7658f7956
+"sourcePageId": 1694
+"name": "Languages"
+"menuText": "Languages"
+"sortOrder": 5
+"isActive": true
+"layoutApplyToSubPages": false
+"isFolder": true
+"hidden": false
+"allowclick": false
+"allowsearch": false
+"showInSitemap": false
+"showInLegend": false
+"sslMode": 0
+"displayMode": "Normal"
+"activeFrom": 2022-08-30T11:44:47.2400000
+"activeTo": 2999-12-31T00:00:00.0000000
+"permissionType": 2
+"seo":
+  "noindex": false
+  "nofollow": false
+  "robots404": false
+"urlSettings":
+  "urlIgnoreForChildren": true
+  "urlUseAsWritten": false
+"visibility":
+  "hideForPhones": true
+  "hideForTablets": true
+  "hideForDesktops": true
+"propertyFields":
+  "Id": "977"
+  "Sort": 0
+  "ItemInstanceType": ""
+  "SubmenuType": "auto"

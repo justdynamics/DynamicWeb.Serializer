@@ -1,0 +1,14 @@
+﻿"CurrencyCode": "CZK"
+"CurrencyLanguageId": "ENG"
+"CurrencySymbol": "Kč"
+"CurrencyName": "Czech Koruna"
+"CurrencyRate": 29
+"CurrencyIsDefault": false
+"CurrencyCultureInfo": "cs-CZ"
+"CurrencyPayGatewayCode": 203
+"CurrencyRoundingId": ""
+"CurrencySymbolPlace": 0
+"CurrencyAutoId": 84
+"CurrencyPositivePattern": 2
+"CurrencyNegativePattern": -1
+"CurrencyUseCurrencyCodeForFormat": false

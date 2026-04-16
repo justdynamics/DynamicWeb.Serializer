@@ -1,0 +1,19 @@
+﻿"paragraphUniqueId": 1c35bb56-2a6a-41dd-9cf0-9177bada7618
+"sourceParagraphId": 20173
+"sortOrder": 8
+"itemType": "Swift-v2_Text"
+"header": "Text"
+"template": "TextCenter.cshtml"
+"colorSchemeId": ""
+"moduleSystemName": ""
+"moduleSettings": ""
+"fields":
+  "FirstButton": "{\r\n  \"SelectedValue\": \"106\",\r\n  \"Label\": \"Contact us\",\r\n  \"Link\": \"Default.aspx?ID=106\",\r\n  \"LinkType\": \"page\",\r\n  \"Style\": \"primary\"\r\n}"
+  "GlobalRecordPageGuid": "a8ff170e-57d1-4837-ba2e-b90fa6ed6c32"
+  "Id": "1184"
+  "ItemInstanceType": ""
+  "Sort": 0
+  "Subtitle": ""
+  "Text": "<p class=\"dw-h4\">Still have questions?<br></p><p>We’re here to help! If you have any questions or need assistance, please reach out to us through the form below or contact one of our dedicated sales representatives.<br></p>"
+  "Title": ""
+"columnId": 1

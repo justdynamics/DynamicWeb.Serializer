@@ -1,0 +1,18 @@
+﻿"paragraphUniqueId": 1c103229-50ff-468b-ad0f-f233eb9008fa
+"sourceParagraphId": 21963
+"sortOrder": 1
+"itemType": "Swift-v2_Feature"
+"header": "User created"
+"template": "IconBoxTop.cshtml"
+"colorSchemeId": ""
+"moduleSystemName": ""
+"moduleSettings": ""
+"fields":
+  "GlobalRecordPageGuid": "b6ae011d-379d-4a6d-870c-278318eaef30"
+  "Icon": "/Files/Images/Icons/check.svg"
+  "Id": "1661"
+  "ItemInstanceType": ""
+  "Sort": 0
+  "Text": "<div>Thank you for creating the user profile.</div><div></div><p></p>"
+  "Title": "<div class=\"dw-paragraph-1\">User created</div>"
+"columnId": 1

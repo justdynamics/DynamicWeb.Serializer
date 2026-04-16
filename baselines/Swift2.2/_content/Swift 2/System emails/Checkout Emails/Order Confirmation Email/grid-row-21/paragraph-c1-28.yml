@@ -1,0 +1,23 @@
+﻿"paragraphUniqueId": ba332bb7-2d35-484c-9c3c-9f14550be80e
+"sourceParagraphId": 9803
+"sortOrder": 28
+"itemType": "Swift-v2_EmailOrderlines"
+"header": "Orderlines"
+"template": ""
+"colorSchemeId": "lightgrey1"
+"moduleSystemName": "eCom_ContextOrderRenderer"
+"moduleSettings": |-
+  <?xml version="1.0" encoding="utf-8"?>
+  <Settings>
+    <Template>EmailOrderlines.cshtml</Template>
+    <ImagePatternProductCatalog></ImagePatternProductCatalog>
+    <RenderInTestMode>1</RenderInTestMode>
+    <TestOrderId>ORDER342</TestOrderId>
+  </Settings>
+"fields":
+  "GlobalRecordPageGuid": "29d6b442-6011-4315-9d5c-326759221023"
+  "Id": "3"
+  "ItemInstanceType": ""
+  "Padding": "24"
+  "Sort": 0
+"columnId": 1

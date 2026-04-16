@@ -1,0 +1,19 @@
+﻿"paragraphUniqueId": de4ef687-92c1-4abd-964a-8bb097fbfe2f
+"sourceParagraphId": 22145
+"sortOrder": 8
+"itemType": "Swift-v2_Feature"
+"header": "Competitive wholesale pricing"
+"template": "IconLeft.cshtml"
+"colorSchemeId": ""
+"moduleSystemName": ""
+"moduleSettings": ""
+"fields":
+  "Button": "{\r\n  \"SelectedValue\": \"\",\r\n  \"Label\": \"\",\r\n  \"Link\": \"\",\r\n  \"LinkType\": \"\",\r\n  \"Style\": \"outline-primary\"\r\n}"
+  "GlobalRecordPageGuid": "5c47a52a-4a24-449e-8df9-563f03afe297"
+  "Icon": "/Files/Images/Icons/cart-shopping.svg"
+  "Id": "1666"
+  "ItemInstanceType": ""
+  "Sort": 0
+  "Text": "<p>Whether it’s in our homes, our communities, or our daily routines, every small action we take adds up to a big change for our world.<br></p>"
+  "Title": "<h3 class=\"dw-h6\">Competitive wholesale pricing</h3>"
+"columnId": 2

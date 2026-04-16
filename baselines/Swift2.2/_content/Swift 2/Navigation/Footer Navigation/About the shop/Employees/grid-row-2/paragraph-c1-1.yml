@@ -1,0 +1,36 @@
+﻿"paragraphUniqueId": 046e0be5-8641-4a3c-8bd1-a2a4f40fab56
+"sourceParagraphId": 22094
+"sortOrder": 1
+"itemType": "Swift-v2_App"
+"header": "App"
+"template": ""
+"colorSchemeId": ""
+"moduleSystemName": "UserView"
+"moduleSettings": |-
+  <?xml version="1.0" encoding="utf-8"?>
+  <Settings>
+    <ListTemplate>EmployeesSearchList.cshtml</ListTemplate>
+    <DetailTemplate></DetailTemplate>
+    <Source>ListOfChosenUsers</Source>
+    <ChosenUser></ChosenUser>
+    <ListUsers>1281,1282,1283,1284,1285,1286,1287,1288,1289,1290,1291</ListUsers>
+    <ListUserGroups>1249</ListUserGroups>
+    <ShowInactiveUsers>0</ShowInactiveUsers>
+    <PageSize>12</PageSize>
+    <SortBy>CustomerNumber</SortBy>
+    <SortOrder>Ascending</SortOrder>
+    <EmailTemplate></EmailTemplate>
+    <SenderName></SenderName>
+    <SenderEmail></SenderEmail>
+    <EmailSubject>Confirm your account</EmailSubject>
+    <EditUserPageId></EditUserPageId>
+    <CreateUserPageId></CreateUserPageId>
+    <CreatePasswordPageId></CreatePasswordPageId>
+  </Settings>
+"fields":
+  "GlobalRecordPageGuid": "c3a5266d-0ca0-45b4-a2a5-2d8c78e039e5"
+  "Id": "356"
+  "ItemInstanceType": ""
+  "Sort": 0
+  "Title": "App"
+"columnId": 1

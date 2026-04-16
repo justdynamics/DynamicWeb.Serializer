@@ -1,0 +1,38 @@
+﻿"paragraphUniqueId": b684a04c-7660-4df6-be39-9b2b0922f850
+"sourceParagraphId": 22205
+"sortOrder": 1
+"itemType": "Swift-v2_App"
+"header": "Accounts"
+"template": ""
+"colorSchemeId": ""
+"moduleSystemName": "UserGroups"
+"moduleSettings": |-
+  <?xml version="1.0" encoding="utf-8"?>
+  <Settings>
+    <GroupListTemplate>UserGroup_List.cshtml</GroupListTemplate>
+    <UserListTemplate>UserGroupUser_List.cshtml</UserListTemplate>
+    <EditTemplate>Edit.cshtml</EditTemplate>
+    <ListGroupType>SystemAccount</ListGroupType>
+    <PageSize>10</PageSize>
+    <SortBy>Id</SortBy>
+    <SortOrder>Ascending</SortOrder>
+    <RedirectAfterImpersonation>Default.aspx?Id=8446</RedirectAfterImpersonation>
+    <CreateUserTemplate></CreateUserTemplate>
+    <UserGroups></UserGroups>
+    <UserSelectableGroups></UserSelectableGroups>
+    <EmailTemplate></EmailTemplate>
+    <SenderName>DynamicWeb</SenderName>
+    <SenderEmail>noreply@dynamicweb.dk</SenderEmail>
+    <EmailSubject>Confirm your account</EmailSubject>
+    <RedirectAfterSubmission></RedirectAfterSubmission>
+    <RedirectAfterApproval></RedirectAfterApproval>
+    <LoginPageId></LoginPageId>
+    <CreatePasswordPageId></CreatePasswordPageId>
+  </Settings>
+"fields":
+  "GlobalRecordPageGuid": "be656b29-646b-43c3-80a5-19fc553ab6d5"
+  "Id": "391"
+  "ItemInstanceType": ""
+  "Sort": 0
+  "Title": "Accounts"
+"columnId": 1

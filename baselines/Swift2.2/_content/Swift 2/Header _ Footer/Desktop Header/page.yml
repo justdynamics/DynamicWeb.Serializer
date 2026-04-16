@@ -1,0 +1,41 @@
+﻿"pageUniqueId": 0a64e52b-0cac-44e8-9573-9f62c17272d5
+"sourcePageId": 121
+"name": "Desktop Header"
+"menuText": "Desktop Header"
+"sortOrder": 1
+"isActive": false
+"itemType": "Swift-v2_Header"
+"layoutApplyToSubPages": false
+"isFolder": false
+"hidden": false
+"allowclick": false
+"allowsearch": false
+"showInSitemap": false
+"showInLegend": false
+"sslMode": 0
+"displayMode": "Normal"
+"activeFrom": 2020-12-08T11:07:00.0000000
+"activeTo": 2999-12-31T23:59:59.0000000
+"permissionType": 1
+"seo":
+  "noindex": true
+  "nofollow": true
+  "robots404": false
+"urlSettings":
+  "urlIgnoreForChildren": false
+  "urlUseAsWritten": false
+"visibility":
+  "hideForPhones": false
+  "hideForTablets": false
+  "hideForDesktops": false
+"fields":
+  "HeaderPosition": "sticky-top"
+  "Id": "3"
+  "ItemInstanceType": ""
+  "Sort": 1
+  "Title": "Desktop Header"
+"propertyFields":
+  "Id": "12"
+  "Sort": 0
+  "ItemInstanceType": ""
+  "SubmenuType": "auto"

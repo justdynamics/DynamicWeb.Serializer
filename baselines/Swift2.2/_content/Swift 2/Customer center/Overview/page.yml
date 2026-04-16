@@ -1,0 +1,61 @@
+﻿"pageUniqueId": 621cb250-a28d-45ac-bef2-893e0536078b
+"sourcePageId": 8446
+"name": "Overview"
+"menuText": "Overview"
+"sortOrder": 1
+"isActive": true
+"itemType": "Swift-v2_Page"
+"layoutApplyToSubPages": false
+"isFolder": false
+"hidden": false
+"allowclick": true
+"allowsearch": true
+"showInSitemap": true
+"showInLegend": true
+"sslMode": 0
+"displayMode": "Normal"
+"activeFrom": 2026-01-21T22:34:00.0000000
+"activeTo": 2999-12-31T23:59:59.0000000
+"permissionType": 2
+"seo":
+  "noindex": false
+  "nofollow": false
+  "robots404": false
+"urlSettings":
+  "urlIgnoreForChildren": false
+  "urlUseAsWritten": false
+"visibility":
+  "hideForPhones": false
+  "hideForTablets": false
+  "hideForDesktops": false
+"fields":
+  "Id": "1119"
+  "ItemInstanceType": ""
+  "Sort": 1
+  "Title": "Overview"
+"propertyFields":
+  "Id": "2745"
+  "Sort": 0
+  "ItemInstanceType": ""
+  "Icon": "/Files/Images/Icons/house.svg"
+  "SubmenuType": "auto"
+"permissions":
+- "owner": "Account Admin"
+  "ownerType": "group"
+  "ownerId": "1270"
+  "level": "all"
+  "levelValue": 1364
+- "owner": "CSR"
+  "ownerType": "group"
+  "ownerId": "1292"
+  "level": "all"
+  "levelValue": 1364
+- "owner": "Customers"
+  "ownerType": "group"
+  "ownerId": "1325"
+  "level": "all"
+  "levelValue": 1364
+- "owner": "Anonymous"
+  "ownerType": "role"
+  "level": "none"
+  "levelValue": 1

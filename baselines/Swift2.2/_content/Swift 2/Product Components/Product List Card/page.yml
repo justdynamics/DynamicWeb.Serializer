@@ -1,0 +1,40 @@
+﻿"pageUniqueId": 041cd1f0-1117-4ffc-9100-71a11d6f7ac2
+"sourcePageId": 5861
+"name": "Product List Card"
+"menuText": "Product List Card"
+"sortOrder": 2
+"isActive": false
+"itemType": "Swift-v2_ProductComponent"
+"layoutApplyToSubPages": false
+"isFolder": false
+"hidden": false
+"allowclick": true
+"allowsearch": true
+"showInSitemap": true
+"showInLegend": true
+"sslMode": 0
+"displayMode": "Normal"
+"activeFrom": 2024-12-16T13:15:00.0000000
+"activeTo": 2999-12-31T23:59:59.0000000
+"permissionType": 2
+"seo":
+  "noindex": false
+  "nofollow": false
+  "robots404": false
+"urlSettings":
+  "urlIgnoreForChildren": false
+  "urlUseAsWritten": false
+"visibility":
+  "hideForPhones": false
+  "hideForTablets": false
+  "hideForDesktops": false
+"fields":
+  "Id": "1"
+  "ItemInstanceType": ""
+  "Sort": 2
+  "Title": "Product List Card"
+"propertyFields":
+  "Id": "2159"
+  "Sort": 0
+  "ItemInstanceType": ""
+  "SubmenuType": "auto"

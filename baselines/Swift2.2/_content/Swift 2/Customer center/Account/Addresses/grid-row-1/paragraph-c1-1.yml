@@ -1,0 +1,26 @@
+﻿"paragraphUniqueId": 29915c1c-160d-43eb-b3cd-81f975d4791a
+"sourceParagraphId": 22161
+"sortOrder": 1
+"itemType": "Swift-v2_App"
+"header": "Users - Manage addresses"
+"template": ""
+"colorSchemeId": ""
+"moduleSystemName": "UserAddresses"
+"moduleSettings": |-
+  <?xml version="1.0" encoding="utf-8"?>
+  <Settings>
+    <ListTemplate>ListAddressesCards.cshtml</ListTemplate>
+    <EditTemplate>EditAddressesOffcanvas.cshtml</EditTemplate>
+    <PageSize>10</PageSize>
+    <SortBy>Address</SortBy>
+    <SortOrder>Ascending</SortOrder>
+    <Source>OwnAddressesAndAddressesOfUsersWithSameCustomerNumber</Source>
+    <AllowEditAddress>True</AllowEditAddress>
+  </Settings>
+"fields":
+  "GlobalRecordPageGuid": "c1a954f6-bec3-41be-9849-90da0ff533cd"
+  "Id": "365"
+  "ItemInstanceType": ""
+  "Sort": 0
+  "Title": "Users - Manage addresses"
+"columnId": 1

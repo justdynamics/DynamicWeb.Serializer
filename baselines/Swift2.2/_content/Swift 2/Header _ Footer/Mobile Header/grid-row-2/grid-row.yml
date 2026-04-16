@@ -1,0 +1,24 @@
+﻿"id": 4c8e51f5-9ed2-436b-8d03-5c1ecf7b0c1e
+"sortOrder": 2
+"definitionId": "4ColumnsFlex"
+"itemType": "Swift-v2_RowFlex"
+"container": "Grid"
+"containerWidth": 3
+"colorSchemeId": "light"
+"topSpacing": 2
+"bottomSpacing": 2
+"gapX": 3
+"gapY": 3
+"verticalAlignment": "Center"
+"flexibleColumns": "1,1,0,1"
+"fields":
+  "Id": "130"
+  "Sort": 0
+  "ItemInstanceType": ""
+"columns":
+- "id": 1
+  "width": 0
+- "id": 2
+  "width": 0
+- "id": 4
+  "width": 0

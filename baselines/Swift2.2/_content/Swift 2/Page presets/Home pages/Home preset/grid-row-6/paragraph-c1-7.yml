@@ -1,0 +1,18 @@
+﻿"paragraphUniqueId": 44fd6187-c84e-41b5-b4ee-5baa813519d1
+"sourceParagraphId": 22144
+"sortOrder": 7
+"itemType": "Swift-v2_Feature"
+"header": "Bulk ordering made easy"
+"template": "IconLeft.cshtml"
+"colorSchemeId": ""
+"moduleSystemName": ""
+"moduleSettings": ""
+"fields":
+  "GlobalRecordPageGuid": "5c47a52a-4a24-449e-8df9-563f03afe297"
+  "Icon": "/Files/Images/Icons/clipboard-list.svg"
+  "Id": "1665"
+  "ItemInstanceType": ""
+  "Sort": 0
+  "Text": "<p>Whether it’s in our homes, our communities, or our daily routines, every small action we take adds up to a big change for our world.<br></p>"
+  "Title": "<h3 class=\"dw-h6\">Bulk ordering made easy</h3>"
+"columnId": 1

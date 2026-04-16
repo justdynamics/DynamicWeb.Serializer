@@ -1,0 +1,23 @@
+﻿"paragraphUniqueId": c80a0610-3d70-4087-830a-2d46219587dd
+"sourceParagraphId": 7333
+"sortOrder": 17
+"itemType": "Swift-v2_EmailProductCatalog"
+"header": "Products"
+"template": ""
+"colorSchemeId": ""
+"moduleSystemName": ""
+"moduleSettings": ""
+"fields":
+  "Align": "center"
+  "GlobalRecordPageGuid": "4081a661-c987-4804-897d-5a1a6b500f10"
+  "HideProductNumber": true
+  "HideProductPrice": true
+  "Id": "3"
+  "ImageAspectRatio": "original"
+  "ItemInstanceType": ""
+  "Layout": "2"
+  "Padding": "32"
+  "Products": "p_6110868996M:,p_6110869146M:,p_6110869243M:,p_6110869298M:"
+  "Sort": 0
+  "Title": "Products"
+"columnId": 1

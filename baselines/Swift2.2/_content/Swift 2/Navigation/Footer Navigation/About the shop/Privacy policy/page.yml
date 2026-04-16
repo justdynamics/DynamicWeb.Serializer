@@ -1,0 +1,42 @@
+﻿"pageUniqueId": 800bd3ea-5124-41e5-9aab-2a1c81822e6f
+"sourcePageId": 490
+"name": "Privacy policy"
+"menuText": "Privacy policy"
+"sortOrder": 5
+"isActive": true
+"itemType": "Swift-v2_Page"
+"layoutApplyToSubPages": false
+"isFolder": false
+"hidden": false
+"allowclick": true
+"allowsearch": true
+"showInSitemap": true
+"showInLegend": true
+"sslMode": 0
+"displayMode": "Normal"
+"activeFrom": 2021-05-20T15:39:00.0000000
+"activeTo": 2999-12-31T00:00:00.0000000
+"permissionType": 2
+"seo":
+  "description": "Read about our privacy policy."
+  "noindex": false
+  "nofollow": false
+  "robots404": false
+"urlSettings":
+  "urlIgnoreForChildren": false
+  "urlUseAsWritten": false
+"visibility":
+  "hideForPhones": false
+  "hideForTablets": false
+  "hideForDesktops": false
+"fields":
+  "Id": "319"
+  "ItemInstanceType": ""
+  "Sort": 5
+  "Title": "Privacy policy"
+"propertyFields":
+  "Id": "972"
+  "Sort": 0
+  "ItemInstanceType": ""
+  "Icon": "/Files/Icons/1_none.svg"
+  "SubmenuType": "auto"

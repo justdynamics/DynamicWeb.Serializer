@@ -1,0 +1,29 @@
+﻿"ShippingId": "SHIP10"
+"ShippingLanguageId": "ENU"
+"ShippingName": "Bring, DAO Parcelshop"
+"ShippingDescription": "Danish parcelshop"
+"ShippingPriceOverMaxWeight": 0
+"ShippingFreeFeeAmount": 0
+"ShippingServiceSystemName": ""
+"ShippingServiceParameters": ""
+"ShippingSorting": 5
+"ShippingFeeSelection": "high"
+"ShippingIcon": ""
+"ShippingLimitsUseLogic": 1
+"ShippingFeeRulesSource": 2
+"ShippingTakeDiscountIntoAccount": true
+"ShippingEligibleForFreeShipping": false
+"ShippingActive": true
+"ShippingUserGroups": ""
+"ShippingAllowAnonymousUsers": false
+"ShippingCode": ""
+"ShippingAgentCode": ""
+"ShippingAgentName": ""
+"ShippingAgentServiceCode": ""
+"ShippingAgentServiceDescription": ""
+"ShippingUsePriceWithVat": false
+"ShippingMinWeight": 
+"ShippingMaxWeight": 
+"ShippingProductIds": ""
+"ShippingProductGroupIds": ""
+"ShippingProductFilterMode": 0

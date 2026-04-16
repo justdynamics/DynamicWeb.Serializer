@@ -1,0 +1,62 @@
+﻿"pageUniqueId": 4934fccb-9b2a-4cb3-bd59-a1cc7788e21d
+"sourcePageId": 5862
+"name": "Shop"
+"menuText": "Shop"
+"sortOrder": 3
+"isActive": true
+"itemType": "Swift-v2_Shop"
+"layoutApplyToSubPages": false
+"isFolder": false
+"navigationTag": "Shop"
+"hidden": false
+"allowclick": true
+"allowsearch": true
+"showInSitemap": true
+"showInLegend": true
+"sslMode": 0
+"displayMode": "Normal"
+"activeFrom": 2024-12-16T13:43:00.0000000
+"activeTo": 2999-12-31T23:59:59.0000000
+"permissionType": 2
+"seo":
+  "noindex": false
+  "nofollow": false
+  "robots404": false
+"urlSettings":
+  "urlDataProviderTypeName": "Dynamicweb.Ecommerce.Frontend.UrlHandling.ShopUrlDataProvider, Dynamicweb.Ecommerce"
+  "urlDataProviderParameters": |-
+    <?xml version="1.0" encoding="utf-8"?>
+    <Parameters addin="Dynamicweb.Ecommerce.Frontend.UrlHandling.ShopUrlDataProvider">
+      <Parameter addin="Dynamicweb.Ecommerce.Frontend.UrlHandling.ShopUrlDataProvider" name="IncludeFrom" value="ContextShop" />
+      <Parameter addin="Dynamicweb.Ecommerce.Frontend.UrlHandling.ShopUrlDataProvider" name="SelectedShopId" value="" />
+      <Parameter addin="Dynamicweb.Ecommerce.Frontend.UrlHandling.ShopUrlDataProvider" name="IncludeLanguage" value="ContextLanguage" />
+      <Parameter addin="Dynamicweb.Ecommerce.Frontend.UrlHandling.ShopUrlDataProvider" name="SelectedLanguageId" value="" />
+      <Parameter addin="Dynamicweb.Ecommerce.Frontend.UrlHandling.ShopUrlDataProvider" name="Include" value="GroupsProductsVariants" />
+      <Parameter addin="Dynamicweb.Ecommerce.Frontend.UrlHandling.ShopUrlDataProvider" name="GroupPath" value="Tree" />
+      <Parameter addin="Dynamicweb.Ecommerce.Frontend.UrlHandling.ShopUrlDataProvider" name="ProductPath" value="Tree" />
+      <Parameter addin="Dynamicweb.Ecommerce.Frontend.UrlHandling.ShopUrlDataProvider" name="IncludeVariantsInSitemapXml" value="False" />
+    </Parameters>
+  "urlIgnoreForChildren": false
+  "urlUseAsWritten": false
+"visibility":
+  "hideForPhones": false
+  "hideForTablets": false
+  "hideForDesktops": false
+"navigationSettings":
+  "useEcomGroups": true
+  "parentType": "Shop"
+  "groups": "[all]"
+  "shopID": "SHOP1"
+  "maxLevels": 100
+  "productPage": "Default.aspx?Id=5862"
+  "includeProducts": false
+"fields":
+  "Id": "1"
+  "ItemInstanceType": ""
+  "Sort": 3
+  "Title": "Shop"
+"propertyFields":
+  "Id": "2160"
+  "Sort": 0
+  "ItemInstanceType": ""
+  "SubmenuType": "auto"

@@ -1,0 +1,26 @@
+﻿"paragraphUniqueId": 3d175e8e-ab13-4296-a073-a2720136c341
+"sourceParagraphId": 21221
+"sortOrder": 1
+"itemType": "Swift-v2_App"
+"header": "Forgot password"
+"template": ""
+"colorSchemeId": ""
+"moduleSystemName": "UserForgotPassword"
+"moduleSettings": |-
+  <?xml version="1.0" encoding="utf-8"?>
+  <Settings>
+    <Template>ResetPassword.cshtml</Template>
+    <PasswordTemplate>ChangePassword.cshtml</PasswordTemplate>
+    <EmailTemplate>ForgotPasswordEmail.cshtml</EmailTemplate>
+    <SenderName>Dynamicweb</SenderName>
+    <SenderEmail>noreply@dynamicweb.dk</SenderEmail>
+    <EmailSubject>Change password</EmailSubject>
+    <LoginPageId>Default.aspx?Id=8284</LoginPageId>
+  </Settings>
+"fields":
+  "GlobalRecordPageGuid": "991433fe-0dbd-44bc-9fb5-3f307806ba03"
+  "Id": "307"
+  "ItemInstanceType": ""
+  "Sort": 0
+  "Title": "Forgot password"
+"columnId": 1

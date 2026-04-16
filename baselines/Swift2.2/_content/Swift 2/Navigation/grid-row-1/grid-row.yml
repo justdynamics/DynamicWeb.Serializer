@@ -1,0 +1,9 @@
+﻿"id": 3f304fd3-564e-4f0d-b008-0a2c415cbcb2
+"sortOrder": 1
+"definitionId": "1Column"
+"itemType": "Swift-v2_Row"
+"container": "Grid"
+"verticalAlignment": "None"
+"columns":
+- "id": 1
+  "width": 0

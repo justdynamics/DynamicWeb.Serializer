@@ -1,0 +1,42 @@
+﻿"pageUniqueId": bba2a305-ffc3-427d-a0e3-99bb19977072
+"sourcePageId": 1247
+"name": "Find dealers"
+"menuText": "Find dealers"
+"sortOrder": 5
+"isActive": true
+"itemType": "Swift-v2_Page"
+"layoutApplyToSubPages": false
+"isFolder": false
+"hidden": false
+"allowclick": true
+"allowsearch": true
+"showInSitemap": true
+"showInLegend": true
+"sslMode": 0
+"displayMode": "Normal"
+"activeFrom": 2021-10-26T09:19:00.0000000
+"activeTo": 2999-12-31T00:00:00.0000000
+"permissionType": 2
+"seo":
+  "description": "Find your closest dealer on the map."
+  "noindex": false
+  "nofollow": false
+  "robots404": false
+"urlSettings":
+  "urlIgnoreForChildren": false
+  "urlUseAsWritten": false
+"visibility":
+  "hideForPhones": false
+  "hideForTablets": false
+  "hideForDesktops": false
+"fields":
+  "Id": "536"
+  "ItemInstanceType": ""
+  "Sort": 5
+  "Title": "Find dealers"
+"propertyFields":
+  "Id": "492"
+  "Sort": 0
+  "ItemInstanceType": ""
+  "Icon": "/Files/Icons/map-pin.svg"
+  "SubmenuType": "auto"

@@ -1,0 +1,22 @@
+﻿"paragraphUniqueId": c2ac8ac4-1e1c-4989-9bf9-ef7f022dceae
+"sourceParagraphId": 21972
+"sortOrder": 8
+"itemType": "Swift-v2_EmailText"
+"header": "New column"
+"template": ""
+"colorSchemeId": ""
+"moduleSystemName": ""
+"moduleSettings": ""
+"fields":
+  "Align": "center"
+  "BorderThicknes": "1"
+  "Borders": "top"
+  "GlobalRecordPageGuid": "14ba3ff7-6f6f-45a1-b178-d8fec858c859"
+  "Id": "547"
+  "ItemInstanceType": ""
+  "LineHeight": "1.5"
+  "Padding": "32"
+  "Sort": 0
+  "Text": "<p>Dear visitor,</p><p>Thank you reaching out to us.<br>Your product is now back in stock on the website</p><p><strong>{{Global:Request.Host}}</strong></p>"
+  "Title": "New column"
+"columnId": 1

@@ -1,0 +1,22 @@
+﻿"paragraphUniqueId": ef239fe1-1c5d-4029-b70d-8d04bccf20bc
+"sourceParagraphId": 7305
+"sortOrder": 3
+"itemType": "Swift-v2_EmailImage"
+"header": "Image"
+"template": ""
+"colorSchemeId": ""
+"moduleSystemName": ""
+"moduleSettings": ""
+"fields":
+  "GlobalRecordPageGuid": "4081a661-c987-4804-897d-5a1a6b500f10"
+  "Id": "5"
+  "Image": "/Files/Images/Emails/Demo images/EmailSalePoster.png"
+  "ImageAltText": "20% off"
+  "ItemInstanceType": ""
+  "LinkType": "page"
+  "Padding": "0"
+  "PageLink": ""
+  "ProductGroupLink": ""
+  "ProductLink": ""
+  "Sort": 0
+"columnId": 1

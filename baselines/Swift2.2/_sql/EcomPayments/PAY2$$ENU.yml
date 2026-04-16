@@ -1,0 +1,23 @@
+﻿"PaymentId": "PAY2"
+"PaymentLanguageId": "ENU"
+"PaymentName": "Invoice"
+"PaymentDescription": "Invoice"
+"PaymentIcon": ""
+"PaymentGatewayId": ""
+"PaymentGatewayTemplate": 
+"PaymentMerchantNum": 
+"PaymentGatewayMD5Key": 
+"PaymentCCITemplate": 
+"PaymentGatewayParameters": ""
+"PaymentIconOrderList": ""
+"PaymentAddInType": "None"
+"PaymentCheckoutSystemName": ""
+"PaymentCheckoutParameters": ""
+"PaymentSorting": 0
+"PaymentActive": true
+"PaymentUserGroups": ""
+"PaymentAllowAnonymousUsers": false
+"PaymentCode": ""
+"PaymentTermsCode": ""
+"PaymentTermsDescription": ""
+"PaymentDisableSavedCards": false

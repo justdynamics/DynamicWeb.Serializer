@@ -1,0 +1,14 @@
+﻿"CurrencyCode": "BGN"
+"CurrencyLanguageId": "DAN"
+"CurrencySymbol": "лв."
+"CurrencyName": "Bulgariske Lev"
+"CurrencyRate": 380
+"CurrencyIsDefault": false
+"CurrencyCultureInfo": "bg-BG"
+"CurrencyPayGatewayCode": 100
+"CurrencyRoundingId": ""
+"CurrencySymbolPlace": 0
+"CurrencyAutoId": 10
+"CurrencyPositivePattern": 2
+"CurrencyNegativePattern": -1
+"CurrencyUseCurrencyCodeForFormat": false

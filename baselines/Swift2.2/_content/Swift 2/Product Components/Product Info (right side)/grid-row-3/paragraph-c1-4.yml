@@ -1,0 +1,24 @@
+﻿"paragraphUniqueId": 72c8e7a6-180d-4e80-bdba-c52b13f62a6d
+"sourceParagraphId": 20194
+"sortOrder": 4
+"itemType": "Swift-v2_ProductVariantSelector"
+"header": ""
+"template": ""
+"colorSchemeId": ""
+"moduleSystemName": ""
+"moduleSettings": ""
+"fields":
+  "ButtonAspectRatio": "100%"
+  "ButtonLayout": "rounded-circle"
+  "DefaultVariantGroupLayout": "button"
+  "GlobalRecordPageGuid": "fb23f239-6758-47a7-ae31-fbed98fdedfa"
+  "HideGroupHeaders": "false"
+  "HorizontalAlignment": "start"
+  "Id": "16"
+  "ItemInstanceType": ""
+  "ShowSelectedOptionName": false
+  "ShowVariantGroupOptions": "all"
+  "Sort": 0
+  "Title": ""
+  "VariantGroups": 0
+"columnId": 1

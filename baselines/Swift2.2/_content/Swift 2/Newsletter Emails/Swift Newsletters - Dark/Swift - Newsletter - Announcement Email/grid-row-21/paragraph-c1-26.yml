@@ -1,0 +1,24 @@
+﻿"paragraphUniqueId": c19b1ac0-d363-4cfa-8f9d-5f5509a74887
+"sourceParagraphId": 7723
+"sortOrder": 26
+"itemType": "Swift-v2_EmailButton"
+"header": "Shop now"
+"template": ""
+"colorSchemeId": ""
+"moduleSystemName": ""
+"moduleSettings": ""
+"fields":
+  "Align": "center"
+  "BorderThicknes": "1"
+  "Borders": "none"
+  "GlobalRecordPageGuid": "961323a5-86f4-4b70-9eb8-191f1aa054a6"
+  "Id": "33"
+  "ItemInstanceType": ""
+  "LinkType": "page"
+  "Padding": "8"
+  "PageLink": "Default.aspx?Id=149"
+  "ProductGroupLink": ""
+  "ProductLink": ""
+  "Sort": 0
+  "Title": "Shop now"
+"columnId": 1

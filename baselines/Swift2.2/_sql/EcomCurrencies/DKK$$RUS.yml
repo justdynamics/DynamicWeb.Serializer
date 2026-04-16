@@ -1,0 +1,14 @@
+﻿"CurrencyCode": "DKK"
+"CurrencyLanguageId": "RUS"
+"CurrencySymbol": "kr."
+"CurrencyName": "Kroner"
+"CurrencyRate": 15
+"CurrencyIsDefault": false
+"CurrencyCultureInfo": "da-DK"
+"CurrencyPayGatewayCode": 208
+"CurrencyRoundingId": ""
+"CurrencySymbolPlace": 0
+"CurrencyAutoId": 35
+"CurrencyPositivePattern": 3
+"CurrencyNegativePattern": 8
+"CurrencyUseCurrencyCodeForFormat": false

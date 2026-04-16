@@ -1,0 +1,14 @@
+﻿"CurrencyCode": "PLN"
+"CurrencyLanguageId": "UKR"
+"CurrencySymbol": "zł"
+"CurrencyName": "Zloty"
+"CurrencyRate": 163
+"CurrencyIsDefault": false
+"CurrencyCultureInfo": "pl-PL"
+"CurrencyPayGatewayCode": 985
+"CurrencyRoundingId": ""
+"CurrencySymbolPlace": 0
+"CurrencyAutoId": 112
+"CurrencyPositivePattern": 3
+"CurrencyNegativePattern": 8
+"CurrencyUseCurrencyCodeForFormat": false

@@ -1,0 +1,65 @@
+﻿"tableName": "EcomLanguages"
+"nameColumn": ""
+"compareColumns": ""
+"keyColumns":
+- "LanguageId"
+"identityColumns":
+- "LanguageAutoId"
+"allColumns":
+- "LanguageId"
+- "LanguageCode2"
+- "LanguageName"
+- "LanguageNativeName"
+- "LanguageIsDefault"
+- "LanguageAutoId"
+- "LanguageCulture"
+"columnDefinitions":
+- "name": "LanguageId"
+  "dataType": "nvarchar"
+  "maxLength": 50
+  "precision": 0
+  "scale": 0
+  "isNullable": false
+  "isIdentity": false
+- "name": "LanguageCode2"
+  "dataType": "nvarchar"
+  "maxLength": 50
+  "precision": 0
+  "scale": 0
+  "isNullable": true
+  "isIdentity": false
+- "name": "LanguageName"
+  "dataType": "nvarchar"
+  "maxLength": 255
+  "precision": 0
+  "scale": 0
+  "isNullable": true
+  "isIdentity": false
+- "name": "LanguageNativeName"
+  "dataType": "nvarchar"
+  "maxLength": 255
+  "precision": 0
+  "scale": 0
+  "isNullable": true
+  "isIdentity": false
+- "name": "LanguageIsDefault"
+  "dataType": "bit"
+  "maxLength": 0
+  "precision": 0
+  "scale": 0
+  "isNullable": true
+  "isIdentity": false
+- "name": "LanguageAutoId"
+  "dataType": "int"
+  "maxLength": 0
+  "precision": 10
+  "scale": 0
+  "isNullable": false
+  "isIdentity": true
+- "name": "LanguageCulture"
+  "dataType": "nvarchar"
+  "maxLength": 50
+  "precision": 0
+  "scale": 0
+  "isNullable": true
+  "isIdentity": false

@@ -1,0 +1,20 @@
+﻿"paragraphUniqueId": 0b3f2ecb-e0ec-43d0-9210-7d9050f381de
+"sourceParagraphId": 22193
+"sortOrder": 1
+"itemType": "Swift-v2_App"
+"header": ""
+"template": ""
+"colorSchemeId": ""
+"moduleSystemName": "UserChangePassword"
+"moduleSettings": |-
+  <?xml version="1.0" encoding="utf-8"?>
+  <Settings>
+    <ChangePasswordTemplate>ChangePassword.cshtml</ChangePasswordTemplate>
+  </Settings>
+"fields":
+  "GlobalRecordPageGuid": "5fbc6766-2f57-44eb-94d9-51c48949e69a"
+  "Id": "385"
+  "ItemInstanceType": ""
+  "Sort": 0
+  "Title": ""
+"columnId": 1

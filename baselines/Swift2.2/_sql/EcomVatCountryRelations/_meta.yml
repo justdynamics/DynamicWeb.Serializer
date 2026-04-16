@@ -1,0 +1,59 @@
+﻿"tableName": "EcomVatCountryRelations"
+"nameColumn": ""
+"compareColumns": ""
+"keyColumns":
+- "VatCountryRelCountryId"
+- "VatCountryRelGroupId"
+- "VatCountryRelLangId"
+"identityColumns":
+- "VatCountryRelAutoId"
+"allColumns":
+- "VatCountryRelGroupId"
+- "VatCountryRelCountryId"
+- "VatCountryRelLangId"
+- "VatCountryRelVat"
+- "VatCountryRelAutoId"
+- "VatCountryRelReverseChargeForVat"
+"columnDefinitions":
+- "name": "VatCountryRelGroupId"
+  "dataType": "nvarchar"
+  "maxLength": 50
+  "precision": 0
+  "scale": 0
+  "isNullable": false
+  "isIdentity": false
+- "name": "VatCountryRelCountryId"
+  "dataType": "nvarchar"
+  "maxLength": 3
+  "precision": 0
+  "scale": 0
+  "isNullable": false
+  "isIdentity": false
+- "name": "VatCountryRelLangId"
+  "dataType": "nvarchar"
+  "maxLength": 50
+  "precision": 0
+  "scale": 0
+  "isNullable": false
+  "isIdentity": false
+- "name": "VatCountryRelVat"
+  "dataType": "float"
+  "maxLength": 0
+  "precision": 53
+  "scale": 0
+  "isNullable": true
+  "isIdentity": false
+- "name": "VatCountryRelAutoId"
+  "dataType": "int"
+  "maxLength": 0
+  "precision": 10
+  "scale": 0
+  "isNullable": false
+  "isIdentity": true
+- "name": "VatCountryRelReverseChargeForVat"
+  "dataType": "bit"
+  "maxLength": 0
+  "precision": 0
+  "scale": 0
+  "isNullable": true
+  "isIdentity": false

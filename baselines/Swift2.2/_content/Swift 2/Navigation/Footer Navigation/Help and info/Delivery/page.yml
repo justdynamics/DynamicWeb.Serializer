@@ -1,0 +1,42 @@
+﻿"pageUniqueId": d88f09e2-1a31-48df-9d76-6596282a1f1c
+"sourcePageId": 109
+"name": "Delivery"
+"menuText": "Delivery"
+"sortOrder": 2
+"isActive": true
+"itemType": "Swift-v2_Page"
+"layoutApplyToSubPages": false
+"isFolder": false
+"hidden": false
+"allowclick": true
+"allowsearch": true
+"showInSitemap": true
+"showInLegend": true
+"sslMode": 0
+"displayMode": "Normal"
+"activeFrom": 2020-12-07T15:16:00.0000000
+"activeTo": 2999-12-31T00:00:00.0000000
+"permissionType": 2
+"seo":
+  "description": "We ship your bike parts worldwide - favourable and fast."
+  "noindex": false
+  "nofollow": false
+  "robots404": false
+"urlSettings":
+  "urlIgnoreForChildren": false
+  "urlUseAsWritten": false
+"visibility":
+  "hideForPhones": false
+  "hideForTablets": false
+  "hideForDesktops": false
+"fields":
+  "Id": "65"
+  "ItemInstanceType": ""
+  "Sort": 2
+  "Title": "Delivery"
+"propertyFields":
+  "Id": "973"
+  "Sort": 0
+  "ItemInstanceType": ""
+  "Icon": "/Files/Icons/1_none.svg"
+  "SubmenuType": "auto"

@@ -1,0 +1,37 @@
+﻿"ShippingId": "SHIP5"
+"ShippingLanguageId": "ENU"
+"ShippingName": "Click & Collect delivery method"
+"ShippingDescription": ""
+"ShippingPriceOverMaxWeight": 0
+"ShippingFreeFeeAmount": 0
+"ShippingServiceSystemName": "Dynamicweb.Ecommerce.Cart.ShippingProviders.StockLocationShippingProvider, Dynamicweb.Ecommerce"
+"ShippingServiceParameters": |-
+  <?xml version="1.0" encoding="utf-8"?>
+  <Parameters addin="Dynamicweb.Ecommerce.Cart.ShippingProviders.StockLocationShippingProvider">
+    <Parameter addin="Dynamicweb.Ecommerce.Cart.ShippingProviders.StockLocationShippingProvider" name="StockLocationCategory" value="STOCKLOCCAT1" />
+    <Parameter addin="Dynamicweb.Ecommerce.Cart.ShippingProviders.StockLocationShippingProvider" name="DropPointMax" value="5" />
+    <Parameter addin="Dynamicweb.Ecommerce.Cart.ShippingProviders.StockLocationShippingProvider" name="Shipping Provider Template" value="" />
+    <Parameter addin="Dynamicweb.Ecommerce.Cart.ShippingProviders.StockLocationShippingProvider" name="Save pick up point address in delivery address" value="False" />
+    <Parameter addin="Dynamicweb.Ecommerce.Cart.ShippingProviders.StockLocationShippingProvider" name="Use delivery address if specified" value="True" />
+  </Parameters>
+"ShippingSorting": 6
+"ShippingFeeSelection": "high"
+"ShippingIcon": ""
+"ShippingLimitsUseLogic": 1
+"ShippingFeeRulesSource": 1
+"ShippingTakeDiscountIntoAccount": true
+"ShippingEligibleForFreeShipping": false
+"ShippingActive": false
+"ShippingUserGroups": ""
+"ShippingAllowAnonymousUsers": false
+"ShippingCode": ""
+"ShippingAgentCode": ""
+"ShippingAgentName": ""
+"ShippingAgentServiceCode": ""
+"ShippingAgentServiceDescription": ""
+"ShippingUsePriceWithVat": false
+"ShippingMinWeight": 
+"ShippingMaxWeight": 
+"ShippingProductIds": ""
+"ShippingProductGroupIds": ""
+"ShippingProductFilterMode": 0

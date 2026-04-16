@@ -1,0 +1,29 @@
+﻿"ShippingId": "SHIP4"
+"ShippingLanguageId": "ENU"
+"ShippingName": "PostNord Privat"
+"ShippingDescription": "PostNord Privat"
+"ShippingPriceOverMaxWeight": 50
+"ShippingFreeFeeAmount": 0
+"ShippingServiceSystemName": ""
+"ShippingServiceParameters": ""
+"ShippingSorting": 2
+"ShippingFeeSelection": "high"
+"ShippingIcon": "/Images/Shipping/PostNord.svg"
+"ShippingLimitsUseLogic": 1
+"ShippingFeeRulesSource": 2
+"ShippingTakeDiscountIntoAccount": true
+"ShippingEligibleForFreeShipping": false
+"ShippingActive": true
+"ShippingUserGroups": ""
+"ShippingAllowAnonymousUsers": false
+"ShippingCode": ""
+"ShippingAgentCode": ""
+"ShippingAgentName": ""
+"ShippingAgentServiceCode": ""
+"ShippingAgentServiceDescription": ""
+"ShippingUsePriceWithVat": false
+"ShippingMinWeight": 
+"ShippingMaxWeight": 
+"ShippingProductIds": ""
+"ShippingProductGroupIds": ""
+"ShippingProductFilterMode": 0

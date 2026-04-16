@@ -1,0 +1,41 @@
+﻿"pageUniqueId": 15e4ab2a-a10e-4959-8c9f-67293f8afa30
+"sourcePageId": 5865
+"name": "Product Details"
+"menuText": "Product Details"
+"sortOrder": 2
+"isActive": false
+"itemType": "Swift-v2_ProductDetails"
+"layoutApplyToSubPages": false
+"isFolder": false
+"navigationTag": "ProductDetailPage"
+"hidden": false
+"allowclick": true
+"allowsearch": true
+"showInSitemap": true
+"showInLegend": true
+"sslMode": 0
+"displayMode": "Normal"
+"activeFrom": 2024-12-16T13:57:00.0000000
+"activeTo": 2999-12-31T23:59:59.0000000
+"permissionType": 2
+"seo":
+  "noindex": false
+  "nofollow": false
+  "robots404": false
+"urlSettings":
+  "urlIgnoreForChildren": false
+  "urlUseAsWritten": false
+"visibility":
+  "hideForPhones": false
+  "hideForTablets": false
+  "hideForDesktops": false
+"fields":
+  "Id": "151"
+  "ItemInstanceType": ""
+  "Sort": 0
+  "Title": "Product Details"
+"propertyFields":
+  "Id": "2163"
+  "Sort": 0
+  "ItemInstanceType": ""
+  "SubmenuType": "auto"

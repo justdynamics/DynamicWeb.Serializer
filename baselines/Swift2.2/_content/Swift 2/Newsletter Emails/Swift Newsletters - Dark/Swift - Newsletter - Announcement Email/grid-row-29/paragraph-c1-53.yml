@@ -1,0 +1,23 @@
+﻿"paragraphUniqueId": c8ecdb3f-f0d7-4ea0-af4b-e79c6b5beec6
+"sourceParagraphId": 21928
+"sortOrder": 53
+"itemType": "Swift-v2_EmailViewInBrowser"
+"header": "View in browser"
+"template": ""
+"colorSchemeId": ""
+"moduleSystemName": ""
+"moduleSettings": ""
+"fields":
+  "Align": "center"
+  "BorderThicknes": "1"
+  "Borders": "none"
+  "GlobalRecordPageGuid": "961323a5-86f4-4b70-9eb8-191f1aa054a6"
+  "Id": "36"
+  "ItemInstanceType": ""
+  "LeadingText": "<p>Email not displaying correctly?</p>"
+  "LineHeight": "1.5"
+  "LinkText": "View in browser"
+  "Padding": "16"
+  "ReduceFontSize": true
+  "Sort": 0
+"columnId": 1

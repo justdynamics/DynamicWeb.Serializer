@@ -1,0 +1,41 @@
+﻿"pageUniqueId": bb27615b-ff9b-4a4d-8548-2cd7d6640c45
+"sourcePageId": 8388
+"name": "My favorites"
+"menuText": "My favorites"
+"sortOrder": 5
+"isActive": true
+"itemType": "Swift-v2_Page"
+"layoutApplyToSubPages": false
+"isFolder": false
+"hidden": false
+"allowclick": true
+"allowsearch": true
+"showInSitemap": true
+"showInLegend": true
+"sslMode": 0
+"displayMode": "Normal"
+"activeFrom": 2025-08-27T14:46:00.0000000
+"activeTo": 2999-12-31T23:59:59.0000000
+"permissionType": 2
+"seo":
+  "noindex": false
+  "nofollow": false
+  "robots404": false
+"urlSettings":
+  "urlIgnoreForChildren": false
+  "urlUseAsWritten": false
+"visibility":
+  "hideForPhones": false
+  "hideForTablets": false
+  "hideForDesktops": false
+"fields":
+  "Id": "1073"
+  "ItemInstanceType": ""
+  "Sort": 5
+  "Title": "My favorites"
+"propertyFields":
+  "Id": "2687"
+  "Sort": 0
+  "ItemInstanceType": ""
+  "Icon": "/Files/Images/Icons/heart.svg"
+  "SubmenuType": "auto"

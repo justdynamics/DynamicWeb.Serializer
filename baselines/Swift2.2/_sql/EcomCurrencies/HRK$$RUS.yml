@@ -1,0 +1,14 @@
+﻿"CurrencyCode": "HRK"
+"CurrencyLanguageId": "RUS"
+"CurrencySymbol": "kn"
+"CurrencyName": "Croatian Kuna"
+"CurrencyRate": 99
+"CurrencyIsDefault": false
+"CurrencyCultureInfo": "hr-HR"
+"CurrencyPayGatewayCode": 191
+"CurrencyRoundingId": ""
+"CurrencySymbolPlace": 0
+"CurrencyAutoId": 138
+"CurrencyPositivePattern": 3
+"CurrencyNegativePattern": 8
+"CurrencyUseCurrencyCodeForFormat": false

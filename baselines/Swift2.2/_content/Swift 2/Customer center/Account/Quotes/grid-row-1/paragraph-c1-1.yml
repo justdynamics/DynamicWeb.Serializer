@@ -1,0 +1,29 @@
+﻿"paragraphUniqueId": ca5cd2a9-b721-409a-9609-2ec4609e9046
+"sourceParagraphId": 22166
+"sortOrder": 1
+"itemType": "Swift-v2_App"
+"header": "Quotes"
+"template": ""
+"colorSchemeId": ""
+"moduleSystemName": "eCom_CustomerExperienceCenter"
+"moduleSettings": |-
+  <?xml version="1.0" encoding="utf-8"?>
+  <Settings>
+    <OrderType>Quote</OrderType>
+    <RetrieveListBasedOn>UseCustomerNumber</RetrieveListBasedOn>
+    <PageSize>10</PageSize>
+    <SortByField>CreatedAt</SortByField>
+    <SortOrder>Desc</SortOrder>
+    <OrderListTemplate>Quotes_List.cshtml</OrderListTemplate>
+    <DetailTemplate>Quotes_Details.cshtml</DetailTemplate>
+    <EmailTemplate></EmailTemplate>
+    <LedgerType></LedgerType>
+    <LedgerFlowStates></LedgerFlowStates>
+  </Settings>
+"fields":
+  "GlobalRecordPageGuid": "df52d626-db25-4dca-930b-a2939fd33ccc"
+  "Id": "370"
+  "ItemInstanceType": ""
+  "Sort": 0
+  "Title": "Quotes"
+"columnId": 1

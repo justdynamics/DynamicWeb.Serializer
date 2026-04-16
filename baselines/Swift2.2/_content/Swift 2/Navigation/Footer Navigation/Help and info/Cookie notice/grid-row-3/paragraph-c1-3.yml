@@ -1,0 +1,18 @@
+﻿"paragraphUniqueId": 6915b277-f6dd-4c17-8186-48fac8bf5374
+"sourceParagraphId": 4038
+"sortOrder": 3
+"itemType": "Swift-v2_Text"
+"header": "Which cookies are used by the Website and why?"
+"template": "TextLeft.cshtml"
+"colorSchemeId": ""
+"moduleSystemName": ""
+"moduleSettings": ""
+"fields":
+  "GlobalRecordPageGuid": "7c888265-1f39-497b-af3b-70e3c63f95f9"
+  "Id": "287"
+  "ItemInstanceType": ""
+  "Sort": 0
+  "Subtitle": ""
+  "Text": "<p>The Website uses the following cookies:</p><p><strong>In connection with log-in information: &quot;DW_Extranet&quot; (only if the solution contains Extranet)</strong></p><p>”DW_Extranet” is a ”persistent cookie”. It contains encrypted information about username and password to the extent you are using a log-in function on the Website. The lifespan of the cookie is one month, and it will therefore be deleted one month after the last time you have used the Website&#39;s log-in function. This cookie is used to remember you when you return to the Website, so that you won&#39;t have to log in again.</p><p><strong>In connection with the date of your latest and previous visits: ”Dynamicweb”</strong></p><p>”Dynamicweb” is a persistent cookie. it consists of two parts;<br>&quot;Dynamicweb.VisitorID&quot; is a unique ID which you have been given upon your visiting the Website. &quot;Dynamicweb.VisitDate&quot; is information about the date of your last visit to the Website and is used in connection with statistics.<br>The cookie has a one year lifespan and it is therefore deleted one year after your last visit to the Website.</p>"
+  "Title": "<h2 class=\"dw-h4\">Which cookies are used by the Website and why?</h2>"
+"columnId": 1

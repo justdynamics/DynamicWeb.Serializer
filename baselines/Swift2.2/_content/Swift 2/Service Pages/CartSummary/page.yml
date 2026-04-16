@@ -1,0 +1,45 @@
+﻿"pageUniqueId": fcc06f29-e02a-441b-b964-2f7eb67dab02
+"sourcePageId": 1291
+"name": "CartSummary"
+"menuText": "CartSummary"
+"sortOrder": 2
+"isActive": false
+"itemType": "Swift-v2_CartSummary"
+"layoutApplyToSubPages": false
+"isFolder": false
+"navigationTag": "CartSummary"
+"hidden": false
+"allowclick": true
+"allowsearch": false
+"showInSitemap": false
+"showInLegend": false
+"sslMode": 0
+"displayMode": "Normal"
+"activeFrom": 2021-12-02T12:29:00.0000000
+"activeTo": 2999-12-31T23:59:59.0000000
+"permissionType": 2
+"seo":
+  "noindex": false
+  "nofollow": false
+  "robots404": false
+"urlSettings":
+  "urlIgnoreForChildren": false
+  "urlUseAsWritten": false
+"visibility":
+  "hideForPhones": false
+  "hideForTablets": false
+  "hideForDesktops": false
+"fields":
+  "CartPageLink": "Default.aspx?Id=1840"
+  "CheckoutAnonymousPageLink": "Default.aspx?Id=1844"
+  "CheckoutSignedInPageLink": "1846"
+  "Id": "1"
+  "ItemInstanceType": ""
+  "QuoteCheckoutPageLink": "1848"
+  "Sort": 2
+  "Title": "CartSummary"
+"propertyFields":
+  "Id": "538"
+  "Sort": 0
+  "ItemInstanceType": ""
+  "SubmenuType": "auto"

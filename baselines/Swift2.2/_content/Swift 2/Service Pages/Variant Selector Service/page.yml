@@ -1,0 +1,41 @@
+﻿"pageUniqueId": 431df042-eeb1-443a-ae9a-1f1dd008e8ee
+"sourcePageId": 1685
+"name": "Variant Selector Service"
+"menuText": "Variant Selector Service"
+"sortOrder": 7
+"isActive": false
+"itemType": "Swift-v2_Page"
+"layoutApplyToSubPages": false
+"isFolder": false
+"hidden": false
+"allowclick": true
+"allowsearch": false
+"showInSitemap": false
+"showInLegend": false
+"sslMode": 0
+"displayMode": "Normal"
+"activeFrom": 2021-10-25T09:29:00.0000000
+"activeTo": 2999-12-31T00:00:00.0000000
+"permissionType": 2
+"seo":
+  "noindex": false
+  "nofollow": false
+  "robots404": false
+"urlSettings":
+  "urlIgnoreForChildren": false
+  "urlUseAsWritten": false
+"visibility":
+  "hideForPhones": false
+  "hideForTablets": false
+  "hideForDesktops": false
+"fields":
+  "Id": "634"
+  "ItemInstanceType": ""
+  "Sort": 7
+  "Title": "Variant Selector Service"
+"propertyFields":
+  "Id": "964"
+  "Sort": 0
+  "ItemInstanceType": ""
+  "Icon": "/Files/Icons/1_none.svg"
+  "SubmenuType": "auto"

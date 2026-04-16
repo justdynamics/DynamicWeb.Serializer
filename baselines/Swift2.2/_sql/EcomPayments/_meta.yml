@@ -1,0 +1,202 @@
+﻿"tableName": "EcomPayments"
+"nameColumn": ""
+"compareColumns": ""
+"keyColumns":
+- "PaymentId"
+- "PaymentLanguageId"
+"identityColumns":
+- "PaymentAutoId"
+"allColumns":
+- "PaymentId"
+- "PaymentLanguageId"
+- "PaymentName"
+- "PaymentDescription"
+- "PaymentIcon"
+- "PaymentGatewayId"
+- "PaymentGatewayTemplate"
+- "PaymentMerchantNum"
+- "PaymentGatewayMD5Key"
+- "PaymentCCITemplate"
+- "PaymentGatewayParameters"
+- "PaymentIconOrderList"
+- "PaymentAddInType"
+- "PaymentCheckoutSystemName"
+- "PaymentCheckoutParameters"
+- "PaymentSorting"
+- "PaymentAutoId"
+- "PaymentActive"
+- "PaymentUserGroups"
+- "PaymentAllowAnonymousUsers"
+- "PaymentCode"
+- "PaymentTermsCode"
+- "PaymentTermsDescription"
+- "PaymentDisableSavedCards"
+"columnDefinitions":
+- "name": "PaymentId"
+  "dataType": "nvarchar"
+  "maxLength": 50
+  "precision": 0
+  "scale": 0
+  "isNullable": false
+  "isIdentity": false
+- "name": "PaymentLanguageId"
+  "dataType": "nvarchar"
+  "maxLength": 50
+  "precision": 0
+  "scale": 0
+  "isNullable": false
+  "isIdentity": false
+- "name": "PaymentName"
+  "dataType": "nvarchar"
+  "maxLength": 255
+  "precision": 0
+  "scale": 0
+  "isNullable": true
+  "isIdentity": false
+- "name": "PaymentDescription"
+  "dataType": "nvarchar"
+  "maxLength": -1
+  "precision": 0
+  "scale": 0
+  "isNullable": true
+  "isIdentity": false
+- "name": "PaymentIcon"
+  "dataType": "nvarchar"
+  "maxLength": 255
+  "precision": 0
+  "scale": 0
+  "isNullable": true
+  "isIdentity": false
+- "name": "PaymentGatewayId"
+  "dataType": "nvarchar"
+  "maxLength": 50
+  "precision": 0
+  "scale": 0
+  "isNullable": true
+  "isIdentity": false
+- "name": "PaymentGatewayTemplate"
+  "dataType": "nvarchar"
+  "maxLength": 255
+  "precision": 0
+  "scale": 0
+  "isNullable": true
+  "isIdentity": false
+- "name": "PaymentMerchantNum"
+  "dataType": "nvarchar"
+  "maxLength": 50
+  "precision": 0
+  "scale": 0
+  "isNullable": true
+  "isIdentity": false
+- "name": "PaymentGatewayMD5Key"
+  "dataType": "nvarchar"
+  "maxLength": 255
+  "precision": 0
+  "scale": 0
+  "isNullable": true
+  "isIdentity": false
+- "name": "PaymentCCITemplate"
+  "dataType": "nvarchar"
+  "maxLength": 255
+  "precision": 0
+  "scale": 0
+  "isNullable": true
+  "isIdentity": false
+- "name": "PaymentGatewayParameters"
+  "dataType": "ntext"
+  "maxLength": 1073741823
+  "precision": 0
+  "scale": 0
+  "isNullable": true
+  "isIdentity": false
+- "name": "PaymentIconOrderList"
+  "dataType": "nvarchar"
+  "maxLength": 255
+  "precision": 0
+  "scale": 0
+  "isNullable": true
+  "isIdentity": false
+- "name": "PaymentAddInType"
+  "dataType": "nvarchar"
+  "maxLength": -1
+  "precision": 0
+  "scale": 0
+  "isNullable": true
+  "isIdentity": false
+- "name": "PaymentCheckoutSystemName"
+  "dataType": "nvarchar"
+  "maxLength": -1
+  "precision": 0
+  "scale": 0
+  "isNullable": true
+  "isIdentity": false
+- "name": "PaymentCheckoutParameters"
+  "dataType": "nvarchar"
+  "maxLength": -1
+  "precision": 0
+  "scale": 0
+  "isNullable": true
+  "isIdentity": false
+- "name": "PaymentSorting"
+  "dataType": "int"
+  "maxLength": 0
+  "precision": 10
+  "scale": 0
+  "isNullable": true
+  "isIdentity": false
+- "name": "PaymentAutoId"
+  "dataType": "int"
+  "maxLength": 0
+  "precision": 10
+  "scale": 0
+  "isNullable": false
+  "isIdentity": true
+- "name": "PaymentActive"
+  "dataType": "bit"
+  "maxLength": 0
+  "precision": 0
+  "scale": 0
+  "isNullable": false
+  "isIdentity": false
+- "name": "PaymentUserGroups"
+  "dataType": "nvarchar"
+  "maxLength": -1
+  "precision": 0
+  "scale": 0
+  "isNullable": true
+  "isIdentity": false
+- "name": "PaymentAllowAnonymousUsers"
+  "dataType": "bit"
+  "maxLength": 0
+  "precision": 0
+  "scale": 0
+  "isNullable": false
+  "isIdentity": false
+- "name": "PaymentCode"
+  "dataType": "nvarchar"
+  "maxLength": 25
+  "precision": 0
+  "scale": 0
+  "isNullable": true
+  "isIdentity": false
+- "name": "PaymentTermsCode"
+  "dataType": "nvarchar"
+  "maxLength": 25
+  "precision": 0
+  "scale": 0
+  "isNullable": true
+  "isIdentity": false
+- "name": "PaymentTermsDescription"
+  "dataType": "nvarchar"
+  "maxLength": -1
+  "precision": 0
+  "scale": 0
+  "isNullable": true
+  "isIdentity": false
+- "name": "PaymentDisableSavedCards"
+  "dataType": "bit"
+  "maxLength": 0
+  "precision": 0
+  "scale": 0
+  "isNullable": false
+  "isIdentity": false

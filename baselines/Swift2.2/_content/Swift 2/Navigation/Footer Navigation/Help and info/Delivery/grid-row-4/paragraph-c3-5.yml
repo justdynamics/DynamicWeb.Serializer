@@ -1,0 +1,18 @@
+﻿"paragraphUniqueId": a35d1363-95b9-44ec-a7ce-ab08b7a808bd
+"sourceParagraphId": 2777
+"sortOrder": 5
+"itemType": "Swift-v2_Feature"
+"header": "Feature"
+"template": "IconBoxLeft.cshtml"
+"colorSchemeId": ""
+"moduleSystemName": ""
+"moduleSettings": ""
+"fields":
+  "GlobalRecordPageGuid": "d88f09e2-1a31-48df-9d76-6596282a1f1c"
+  "Icon": "/Files/Images/Icons/clock.svg"
+  "Id": "761"
+  "ItemInstanceType": ""
+  "Sort": 0
+  "Text": "<p><strong>Call us</strong><br>+45 12345678</p>"
+  "Title": ""
+"columnId": 3

@@ -1,0 +1,110 @@
+﻿"paragraphUniqueId": 72bdb62f-14d8-4e14-ac95-5f22dc1e9fa2
+"sourceParagraphId": 9699
+"sortOrder": 1
+"itemType": "Swift-v2_CheckoutApp"
+"header": "Checkout"
+"template": ""
+"colorSchemeId": ""
+"moduleSystemName": "eCom_CartV2"
+"moduleSettings": |-
+  <?xml version="1.0" encoding="utf-8"?>
+  <Settings>
+    <ShopSelector>SHOP1</ShopSelector>
+    <CartSelector></CartSelector>
+    <CheckoutToQuote>0</CheckoutToQuote>
+    <DoValidateCustomerAccepted>1</DoValidateCustomerAccepted>
+    <CustomerAcceptedErrorMessage>Please accept the terms and conditions</CustomerAcceptedErrorMessage>
+    <DoValidateStockStatus>0</DoValidateStockStatus>
+    <StockStatusErrorMessage>The quantity of products in cart exceeds the stock quantity ({ProductName}).</StockStatusErrorMessage>
+    <UseNewsletterSubscription>1</UseNewsletterSubscription>
+    <EmptyCartRadio>EmptyCartRadioRedirect</EmptyCartRadio>
+    <EmptyCartTemplate></EmptyCartTemplate>
+    <EmptyCartTemplate_path></EmptyCartTemplate_path>
+    <SetUserDetailsRadio>SetUserDetailsRadioTrue</SetUserDetailsRadio>
+    <DoCreateUserInCheckout>0</DoCreateUserInCheckout>
+    <CreateNewUserGroupsHidden></CreateNewUserGroupsHidden>
+    <DoUpdateUsersByEmail>0</DoUpdateUsersByEmail>
+    <ErrorEmtyUsername>The username cannot be empty</ErrorEmtyUsername>
+    <ErrorUsernameTaken>This username is already taken</ErrorUsernameTaken>
+    <ErrorEmtyPassword>The password cannot be empty</ErrorEmtyPassword>
+    <ErrorPasswordsNotMatch>The passwords do not match</ErrorPasswordsNotMatch>
+    <ErrorPasswordLength>The length of the password cannot be 32</ErrorPasswordLength>
+    <ErrorIllegalPasswordCharacters>Your password contains system reserved characters. Please choose another password</ErrorIllegalPasswordCharacters>
+    <PaymetTypes></PaymetTypes>
+    <SelectAllPayments>1</SelectAllPayments>
+    <DeliveryTypes></DeliveryTypes>
+    <SelectAllDeliveries>1</SelectAllDeliveries>
+    <OnReEnterRadio>OnReEnterRadioFirstStep</OnReEnterRadio>
+    <CountryForShippingRadio>CountryForShippingRadioBoth</CountryForShippingRadio>
+    <CountryForPaymentRadio>CountryForPaymentRadioCustomer</CountryForPaymentRadio>
+    <RemoveNoneExistingProductsRadio>RemoveNoneExistingProductsRadioTrue</RemoveNoneExistingProductsRadio>
+    <DefaultPaymentId></DefaultPaymentId>
+    <DefaultShippingId></DefaultShippingId>
+    <IncludeDeliveryAddressesFromUsersWithSameCustomerNumber>0</IncludeDeliveryAddressesFromUsersWithSameCustomerNumber>
+    <Step1Name>Information</Step1Name>
+    <Step1Template>eCom7/CartV2/Step/InformationUser.cshtml</Step1Template>
+    <Step1Template_path></Step1Template_path>
+    <Step1IsCheckout>false</Step1IsCheckout>
+    <Step2Name>Delivery</Step2Name>
+    <Step2Template>eCom7/CartV2/Step/DeliveryUser.cshtml</Step2Template>
+    <Step2Template_path></Step2Template_path>
+    <Step2IsCheckout>false</Step2IsCheckout>
+    <Step3Name>Payment</Step3Name>
+    <Step3Template>eCom7/CartV2/Step/PaymentUser.cshtml</Step3Template>
+    <Step3Template_path></Step3Template_path>
+    <Step3IsCheckout>false</Step3IsCheckout>
+    <Step4Name>Checkout</Step4Name>
+    <Step4Template></Step4Template>
+    <Step4Template_path></Step4Template_path>
+    <Step4IsCheckout>true</Step4IsCheckout>
+    <Step5Name>Receipt</Step5Name>
+    <Step5Template>eCom7/CartV2/Step/Receipt.cshtml</Step5Template>
+    <Step5Template_path></Step5Template_path>
+    <Step5IsCheckout>false</Step5IsCheckout>
+    <Mail1Recipient></Mail1Recipient>
+    <Mail1Subject>Your order</Mail1Subject>
+    <Mail1Template></Mail1Template>
+    <Mail1Template_path></Mail1Template_path>
+    <Mail1SenderName>Swift</Mail1SenderName>
+    <Mail1SenderEmail>noreply@dynamicweb.dk</Mail1SenderEmail>
+    <Mail1IsCustomer>true</Mail1IsCustomer>
+    <Mail1IsDelivery>true</Mail1IsDelivery>
+    <Mail1EncodingCodePage>65001</Mail1EncodingCodePage>
+    <Mail1Attachment></Mail1Attachment>
+    <Mail1Attachment_path></Mail1Attachment_path>
+    <Mail1IsCustomField>false</Mail1IsCustomField>
+    <Mail1RecipientCustomField></Mail1RecipientCustomField>
+    <Mail1RedirectType>Page</Mail1RedirectType>
+    <Mail1RedirectPage>Default.aspx?Id=1673</Mail1RedirectPage>
+    <ErrorMessage_VALIDATION1>Missing billing address</ErrorMessage_VALIDATION1>
+    <ErrorMessage_VALIDATION2>Missing billing city</ErrorMessage_VALIDATION2>
+    <ErrorMessage_VALIDATION4>Missing billing zip</ErrorMessage_VALIDATION4>
+    <ValidationGroups>VALIDATIONGROUP1</ValidationGroups>
+    <SelectedValidations>VALIDATION1,VALIDATION2,VALIDATION4</SelectedValidations>
+  </Settings>
+"fields":
+  "CartPageLink": "Default.aspx?Id=1840"
+  "CheckoutUserPageLink": "Default.aspx?ID=1846"
+  "DisableComments": false
+  "DisableOrderReference": false
+  "DisableVouchers": false
+  "DisabledDates": 125
+  "DisabledWeekdays": "[\"6\",\"0\"]"
+  "EnableAdditionalAddress": false
+  "EnableDeliveryDate": true
+  "EnableFindLocation": true
+  "GlobalRecordPageGuid": "6ebb84de-540b-403b-9e30-f105463392cc"
+  "HideEditBillingAddress": false
+  "HideEditShippingAddress": false
+  "Id": "35"
+  "ItemInstanceType": ""
+  "Logo": ""
+  "LogoLink": "Default.aspx?ID=6869"
+  "MaxWidth": 150
+  "SignInPageLink": "Default.aspx?ID=111"
+  "Sort": 0
+  "TermsAndConditionsPageLink": "Default.aspx?Id=108"
+  "Title": "Checkout"
+  "UserAccountPageLink": "Default.aspx?ID=8431"
+  "UserAddressesPageLink": "Default.aspx?ID=8398"
+"columnId": 1

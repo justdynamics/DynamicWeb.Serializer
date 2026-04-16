@@ -1,0 +1,17 @@
+﻿"id": 1e9fb879-9f3c-4c19-b56d-77fea839e10d
+"sortOrder": 9
+"definitionId": "2ColumnsEmail"
+"itemType": "Swift-v2_EmailRow"
+"container": "Grid"
+"colorSchemeId": "darksubtle"
+"mobileLayout": "6,6"
+"verticalAlignment": "None"
+"fields":
+  "Id": "403"
+  "Sort": 0
+  "ItemInstanceType": ""
+"columns":
+- "id": 1
+  "width": 0
+- "id": 2
+  "width": 0

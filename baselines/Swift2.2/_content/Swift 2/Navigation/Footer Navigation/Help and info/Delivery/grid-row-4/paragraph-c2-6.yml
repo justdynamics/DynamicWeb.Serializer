@@ -1,0 +1,18 @@
+﻿"paragraphUniqueId": f7056845-df0d-40c5-b538-c7e113462b15
+"sourceParagraphId": 2778
+"sortOrder": 6
+"itemType": "Swift-v2_Feature"
+"header": "test"
+"template": "IconBoxLeft.cshtml"
+"colorSchemeId": ""
+"moduleSystemName": ""
+"moduleSettings": ""
+"fields":
+  "GlobalRecordPageGuid": "d88f09e2-1a31-48df-9d76-6596282a1f1c"
+  "Icon": "/Files/Images/Icons/users.svg"
+  "Id": "762"
+  "ItemInstanceType": ""
+  "Sort": 0
+  "Text": "<p><strong>Chat with us</strong><br>Get a reply instantly<br></p>"
+  "Title": ""
+"columnId": 2

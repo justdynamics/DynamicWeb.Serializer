@@ -1,0 +1,122 @@
+﻿"tableName": "EcomCurrencies"
+"nameColumn": ""
+"compareColumns": ""
+"keyColumns":
+- "CurrencyCode"
+- "CurrencyLanguageId"
+"identityColumns":
+- "CurrencyAutoId"
+"allColumns":
+- "CurrencyCode"
+- "CurrencyLanguageId"
+- "CurrencySymbol"
+- "CurrencyName"
+- "CurrencyRate"
+- "CurrencyIsDefault"
+- "CurrencyCultureInfo"
+- "CurrencyPayGatewayCode"
+- "CurrencyRoundingId"
+- "CurrencySymbolPlace"
+- "CurrencyAutoId"
+- "CurrencyPositivePattern"
+- "CurrencyNegativePattern"
+- "CurrencyUseCurrencyCodeForFormat"
+"columnDefinitions":
+- "name": "CurrencyCode"
+  "dataType": "nvarchar"
+  "maxLength": 3
+  "precision": 0
+  "scale": 0
+  "isNullable": false
+  "isIdentity": false
+- "name": "CurrencyLanguageId"
+  "dataType": "nvarchar"
+  "maxLength": 50
+  "precision": 0
+  "scale": 0
+  "isNullable": false
+  "isIdentity": false
+- "name": "CurrencySymbol"
+  "dataType": "nvarchar"
+  "maxLength": 5
+  "precision": 0
+  "scale": 0
+  "isNullable": true
+  "isIdentity": false
+- "name": "CurrencyName"
+  "dataType": "nvarchar"
+  "maxLength": 50
+  "precision": 0
+  "scale": 0
+  "isNullable": true
+  "isIdentity": false
+- "name": "CurrencyRate"
+  "dataType": "float"
+  "maxLength": 0
+  "precision": 53
+  "scale": 0
+  "isNullable": true
+  "isIdentity": false
+- "name": "CurrencyIsDefault"
+  "dataType": "bit"
+  "maxLength": 0
+  "precision": 0
+  "scale": 0
+  "isNullable": true
+  "isIdentity": false
+- "name": "CurrencyCultureInfo"
+  "dataType": "nvarchar"
+  "maxLength": 50
+  "precision": 0
+  "scale": 0
+  "isNullable": true
+  "isIdentity": false
+- "name": "CurrencyPayGatewayCode"
+  "dataType": "smallint"
+  "maxLength": 0
+  "precision": 5
+  "scale": 0
+  "isNullable": true
+  "isIdentity": false
+- "name": "CurrencyRoundingId"
+  "dataType": "nvarchar"
+  "maxLength": 50
+  "precision": 0
+  "scale": 0
+  "isNullable": true
+  "isIdentity": false
+- "name": "CurrencySymbolPlace"
+  "dataType": "int"
+  "maxLength": 0
+  "precision": 10
+  "scale": 0
+  "isNullable": true
+  "isIdentity": false
+- "name": "CurrencyAutoId"
+  "dataType": "int"
+  "maxLength": 0
+  "precision": 10
+  "scale": 0
+  "isNullable": false
+  "isIdentity": true
+- "name": "CurrencyPositivePattern"
+  "dataType": "int"
+  "maxLength": 0
+  "precision": 10
+  "scale": 0
+  "isNullable": true
+  "isIdentity": false
+- "name": "CurrencyNegativePattern"
+  "dataType": "int"
+  "maxLength": 0
+  "precision": 10
+  "scale": 0
+  "isNullable": true
+  "isIdentity": false
+- "name": "CurrencyUseCurrencyCodeForFormat"
+  "dataType": "bit"
+  "maxLength": 0
+  "precision": 0
+  "scale": 0
+  "isNullable": false
+  "isIdentity": false

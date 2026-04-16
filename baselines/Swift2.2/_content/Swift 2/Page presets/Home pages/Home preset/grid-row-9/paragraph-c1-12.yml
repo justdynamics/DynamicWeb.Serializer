@@ -1,0 +1,19 @@
+﻿"paragraphUniqueId": 2bb35a10-2d60-4c39-b12e-78c1116311d6
+"sourceParagraphId": 22149
+"sortOrder": 12
+"itemType": "Swift-v2_Text"
+"header": "Partners"
+"template": "TextCenter.cshtml"
+"colorSchemeId": ""
+"moduleSystemName": ""
+"moduleSettings": ""
+"fields":
+  "FirstButton": "{\r\n  \"SelectedValue\": \"\",\r\n  \"Label\": \"\",\r\n  \"Link\": \"\",\r\n  \"LinkType\": \"\",\r\n  \"Style\": \"primary\"\r\n}"
+  "GlobalRecordPageGuid": "5c47a52a-4a24-449e-8df9-563f03afe297"
+  "Id": "1427"
+  "ItemInstanceType": ""
+  "SecondButton": "{\r\n  \"SelectedValue\": \"\",\r\n  \"Label\": \"\",\r\n  \"Link\": \"\",\r\n  \"LinkType\": \"\",\r\n  \"Style\": \"primary\"\r\n}"
+  "Sort": 0
+  "Subtitle": "<p class=\"dw-h3\">500+"
+  "Title": "<p class=\"dw-paragraph-1\">Partners"
+"columnId": 1

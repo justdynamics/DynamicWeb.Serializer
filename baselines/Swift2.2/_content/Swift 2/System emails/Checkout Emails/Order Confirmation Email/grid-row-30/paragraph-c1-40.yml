@@ -1,0 +1,22 @@
+﻿"paragraphUniqueId": 7d7b340c-02b6-4f06-9394-61861c2b9bfe
+"sourceParagraphId": 21839
+"sortOrder": 40
+"itemType": "Swift-v2_EmailText"
+"header": "Address"
+"template": ""
+"colorSchemeId": ""
+"moduleSystemName": ""
+"moduleSettings": ""
+"fields":
+  "Align": "center"
+  "BorderThicknes": "1"
+  "Borders": "none"
+  "GlobalRecordPageGuid": "29d6b442-6011-4315-9d5c-326759221023"
+  "Id": "539"
+  "ItemInstanceType": ""
+  "LineHeight": "1"
+  "Padding": "0"
+  "Sort": 0
+  "Text": "<p>Bjoernholms Allé 30, 8260 Viby J, Denmark</p><p>+45 70 25 20 90 | info@dynamicweb.dk</p>"
+  "Title": "Address"
+"columnId": 1

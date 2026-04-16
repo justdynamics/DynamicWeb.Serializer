@@ -1,0 +1,25 @@
+﻿"paragraphUniqueId": 4f47da97-fa64-45b3-8c8a-1f8346ca33a5
+"sourceParagraphId": 22159
+"sortOrder": 1
+"itemType": "Swift-v2_App"
+"header": "Favorites"
+"template": ""
+"colorSchemeId": ""
+"moduleSystemName": "eCom_CustomerExperienceCenterFavorites"
+"moduleSettings": |-
+  <?xml version="1.0" encoding="utf-8"?>
+  <Settings>
+    <RetrieveListBasedOn>UseUserID</RetrieveListBasedOn>
+    <PageSize>10</PageSize>
+    <SortByField></SortByField>
+    <SortOrder>Asc</SortOrder>
+    <FavoriteListsTemplate>FavoriteLists.cshtml</FavoriteListsTemplate>
+    <DetailTemplate>FavoriteDetail.cshtml</DetailTemplate>
+  </Settings>
+"fields":
+  "GlobalRecordPageGuid": "bb27615b-ff9b-4a4d-8548-2cd7d6640c45"
+  "Id": "363"
+  "ItemInstanceType": ""
+  "Sort": 0
+  "Title": "Favorites"
+"columnId": 1

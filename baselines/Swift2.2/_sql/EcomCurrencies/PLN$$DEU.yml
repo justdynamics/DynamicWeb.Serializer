@@ -1,0 +1,14 @@
+﻿"CurrencyCode": "PLN"
+"CurrencyLanguageId": "DEU"
+"CurrencySymbol": "zł"
+"CurrencyName": "Zloty"
+"CurrencyRate": 163
+"CurrencyIsDefault": false
+"CurrencyCultureInfo": "pl-PL"
+"CurrencyPayGatewayCode": 985
+"CurrencyRoundingId": ""
+"CurrencySymbolPlace": 0
+"CurrencyAutoId": 118
+"CurrencyPositivePattern": 3
+"CurrencyNegativePattern": 8
+"CurrencyUseCurrencyCodeForFormat": false

@@ -1,0 +1,24 @@
+﻿"paragraphUniqueId": 45ab92b5-dac3-42ae-9116-9d33ddd0a1a5
+"sourceParagraphId": 20198
+"sortOrder": 8
+"itemType": "Swift-v2_ProductFieldDisplayGroupsAccordion"
+"header": ""
+"template": ""
+"colorSchemeId": ""
+"moduleSystemName": ""
+"moduleSettings": ""
+"fields":
+  "CustomizeLayouts": false
+  "FieldDisplayGroupLayoutSelector": 0
+  "FieldDisplayGroups": "[\"MainFeatures\",\"All_specs\",\"Engine\",\"Battery\",\"Equipment\",\"Bike_spec\",\"Clothing_spec\",\"Short_clothes_info\"]"
+  "GlobalRecordPageGuid": "fb23f239-6758-47a7-ae31-fbed98fdedfa"
+  "HideFieldLabels": false
+  "HideFieldsWithZeroValue": false
+  "HideTitle": false
+  "Id": "19"
+  "ItemInstanceType": ""
+  "Layout": "bullets"
+  "Sort": 0
+  "Title": ""
+  "TitleFontSize": "h5"
+"columnId": 1

@@ -1,0 +1,36 @@
+﻿"pageUniqueId": 8639e1d3-f078-4892-aa01-2ae965b9f7a9
+"sourcePageId": 7837
+"name": "Newsletter Emails"
+"menuText": "Newsletter Emails"
+"sortOrder": 1
+"isActive": true
+"layoutApplyToSubPages": false
+"isFolder": true
+"treeSection": "Emails"
+"hidden": false
+"allowclick": false
+"allowsearch": false
+"showInSitemap": false
+"showInLegend": false
+"sslMode": 0
+"displayMode": "Normal"
+"activeFrom": 2025-04-22T14:18:08.5500000
+"activeTo": 2999-12-31T23:59:59.0000000
+"permissionType": 2
+"seo":
+  "noindex": false
+  "nofollow": false
+  "robots404": false
+"urlSettings":
+  "urlIgnoreForChildren": true
+  "urlUseAsWritten": false
+"visibility":
+  "hideForPhones": true
+  "hideForTablets": true
+  "hideForDesktops": true
+"propertyFields":
+  "Id": "2487"
+  "Sort": 0
+  "ItemInstanceType": ""
+  "Icon": ""
+  "SubmenuType": "auto"

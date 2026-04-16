@@ -1,0 +1,58 @@
+﻿"tableName": "EcomVatGroups"
+"nameColumn": "VatName"
+"compareColumns": ""
+"keyColumns":
+- "VatGroupId"
+- "VatGroupLanguageId"
+"identityColumns":
+- "VatGroupAutoId"
+"allColumns":
+- "VatGroupId"
+- "VatGroupName"
+- "VatGroupLanguageId"
+- "VatGroupVatName"
+- "VatGroupConfigurableVatProviderSettings"
+- "VatGroupAutoId"
+"columnDefinitions":
+- "name": "VatGroupId"
+  "dataType": "nvarchar"
+  "maxLength": 50
+  "precision": 0
+  "scale": 0
+  "isNullable": false
+  "isIdentity": false
+- "name": "VatGroupName"
+  "dataType": "nvarchar"
+  "maxLength": 255
+  "precision": 0
+  "scale": 0
+  "isNullable": true
+  "isIdentity": false
+- "name": "VatGroupLanguageId"
+  "dataType": "nvarchar"
+  "maxLength": 50
+  "precision": 0
+  "scale": 0
+  "isNullable": false
+  "isIdentity": false
+- "name": "VatGroupVatName"
+  "dataType": "nvarchar"
+  "maxLength": 255
+  "precision": 0
+  "scale": 0
+  "isNullable": true
+  "isIdentity": false
+- "name": "VatGroupConfigurableVatProviderSettings"
+  "dataType": "nvarchar"
+  "maxLength": -1
+  "precision": 0
+  "scale": 0
+  "isNullable": true
+  "isIdentity": false
+- "name": "VatGroupAutoId"
+  "dataType": "int"
+  "maxLength": 0
+  "precision": 10
+  "scale": 0
+  "isNullable": false
+  "isIdentity": true

@@ -1,0 +1,48 @@
+﻿"pageUniqueId": 90773aa1-018b-49e7-9402-be0fe8ffe785
+"sourcePageId": 111
+"name": "Sign in"
+"menuText": "Sign in"
+"sortOrder": 1
+"isActive": true
+"itemType": "Swift-v2_Page"
+"layoutApplyToSubPages": false
+"isFolder": false
+"treeSection": "Customer center"
+"shortCut": "Default.aspx?ID=8284"
+"hidden": false
+"allowclick": true
+"allowsearch": false
+"showInSitemap": false
+"showInLegend": false
+"sslMode": 0
+"displayMode": "Normal"
+"activeFrom": 2020-12-14T08:21:00.0000000
+"activeTo": 2999-12-31T23:59:59.0000000
+"permissionType": 2
+"seo":
+  "noindex": false
+  "nofollow": false
+  "robots404": false
+"urlSettings":
+  "urlIgnoreForChildren": false
+  "urlUseAsWritten": false
+"visibility":
+  "hideForPhones": false
+  "hideForTablets": false
+  "hideForDesktops": false
+"fields":
+  "Id": "957"
+  "ItemInstanceType": ""
+  "Sort": 1
+  "Title": "Sign in"
+"propertyFields":
+  "Id": "8"
+  "Sort": 0
+  "ItemInstanceType": ""
+  "Icon": "/Files/Images/Icons/user.svg"
+  "SubmenuType": "auto"
+"permissions":
+- "owner": "Anonymous"
+  "ownerType": "role"
+  "level": "read"
+  "levelValue": 4

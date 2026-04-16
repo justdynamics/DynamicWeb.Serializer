@@ -1,0 +1,22 @@
+﻿"paragraphUniqueId": 20377d0b-ac55-4d96-ad46-d39468dfa1f3
+"sourceParagraphId": 9749
+"sortOrder": 2
+"itemType": "Swift-v2_EmailHeading"
+"header": "Contact form"
+"template": ""
+"colorSchemeId": ""
+"moduleSystemName": ""
+"moduleSettings": ""
+"fields":
+  "Align": "center"
+  "BorderThicknes": "1"
+  "Borders": "none"
+  "FontSize": "32"
+  "GlobalRecordPageGuid": "d64e3ca2-b3f8-43c6-af45-165daad9e16b"
+  "Id": "155"
+  "ItemInstanceType": ""
+  "LineHeight": "1.5"
+  "Padding": "8"
+  "Sort": 0
+  "Title": "Contact form"
+"columnId": 1

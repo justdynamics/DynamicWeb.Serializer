@@ -1,0 +1,23 @@
+﻿"OrderStateId": "OS1"
+"OrderStateName": "New"
+"OrderStateDescription": "New orders"
+"OrderStateIsDefault": true
+"OrderStateDontUseInstatistics": false
+"OrderStateIsDeleted": false
+"OrderStateMailTemplate": ""
+"OrderFlowId": 1
+"OrderStateMailSender": ""
+"OrderStateMailSenderName": ""
+"OrderStateMailSubject": ""
+"OrderStateAutoId": 1
+"OrderStateSendToCustomer": false
+"OrderStateOthersMailTemplate": ""
+"OrderStateOthersRecipients": ""
+"OrderStateSortOrder": 0
+"OrderStateOrderType": 0
+"OrderStateAllowOrder": true
+"OrderStateSendToDeliveryEmail": false
+"OrderStateSendToField": false
+"OrderStateCustomRecipientField": ""
+"OrderStateAllowEdit": false
+"OrderStateColor": "#7b24ff"

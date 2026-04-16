@@ -1,0 +1,29 @@
+﻿"ShippingId": "SHIP6"
+"ShippingLanguageId": "DAN"
+"ShippingName": "UPS"
+"ShippingDescription": "International fragt"
+"ShippingPriceOverMaxWeight": 0
+"ShippingFreeFeeAmount": 0
+"ShippingServiceSystemName": ""
+"ShippingServiceParameters": ""
+"ShippingSorting": 8
+"ShippingFeeSelection": "High"
+"ShippingIcon": ""
+"ShippingLimitsUseLogic": 1
+"ShippingFeeRulesSource": 2
+"ShippingTakeDiscountIntoAccount": true
+"ShippingEligibleForFreeShipping": false
+"ShippingActive": true
+"ShippingUserGroups": ""
+"ShippingAllowAnonymousUsers": false
+"ShippingCode": ""
+"ShippingAgentCode": ""
+"ShippingAgentName": ""
+"ShippingAgentServiceCode": ""
+"ShippingAgentServiceDescription": ""
+"ShippingUsePriceWithVat": false
+"ShippingMinWeight": 
+"ShippingMaxWeight": 
+"ShippingProductIds": ""
+"ShippingProductGroupIds": ""
+"ShippingProductFilterMode": 0

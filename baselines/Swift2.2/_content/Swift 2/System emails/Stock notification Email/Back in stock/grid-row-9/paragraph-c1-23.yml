@@ -1,0 +1,71 @@
+﻿"paragraphUniqueId": 4816ff12-996a-48ca-866d-157e1dffd679
+"sourceParagraphId": 21987
+"sortOrder": 23
+"itemType": "Swift-v2_EmailBackInStockNotificationProductCatalog"
+"header": "Back in stock product catalog"
+"template": ""
+"colorSchemeId": ""
+"moduleSystemName": "eCom_Catalog"
+"moduleSettings": |-
+  <?xml version="1.0" encoding="utf-8"?>
+  <Settings>
+    <PPUsePrintPublisher>0</PPUsePrintPublisher>
+    <PPFirstPageTemplate></PPFirstPageTemplate>
+    <PPLastPageTemplate></PPLastPageTemplate>
+    <PPRegularPageTemplate></PPRegularPageTemplate>
+    <PPHeaderTemplate></PPHeaderTemplate>
+    <PPFooterTemplate></PPFooterTemplate>
+    <PPEmailTemplate></PPEmailTemplate>
+    <PPEmailFormTemplate></PPEmailFormTemplate>
+    <ProductTemplate></ProductTemplate>
+    <ProductFeedTemplate></ProductFeedTemplate>
+    <ProductListTemplate>ProductList.cshtml</ProductListTemplate>
+    <ProductListFeedTemplate></ProductListFeedTemplate>
+    <GroupListTemplate></GroupListTemplate>
+    <TemplateSearchBox>0</TemplateSearchBox>
+    <SearchTemplate></SearchTemplate>
+    <NoProductTemplate></NoProductTemplate>
+    <CompareTemplate></CompareTemplate>
+    <MetaFirstPageAsCanonical>0</MetaFirstPageAsCanonical>
+    <Show>Context</Show>
+    <ProductAndGroupsSelector>[all]</ProductAndGroupsSelector>
+    <IncludeSubgroups>0</IncludeSubgroups>
+    <PageSize>0</PageSize>
+    <SortBy>False</SortBy>
+    <SortOrder>ASC</SortOrder>
+    <ID_ProductID></ID_ProductID>
+    <VariantID_ProductID></VariantID_ProductID>
+    <RetrieveMyListsBasedOn>UseUserID</RetrieveMyListsBasedOn>
+    <ShortDescLength>0</ShortDescLength>
+    <RemoveDuplicates>1</RemoveDuplicates>
+    <ShowOnParagraph></ShowOnParagraph>
+    <UseFrontendCaching>0</UseFrontendCaching>
+    <FrontendCachingExpiration>0</FrontendCachingExpiration>
+    <IgnoreUrlParameters>0</IgnoreUrlParameters>
+    <DisableProductDetail>0</DisableProductDetail>
+    <IncludeExtendedVariants>0</IncludeExtendedVariants>
+    <IndexQuery></IndexQuery>
+    <FacetGroups></FacetGroups>
+    <TrackQueries>0</TrackQueries>
+    <ShowFacetOptionsWithNoResults>0</ShowFacetOptionsWithNoResults>
+    <QueryConditions></QueryConditions>
+    <QuerySortByParams>[]</QuerySortByParams>
+    <UseGroupSortInGroupContext>0</UseGroupSortInGroupContext>
+    <DynamicFacets>None</DynamicFacets>
+    <FieldToSpellCheck></FieldToSpellCheck>
+    <ParameterToSpellCheck></ParameterToSpellCheck>
+    <SearchForEditors_SearchForEditorsIndex></SearchForEditors_SearchForEditorsIndex>
+    <SearchForEditors_SearchForEditorsConfiguration></SearchForEditors_SearchForEditorsConfiguration>
+  </Settings>
+"fields":
+  "Align": "left"
+  "GlobalRecordPageGuid": "14ba3ff7-6f6f-45a1-b178-d8fec858c859"
+  "HideProductNumber": false
+  "Id": "11"
+  "ImageAspectRatio": "4-3"
+  "ItemInstanceType": ""
+  "Layout": "2"
+  "Padding": "16"
+  "Sort": 0
+  "Title": "Back in stock product catalog"
+"columnId": 1

@@ -1,0 +1,29 @@
+﻿"paragraphUniqueId": 753fc188-95d1-49cf-a3ef-96e3c6f8b02d
+"sourceParagraphId": 22225
+"sortOrder": 3
+"itemType": "Swift-v2_App"
+"header": ""
+"template": ""
+"colorSchemeId": ""
+"moduleSystemName": "eCom_CustomerExperienceCenter"
+"moduleSettings": |-
+  <?xml version="1.0" encoding="utf-8"?>
+  <Settings>
+    <OrderType>Order</OrderType>
+    <RetrieveListBasedOn>UseUserID</RetrieveListBasedOn>
+    <PageSize>9</PageSize>
+    <SortByField>CreatedAt</SortByField>
+    <SortOrder>Desc</SortOrder>
+    <OrderListTemplate>Orders_List.cshtml</OrderListTemplate>
+    <DetailTemplate>Orders_Details.cshtml</DetailTemplate>
+    <EmailTemplate></EmailTemplate>
+    <LedgerType></LedgerType>
+    <LedgerFlowStates></LedgerFlowStates>
+  </Settings>
+"fields":
+  "GlobalRecordPageGuid": "621cb250-a28d-45ac-bef2-893e0536078b"
+  "Id": "401"
+  "ItemInstanceType": ""
+  "Sort": 0
+  "Title": ""
+"columnId": 1

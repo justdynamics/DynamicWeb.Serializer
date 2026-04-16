@@ -1,0 +1,43 @@
+﻿"pageUniqueId": f9ac3a74-0e9d-4e01-812e-8a28f5325f8c
+"sourcePageId": 218
+"name": "Product and content search results"
+"menuText": "Product and content search results"
+"sortOrder": 4
+"isActive": false
+"itemType": "Swift-v2_Page"
+"layout": "Swift-v2_PageClean.cshtml"
+"layoutApplyToSubPages": false
+"isFolder": false
+"navigationTag": "Search"
+"hidden": false
+"allowclick": true
+"allowsearch": false
+"showInSitemap": false
+"showInLegend": false
+"sslMode": 0
+"displayMode": "Normal"
+"activeFrom": 2021-03-16T14:23:00.0000000
+"activeTo": 2999-12-31T23:59:59.0000000
+"permissionType": 2
+"seo":
+  "noindex": false
+  "nofollow": false
+  "robots404": false
+"urlSettings":
+  "urlIgnoreForChildren": false
+  "urlUseAsWritten": false
+"visibility":
+  "hideForPhones": false
+  "hideForTablets": false
+  "hideForDesktops": false
+"fields":
+  "Id": "138"
+  "ItemInstanceType": ""
+  "Sort": 4
+  "Title": "Product and content search results"
+"propertyFields":
+  "Id": "944"
+  "Sort": 0
+  "ItemInstanceType": ""
+  "Icon": "/Files/Icons/1_none.svg"
+  "SubmenuType": "auto"

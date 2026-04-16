@@ -1,0 +1,18 @@
+﻿"paragraphUniqueId": a319fed0-3d6c-4a8a-85fb-1f731e2f95e2
+"sourceParagraphId": 4041
+"sortOrder": 6
+"itemType": "Swift-v2_Text"
+"header": "How can I delete cookies?"
+"template": "TextLeft.cshtml"
+"colorSchemeId": ""
+"moduleSystemName": ""
+"moduleSettings": ""
+"fields":
+  "GlobalRecordPageGuid": "7c888265-1f39-497b-af3b-70e3c63f95f9"
+  "Id": "290"
+  "ItemInstanceType": ""
+  "Sort": 0
+  "Subtitle": ""
+  "Text": "<p>You can delete cookies in your browser seetings. You can find assistance either within the browser settings or on the browsers&#39; webpages. Below you&#39;ll find a list of links to instructions for the most widely-used browsers:</p><ul><li><strong>Internet Explorer:</strong><br><a href=\"https://support.microsoft.com/en-us/windows/delete-and-manage-cookies-168dab11-0753-043d-7c16-ede5947fc64d\" rel=\"noopener noreferrer\">https://support.microsoft.com/en-us/windows/delete-and-manage-cookies-168dab11-0753-043d-7c16-ede5947fc64d</a></li><li><strong>Microsoft Edge:</strong><br><a href=\"https://support.microsoft.com/en-us/microsoft-edge/delete-cookies-in-microsoft-edge-63947406-40ac-c3b8-57b9-2a946a29ae09\" rel=\"noopener noreferrer\">https://support.microsoft.com/en-us/microsoft-edge/delete-cookies-in-microsoft-edge-63947406-40ac-c3b8-57b9-2a946a29ae09</a></li><li><strong>Mozilla Firefox:</strong><br><a href=\"https://support.mozilla.org/en-US/kb/clear-cookies-and-site-data-firefox\" rel=\"noopener noreferrer\">https://support.mozilla.org/en-US/kb/clear-cookies-and-site-data-firefox</a></li><li><strong>Google Chrome:</strong><br><a href=\"https://support.google.com/accounts/answer/32050\" rel=\"noopener noreferrer\">https://support.google.com/accounts/answer/32050</a></li><li><strong>Opera:</strong><br><a href=\"https://www.opera.com/use-cases/clean-browser-and-remove-trackers\" rel=\"noopener noreferrer\">https://www.opera.com/use-cases/clean-browser-and-remove-trackers</a></li><li><strong>Safari:</strong><br><a href=\"https://support.apple.com/guide/safari/manage-cookies-and-website-data-sfri11471/mac\" rel=\"noopener noreferrer\">https://support.apple.com/guide/safari/manage-cookies-and-website-data-sfri11471/mac</a></li></ul>"
+  "Title": "<h2 class=\"dw-h4\">How can I delete cookies?</h2>"
+"columnId": 1

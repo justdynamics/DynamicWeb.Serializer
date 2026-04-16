@@ -1,0 +1,23 @@
+﻿"paragraphUniqueId": 800f6522-5068-4bb9-8ada-8646c26cf466
+"sourceParagraphId": 21934
+"sortOrder": 34
+"itemType": "Swift-v2_EmailUnsubscribeLink"
+"header": "Unsubscribe"
+"template": ""
+"colorSchemeId": ""
+"moduleSystemName": ""
+"moduleSettings": ""
+"fields":
+  "Align": "center"
+  "BorderThicknes": "1"
+  "Borders": "none"
+  "GlobalRecordPageGuid": "4081a661-c987-4804-897d-5a1a6b500f10"
+  "Id": "18"
+  "ItemInstanceType": ""
+  "LeadingText": "<p>Don't you want the Newsletter anymore?</p>"
+  "LineHeight": "1.25"
+  "LinkText": "Unsubscribe"
+  "Padding": "16"
+  "ReduceFontSize": true
+  "Sort": 0
+"columnId": 1

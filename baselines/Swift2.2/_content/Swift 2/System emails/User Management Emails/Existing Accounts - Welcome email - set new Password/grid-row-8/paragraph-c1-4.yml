@@ -1,0 +1,22 @@
+﻿"paragraphUniqueId": 4ddec3d4-3d54-4456-9e43-802864694f45
+"sourceParagraphId": 9203
+"sortOrder": 4
+"itemType": "Swift-v2_EmailText"
+"header": "Welcome"
+"template": ""
+"colorSchemeId": ""
+"moduleSystemName": ""
+"moduleSettings": ""
+"fields":
+  "Align": "center"
+  "BorderThicknes": "1"
+  "Borders": "top"
+  "GlobalRecordPageGuid": "7afd5939-fbe1-4d71-8b81-5f9db7e59cb3"
+  "Id": "150"
+  "ItemInstanceType": ""
+  "LineHeight": "1.5"
+  "Padding": "32"
+  "Sort": 0
+  "Text": "<p>Hi <strong>{{UserManagement:User.Name}}</strong>!</p><p>Welcome to the new webshop</p><p>Your account has been activated for the new website, please click on the link below to set a new password, in order to access your account</p>"
+  "Title": "Welcome"
+"columnId": 1

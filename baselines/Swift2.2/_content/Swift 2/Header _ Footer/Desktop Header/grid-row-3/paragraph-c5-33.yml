@@ -1,0 +1,18 @@
+﻿"paragraphUniqueId": d53ac896-a5e1-43c9-be2d-53631971d156
+"sourceParagraphId": 21950
+"sortOrder": 33
+"itemType": "Swift-v2_Favorites"
+"header": "Favorites"
+"template": ""
+"colorSchemeId": ""
+"moduleSystemName": ""
+"moduleSettings": ""
+"fields":
+  "FavoritesPage": "Default.aspx?ID=8388"
+  "GlobalRecordPageGuid": "0a64e52b-0cac-44e8-9573-9f62c17272d5"
+  "Icon": "/Files/Images/Icons/heart.svg"
+  "Id": "1"
+  "ItemInstanceType": ""
+  "Sort": 0
+  "Title": "<div class=\"dw-paragraph\">Favorites</div>"
+"columnId": 5

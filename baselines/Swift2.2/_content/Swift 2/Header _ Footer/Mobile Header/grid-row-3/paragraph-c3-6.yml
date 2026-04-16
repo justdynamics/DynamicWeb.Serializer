@@ -1,0 +1,19 @@
+﻿"paragraphUniqueId": 66d59906-8ee1-40eb-a58d-d26ec086a2e6
+"sourceParagraphId": 21954
+"sortOrder": 6
+"itemType": "Swift-v2_MiniCart"
+"header": ""
+"template": ""
+"colorSchemeId": ""
+"moduleSystemName": ""
+"moduleSettings": ""
+"fields":
+  "CartPage": "Default.aspx?ID=1840"
+  "GlobalRecordPageGuid": "29698ead-ff6f-4736-ad4d-5e104ad7ecee"
+  "Icon": "/Files/Images/Icons/cart-shopping.svg"
+  "Id": "3"
+  "ItemInstanceType": ""
+  "OffcanvasMinicartBehaviour": "3"
+  "Sort": 0
+  "Title": "<div class=\"dw-paragraph\">Cart</div>"
+"columnId": 3

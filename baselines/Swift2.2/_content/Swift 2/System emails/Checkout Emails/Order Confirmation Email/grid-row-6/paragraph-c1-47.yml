@@ -1,0 +1,22 @@
+﻿"paragraphUniqueId": 0f0cb61d-bcda-402e-92c2-b5b3b7ced900
+"sourceParagraphId": 21900
+"sortOrder": 47
+"itemType": "Swift-v2_EmailHeading"
+"header": "Thank you for your order"
+"template": ""
+"colorSchemeId": ""
+"moduleSystemName": ""
+"moduleSettings": ""
+"fields":
+  "Align": "center"
+  "BorderThicknes": "1"
+  "Borders": "none"
+  "FontSize": "32"
+  "GlobalRecordPageGuid": "29d6b442-6011-4315-9d5c-326759221023"
+  "Id": "431"
+  "ItemInstanceType": ""
+  "LineHeight": "1.5"
+  "Padding": "8"
+  "Sort": 0
+  "Title": "Thank you for your order"
+"columnId": 1

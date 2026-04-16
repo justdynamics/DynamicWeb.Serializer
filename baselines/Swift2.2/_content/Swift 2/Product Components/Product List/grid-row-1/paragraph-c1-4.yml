@@ -1,0 +1,28 @@
+﻿"paragraphUniqueId": 7e9c331c-ad6d-477c-8bd1-9aef43fa6f1b
+"sourceParagraphId": 20185
+"sortOrder": 4
+"itemType": "Swift-v2_ProductListFacets"
+"header": "Facets"
+"template": ""
+"colorSchemeId": ""
+"moduleSystemName": ""
+"moduleSettings": ""
+"fields":
+  "EnableGroupNavigation": false
+  "ExpandFacetGroups": "all"
+  "GlobalRecordPageGuid": "04756e52-bb63-4aee-a496-e036df7e66d6"
+  "GroupNavigationStartLevel": "2"
+  "GroupNavigationStopLevel": "9"
+  "Id": "64"
+  "ItemInstanceType": ""
+  "Layout": "horizontal"
+  "Sort": 0
+  "SortByHighestPrice": false
+  "SortByLowestPrice": false
+  "SortByMostSold": false
+  "SortByNameAZ": true
+  "SortByNameZA": true
+  "SortByNewest": false
+  "SortByRelevance": true
+  "Title": ""
+"columnId": 1

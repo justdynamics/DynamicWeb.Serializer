@@ -1,0 +1,69 @@
+﻿"paragraphUniqueId": e416c877-667c-461e-9c7c-2421545ffbd9
+"sourceParagraphId": 9701
+"sortOrder": 1
+"itemType": "Swift-v2_QuoteCheckoutApp"
+"header": "Quote checkout"
+"template": ""
+"colorSchemeId": ""
+"moduleSystemName": "eCom_CartV2"
+"moduleSettings": |-
+  <?xml version="1.0" encoding="utf-8"?>
+  <Settings>
+    <ShopSelector>SHOP1</ShopSelector>
+    <CartSelector></CartSelector>
+    <CheckoutToQuote>1</CheckoutToQuote>
+    <DoValidateCustomerAccepted>0</DoValidateCustomerAccepted>
+    <CustomerAcceptedErrorMessage>Please accept the terms and conditions</CustomerAcceptedErrorMessage>
+    <DoValidateStockStatus>0</DoValidateStockStatus>
+    <StockStatusErrorMessage>The quantity of products in cart exceeds the stock quantity ({ProductName}).</StockStatusErrorMessage>
+    <UseNewsletterSubscription>0</UseNewsletterSubscription>
+    <EmptyCartRadio>EmptyCartRadioRedirect</EmptyCartRadio>
+    <EmptyCartTemplate></EmptyCartTemplate>
+    <EmptyCartTemplate_path></EmptyCartTemplate_path>
+    <SetUserDetailsRadio>SetUserDetailsRadioTrue</SetUserDetailsRadio>
+    <DoCreateUserInCheckout>0</DoCreateUserInCheckout>
+    <CreateNewUserGroupsHidden></CreateNewUserGroupsHidden>
+    <DoUpdateUsersByEmail>0</DoUpdateUsersByEmail>
+    <ErrorEmtyUsername>The username cannot be empty</ErrorEmtyUsername>
+    <ErrorUsernameTaken>This username is already taken</ErrorUsernameTaken>
+    <ErrorEmtyPassword>The password cannot be empty</ErrorEmtyPassword>
+    <ErrorPasswordsNotMatch>The passwords do not match</ErrorPasswordsNotMatch>
+    <ErrorPasswordLength>The length of the password cannot be 32</ErrorPasswordLength>
+    <ErrorIllegalPasswordCharacters>Your password contains system reserved characters. Please choose another password</ErrorIllegalPasswordCharacters>
+    <PaymetTypes></PaymetTypes>
+    <SelectAllPayments>1</SelectAllPayments>
+    <DeliveryTypes></DeliveryTypes>
+    <SelectAllDeliveries>1</SelectAllDeliveries>
+    <OnReEnterRadio>OnReEnterRadioFirstStep</OnReEnterRadio>
+    <CountryForShippingRadio>CountryForShippingRadioBoth</CountryForShippingRadio>
+    <CountryForPaymentRadio>CountryForPaymentRadioCustomer</CountryForPaymentRadio>
+    <RemoveNoneExistingProductsRadio>RemoveNoneExistingProductsRadioTrue</RemoveNoneExistingProductsRadio>
+    <DefaultPaymentId>PAY2</DefaultPaymentId>
+    <DefaultShippingId></DefaultShippingId>
+    <IncludeDeliveryAddressesFromUsersWithSameCustomerNumber>0</IncludeDeliveryAddressesFromUsersWithSameCustomerNumber>
+    <Step1Name>Quote request</Step1Name>
+    <Step1Template>eCom7/CartV2/Step/QuoteRequestUser.cshtml</Step1Template>
+    <Step1Template_path></Step1Template_path>
+    <Step1IsCheckout>false</Step1IsCheckout>
+    <Step2Name>Submit quote</Step2Name>
+    <Step2Template></Step2Template>
+    <Step2Template_path></Step2Template_path>
+    <Step2IsCheckout>true</Step2IsCheckout>
+    <Step3Name>Receipt</Step3Name>
+    <Step3Template>eCom7/CartV2/Step/QuoteReceipt.cshtml</Step3Template>
+    <Step3Template_path></Step3Template_path>
+    <Step3IsCheckout>false</Step3IsCheckout>
+    <ValidationGroups></ValidationGroups>
+    <SelectedValidations></SelectedValidations>
+  </Settings>
+"fields":
+  "CartPageLink": "Default.aspx?Id=1840"
+  "GlobalRecordPageGuid": "8aa6ebba-91b5-476f-a461-ed517b06a429"
+  "Id": "4"
+  "ItemInstanceType": ""
+  "Logo": ""
+  "LogoLink": "Default.aspx?ID=6869"
+  "MaxWidth": 150
+  "Sort": 0
+  "Title": "Quote checkout"
+"columnId": 1

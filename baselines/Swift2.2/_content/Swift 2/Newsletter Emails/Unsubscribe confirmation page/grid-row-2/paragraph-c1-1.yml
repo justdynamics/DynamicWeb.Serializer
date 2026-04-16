@@ -1,0 +1,18 @@
+﻿"paragraphUniqueId": 2de18854-9a54-472f-810d-6869abc635cb
+"sourceParagraphId": 9227
+"sortOrder": 1
+"itemType": "Swift-v2_Feature"
+"header": "We are sad to see you go!"
+"template": ""
+"colorSchemeId": ""
+"moduleSystemName": ""
+"moduleSettings": ""
+"fields":
+  "GlobalRecordPageGuid": "d2083e5e-5d8c-465a-bbf2-abbabdadec80"
+  "Icon": "/Files/Images/Icons/clipboard-list.svg"
+  "Id": "1345"
+  "ItemInstanceType": ""
+  "Sort": 0
+  "Text": "<p class=\"dw-paragraph\">You have successfully unsubscribed, and you will no longer receive this type of emails from Swift</p><p></p>"
+  "Title": "<p class=\"dw-h4\">We are sad to see you go!</p>"
+"columnId": 1

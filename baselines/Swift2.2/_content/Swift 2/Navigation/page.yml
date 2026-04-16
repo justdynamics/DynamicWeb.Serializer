@@ -1,0 +1,35 @@
+﻿"pageUniqueId": 4f3d48a7-8635-48a7-8d48-660bbfbe4678
+"sourcePageId": 88
+"name": "Navigation"
+"menuText": "Navigation"
+"sortOrder": 7
+"isActive": true
+"layoutApplyToSubPages": false
+"isFolder": true
+"hidden": false
+"allowclick": false
+"allowsearch": false
+"showInSitemap": false
+"showInLegend": false
+"sslMode": 0
+"displayMode": "Normal"
+"activeFrom": 2020-12-07T14:57:00.0000000
+"activeTo": 2999-12-31T00:00:00.0000000
+"permissionType": 2
+"seo":
+  "noindex": false
+  "nofollow": false
+  "robots404": false
+"urlSettings":
+  "urlIgnoreForChildren": true
+  "urlUseAsWritten": false
+"visibility":
+  "hideForPhones": true
+  "hideForTablets": true
+  "hideForDesktops": true
+"propertyFields":
+  "Id": "1000"
+  "Sort": 0
+  "ItemInstanceType": ""
+  "Icon": "/Files/Icons/1_none.svg"
+  "SubmenuType": "auto"

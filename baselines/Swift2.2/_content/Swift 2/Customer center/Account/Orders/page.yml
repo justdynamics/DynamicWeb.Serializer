@@ -1,0 +1,41 @@
+﻿"pageUniqueId": ec1986d4-8f3a-413f-911e-f94e5935336c
+"sourcePageId": 8391
+"name": "Orders"
+"menuText": "Orders"
+"sortOrder": 1
+"isActive": true
+"itemType": "Swift-v2_Page"
+"layoutApplyToSubPages": false
+"isFolder": false
+"hidden": false
+"allowclick": true
+"allowsearch": true
+"showInSitemap": true
+"showInLegend": true
+"sslMode": 0
+"displayMode": "Normal"
+"activeFrom": 2025-08-27T14:48:00.0000000
+"activeTo": 2999-12-31T23:59:59.0000000
+"permissionType": 2
+"seo":
+  "noindex": false
+  "nofollow": false
+  "robots404": false
+"urlSettings":
+  "urlIgnoreForChildren": false
+  "urlUseAsWritten": false
+"visibility":
+  "hideForPhones": false
+  "hideForTablets": false
+  "hideForDesktops": false
+"fields":
+  "Id": "1076"
+  "ItemInstanceType": ""
+  "Sort": 1
+  "Title": "Orders"
+"propertyFields":
+  "Id": "2690"
+  "Sort": 0
+  "ItemInstanceType": ""
+  "Icon": "/Files/Images/Icons/clipboard-list.svg"
+  "SubmenuType": "auto"

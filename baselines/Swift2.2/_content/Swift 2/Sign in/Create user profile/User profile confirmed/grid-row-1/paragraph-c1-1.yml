@@ -1,0 +1,18 @@
+﻿"paragraphUniqueId": ebf9f24b-a874-4503-836d-8f9b348b93dd
+"sourceParagraphId": 21946
+"sortOrder": 1
+"itemType": "Swift-v2_Feature"
+"header": "Confirmed"
+"template": "IconBoxTop.cshtml"
+"colorSchemeId": ""
+"moduleSystemName": ""
+"moduleSettings": ""
+"fields":
+  "GlobalRecordPageGuid": "703128b6-3aad-46cf-b8c3-2359e2357aee"
+  "Icon": "/Files/Images/Icons/check.svg"
+  "Id": "1660"
+  "ItemInstanceType": ""
+  "Sort": 0
+  "Text": "<p class=\"dw-paragraph\">Thank you for creating the user profile. Please check your email.</p><p></p>"
+  "Title": "<p class=\"dw-paragraph-1\">Confirmed</p>"
+"columnId": 1

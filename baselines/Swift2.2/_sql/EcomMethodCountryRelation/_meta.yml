@@ -1,0 +1,73 @@
+﻿"tableName": "EcomMethodCountryRelation"
+"nameColumn": ""
+"compareColumns": ""
+"keyColumns":
+- "MethodCountryRelCode2"
+"identityColumns":
+- "MethodCountryRelAutoId"
+"allColumns":
+- "MethodCountryRelCode2"
+- "MethodCountryRelMethodType"
+- "MethodCountryRelCountryId"
+- "MethodCountryRelMethodId"
+- "MethodCountryRelLanguageId"
+- "MethodCountryRelIsDefault"
+- "MethodCountryRelRegionCode"
+- "MethodCountryRelAutoId"
+"columnDefinitions":
+- "name": "MethodCountryRelCode2"
+  "dataType": "nvarchar"
+  "maxLength": 50
+  "precision": 0
+  "scale": 0
+  "isNullable": false
+  "isIdentity": false
+- "name": "MethodCountryRelMethodType"
+  "dataType": "nvarchar"
+  "maxLength": 50
+  "precision": 0
+  "scale": 0
+  "isNullable": true
+  "isIdentity": false
+- "name": "MethodCountryRelCountryId"
+  "dataType": "nvarchar"
+  "maxLength": 50
+  "precision": 0
+  "scale": 0
+  "isNullable": true
+  "isIdentity": false
+- "name": "MethodCountryRelMethodId"
+  "dataType": "nvarchar"
+  "maxLength": 50
+  "precision": 0
+  "scale": 0
+  "isNullable": true
+  "isIdentity": false
+- "name": "MethodCountryRelLanguageId"
+  "dataType": "nvarchar"
+  "maxLength": 50
+  "precision": 0
+  "scale": 0
+  "isNullable": true
+  "isIdentity": false
+- "name": "MethodCountryRelIsDefault"
+  "dataType": "bit"
+  "maxLength": 0
+  "precision": 0
+  "scale": 0
+  "isNullable": true
+  "isIdentity": false
+- "name": "MethodCountryRelRegionCode"
+  "dataType": "nvarchar"
+  "maxLength": 3
+  "precision": 0
+  "scale": 0
+  "isNullable": false
+  "isIdentity": false
+- "name": "MethodCountryRelAutoId"
+  "dataType": "int"
+  "maxLength": 0
+  "precision": 10
+  "scale": 0
+  "isNullable": false
+  "isIdentity": true

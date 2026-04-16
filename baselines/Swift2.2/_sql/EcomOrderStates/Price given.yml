@@ -1,0 +1,23 @@
+﻿"OrderStateId": "OS9"
+"OrderStateName": "Price given"
+"OrderStateDescription": ""
+"OrderStateIsDefault": false
+"OrderStateDontUseInstatistics": false
+"OrderStateIsDeleted": false
+"OrderStateMailTemplate": ""
+"OrderFlowId": 3
+"OrderStateMailSender": ""
+"OrderStateMailSenderName": ""
+"OrderStateMailSubject": ""
+"OrderStateAutoId": 9
+"OrderStateSendToCustomer": true
+"OrderStateOthersMailTemplate": ""
+"OrderStateOthersRecipients": ""
+"OrderStateSortOrder": 0
+"OrderStateOrderType": 1
+"OrderStateAllowOrder": true
+"OrderStateSendToDeliveryEmail": false
+"OrderStateSendToField": false
+"OrderStateCustomRecipientField": ""
+"OrderStateAllowEdit": false
+"OrderStateColor": "#10B981"

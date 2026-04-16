@@ -1,0 +1,14 @@
+﻿"CurrencyCode": "RON"
+"CurrencyLanguageId": "NON"
+"CurrencySymbol": "RON"
+"CurrencyName": "Leu"
+"CurrencyRate": 150
+"CurrencyIsDefault": false
+"CurrencyCultureInfo": "ro-RO"
+"CurrencyPayGatewayCode": 642
+"CurrencyRoundingId": ""
+"CurrencySymbolPlace": 0
+"CurrencyAutoId": 167
+"CurrencyPositivePattern": 3
+"CurrencyNegativePattern": 8
+"CurrencyUseCurrencyCodeForFormat": false

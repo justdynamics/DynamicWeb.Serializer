@@ -1,0 +1,23 @@
+﻿"OrderStateId": "OS4"
+"OrderStateName": "Deleted"
+"OrderStateDescription": "Deleted orders"
+"OrderStateIsDefault": false
+"OrderStateDontUseInstatistics": true
+"OrderStateIsDeleted": true
+"OrderStateMailTemplate": ""
+"OrderFlowId": 1
+"OrderStateMailSender": ""
+"OrderStateMailSenderName": ""
+"OrderStateMailSubject": ""
+"OrderStateAutoId": 4
+"OrderStateSendToCustomer": false
+"OrderStateOthersMailTemplate": ""
+"OrderStateOthersRecipients": ""
+"OrderStateSortOrder": 3
+"OrderStateOrderType": 0
+"OrderStateAllowOrder": true
+"OrderStateSendToDeliveryEmail": false
+"OrderStateSendToField": false
+"OrderStateCustomRecipientField": ""
+"OrderStateAllowEdit": false
+"OrderStateColor": "#cf2a2a"

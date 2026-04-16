@@ -1,0 +1,33 @@
+﻿"tableName": "EcomOrderStateRules"
+"nameColumn": ""
+"compareColumns": ""
+"keyColumns":
+- "OrderStateRuleId"
+"identityColumns":
+- "OrderStateRuleId"
+"allColumns":
+- "OrderStateRuleId"
+- "OrderStateRuleFromState"
+- "OrderStateRuleToState"
+"columnDefinitions":
+- "name": "OrderStateRuleId"
+  "dataType": "int"
+  "maxLength": 0
+  "precision": 10
+  "scale": 0
+  "isNullable": false
+  "isIdentity": true
+- "name": "OrderStateRuleFromState"
+  "dataType": "nvarchar"
+  "maxLength": 50
+  "precision": 0
+  "scale": 0
+  "isNullable": false
+  "isIdentity": false
+- "name": "OrderStateRuleToState"
+  "dataType": "nvarchar"
+  "maxLength": 50
+  "precision": 0
+  "scale": 0
+  "isNullable": false
+  "isIdentity": false

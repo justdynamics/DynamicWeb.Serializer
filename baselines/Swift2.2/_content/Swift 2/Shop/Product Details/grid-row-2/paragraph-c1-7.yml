@@ -1,0 +1,27 @@
+﻿"paragraphUniqueId": 787134a5-1240-4b52-a156-148c80b3a9a9
+"sourceParagraphId": 20206
+"sortOrder": 7
+"itemType": "Swift-v2_ProductMedia"
+"header": "Product detail image"
+"template": ""
+"colorSchemeId": ""
+"moduleSystemName": ""
+"moduleSettings": ""
+"fields":
+  "DefaultImageFallback": false
+  "DisableGetImage": false
+  "DisableLazyLoading": false
+  "GlobalRecordPageGuid": "15e4ab2a-a10e-4959-8c9f-67293f8afa30"
+  "Id": "1"
+  "ImageAspectRatio": "75%"
+  "ImageAssets": "[\"Images\",\"Product_details\"]"
+  "ImagePatternImages": true
+  "InvertModalArrowsColor": false
+  "ItemInstanceType": ""
+  "OpenVideoInModal": "true"
+  "ShowOnlyPrimaryImage": false
+  "Sort": 0
+  "ThumbnailPlacement": "bottom"
+  "Title": "Product detail image"
+  "VideoAutoPlay": false
+"columnId": 1

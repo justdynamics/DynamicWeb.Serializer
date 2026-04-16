@@ -1,0 +1,43 @@
+﻿"pageUniqueId": a65aa8c9-49a7-4013-94a3-751eef5aafa3
+"sourcePageId": 1679
+"name": "Form email - Contact Receipt - Visitor"
+"menuText": "Form email - Contact Receipt - Visitor"
+"sortOrder": 3
+"isActive": true
+"itemType": "Swift-v2_Email"
+"layoutApplyToSubPages": false
+"isFolder": false
+"hidden": false
+"allowclick": true
+"allowsearch": false
+"showInSitemap": false
+"showInLegend": true
+"sslMode": 0
+"colorSchemeId": "light"
+"displayMode": "Normal"
+"activeFrom": 2022-08-04T14:46:00.0000000
+"activeTo": 2999-12-31T23:59:59.0000000
+"permissionType": 2
+"seo":
+  "noindex": true
+  "nofollow": true
+  "robots404": false
+"urlSettings":
+  "urlIgnoreForChildren": false
+  "urlUseAsWritten": false
+"visibility":
+  "hideForPhones": false
+  "hideForTablets": false
+  "hideForDesktops": false
+"fields":
+  "Id": "44"
+  "ItemInstanceType": ""
+  "PreHeaderText": ""
+  "Sort": 3
+  "Title": "Form email - Contact Receipt - Visitor"
+"propertyFields":
+  "Id": "937"
+  "Sort": 0
+  "ItemInstanceType": ""
+  "Icon": "/Files/Icons/1_none.svg"
+  "SubmenuType": "auto"

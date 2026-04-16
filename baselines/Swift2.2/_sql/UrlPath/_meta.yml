@@ -1,0 +1,81 @@
+﻿"tableName": "UrlPath"
+"nameColumn": ""
+"compareColumns": ""
+"keyColumns":
+- "UrlPathId"
+"identityColumns":
+- "UrlPathId"
+"allColumns":
+- "UrlPathId"
+- "UrlPathPath"
+- "UrlPathRedirect"
+- "UrlPathStatus"
+- "UrlPathCreated"
+- "UrlPathUpdated"
+- "UrlPathActive"
+- "UrlPathAreaId"
+- "UrlPathVisitsCount"
+"columnDefinitions":
+- "name": "UrlPathId"
+  "dataType": "int"
+  "maxLength": 0
+  "precision": 10
+  "scale": 0
+  "isNullable": false
+  "isIdentity": true
+- "name": "UrlPathPath"
+  "dataType": "nvarchar"
+  "maxLength": 255
+  "precision": 0
+  "scale": 0
+  "isNullable": false
+  "isIdentity": false
+- "name": "UrlPathRedirect"
+  "dataType": "nvarchar"
+  "maxLength": 255
+  "precision": 0
+  "scale": 0
+  "isNullable": false
+  "isIdentity": false
+- "name": "UrlPathStatus"
+  "dataType": "int"
+  "maxLength": 0
+  "precision": 10
+  "scale": 0
+  "isNullable": true
+  "isIdentity": false
+- "name": "UrlPathCreated"
+  "dataType": "datetime"
+  "maxLength": 0
+  "precision": 0
+  "scale": 0
+  "isNullable": true
+  "isIdentity": false
+- "name": "UrlPathUpdated"
+  "dataType": "datetime"
+  "maxLength": 0
+  "precision": 0
+  "scale": 0
+  "isNullable": true
+  "isIdentity": false
+- "name": "UrlPathActive"
+  "dataType": "bit"
+  "maxLength": 0
+  "precision": 0
+  "scale": 0
+  "isNullable": false
+  "isIdentity": false
+- "name": "UrlPathAreaId"
+  "dataType": "int"
+  "maxLength": 0
+  "precision": 10
+  "scale": 0
+  "isNullable": true
+  "isIdentity": false
+- "name": "UrlPathVisitsCount"
+  "dataType": "int"
+  "maxLength": 0
+  "precision": 10
+  "scale": 0
+  "isNullable": false
+  "isIdentity": false
