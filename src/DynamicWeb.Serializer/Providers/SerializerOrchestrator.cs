@@ -153,16 +153,23 @@ public class SerializerOrchestrator
 
             // Cache invalidation: clear configured service caches after successful deserialize (per D-08, D-09)
             // Skip during dry-run (no data was actually written)
-            if (!isDryRun && _cacheInvalidator != null && predicate.ServiceCaches.Count > 0 && !result.HasErrors)
+            if (!isDryRun && predicate.ServiceCaches.Count > 0 && !result.HasErrors)
             {
-                try
+                if (_cacheInvalidator == null)
                 {
-                    _cacheInvalidator.InvalidateCaches(predicate.ServiceCaches, log);
+                    log?.Invoke($"WARNING: Predicate '{predicate.Name}' declares {predicate.ServiceCaches.Count} service cache(s) but no CacheInvalidator is wired — caches will NOT be cleared");
                 }
-                catch (Exception ex)
+                else
                 {
-                    log?.Invoke($"WARNING: Cache invalidation failed for predicate '{predicate.Name}': {ex.Message}");
-                    // Don't fail the overall operation — cache invalidation is best-effort
+                    try
+                    {
+                        _cacheInvalidator.InvalidateCaches(predicate.ServiceCaches, log);
+                    }
+                    catch (Exception ex)
+                    {
+                        log?.Invoke($"WARNING: Cache invalidation failed for predicate '{predicate.Name}': {ex.Message}");
+                        // Don't fail the overall operation — cache invalidation is best-effort
+                    }
                 }
             }
 
