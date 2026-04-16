@@ -20,6 +20,9 @@ public class ContentDeserializer
     private readonly bool _isDryRun;
     private readonly string? _filesRoot;
     private readonly HashSet<string> _loggedTemplateMissing = new(StringComparer.OrdinalIgnoreCase);
+    private readonly HashSet<string> _loggedAreaColumnMissing = new(StringComparer.OrdinalIgnoreCase);
+    private HashSet<string>? _targetAreaColumns;
+    private Dictionary<string, string>? _targetAreaColumnTypes;
     private readonly PermissionMapper _permissionMapper;
 
     public ContentDeserializer(
@@ -332,12 +335,94 @@ public class ContentDeserializer
     // -------------------------------------------------------------------------
 
     /// <summary>
+    /// Returns the set of column names present on the target [Area] table, cached for the
+    /// duration of this deserialize run. Used to gracefully skip source columns that do
+    /// not exist on the target — prevents "Invalid column name" hard-fails when source
+    /// and target DBs are on different DW schema versions.
+    /// </summary>
+    private HashSet<string> GetTargetAreaColumns()
+    {
+        EnsureTargetAreaSchema();
+        return _targetAreaColumns!;
+    }
+
+    private void EnsureTargetAreaSchema()
+    {
+        if (_targetAreaColumns != null) return;
+
+        var cols = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var types = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        var cb = new CommandBuilder();
+        cb.Add("SELECT COLUMN_NAME, DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'Area'");
+        using var reader = Database.CreateDataReader(cb);
+        while (reader.Read())
+        {
+            var name = reader.GetString(0);
+            var type = reader.GetString(1);
+            cols.Add(name);
+            types[name] = type;
+        }
+
+        _targetAreaColumns = cols;
+        _targetAreaColumnTypes = types;
+    }
+
+    /// <summary>
+    /// Coerces a YAML-parsed value into the CLR type the target SQL column expects.
+    /// YAML has no type hints for <c>Dictionary&lt;string, object&gt;</c> values, so a
+    /// column like [AreaCreatedDate] arrives here as a <see cref="string"/> despite the
+    /// target being <c>datetime</c>. SQL Server's implicit conversion fails on certain
+    /// ISO strings (7-digit fractional seconds, etc.), so we parse explicitly.
+    /// </summary>
+    private object CoerceForColumn(string columnName, object? value)
+    {
+        if (value == null || value is DBNull) return DBNull.Value;
+        if (_targetAreaColumnTypes == null) return value;
+        if (!_targetAreaColumnTypes.TryGetValue(columnName, out var dataType)) return value;
+
+        if (value is string s)
+        {
+            switch (dataType.ToLowerInvariant())
+            {
+                case "datetime":
+                case "datetime2":
+                case "smalldatetime":
+                case "date":
+                case "datetimeoffset":
+                    if (string.IsNullOrWhiteSpace(s)) return DBNull.Value;
+                    if (DateTime.TryParse(s, System.Globalization.CultureInfo.InvariantCulture,
+                            System.Globalization.DateTimeStyles.AssumeUniversal | System.Globalization.DateTimeStyles.AdjustToUniversal,
+                            out var dt))
+                        return dt;
+                    break;
+                case "bit":
+                    if (bool.TryParse(s, out var b)) return b;
+                    break;
+                case "int":
+                case "smallint":
+                case "tinyint":
+                    if (string.IsNullOrWhiteSpace(s)) return DBNull.Value;
+                    if (int.TryParse(s, System.Globalization.CultureInfo.InvariantCulture, out var i)) return i;
+                    break;
+                case "bigint":
+                    if (string.IsNullOrWhiteSpace(s)) return DBNull.Value;
+                    if (long.TryParse(s, System.Globalization.CultureInfo.InvariantCulture, out var l)) return l;
+                    break;
+            }
+        }
+        return value;
+    }
+
+    /// <summary>
     /// Write area properties back to the [Area] table via SQL UPDATE.
     /// Skips columns in excludeFields to preserve environment-specific values.
+    /// Also skips columns not present on the target schema (logs a warning once per column).
     /// </summary>
     private void WriteAreaProperties(int areaId, Dictionary<string, object> properties, IReadOnlySet<string>? excludeFields, IReadOnlySet<string>? excludeAreaColumns = null)
     {
         if (properties.Count == 0) return;
+
+        var targetCols = GetTargetAreaColumns();
 
         var cb = new CommandBuilder();
         var first = true;
@@ -347,14 +432,23 @@ public class ContentDeserializer
             if (excludeFields?.Contains(kvp.Key) == true) continue;
             if (excludeAreaColumns?.Contains(kvp.Key) == true) continue;
 
+            // Skip columns that don't exist on the target schema (graceful cross-version handling)
+            if (!targetCols.Contains(kvp.Key))
+            {
+                if (_loggedAreaColumnMissing.Add(kvp.Key))
+                    Log($"WARNING: source column [Area].[{kvp.Key}] not present on target schema — skipping");
+                continue;
+            }
+
+            var coerced = CoerceForColumn(kvp.Key, kvp.Value);
             if (first)
             {
-                cb.Add($"UPDATE [Area] SET [{kvp.Key}] = {{0}}", kvp.Value ?? DBNull.Value);
+                cb.Add($"UPDATE [Area] SET [{kvp.Key}] = {{0}}", coerced);
                 first = false;
             }
             else
             {
-                cb.Add($", [{kvp.Key}] = {{0}}", kvp.Value ?? DBNull.Value);
+                cb.Add($", [{kvp.Key}] = {{0}}", coerced);
             }
         }
         // If all properties were excluded, nothing to update
@@ -373,11 +467,18 @@ public class ContentDeserializer
         var columns = new List<string> { "[AreaID]", "[AreaName]", "[AreaSort]", "[AreaUniqueId]" };
         var values = new List<object> { areaId, area.Name, area.SortOrder, area.AreaId };
 
+        var targetCols = GetTargetAreaColumns();
         foreach (var kvp in area.Properties)
         {
             if (excludeFields?.Contains(kvp.Key) == true) continue;
+            if (!targetCols.Contains(kvp.Key))
+            {
+                if (_loggedAreaColumnMissing.Add(kvp.Key))
+                    Log($"WARNING: source column [Area].[{kvp.Key}] not present on target schema — skipping");
+                continue;
+            }
             columns.Add($"[{kvp.Key}]");
-            values.Add(kvp.Value ?? DBNull.Value);
+            values.Add(CoerceForColumn(kvp.Key, kvp.Value));
         }
 
         var cb = new CommandBuilder();
