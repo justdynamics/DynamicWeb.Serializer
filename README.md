@@ -36,26 +36,17 @@ Source Environment                          Target Environment
 **Steps:**
 
 1. **Configure predicates** in the admin UI (Settings > Database > Serialize > Predicates) pointing to the data you want to sync
-2. **Serialize** -- run via Management API or DW CLI:
+2. **Serialize** -- run via Management API:
    ```bash
-   # Management API
    curl -X POST https://source.example.com/Admin/Api/SerializerSerialize \
      -H "Authorization: Bearer CLD.your-api-key"
-
-   # DW CLI
-   dw command SerializerSerialize
    ```
 3. **Commit the YAML files** to your Git repository
 4. **Deploy to target environment** -- the YAML files arrive via Git pull/deploy pipeline
-5. **Deserialize** -- trigger immediately after deploy via API or CLI:
+5. **Deserialize** -- trigger immediately after deploy:
    ```bash
-   # Management API
    curl -X POST https://target.example.com/Admin/Api/SerializerDeserialize \
      -H "Authorization: Bearer CLD.your-api-key"
-
-   # DW CLI
-   dw env production
-   dw command SerializerDeserialize
    ```
 6. Content is matched by **PageUniqueId (GUID)** -- existing pages are updated, new pages are created
 
@@ -86,7 +77,7 @@ DynamicWeb.Serializer serializes the full DynamicWeb content hierarchy:
 
 | Level | What's serialized |
 |-------|-------------------|
-| **Area** | Area metadata |
+| **Area** | Area metadata, area properties (with configurable column exclusions) |
 | **Page** | Name, sort order, item type, item fields, property fields (Icon, SubmenuType) |
 | **Grid Row** | Layout settings (spacing, container width, visual properties) |
 | **Paragraph** | Content, item type fields, column attribution |
@@ -154,8 +145,6 @@ Check the Management API response or log files for details.
 
 All settings are managed from the DynamicWeb admin UI at **Settings > Database > Serialize**, or by editing the config file directly at `Files/Serializer.config.json`.
 
-> **Backward compatibility:** If you have an existing `ContentSync.config.json` file, it will still be detected automatically as a fallback. No migration needed.
-
 ### Settings Screen
 
 | Setting | Description |
@@ -169,17 +158,49 @@ All settings are managed from the DynamicWeb admin UI at **Settings > Database >
 
 Predicates define which data to synchronize. Manage them at **Settings > Database > Serialize > Predicates**.
 
+#### Content Predicates
+
 | Field | Description |
 |-------|-------------|
 | **Name** | Unique name for this predicate |
-| **Provider Type** | The serialization provider (Content, SqlTable) |
-| **Area** | DynamicWeb area containing the content tree (for Content predicates) |
-| **Page** | Root page for the predicate (content tree picker, for Content predicates) |
-| **Table** | SQL table name (for SqlTable predicates) |
-| **Name Column** | Column used as natural key for row identity (for SqlTable predicates, optional) |
-| **Compare Columns** | Columns used for change detection (for SqlTable predicates, optional) |
-| **Service Caches** | DW service cache types to clear after deserialization (for SqlTable predicates, one per line) |
-| **Excludes** | Paths to exclude from sync (one per line, for Content predicates) |
+| **Provider Type** | `Content` -- syncs DW content trees |
+| **Area** | DynamicWeb area containing the content tree |
+| **Page** | Root page for the predicate (content tree picker) |
+| **Excludes** | Paths to exclude from sync (one per line) |
+| **Exclude Fields** | Item type field names to exclude from serialization |
+| **Exclude XML Elements** | XML element names to strip from embedded XML blobs |
+| **Exclude Area Columns** | Area table columns to exclude from serialization (SelectMultiDual populated from database schema) |
+
+#### SqlTable Predicates
+
+| Field | Description |
+|-------|-------------|
+| **Name** | Unique name for this predicate |
+| **Provider Type** | `SqlTable` -- syncs arbitrary SQL tables |
+| **Table** | SQL table name (e.g., `EcomOrderFlow`) |
+| **Name Column** | Column used as natural key for row identity (optional) |
+| **Compare Columns** | Columns used for change detection (optional) |
+| **Service Caches** | DW service cache types to clear after deserialization (one per line) |
+| **Exclude Fields** | Column names to exclude from serialization (SelectMultiDual populated from table schema) |
+| **XML Columns** | Columns containing XML that should be pretty-printed in YAML (SelectMultiDual populated from table schema) |
+| **Exclude XML Elements** | XML element names to strip from embedded XML blobs (one per line) |
+
+#### Global Exclusion Maps
+
+These are set in the config file (not per-predicate) and apply across all predicates:
+
+| Setting | Description |
+|---------|-------------|
+| **excludeFieldsByItemType** | Map of item type system name to list of field names to exclude |
+| **excludeXmlElementsByType** | Map of XML type name to list of element names to exclude |
+
+### Item Type Management
+
+Browse and configure item type field exclusions at **Settings > Database > Serialize > Item Types**. Item types are organized by category in a hierarchical tree mirroring DW's item type structure.
+
+### Embedded XML Management
+
+Configure XML element exclusions at **Settings > Database > Serialize > Embedded XML**. Each XML type shows which elements can be excluded from serialization.
 
 ### Config File
 
@@ -191,6 +212,12 @@ The config file at `Files/Serializer.config.json` is the source of truth. The ad
   "logLevel": "info",
   "dryRun": false,
   "conflictStrategy": "source-wins",
+  "excludeFieldsByItemType": {
+    "Swift_Content": ["SystemName_Internal"]
+  },
+  "excludeXmlElementsByType": {
+    "ParagraphModule": ["cache"]
+  },
   "predicates": [
     {
       "name": "Customer Center",
@@ -198,7 +225,10 @@ The config file at `Files/Serializer.config.json` is the source of truth. The ad
       "path": "/Customer Center",
       "areaId": 3,
       "pageId": 8385,
-      "excludes": []
+      "excludes": [],
+      "excludeFields": [],
+      "excludeXmlElements": [],
+      "excludeAreaColumns": ["AreaDomain", "AreaSSLCertificate"]
     },
     {
       "name": "Order Flows",
@@ -206,7 +236,10 @@ The config file at `Files/Serializer.config.json` is the source of truth. The ad
       "table": "EcomOrderFlow",
       "nameColumn": "OrderFlowName",
       "compareColumns": "OrderFlowName,OrderFlowDescription",
-      "serviceCaches": ["Dynamicweb.Ecommerce.Orders.OrderFlowService"]
+      "serviceCaches": ["Dynamicweb.Ecommerce.Orders.OrderFlowService"],
+      "excludeFields": [],
+      "xmlColumns": ["OrderFlowXml"],
+      "excludeXmlElements": ["cache"]
     }
   ]
 }
@@ -228,7 +261,9 @@ Files/System/{OutputDirectory}/
 The Serialize node appears under **Settings > Database** with sub-nodes:
 
 - **Serialize** -- Settings screen (output directory, log level, dry run, conflict strategy)
-- **Predicates** -- CRUD management of Content and SqlTable predicates
+- **Predicates** -- CRUD management of Content and SqlTable predicates, with per-predicate child nodes
+- **Item Types** -- Browse item types by category, configure per-type field exclusions
+- **Embedded XML** -- Configure per-type XML element exclusions
 - **Log Viewer** -- View per-run logs with summaries and actionable advice
 
 ### Serialize Action on Pages
@@ -237,9 +272,7 @@ The **"Serialize subtree"** action appears in the Actions menu on every page edi
 
 ## API Commands & CI/CD Integration
 
-DynamicWeb.Serializer exposes two Management API commands for serialization and deserialization. These replace the previously available scheduled tasks and enable automated workflows triggered by CI/CD pipelines, Git hooks, or the [DynamicWeb CLI](https://github.com/dynamicweb/CLI).
-
-> **Note:** Scheduled tasks have been removed. Use the Management API commands or DW CLI instead. This simplifies the architecture and provides better control over when serialization/deserialization runs.
+DynamicWeb.Serializer exposes two Management API commands for automated serialization and deserialization, enabling workflows triggered by CI/CD pipelines or Git hooks.
 
 ### Available Commands
 
@@ -260,14 +293,6 @@ curl -X POST https://source.example.com/Admin/Api/SerializerSerialize \
 # Deserialize content on target environment (after YAML files are deployed)
 curl -X POST https://target.example.com/Admin/Api/SerializerDeserialize \
   -H "Authorization: Bearer CLD.your-api-key-here"
-```
-
-### Example: DynamicWeb CLI
-
-```bash
-# Using the DW CLI (https://github.com/dynamicweb/CLI)
-dw env production
-dw command SerializerDeserialize
 ```
 
 ### Example: GitHub Actions
@@ -305,11 +330,9 @@ Content is immediately applied
 
 2. Copy `DynamicWeb.Serializer.dll` to your DynamicWeb instance's `bin/` directory
 
-3. **If upgrading from Dynamicweb.ContentSync:** Remove the old `Dynamicweb.ContentSync.dll` from the `bin/` directory to avoid duplicate type registrations
+3. Restart the DynamicWeb application
 
-4. Restart the DynamicWeb application
-
-5. Navigate to **Settings > Database > Serialize** to configure
+4. Navigate to **Settings > Database > Serialize** to configure
 
 ## Tech Stack
 

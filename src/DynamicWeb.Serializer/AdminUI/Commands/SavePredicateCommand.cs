@@ -65,6 +65,31 @@ public sealed class SavePredicateCommand : CommandBase<PredicateEditModel>
             if (duplicateIndex >= 0 && duplicateIndex != Model.Index)
                 return new() { Status = CommandResult.ResultType.Invalid, Message = $"A predicate with the name '{Model.Name}' already exists (duplicate)" };
 
+            // Parse shared filtering fields (apply to both Content and SqlTable)
+            var excludeFields = (Model.ExcludeFields ?? string.Empty)
+                .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(e => e.Trim())
+                .Where(e => e.Length > 0)
+                .ToList();
+
+            var excludeXmlElements = (Model.ExcludeXmlElements ?? string.Empty)
+                .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(e => e.Trim())
+                .Where(e => e.Length > 0)
+                .ToList();
+
+            var xmlColumns = (Model.XmlColumns ?? string.Empty)
+                .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(e => e.Trim())
+                .Where(e => e.Length > 0)
+                .ToList();
+
+            var excludeAreaColumns = (Model.ExcludeAreaColumns ?? string.Empty)
+                .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(e => e.Trim())
+                .Where(e => e.Length > 0)
+                .ToList();
+
             // Build predicate based on provider type
             ProviderPredicateDefinition predicate;
 
@@ -88,12 +113,6 @@ public sealed class SavePredicateCommand : CommandBase<PredicateEditModel>
                         : $"/page-{Model.PageId}";
                 }
 
-                var excludeAreaColumns = (Model.ExcludeAreaColumns ?? string.Empty)
-                    .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
-                    .Select(e => e.Trim())
-                    .Where(e => e.Length > 0)
-                    .ToList();
-
                 // Split excludes: handle \r\n and \n, trim, remove empties
                 var excludes = (Model.Excludes ?? string.Empty)
                     .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
@@ -109,6 +128,8 @@ public sealed class SavePredicateCommand : CommandBase<PredicateEditModel>
                     AreaId = Model.AreaId,
                     PageId = Model.PageId,
                     Excludes = excludes,
+                    ExcludeFields = excludeFields,
+                    ExcludeXmlElements = excludeXmlElements,
                     ExcludeAreaColumns = excludeAreaColumns
                 };
             }
@@ -127,7 +148,10 @@ public sealed class SavePredicateCommand : CommandBase<PredicateEditModel>
                     Table = Model.Table?.Trim(),
                     NameColumn = string.IsNullOrWhiteSpace(Model.NameColumn) ? null : Model.NameColumn.Trim(),
                     CompareColumns = string.IsNullOrWhiteSpace(Model.CompareColumns) ? null : Model.CompareColumns.Trim(),
-                    ServiceCaches = serviceCaches
+                    ServiceCaches = serviceCaches,
+                    ExcludeFields = excludeFields,
+                    ExcludeXmlElements = excludeXmlElements,
+                    XmlColumns = xmlColumns
                 };
             }
 
