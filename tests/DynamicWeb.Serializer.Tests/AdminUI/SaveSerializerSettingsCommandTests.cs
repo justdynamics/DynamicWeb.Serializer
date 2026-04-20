@@ -2,12 +2,13 @@ using DynamicWeb.Serializer.AdminUI.Commands;
 using DynamicWeb.Serializer.AdminUI.Models;
 using DynamicWeb.Serializer.Configuration;
 using DynamicWeb.Serializer.Models;
+using DynamicWeb.Serializer.Tests.TestHelpers;
 using Dynamicweb.CoreUI.Data;
 using Xunit;
 
 namespace DynamicWeb.Serializer.Tests.AdminUI;
 
-public class SaveSerializerSettingsCommandTests : IDisposable
+public class SaveSerializerSettingsCommandTests : ConfigLoaderValidatorFixtureBase
 {
     private readonly string _tempDir;
     private readonly string _filesDir;
@@ -27,8 +28,9 @@ public class SaveSerializerSettingsCommandTests : IDisposable
         Directory.CreateDirectory(_systemDir);
     }
 
-    public void Dispose()
+    public override void Dispose()
     {
+        base.Dispose();  // clear AsyncLocal first
         if (Directory.Exists(_tempDir))
             Directory.Delete(_tempDir, recursive: true);
     }

@@ -27,6 +27,14 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Phase 37-06: ConfigLoader._testDefaultValidatorConstructedCallback is marked internal
+         (T-37-06-03 threat model: production code in other assemblies cannot subscribe). The
+         test assembly needs access to the field to prove the default-validator construction
+         path executes — exactly the structural-integration surface the field exists for. -->
+    <InternalsVisibleTo Include="DynamicWeb.Serializer.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
 

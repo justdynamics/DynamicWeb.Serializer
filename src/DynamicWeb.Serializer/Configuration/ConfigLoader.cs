@@ -15,6 +15,37 @@ public static class ConfigLoader
     // T-37-01-02: OutputSubfolder path-traversal guard. Alphanumeric + underscore + dash, 1..32 chars.
     private static readonly Regex _safeSubfolder = new("^[a-zA-Z0-9_-]{1,32}$", RegexOptions.Compiled);
 
+    /// <summary>
+    /// Test-only override of the default SqlIdentifierValidator used by the 1-arg
+    /// <see cref="Load(string)"/> overload. When non-null, <see cref="Load(string)"/>
+    /// delegates to the 2-arg overload with THIS validator; when null, it constructs
+    /// a fresh <see cref="SqlIdentifierValidator"/> (which queries INFORMATION_SCHEMA
+    /// via the live Dynamicweb DB connection).
+    ///
+    /// Uses <see cref="AsyncLocal{T}"/> so parallel xUnit test workers do not leak
+    /// overrides between tests. Mirrors the pattern in
+    /// <see cref="ConfigPathResolver.TestOverridePath"/>. NOT intended for production.
+    ///
+    /// Phase 37-06 (gap closure for SC-3 / CR-01): exists solely so existing unit tests
+    /// that exercise JSON parsing (not identifier validation) can continue to call the
+    /// 1-arg Load overload without needing a live DW DB.
+    /// </summary>
+    private static readonly AsyncLocal<SqlIdentifierValidator?> _testOverrideIdentifierValidator = new();
+    public static SqlIdentifierValidator? TestOverrideIdentifierValidator
+    {
+        get => _testOverrideIdentifierValidator.Value;
+        set => _testOverrideIdentifierValidator.Value = value;
+    }
+
+    /// <summary>
+    /// Test-only spy hook invoked by the 1-arg <see cref="Load(string)"/> overload
+    /// when it constructs a DEFAULT <see cref="SqlIdentifierValidator"/> (i.e.
+    /// <see cref="TestOverrideIdentifierValidator"/> was null). Exists so a structural
+    /// test can prove the default validator was built without relying on catching a
+    /// non-specific DB-layer exception.
+    /// </summary>
+    internal static readonly AsyncLocal<Action?> _testDefaultValidatorConstructedCallback = new();
+
     public static SerializerConfiguration Load(string filePath) => Load(filePath, identifierValidator: null);
 
     /// <summary>

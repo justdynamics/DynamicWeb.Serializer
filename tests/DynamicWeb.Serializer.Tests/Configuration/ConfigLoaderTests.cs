@@ -1,10 +1,11 @@
 using DynamicWeb.Serializer.Configuration;
 using DynamicWeb.Serializer.Models;
+using DynamicWeb.Serializer.Tests.TestHelpers;
 using Xunit;
 
 namespace DynamicWeb.Serializer.Tests.Configuration;
 
-public class ConfigLoaderTests : IDisposable
+public class ConfigLoaderTests : ConfigLoaderValidatorFixtureBase
 {
     private readonly string _tempDir;
     private readonly List<string> _tempFiles = new();
@@ -15,8 +16,9 @@ public class ConfigLoaderTests : IDisposable
         Directory.CreateDirectory(_tempDir);
     }
 
-    public void Dispose()
+    public override void Dispose()
     {
+        base.Dispose();  // clear AsyncLocal first
         if (Directory.Exists(_tempDir))
             Directory.Delete(_tempDir, recursive: true);
     }
@@ -1175,5 +1177,107 @@ public class ConfigLoaderTests : IDisposable
 
         var config = ConfigLoader.Load(path); // no throw
         Assert.Empty(config.Deploy.Predicates[0].ServiceCaches);
+    }
+
+    // -------------------------------------------------------------------------
+    // Phase 37-06 (gap closure): SC-3 — default-path 1-arg Load runs identifier validation
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public void Load_DefaultPath_MaliciousTableIdentifier_Throws()
+    {
+        var previousOverride = ConfigLoader.TestOverrideIdentifierValidator;
+        try
+        {
+            // Replace the class-level permissive fixture with a narrow allowlist that
+            // specifically EXCLUDES the malicious table string.
+            ConfigLoader.TestOverrideIdentifierValidator = new SqlIdentifierValidator(
+                tableLoader: () => new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "AccessUser" },
+                columnLoader: _ => new HashSet<string>(StringComparer.OrdinalIgnoreCase));
+
+            var json = """
+                {
+                  "outputDirectory": "/serialization",
+                  "deploy": {
+                    "outputSubfolder": "deploy",
+                    "conflictStrategy": "source-wins",
+                    "predicates": [
+                      {
+                        "name": "MaliciousSqlTable",
+                        "providerType": "SqlTable",
+                        "table": "EcomOrders] WHERE 1=1; DROP TABLE Users; --"
+                      }
+                    ]
+                  }
+                }
+                """;
+            var path = WriteConfigFile(json);
+
+            // The 1-arg overload is the production default path. Prior to Phase 37-06 it
+            // silently bypassed identifier validation (identifierValidator: null). After the
+            // fix it reads TestOverrideIdentifierValidator (narrow) and rejects the table.
+            var ex = Assert.Throws<InvalidOperationException>(() => ConfigLoader.Load(path));
+            Assert.Contains("INFORMATION_SCHEMA", ex.Message);
+            Assert.Contains("EcomOrders", ex.Message); // substring of the malicious identifier
+        }
+        finally
+        {
+            ConfigLoader.TestOverrideIdentifierValidator = previousOverride;
+        }
+    }
+
+    [Fact]
+    [Trait("Category", "Phase37-06-StructuralIntegration")]
+    public void Load_DefaultPath_NoTestOverride_ConstructsDefaultValidator()
+    {
+        var previousOverride = ConfigLoader.TestOverrideIdentifierValidator;
+        var previousCallback = ConfigLoader._testDefaultValidatorConstructedCallback.Value;
+        try
+        {
+            ConfigLoader.TestOverrideIdentifierValidator = null;
+
+            var defaultValidatorConstructed = false;
+            ConfigLoader._testDefaultValidatorConstructedCallback.Value =
+                () => defaultValidatorConstructed = true;
+
+            var json = """
+                {
+                  "outputDirectory": "/serialization",
+                  "deploy": {
+                    "outputSubfolder": "deploy",
+                    "conflictStrategy": "source-wins",
+                    "predicates": [
+                      {
+                        "name": "StructuralProof",
+                        "providerType": "SqlTable",
+                        "table": "NotARealTable"
+                      }
+                    ]
+                  }
+                }
+                """;
+            var path = WriteConfigFile(json);
+
+            // Call through; ignore exceptions — the validator construction path is what we
+            // want to prove ran. In the test harness there is no DW DB, so the real
+            // SqlIdentifierValidator will throw a DB-layer exception when it tries to query
+            // INFORMATION_SCHEMA. That exception is immaterial — the spy callback proves
+            // the default-validator construction path executed.
+            try { ConfigLoader.Load(path); } catch { /* intentionally swallow */ }
+
+            Assert.True(
+                defaultValidatorConstructed,
+                "Expected the 1-arg ConfigLoader.Load(path) overload to invoke " +
+                "_testDefaultValidatorConstructedCallback (proving it constructed a " +
+                "default SqlIdentifierValidator). Prior to Phase 37-06 the overload " +
+                "passed identifierValidator: null and skipped validation entirely — " +
+                "this spy would never fire. RED state proves the fix isn't wired; " +
+                "GREEN state proves it is.");
+        }
+        finally
+        {
+            ConfigLoader.TestOverrideIdentifierValidator = previousOverride;
+            ConfigLoader._testDefaultValidatorConstructedCallback.Value = previousCallback;
+        }
     }
 }

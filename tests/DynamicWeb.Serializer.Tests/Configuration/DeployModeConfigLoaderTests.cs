@@ -1,5 +1,6 @@
 using DynamicWeb.Serializer.Configuration;
 using DynamicWeb.Serializer.Models;
+using DynamicWeb.Serializer.Tests.TestHelpers;
 using Xunit;
 
 namespace DynamicWeb.Serializer.Tests.Configuration;
@@ -9,7 +10,7 @@ namespace DynamicWeb.Serializer.Tests.Configuration;
 /// Covers D-01..D-06: top-level Deploy + Seed sections, legacy flat → Deploy migration,
 /// destination-wins default for Seed, GetMode accessor.
 /// </summary>
-public class DeployModeConfigLoaderTests : IDisposable
+public class DeployModeConfigLoaderTests : ConfigLoaderValidatorFixtureBase
 {
     private readonly string _tempDir;
 
@@ -19,8 +20,9 @@ public class DeployModeConfigLoaderTests : IDisposable
         Directory.CreateDirectory(_tempDir);
     }
 
-    public void Dispose()
+    public override void Dispose()
     {
+        base.Dispose();  // clear AsyncLocal first
         if (Directory.Exists(_tempDir))
             Directory.Delete(_tempDir, recursive: true);
     }

@@ -2,12 +2,13 @@ using DynamicWeb.Serializer.AdminUI.Commands;
 using DynamicWeb.Serializer.AdminUI.Models;
 using DynamicWeb.Serializer.Configuration;
 using DynamicWeb.Serializer.Models;
+using DynamicWeb.Serializer.Tests.TestHelpers;
 using Dynamicweb.CoreUI.Data;
 using Xunit;
 
 namespace DynamicWeb.Serializer.Tests.AdminUI;
 
-public class PredicateCommandTests : IDisposable
+public class PredicateCommandTests : ConfigLoaderValidatorFixtureBase
 {
     private readonly string _tempDir;
     private readonly string _configPath;
@@ -19,8 +20,9 @@ public class PredicateCommandTests : IDisposable
         _configPath = Path.Combine(_tempDir, "Serializer.config.json");
     }
 
-    public void Dispose()
+    public override void Dispose()
     {
+        base.Dispose();  // clear AsyncLocal first
         if (Directory.Exists(_tempDir))
             Directory.Delete(_tempDir, recursive: true);
     }
