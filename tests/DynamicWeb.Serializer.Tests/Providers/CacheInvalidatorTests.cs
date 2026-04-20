@@ -1,104 +1,122 @@
+using DynamicWeb.Serializer.Infrastructure;
 using DynamicWeb.Serializer.Providers;
-using Moq;
 using Xunit;
 
 namespace DynamicWeb.Serializer.Tests.Providers;
 
-[Trait("Category", "Phase15")]
+/// <summary>
+/// Phase 37-04 CACHE-01: CacheInvalidator rewritten around DwCacheServiceRegistry
+/// (no more AddInManager / ICacheResolver). Unknown names must throw because
+/// ConfigLoader is the validation choke point — an unknown name reaching
+/// InvalidateCaches is a bug.
+/// </summary>
+[Trait("Category", "Phase37-04")]
 public class CacheInvalidatorTests
 {
+    // ---------- Helpers ----------
+
+    /// <summary>
+    /// Build a CacheInvalidator that resolves against a caller-supplied lookup so tests
+    /// can verify invocation without triggering the real DW ClearCache() side-effects.
+    /// </summary>
+    private static CacheInvalidator NewTestInvalidator(
+        Func<string, DwCacheServiceRegistry.CacheClearEntry?> resolver)
+        => new CacheInvalidator(resolver);
+
+    private static DwCacheServiceRegistry.CacheClearEntry FakeEntry(string shortName, Action invoke)
+        => new(shortName, $"Test.{shortName}", invoke);
+
+    // ---------- Behavior ----------
+
     [Fact]
-    public void InvalidateCaches_ValidCacheName_CallsClearCache()
+    public void InvalidateCaches_KnownName_InvokesAction()
     {
-        var mockResolver = new Mock<ICacheResolver>();
-        var mockCache = new Mock<ICacheInstance>();
-        mockResolver.Setup(r => r.GetCacheType("SomeCache")).Returns(typeof(object));
-        mockResolver.Setup(r => r.GetCacheInstance("SomeCache")).Returns(mockCache.Object);
+        var invoked = 0;
+        var fake = FakeEntry("CountryService", () => invoked++);
 
-        var invalidator = new CacheInvalidator(mockResolver.Object);
-        invalidator.InvalidateCaches(new[] { "SomeCache" });
+        var invalidator = NewTestInvalidator(name =>
+            name.Equals("CountryService", StringComparison.OrdinalIgnoreCase) ? fake : null);
 
-        mockCache.Verify(c => c.ClearCache(), Times.Once);
+        invalidator.InvalidateCaches(new[] { "CountryService" });
+
+        Assert.Equal(1, invoked);
     }
 
     [Fact]
-    public void InvalidateCaches_UnknownCacheType_LogsWarningAndSkips()
+    public void InvalidateCaches_UnknownName_Throws()
     {
-        var mockResolver = new Mock<ICacheResolver>();
-        mockResolver.Setup(r => r.GetCacheType("UnknownCache")).Returns((Type?)null);
+        var invalidator = NewTestInvalidator(_ => null);
 
-        var invalidator = new CacheInvalidator(mockResolver.Object);
-        var logMessages = new List<string>();
+        var ex = Assert.Throws<InvalidOperationException>(() =>
+            invalidator.InvalidateCaches(new[] { "MysteryCache" }));
 
-        invalidator.InvalidateCaches(new[] { "UnknownCache" }, msg => logMessages.Add(msg));
-
-        Assert.Contains(logMessages, m => m.Contains("Cache type not found"));
-        Assert.Contains(logMessages, m => m.Contains("UnknownCache"));
-        mockResolver.Verify(r => r.GetCacheInstance(It.IsAny<string>()), Times.Never);
+        Assert.Contains("MysteryCache", ex.Message);
+        Assert.Contains("DwCacheServiceRegistry", ex.Message);
     }
 
     [Fact]
-    public void InvalidateCaches_NullInstance_LogsWarningAndSkips()
+    public void InvalidateCaches_LogsClearingMessage()
     {
-        var mockResolver = new Mock<ICacheResolver>();
-        mockResolver.Setup(r => r.GetCacheType("BadCache")).Returns(typeof(object));
-        mockResolver.Setup(r => r.GetCacheInstance("BadCache")).Returns((ICacheInstance?)null);
+        var fake = FakeEntry("CountryService", () => { });
+        var invalidator = NewTestInvalidator(_ => fake);
 
-        var invalidator = new CacheInvalidator(mockResolver.Object);
-        var logMessages = new List<string>();
+        var logs = new List<string>();
+        invalidator.InvalidateCaches(new[] { "CountryService" }, logs.Add);
 
-        invalidator.InvalidateCaches(new[] { "BadCache" }, msg => logMessages.Add(msg));
-
-        Assert.Contains(logMessages, m => m.Contains("Could not create cache instance"));
-        Assert.Contains(logMessages, m => m.Contains("BadCache"));
+        Assert.Contains(logs, l => l.Contains("Clearing cache") && l.Contains("CountryService"));
     }
 
     [Fact]
     public void InvalidateCaches_EmptyList_DoesNothing()
     {
-        var mockResolver = new Mock<ICacheResolver>();
-        var invalidator = new CacheInvalidator(mockResolver.Object);
+        var invalidator = NewTestInvalidator(_ =>
+            throw new InvalidOperationException("resolver should not be called for empty list"));
 
-        invalidator.InvalidateCaches(Array.Empty<string>());
-
-        mockResolver.Verify(r => r.GetCacheType(It.IsAny<string>()), Times.Never);
-        mockResolver.Verify(r => r.GetCacheInstance(It.IsAny<string>()), Times.Never);
+        invalidator.InvalidateCaches(Array.Empty<string>()); // no throw
     }
 
     [Fact]
-    public void InvalidateCaches_DuplicateCacheNames_ClearsEachOnce()
+    public void InvalidateCaches_DuplicateNames_InvokesOnce()
     {
-        var mockResolver = new Mock<ICacheResolver>();
-        var mockCache = new Mock<ICacheInstance>();
-        mockResolver.Setup(r => r.GetCacheType("DupeCache")).Returns(typeof(object));
-        mockResolver.Setup(r => r.GetCacheInstance("DupeCache")).Returns(mockCache.Object);
+        var invoked = 0;
+        var fake = FakeEntry("DupeCache", () => invoked++);
 
-        var invalidator = new CacheInvalidator(mockResolver.Object);
+        var invalidator = NewTestInvalidator(name =>
+            name.Equals("DupeCache", StringComparison.OrdinalIgnoreCase) ? fake : null);
 
         invalidator.InvalidateCaches(new[] { "DupeCache", "DupeCache", "DUPECACHE" });
 
-        mockCache.Verify(c => c.ClearCache(), Times.Once);
+        Assert.Equal(1, invoked);
     }
 
     [Fact]
-    public void InvalidateCaches_LogsEachCacheCleared()
+    public void InvalidateCaches_MultipleNames_InvokesEach()
     {
-        var mockResolver = new Mock<ICacheResolver>();
-        var mockCacheA = new Mock<ICacheInstance>();
-        var mockCacheB = new Mock<ICacheInstance>();
-        mockResolver.Setup(r => r.GetCacheType("CacheA")).Returns(typeof(object));
-        mockResolver.Setup(r => r.GetCacheInstance("CacheA")).Returns(mockCacheA.Object);
-        mockResolver.Setup(r => r.GetCacheType("CacheB")).Returns(typeof(object));
-        mockResolver.Setup(r => r.GetCacheInstance("CacheB")).Returns(mockCacheB.Object);
+        var invokedA = 0;
+        var invokedB = 0;
+        var fakeA = FakeEntry("A", () => invokedA++);
+        var fakeB = FakeEntry("B", () => invokedB++);
 
-        var invalidator = new CacheInvalidator(mockResolver.Object);
-        var logMessages = new List<string>();
+        var invalidator = NewTestInvalidator(name => name switch
+        {
+            "A" => fakeA,
+            "B" => fakeB,
+            _ => null,
+        });
 
-        invalidator.InvalidateCaches(new[] { "CacheA", "CacheB" }, msg => logMessages.Add(msg));
+        invalidator.InvalidateCaches(new[] { "A", "B" });
 
-        Assert.Contains(logMessages, m => m.Contains("Clearing cache:") && m.Contains("CacheA"));
-        Assert.Contains(logMessages, m => m.Contains("Clearing cache:") && m.Contains("CacheB"));
-        mockCacheA.Verify(c => c.ClearCache(), Times.Once);
-        mockCacheB.Verify(c => c.ClearCache(), Times.Once);
+        Assert.Equal(1, invokedA);
+        Assert.Equal(1, invokedB);
+    }
+
+    [Fact]
+    public void InvalidateCaches_DefaultConstructor_ResolvesAgainstRealRegistry()
+    {
+        // Smoke-test the production ctor: with a real DwCacheServiceRegistry, an
+        // unknown name must still throw (fail-loud on config-load misconfiguration).
+        var invalidator = new CacheInvalidator();
+        Assert.Throws<InvalidOperationException>(() =>
+            invalidator.InvalidateCaches(new[] { "NotARealCache" }));
     }
 }
