@@ -40,8 +40,9 @@ public class ContentSerializer
     /// After all predicates complete (Phase 37-05 / TEMPLATE-01), scans the full serialized
     /// page tree for template references and emits <c>templates.manifest.yml</c> so the
     /// deserialize side can validate every cshtml / grid-row / item-type file exists on the
-    /// target environment. Task 2 of the plan adds a <c>BaselineLinkSweeper</c> pass here
-    /// (D-22 pass 1) — appended in that commit.
+    /// target environment. Then runs <see cref="BaselineLinkSweeper"/> (D-22 pass 1) over the
+    /// in-memory tree — any unresolvable <c>Default.aspx?ID=N</c> reference throws so the
+    /// baseline is never committed with orphan links.
     /// </summary>
     public void Serialize()
     {
@@ -74,6 +75,24 @@ public class ContentSerializer
         catch (Exception ex)
         {
             Log($"WARNING: Failed to write template manifest: {ex.Message}");
+        }
+
+        // Phase 37-05 / LINK-02 pass 1 (D-22): sweep the in-memory tree for Default.aspx?ID=N
+        // references that don't resolve to a SerializedPage.SourcePageId in the same tree.
+        // Orphan references are fatal — a baseline with broken links fails at runtime on the
+        // target environment and cannot be committed to git.
+        var sweeper = new BaselineLinkSweeper();
+        var sweepResult = sweeper.Sweep(allSerializedPages);
+        Log($"Link sweep: {sweepResult.ResolvedCount} internal link(s) verified, " +
+            $"{sweepResult.Unresolved.Count} unresolvable");
+        if (sweepResult.Unresolved.Count > 0)
+        {
+            var lines = sweepResult.Unresolved.Select(u =>
+                $"  - ID {u.UnresolvablePageId} in {u.SourcePageIdentifier} / {u.FieldName}: {u.Context}");
+            throw new InvalidOperationException(
+                $"Baseline link sweep found {sweepResult.Unresolved.Count} unresolvable reference(s):\n" +
+                string.Join("\n", lines) +
+                "\nFix the source baseline: include the referenced pages in a predicate path, or remove the references.");
         }
 
         Log($"Serialization complete: {totalPages} pages, {totalGridRows} grid rows, {totalParagraphs} paragraphs serialized.");
