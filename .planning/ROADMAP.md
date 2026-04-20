@@ -169,7 +169,7 @@ Plans:
 - [x] 37-01-PLAN.md — Deploy/Seed config split + files-written manifest cleanup (SEED-01, SEED-02, CLEANUP-01; F-01, F-04; D-01..D-06, D-10..D-12)
 - [x] 37-01.1-PLAN.md — Per-mode Item Type + XML Type admin UI (follow-up to 37-01; closes D-02 for non-predicate config)
 - [x] 37-02-PLAN.md — TargetSchemaCache unification (SCHEMA-02; F-12, F-14)
-- [ ] 37-03-PLAN.md — SqlTable `where` clause + SQL identifier whitelist + runtime-column auto-exclusion (FILTER-01, RUNTIME-COLS-01, SEED-002; F-02, F-06, F-07, F-08; D-07, D-08)
+- [x] 37-03-PLAN.md — SqlTable `where` clause + SQL identifier whitelist + runtime-column auto-exclusion (FILTER-01, RUNTIME-COLS-01, SEED-002; F-02, F-06, F-07, F-08; D-07, D-08)
 - [ ] 37-04-PLAN.md — DwCacheServiceRegistry + Strict mode with entry-point-aware defaults (CACHE-01, STRICT-01, SEED-001; F-10; D-16, D-17, D-18)
 - [ ] 37-05-PLAN.md — Template asset manifest + LINK-02 two-pass cross-env link resolution (TEMPLATE-01, LINK-02; F-07, F-15, F-17; D-19..D-24)
 

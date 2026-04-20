@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v0.4.0
 milestone_name: Full Page Fidelity
 status: executing
-stopped_at: Completed 37-02-PLAN.md
-last_updated: "2026-04-20T16:28:09.169Z"
+stopped_at: Completed 37-03-PLAN.md
+last_updated: "2026-04-20T16:47:07.469Z"
 last_activity: 2026-04-20
 progress:
   total_phases: 26
   completed_phases: 24
   total_plans: 54
-  completed_plans: 50
-  percent: 93
+  completed_plans: 51
+  percent: 94
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-04-03)
 ## Current Position
 
 Phase: 37 (production-ready-baseline) — EXECUTING
-Plan: 3 of 6
+Plan: 4 of 6
 Status: Ready to execute
 Last activity: 2026-04-20
 
@@ -112,6 +112,7 @@ Progress: [██████████] 100% (v0.4.0)
 | Phase 37 P37-01 | 95min | 3 tasks | 30 files |
 | Phase 37-production-ready-baseline P01.1 | 23min | 2 tasks | 22 files |
 | Phase 37-production-ready-baseline P37-02 | 13min | 2 tasks | 7 files |
+| Phase 37-production-ready-baseline P37-03 | 24min | 3 tasks | 17 files |
 
 ## Accumulated Context
 
@@ -135,6 +136,7 @@ Recent decisions affecting current work:
 - [Phase 37]: Phase 37-01: Deploy/Seed config structural split with legacy-flat pass-through shims, Seed icon=Flask, SerializeSubtreeCommand pinned to Deploy, SqlTable Seed-skip reuses existingChecksums, Content Seed-skip scoped to UPDATE path only
 - [Phase 37-production-ready-baseline]: Phase 37-01.1: Per-mode Item Type + XML Type admin UI — models/queries/commands carry DeploymentMode and route to ModeConfig dictionaries; legacy ExcludeFieldsByItemType + ExcludeXmlElementsByType aliases removed; tree splits ItemTypes/EmbeddedXml into four per-mode subtrees with unique NodeIds; ContentSerializer/ContentDeserializer pinned to Deploy explicitly (mode-threading deferred); ConfigPathResolver.TestOverridePath added as AsyncLocal test hook for node-provider tests.
 - [Phase 37-production-ready-baseline]: Phase 37-02: TargetSchemaCache consolidates ContentDeserializer Area-only schema tolerance (f0bfbba) + SqlTableProvider.CoerceRowTypes into one shared per-run cache; DataGroupMetadataReader kept parallel (smallest diff); ContentDeserializer cache not shared with SqlTableProvider cache since Area and SqlTable predicate tables never overlap
+- [Phase 37-production-ready-baseline]: Phase 37-03: SqlIdentifierValidator + SqlWhereClauseValidator whitelist identifiers against INFORMATION_SCHEMA; RuntimeExcludes ships flat curated map (UrlPath.UrlPathVisitsCount + EcomShops.ShopIndex* per F-06/F-07) per D-07 no Runtime/Credential split; predicate.Where + predicate.IncludeFields round-trip through ConfigLoader/ConfigWriter; ConfigLoader.Load(path, validator?) overload aggregates errors across Deploy+Seed SqlTable predicates; SavePredicateCommand exposes IdentifierValidator/WhereValidator hooks; StripStringLiterals elides quoted content entirely (space separator, not 'x' fillers) to avoid tokenizer false positives while raw-clause BannedTokens scan still catches literal injection
 
 ### Pending Todos
 
@@ -146,6 +148,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-20T16:28:09.163Z
-Stopped at: Completed 37-02-PLAN.md
+Last session: 2026-04-20T16:47:07.463Z
+Stopped at: Completed 37-03-PLAN.md
 Resume file: None
