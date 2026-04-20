@@ -17,10 +17,20 @@ public static class ConfigPathResolver
         Path.Combine(Directory.GetCurrentDirectory(), "ContentSync.config.json")
     };
 
+    /// <summary>
+    /// Test-only override. When non-null, <see cref="FindConfigFile"/> returns this path directly
+    /// (skipping the normal candidate-path scan). Set by tests that exercise call sites which
+    /// don't expose an explicit ConfigPath parameter (e.g. the admin tree node provider).
+    /// </summary>
+    public static string? TestOverridePath { get; set; }
+
     public static string DefaultPath => Path.GetFullPath(CandidatePaths[0]);
 
     public static string? FindConfigFile()
     {
+        if (TestOverridePath != null)
+            return File.Exists(TestOverridePath) ? Path.GetFullPath(TestOverridePath) : null;
+
         foreach (var path in CandidatePaths)
         {
             if (File.Exists(path))

@@ -16,19 +16,28 @@ public sealed class SerializerSettingsNodeProvider : NavigationNodeProvider<Syst
 {
     // The Database root node ID under Settings > System > Database
     private const string DatabaseRootId = "Settings_Database";
-    internal const string SerializeNodeId = "Serializer_Settings";
+    public const string SerializeNodeId = "Serializer_Settings";
     // Phase 37-01 D-02: the flat Predicates node is split into two mode-scoped nodes.
     // The legacy PredicatesNodeId is kept as a constant for backwards compatibility of any
     // path-provider that has not migrated, but it is no longer emitted under SerializeNodeId.
-    internal const string PredicatesNodeId = "Serializer_Predicates";
-    internal const string DeployPredicatesNodeId = "Serializer_Deploy_Predicates";
-    internal const string SeedPredicatesNodeId = "Serializer_Seed_Predicates";
-    internal const string EmbeddedXmlNodeId = "Serializer_EmbeddedXml";
-    internal const string ItemTypesNodeId = "Serializer_ItemTypes";
-    internal const string LogViewerNodeId = "Serializer_LogViewer";
+    public const string PredicatesNodeId = "Serializer_Predicates";
+    public const string DeployPredicatesNodeId = "Serializer_Deploy_Predicates";
+    public const string SeedPredicatesNodeId = "Serializer_Seed_Predicates";
+    // Phase 37-01.1 Task 2: Item Types and XML Types are split per-mode so Deploy.* and Seed.*
+    // ModeConfig.ExcludeFieldsByItemType / ExcludeXmlElementsByType can be edited independently
+    // through the admin UI tree. The legacy shared ItemTypesNodeId + EmbeddedXmlNodeId constants
+    // are removed (0.x beta, no backcompat per memory/feedback_no_backcompat.md).
+    public const string DeployItemTypesNodeId = "Serializer_Deploy_ItemTypes";
+    public const string SeedItemTypesNodeId = "Serializer_Seed_ItemTypes";
+    public const string DeployXmlTypesNodeId = "Serializer_Deploy_XmlTypes";
+    public const string SeedXmlTypesNodeId = "Serializer_Seed_XmlTypes";
+    public const string LogViewerNodeId = "Serializer_LogViewer";
 
-    private const string ItemTypeCatPrefix = "Serializer_ItemType_Cat_";
-    private const string ItemTypeLeafPrefix = "Serializer_ItemType_";
+    // Per-mode prefixes ensure leaf node IDs never collide between Deploy and Seed subtrees.
+    private const string DeployItemTypeCatPrefix = "Serializer_Deploy_ItemType_Cat_";
+    private const string SeedItemTypeCatPrefix = "Serializer_Seed_ItemType_Cat_";
+    private const string DeployItemTypeLeafPrefix = "Serializer_Deploy_ItemType_";
+    private const string SeedItemTypeLeafPrefix = "Serializer_Seed_ItemType_";
     // Node IDs cannot contain '/' — DW NavigationNodePath splits on it.
     // Use '~' as separator in node IDs and convert back to '/' for category matching.
     private const char NodeIdCategorySeparator = '~';
