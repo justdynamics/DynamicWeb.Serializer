@@ -84,7 +84,15 @@
 
 **Source of findings:** Autonomous baseline test on Swift 2.2 → CleanDB round-trip, documented in `.planning/sessions/2026-04-17-baseline-test/FINDINGS.md` (F-01..F-19).
 
-- [ ] **Phase 37: Production-Ready Baseline** - Seed-content mode, row filtering, schema/type resilience broadening, credential safety, cache invalidation rework, template manifest, strict mode, and baseline diff summary. Planned 2026-04-17 from baseline-test findings.
+**CONTEXT reshape (2026-04-20):** Phase 37 was re-scoped after /gsd-discuss-phase produced 24 locked decisions. See `.planning/phases/37-production-ready-baseline/37-CONTEXT.md` and `DEFERRED.md` for the canonical view. Key shifts vs. original 2026-04-17 draft:
+- SEED-01/SEED-02 land as a top-level Deploy/Seed config split, NOT a per-predicate `deserializeMode` enum (D-01)
+- RUNTIME-COLS-01 and CRED-01 stop being two classification registries. RUNTIME-COLS-01 is a small flat curated exclusion list; CRED-01 is DEFERRED to v0.6.0 (D-07, D-09)
+- DIFF-01 (BaselineDiffWriter) is DEFERRED to v0.6.0 (D-14)
+- STRICT-01 defaults differ by entry point: API/CLI default ON, admin UI default OFF (D-16)
+- TEMPLATE-01 is manifest-only; no template content in the baseline (D-19, D-20)
+- LINK-02 runs TWO passes: serialize-time pre-commit sweep + deserialize-time SqlTable column resolution (D-22)
+
+- [ ] **Phase 37: Production-Ready Baseline** - Deploy/Seed config bifurcation, schema tolerance unification, SqlTable filtering with identifier whitelist, cache invalidation rework, strict mode, template manifest, cross-env link resolution. Re-planned 2026-04-20 from CONTEXT.md.
 
 ## Phase Details
 
@@ -129,39 +137,50 @@ Plans:
 ### Phase 37: Production-Ready Baseline
 **Goal**: The serializer becomes safe to run in an automated Azure deployment pipeline without overwriting customer-edited content, leaking credentials, silently corrupting FK integrity, or breaking on env schema drift.
 **Depends on**: v0.4.0 phases (Phase 23 page properties, Phase 24 area item types, Phase 25 schema sync)
-**Findings addressed**: F-01, F-02, F-04..F-10, F-12, F-14, F-15, F-17, F-18, F-19 (see `.planning/sessions/2026-04-17-baseline-test/FINDINGS.md`)
+**Findings addressed**: F-01, F-02, F-04..F-10, F-12, F-14, F-15, F-17, F-18 (see `.planning/sessions/2026-04-17-baseline-test/FINDINGS.md`). F-19 is deferred to v0.6.0.
 **Seeds promoted**: SEED-001 (strict mode), SEED-002 (SQL identifier whitelist)
-**Requirements** (to add to REQUIREMENTS.md when milestone opens):
-  - `SEED-01`: Content predicates support per-subtree `deserializeMode: source-wins | if-absent | skip`
-  - `SEED-02`: SqlTable predicates support `deserializeMode: source-wins | if-absent | skip` keyed on the predicate's natural key
-  - `FILTER-01`: SqlTable predicates accept a `where` clause, parameterized values, column names validated against INFORMATION_SCHEMA
-  - `SCHEMA-02`: Raw-SQL write paths for Page, Paragraph, GridRow, and ItemType_* tolerate missing target columns with a WARNING (extending the Area-level fix from `f0bfbba`)
-  - `CLEANUP-01`: Serialize writes to a temp tree and swaps on success OR tracks a files-written manifest and deletes stale files post-run
-  - `RUNTIME-COLS-01`: A well-known registry of runtime-only columns (UrlPathVisitsCount, EcomShops index columns, etc.) is auto-excluded by SqlTable predicates
-  - `CRED-01`: A well-known registry of credential columns (PaymentMerchantNum, PaymentGatewayMD5Key, etc.) is auto-excluded by SqlTable predicates
-  - `CACHE-01`: Cache invalidation resolves service types via a curated name registry, not AddInManager; unresolved names are ERROR (not silent skip)
-  - `STRICT-01`: A `--strict` flag (and config key) converts all deserialize warnings into a non-zero exit and aborts on first
-  - `TEMPLATE-01`: Serialize records a template-asset manifest (cshtml / grid-row json paths referenced); deserialize validates each exists and WARNs with remediation
-  - `LINK-02`: SqlTable string columns participate in InternalLinkResolver (at minimum for `Default.aspx?ID=N` patterns)
-  - `DIFF-01`: Serialize can produce a human-readable `BASELINE-DIFF.md` summarizing row-level changes per predicate
+**CONTEXT**: `.planning/phases/37-production-ready-baseline/37-CONTEXT.md` (D-01..D-24 — source of truth on requirement shape)
+**Deferred**: `.planning/phases/37-production-ready-baseline/DEFERRED.md` (CRED-01, DIFF-01)
+**Requirements** (in scope — covered by plans):
+  - `SEED-01`: Content predicates support per-subtree deserialize semantics — delivered as Deploy/Seed config split (D-01) in Plan 37-01
+  - `SEED-02`: SqlTable predicates support per-predicate deserialize semantics — delivered as Deploy/Seed config split in Plan 37-01
+  - `FILTER-01`: SqlTable predicates accept a `where` clause; column names validated against INFORMATION_SCHEMA (Plan 37-03)
+  - `SCHEMA-02`: Schema tolerance unified into TargetSchemaCache helper; covers Area raw-SQL paths and SqlTable MERGE paths (Plan 37-02)
+  - `CLEANUP-01`: Files-written manifest per mode; stale files deleted post-run (Plan 37-01)
+  - `RUNTIME-COLS-01`: Small flat curated list of runtime-only columns auto-excluded (Plan 37-03)
+  - `CACHE-01`: Curated DwCacheServiceRegistry with direct typed ClearCache actions; unresolved names = ERROR (Plan 37-04)
+  - `STRICT-01`: `--strict` flag with entry-point-aware defaults (D-16); escalates all warnings (Plan 37-04)
+  - `TEMPLATE-01`: Template-asset manifest (manifest-only per D-19); validated at deserialize; strict escalates missing (Plan 37-05)
+  - `LINK-02`: Two passes — serialize-time sweep (D-22 pass 1) + deserialize-time SqlTable column resolution (D-22 pass 2) (Plan 37-05)
+**Requirements DEFERRED to v0.6.0** (see DEFERRED.md):
+  - `CRED-01`: Credential column registry (per D-07, D-09 — env-config workflow comes with v0.6.0)
+  - `DIFF-01`: BaselineDiffWriter (per D-14 — observability aid, no correctness impact)
 **Success Criteria** (what must be TRUE):
-  1. A baseline deserialized twice onto the same target is idempotent AND does not overwrite rows that fall under `if-absent` mode after the first apply
-  2. Swift 2.2 → baseline → CleanDB round-trip runs with zero ERROR lines and no silent skip of cache invalidation
-  3. A baseline containing SQL identifiers from an attacker-crafted config is rejected before any query runs (F-02 / SEED-002)
-  4. Default serialize of EcomPayments / EcomShops from a real storefront excludes credential columns without the user listing them manually
-  5. Missing template files are surfaced pre-write, not silently producing broken-looking pages
-  6. Strict mode run on a baseline with any unresolved page link exits non-zero
-  7. PR reviewer can read `BASELINE-DIFF.md` and understand a baseline change without opening raw YAML
-**Plans:** 4 plans planned
+  1. A baseline serialized in Deploy mode overwrites target as before (preserves v0.4.x source-wins behavior); a baseline in Seed mode skips pages whose PageUniqueId is already on target (preserves customer edits)
+  2. Swift 2.2 → baseline → CleanDB round-trip runs with zero ERROR lines from cache invalidation (F-10 closed); unknown cache names fail at config-load, not silently
+  3. A config with SQL-injection-style identifiers (e.g. `"table": "X; DROP TABLE Y"`) is rejected at config-load with a clear error before any SQL runs (F-02, SEED-002)
+  4. Default serialize of EcomShops excludes the env-specific search-index columns listed in RuntimeExcludes without the user listing them manually (F-06); CRED-01 is documented as NOT auto-excluded in v0.5.0
+  5. Missing template files are surfaced pre-deserialize via the TemplateAssetManifest validation (F-15); strict mode escalates to hard failure
+  6. Strict mode run on a baseline with any unresolved page link or missing template exits non-zero (SEED-001)
+  7. Serialize fails with a pre-commit sweep error when the YAML tree contains Default.aspx?ID=N refs pointing outside the baseline (F-07, F-17 closed via D-22 pass 1)
+  8. SqlTable predicates opt-in to link resolution via `resolveLinksInColumns`; UrlPath.UrlPathRedirect rewrites correctly source→target (D-22 pass 2)
+**Plans:** 5 plans planned
 Plans:
-- [ ] 37-01-PLAN.md — Seed content mode + SqlTable row filtering + cross-env link audit (F-01, F-02, F-08, F-17)
-- [ ] 37-02-PLAN.md — Schema/type resilience broadened + stale cleanup + runtime-column registry (F-04, F-06, F-07, F-12, F-14, F-18)
-- [ ] 37-03-PLAN.md — Credential registry + SQL identifier whitelist + payment/shipping secret hygiene (F-05, SEED-002)
-- [ ] 37-04-PLAN.md — Cache invalidation rewrite + template asset manifest + strict mode + baseline diff (F-10, F-15, F-17, F-19, SEED-001)
+- [ ] 37-01-PLAN.md — Deploy/Seed config split + files-written manifest cleanup (SEED-01, SEED-02, CLEANUP-01; F-01, F-04; D-01..D-06, D-10..D-12)
+- [ ] 37-02-PLAN.md — TargetSchemaCache unification (SCHEMA-02; F-12, F-14)
+- [ ] 37-03-PLAN.md — SqlTable `where` clause + SQL identifier whitelist + runtime-column auto-exclusion (FILTER-01, RUNTIME-COLS-01, SEED-002; F-02, F-06, F-07, F-08; D-07, D-08)
+- [ ] 37-04-PLAN.md — DwCacheServiceRegistry + Strict mode with entry-point-aware defaults (CACHE-01, STRICT-01, SEED-001; F-10; D-16, D-17, D-18)
+- [ ] 37-05-PLAN.md — Template asset manifest + LINK-02 two-pass cross-env link resolution (TEMPLATE-01, LINK-02; F-07, F-15, F-17; D-19..D-24)
+
+**Execution waves** (for /gsd-execute-phase):
+- Wave 1: 37-01
+- Wave 2: 37-02, 37-03 (parallel — no file overlap)
+- Wave 3: 37-04 (touches ContentDeserializer + orchestrator + config; depends on 37-01/37-02/37-03 ordering for shared files)
+- Wave 4: 37-05 (touches ContentDeserializer + orchestrator + InternalLinkResolver; depends on all prior waves)
 
 ## Progress
 
-**Execution Order:** Phases 23 -> 24 -> 25
+**Execution Order:** Phases 23 -> 24 -> 25 -> 37
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
@@ -190,3 +209,4 @@ Plans:
 | 23. Full Page Properties + Navigation Settings | v0.4.0 | 2/2 | Complete   | 2026-04-03 |
 | 24. Area ItemType Fields | v0.4.0 | 1/1 | Complete   | 2026-04-03 |
 | 25. Ecommerce Schema Sync | v0.4.0 | 1/1 | Complete | 2026-04-03 |
+| 37. Production-Ready Baseline | v0.5.0 | 0/5 | Plans ready | - |
