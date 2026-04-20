@@ -164,13 +164,13 @@ Plans:
   6. Strict mode run on a baseline with any unresolved page link or missing template exits non-zero (SEED-001)
   7. Serialize fails with a pre-commit sweep error when the YAML tree contains Default.aspx?ID=N refs pointing outside the baseline (F-07, F-17 closed via D-22 pass 1)
   8. SqlTable predicates opt-in to link resolution via `resolveLinksInColumns`; UrlPath.UrlPathRedirect rewrites correctly source→target (D-22 pass 2)
-**Plans:** 3/6 plans executed
+**Plans:** 5/6 plans executed
 Plans:
 - [x] 37-01-PLAN.md — Deploy/Seed config split + files-written manifest cleanup (SEED-01, SEED-02, CLEANUP-01; F-01, F-04; D-01..D-06, D-10..D-12)
 - [x] 37-01.1-PLAN.md — Per-mode Item Type + XML Type admin UI (follow-up to 37-01; closes D-02 for non-predicate config)
 - [x] 37-02-PLAN.md — TargetSchemaCache unification (SCHEMA-02; F-12, F-14)
 - [x] 37-03-PLAN.md — SqlTable `where` clause + SQL identifier whitelist + runtime-column auto-exclusion (FILTER-01, RUNTIME-COLS-01, SEED-002; F-02, F-06, F-07, F-08; D-07, D-08)
-- [ ] 37-04-PLAN.md — DwCacheServiceRegistry + Strict mode with entry-point-aware defaults (CACHE-01, STRICT-01, SEED-001; F-10; D-16, D-17, D-18)
+- [x] 37-04-PLAN.md — DwCacheServiceRegistry + Strict mode with entry-point-aware defaults (CACHE-01, STRICT-01, SEED-001; F-10; D-16, D-17, D-18)
 - [ ] 37-05-PLAN.md — Template asset manifest + LINK-02 two-pass cross-env link resolution (TEMPLATE-01, LINK-02; F-07, F-15, F-17; D-19..D-24)
 
 **Execution waves** (for /gsd-execute-phase):
@@ -210,4 +210,4 @@ Plans:
 | 23. Full Page Properties + Navigation Settings | v0.4.0 | 2/2 | Complete   | 2026-04-03 |
 | 24. Area ItemType Fields | v0.4.0 | 1/1 | Complete   | 2026-04-03 |
 | 25. Ecommerce Schema Sync | v0.4.0 | 1/1 | Complete | 2026-04-03 |
-| 37. Production-Ready Baseline | v0.5.0 | 3/6 | In Progress|  |
+| 37. Production-Ready Baseline | v0.5.0 | 5/6 | In Progress|  |
