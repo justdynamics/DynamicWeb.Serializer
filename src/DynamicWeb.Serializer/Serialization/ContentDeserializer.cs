@@ -19,24 +19,33 @@ public class ContentDeserializer
     private readonly Action<string>? _log;
     private readonly bool _isDryRun;
     private readonly string? _filesRoot;
+    private readonly ConflictStrategy _conflictStrategy;
     private readonly HashSet<string> _loggedTemplateMissing = new(StringComparer.OrdinalIgnoreCase);
     private readonly HashSet<string> _loggedAreaColumnMissing = new(StringComparer.OrdinalIgnoreCase);
     private HashSet<string>? _targetAreaColumns;
     private Dictionary<string, string>? _targetAreaColumnTypes;
     private readonly PermissionMapper _permissionMapper;
 
+    /// <summary>
+    /// When <see cref="ConflictStrategy.DestinationWins"/> (Phase 37-01 Seed mode), pages whose
+    /// <c>PageUniqueId</c> is already present on target are NOT updated — the target row is
+    /// preserved exactly as-is. INSERT paths (new pages) still run normally. Nested content
+    /// (paragraphs within an existing page) follows up in later plans.
+    /// </summary>
     public ContentDeserializer(
         SerializerConfiguration configuration,
         IContentStore? store = null,
         Action<string>? log = null,
         bool isDryRun = false,
-        string? filesRoot = null)
+        string? filesRoot = null,
+        ConflictStrategy conflictStrategy = ConflictStrategy.SourceWins)
     {
         _configuration = configuration;
         _store = store ?? new FileSystemStore();
         _log = log;
         _isDryRun = isDryRun;
         _filesRoot = filesRoot;
+        _conflictStrategy = conflictStrategy;
         _permissionMapper = new PermissionMapper(log);
     }
 
@@ -649,6 +658,16 @@ public class ContentDeserializer
             {
                 throw new InvalidOperationException(
                     $"Could not load existing page with ID {existingId} for update.");
+            }
+
+            // Seed mode (D-06, Phase 37-01): page is already present on target, preserve as-is.
+            // We still return the existingId so child pages / paragraphs resolve their ParentPageId
+            // correctly during the recursive walk — skipping means "don't overwrite", not "disown".
+            if (_conflictStrategy == ConflictStrategy.DestinationWins)
+            {
+                Log($"Seed-skip: page {dto.PageUniqueId} (already present, ID={existingId})");
+                ctx.Skipped++;
+                return existingId;
             }
 
             if (_isDryRun)

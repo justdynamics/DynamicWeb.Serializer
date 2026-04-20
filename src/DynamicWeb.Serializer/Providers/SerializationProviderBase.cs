@@ -1,3 +1,4 @@
+using DynamicWeb.Serializer.Configuration;
 using DynamicWeb.Serializer.Infrastructure;
 using DynamicWeb.Serializer.Models;
 using YamlDotNet.Serialization;
@@ -24,7 +25,14 @@ public abstract class SerializationProviderBase : ISerializationProvider
     public abstract string DisplayName { get; }
 
     public abstract SerializeResult Serialize(ProviderPredicateDefinition predicate, string outputRoot, Action<string>? log = null);
-    public abstract ProviderDeserializeResult Deserialize(ProviderPredicateDefinition predicate, string inputRoot, Action<string>? log = null, bool isDryRun = false);
+
+    public abstract ProviderDeserializeResult Deserialize(
+        ProviderPredicateDefinition predicate,
+        string inputRoot,
+        Action<string>? log = null,
+        bool isDryRun = false,
+        ConflictStrategy strategy = ConflictStrategy.SourceWins);
+
     public abstract ValidationResult ValidatePredicate(ProviderPredicateDefinition predicate);
 
     /// <summary>

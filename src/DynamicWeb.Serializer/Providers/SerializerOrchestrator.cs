@@ -1,3 +1,4 @@
+using DynamicWeb.Serializer.Configuration;
 using DynamicWeb.Serializer.Models;
 using DynamicWeb.Serializer.Providers.SqlTable;
 
@@ -6,7 +7,8 @@ namespace DynamicWeb.Serializer.Providers;
 /// <summary>
 /// Central dispatch: iterates predicates, resolves providers via ProviderRegistry,
 /// validates each predicate, and aggregates results across all providers.
-/// Supports FK-ordered deserialization and per-predicate cache invalidation.
+/// Supports FK-ordered deserialization, per-predicate cache invalidation, and
+/// mode-aware (Deploy/Seed) execution per Phase 37-01.
 /// </summary>
 public class SerializerOrchestrator
 {
@@ -27,17 +29,47 @@ public class SerializerOrchestrator
         _ecomSchemaSync = ecomSchemaSync;
     }
 
-    /// <summary>
-    /// Serialize all predicates, optionally filtered by provider type.
-    /// Unknown provider types and failed validations are logged and skipped.
-    /// Note: FK ordering is NOT applied to serialization (order doesn't matter for reads).
-    /// </summary>
+    // -------------------------------------------------------------------------
+    // Legacy overloads (pre-Phase-37 call sites). Default to Deploy mode + SourceWins
+    // so existing callers / tests compile without touching them.
+    // -------------------------------------------------------------------------
+
+    [Obsolete("Pass DeploymentMode explicitly — see Phase 37-01.")]
     public OrchestratorResult SerializeAll(
         List<ProviderPredicateDefinition> predicates,
         string outputRoot,
         Action<string>? log = null,
+        string? providerFilter = null) =>
+        SerializeAll(predicates, outputRoot, DeploymentMode.Deploy, ConflictStrategy.SourceWins, log, providerFilter);
+
+    [Obsolete("Pass DeploymentMode and ConflictStrategy explicitly — see Phase 37-01.")]
+    public OrchestratorResult DeserializeAll(
+        List<ProviderPredicateDefinition> predicates,
+        string inputRoot,
+        Action<string>? log = null,
+        bool isDryRun = false,
+        string? providerFilter = null) =>
+        DeserializeAll(predicates, inputRoot, DeploymentMode.Deploy, ConflictStrategy.SourceWins, log, isDryRun, providerFilter);
+
+    // -------------------------------------------------------------------------
+    // Mode-aware overloads (Phase 37-01)
+    // -------------------------------------------------------------------------
+
+    /// <summary>
+    /// Serialize all predicates, scoped to the given mode. The mode/strategy pair is logged at the
+    /// start of the run. Strategy is currently unused on the serialize path (it only affects
+    /// deserialize conflict resolution), but is threaded through for symmetry with DeserializeAll.
+    /// </summary>
+    public OrchestratorResult SerializeAll(
+        List<ProviderPredicateDefinition> predicates,
+        string outputRoot,
+        DeploymentMode mode,
+        ConflictStrategy strategy,
+        Action<string>? log = null,
         string? providerFilter = null)
     {
+        log?.Invoke($"=== Mode: {mode} | Strategy: {strategy} ===");
+
         var results = new List<SerializeResult>();
         var errors = new List<string>();
 
@@ -72,23 +104,30 @@ public class SerializerOrchestrator
     }
 
     /// <summary>
-    /// Deserialize all predicates, optionally filtered by provider type.
-    /// SqlTable predicates are reordered by FK dependency (parents first, children last).
-    /// Cache invalidation runs after each successful predicate deserialize (skipped during dry-run).
-    /// Unknown provider types and failed validations are logged and skipped.
+    /// Deserialize all predicates, scoped to the given mode. Under
+    /// <see cref="ConflictStrategy.DestinationWins"/> (default for Seed, per D-06), per-predicate
+    /// providers receive the strategy via <see cref="ISerializationProvider.Deserialize"/>'s
+    /// optional strategy parameter and MUST skip rows/pages whose natural key is already present
+    /// on target — SqlTableProvider skips by <c>RowExistsInTarget</c>, ContentProvider skips
+    /// by <c>PageUniqueId</c> match. Nested content (paragraphs within existing pages) is
+    /// out of scope for 37-01 and follows up in later plans.
     /// </summary>
     public OrchestratorResult DeserializeAll(
         List<ProviderPredicateDefinition> predicates,
         string inputRoot,
+        DeploymentMode mode,
+        ConflictStrategy strategy,
         Action<string>? log = null,
         bool isDryRun = false,
         string? providerFilter = null)
     {
+        log?.Invoke($"=== Mode: {mode} | Strategy: {strategy} ===");
+
         var results = new List<ProviderDeserializeResult>();
         var errors = new List<string>();
 
-        // FK ordering: sort SqlTable predicates by dependency order (parents first, children last)
-        // per D-04, D-05. Content and other predicates are unaffected.
+        // FK ordering: sort SqlTable predicates by dependency order (parents first, children last).
+        // Content and other predicates are unaffected.
         if (_fkResolver != null)
         {
             var sqlTablePredicates = predicates
@@ -104,14 +143,10 @@ public class SerializerOrchestrator
 
                 var orderedTables = _fkResolver.GetDeserializationOrder(tableNames);
 
-                // Build a lookup: table name -> position in FK order
                 var orderIndex = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
                 for (int i = 0; i < orderedTables.Count; i++)
                     orderIndex[orderedTables[i]] = i;
 
-                // Reorder: SqlTable predicates first (FK-sorted, parents before children),
-                // then non-SqlTable predicates (Content etc.) — ensures infrastructure
-                // tables (Area, AccessUser) exist before content deserialization needs them.
                 var nonSqlPredicates = predicates
                     .Where(p => !string.Equals(p.ProviderType, "SqlTable", StringComparison.OrdinalIgnoreCase))
                     .ToList();
@@ -148,11 +183,10 @@ public class SerializerOrchestrator
                 continue;
             }
 
-            var result = provider.Deserialize(predicate, inputRoot, log, isDryRun);
+            var result = provider.Deserialize(predicate, inputRoot, log, isDryRun, strategy);
             results.Add(result);
 
-            // Cache invalidation: clear configured service caches after successful deserialize (per D-08, D-09)
-            // Skip during dry-run (no data was actually written)
+            // Cache invalidation: clear configured service caches after successful deserialize.
             if (!isDryRun && predicate.ServiceCaches.Count > 0 && !result.HasErrors)
             {
                 if (_cacheInvalidator == null)
@@ -168,7 +202,6 @@ public class SerializerOrchestrator
                     catch (Exception ex)
                     {
                         log?.Invoke($"WARNING: Cache invalidation failed for predicate '{predicate.Name}': {ex.Message}");
-                        // Don't fail the overall operation — cache invalidation is best-effort
                     }
                 }
             }
@@ -187,8 +220,6 @@ public class SerializerOrchestrator
                 catch (Exception ex)
                 {
                     log?.Invoke($"WARNING: Schema sync failed for predicate '{predicate.Name}': {ex.Message}");
-                    // Don't fail the overall operation — schema sync is best-effort
-                    // (EcomGroups deserialization will fail with clear error if columns are missing)
                 }
             }
         }

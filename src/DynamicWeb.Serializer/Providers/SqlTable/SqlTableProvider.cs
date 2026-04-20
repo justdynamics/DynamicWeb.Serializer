@@ -1,4 +1,5 @@
 using System.Globalization;
+using DynamicWeb.Serializer.Configuration;
 using DynamicWeb.Serializer.Infrastructure;
 using DynamicWeb.Serializer.Models;
 
@@ -99,7 +100,12 @@ public class SqlTableProvider : SerializationProviderBase
         };
     }
 
-    public override ProviderDeserializeResult Deserialize(ProviderPredicateDefinition predicate, string inputRoot, Action<string>? log = null, bool isDryRun = false)
+    public override ProviderDeserializeResult Deserialize(
+        ProviderPredicateDefinition predicate,
+        string inputRoot,
+        Action<string>? log = null,
+        bool isDryRun = false,
+        ConflictStrategy strategy = ConflictStrategy.SourceWins)
     {
         var validation = ValidatePredicate(predicate);
         if (!validation.IsValid)
@@ -207,6 +213,17 @@ public class SqlTableProvider : SerializationProviderBase
                 {
                     skipped++;
                     Log($"  Skipped {identity} (unchanged)", log);
+                    continue;
+                }
+
+                // Seed mode (D-06, Phase 37-01): rows already present on target stay untouched.
+                // We rely on the existingChecksums lookup above — if the identity is already keyed,
+                // the target has this row, so we skip without issuing the MERGE.
+                if (strategy == ConflictStrategy.DestinationWins
+                    && existingChecksums.ContainsKey(identity))
+                {
+                    skipped++;
+                    Log($"  Seed-skip: [{metadata.TableName}].{identity} (already present)", log);
                     continue;
                 }
 

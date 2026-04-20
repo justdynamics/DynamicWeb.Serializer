@@ -1,3 +1,4 @@
+using DynamicWeb.Serializer.Configuration;
 using DynamicWeb.Serializer.Models;
 
 namespace DynamicWeb.Serializer.Providers;
@@ -22,7 +23,17 @@ public interface ISerializationProvider
     /// <param name="inputRoot">Root directory containing YAML files.</param>
     /// <param name="log">Optional logging callback.</param>
     /// <param name="isDryRun">When true, reports what would change without modifying the database.</param>
-    ProviderDeserializeResult Deserialize(ProviderPredicateDefinition predicate, string inputRoot, Action<string>? log = null, bool isDryRun = false);
+    /// <param name="strategy">
+    /// Conflict strategy (Phase 37-01). <see cref="ConflictStrategy.SourceWins"/> preserves the
+    /// pre-Phase-37 behavior — YAML overwrites target. <see cref="ConflictStrategy.DestinationWins"/>
+    /// skips rows/pages whose natural key / PageUniqueId is already present on target.
+    /// </param>
+    ProviderDeserializeResult Deserialize(
+        ProviderPredicateDefinition predicate,
+        string inputRoot,
+        Action<string>? log = null,
+        bool isDryRun = false,
+        ConflictStrategy strategy = ConflictStrategy.SourceWins);
 
     /// <summary>Validate that a predicate is correctly configured for this provider.</summary>
     ValidationResult ValidatePredicate(ProviderPredicateDefinition predicate);

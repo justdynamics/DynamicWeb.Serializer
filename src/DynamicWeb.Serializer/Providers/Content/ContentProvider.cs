@@ -85,7 +85,12 @@ public class ContentProvider : ISerializationProvider
         }
     }
 
-    public ProviderDeserializeResult Deserialize(ProviderPredicateDefinition predicate, string inputRoot, Action<string>? log = null, bool isDryRun = false)
+    public ProviderDeserializeResult Deserialize(
+        ProviderPredicateDefinition predicate,
+        string inputRoot,
+        Action<string>? log = null,
+        bool isDryRun = false,
+        ConflictStrategy strategy = ConflictStrategy.SourceWins)
     {
         var validation = ValidatePredicate(predicate);
         if (!validation.IsValid)
@@ -112,8 +117,16 @@ public class ContentProvider : ISerializationProvider
                 contentDir = inputRoot;
 
             var config = BuildSerializerConfiguration(predicate, contentDir);
-            var deserializer = new ContentDeserializer(config, log: log, isDryRun: isDryRun, filesRoot: _filesRoot);
+            var deserializer = new ContentDeserializer(
+                config,
+                log: log,
+                isDryRun: isDryRun,
+                filesRoot: _filesRoot,
+                conflictStrategy: strategy);
             var result = deserializer.Deserialize();
+
+            if (strategy == ConflictStrategy.DestinationWins)
+                log?.Invoke($"Content provider running in DestinationWins (Seed) mode — pages whose PageUniqueId is already present on target are preserved.");
 
             return new ProviderDeserializeResult
             {

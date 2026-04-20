@@ -1,4 +1,5 @@
 using System.Data;
+using DynamicWeb.Serializer.Configuration;
 using DynamicWeb.Serializer.Models;
 using DynamicWeb.Serializer.Providers;
 using DynamicWeb.Serializer.Providers.SqlTable;
@@ -48,7 +49,7 @@ public class SerializerOrchestratorTests
             .Returns(ValidationResult.Success());
         _contentProvider.Setup(p => p.Serialize(It.IsAny<ProviderPredicateDefinition>(), It.IsAny<string>(), It.IsAny<Action<string>?>()))
             .Returns(new SerializeResult { RowsSerialized = 5, TableName = "Content" });
-        _contentProvider.Setup(p => p.Deserialize(It.IsAny<ProviderPredicateDefinition>(), It.IsAny<string>(), It.IsAny<Action<string>?>(), It.IsAny<bool>()))
+        _contentProvider.Setup(p => p.Deserialize(It.IsAny<ProviderPredicateDefinition>(), It.IsAny<string>(), It.IsAny<Action<string>?>(), It.IsAny<bool>(), It.IsAny<ConflictStrategy>()))
             .Returns(new ProviderDeserializeResult { Created = 2, Updated = 1, TableName = "Content" });
 
         _sqlTableProvider = new Mock<ISerializationProvider>();
@@ -57,7 +58,7 @@ public class SerializerOrchestratorTests
             .Returns(ValidationResult.Success());
         _sqlTableProvider.Setup(p => p.Serialize(It.IsAny<ProviderPredicateDefinition>(), It.IsAny<string>(), It.IsAny<Action<string>?>()))
             .Returns(new SerializeResult { RowsSerialized = 10, TableName = "EcomOrderFlow" });
-        _sqlTableProvider.Setup(p => p.Deserialize(It.IsAny<ProviderPredicateDefinition>(), It.IsAny<string>(), It.IsAny<Action<string>?>(), It.IsAny<bool>()))
+        _sqlTableProvider.Setup(p => p.Deserialize(It.IsAny<ProviderPredicateDefinition>(), It.IsAny<string>(), It.IsAny<Action<string>?>(), It.IsAny<bool>(), It.IsAny<ConflictStrategy>()))
             .Returns(new ProviderDeserializeResult { Created = 3, Updated = 2, Skipped = 1, TableName = "EcomOrderFlow" });
 
         _registry = new ProviderRegistry();
@@ -183,8 +184,8 @@ public class SerializerOrchestratorTests
 
         var result = _orchestrator.DeserializeAll(predicates, "/input");
 
-        _contentProvider.Verify(p => p.Deserialize(ContentPred1, "/input", It.IsAny<Action<string>?>(), false), Times.Once);
-        _sqlTableProvider.Verify(p => p.Deserialize(SqlTablePred, "/input", It.IsAny<Action<string>?>(), false), Times.Once);
+        _contentProvider.Verify(p => p.Deserialize(ContentPred1, "/input", It.IsAny<Action<string>?>(), false, It.IsAny<ConflictStrategy>()), Times.Once);
+        _sqlTableProvider.Verify(p => p.Deserialize(SqlTablePred, "/input", It.IsAny<Action<string>?>(), false, It.IsAny<ConflictStrategy>()), Times.Once);
         Assert.Equal(2, result.DeserializeResults.Count);
     }
 
@@ -195,8 +196,8 @@ public class SerializerOrchestratorTests
 
         var result = _orchestrator.DeserializeAll(predicates, "/input", isDryRun: true, providerFilter: "SqlTable");
 
-        _contentProvider.Verify(p => p.Deserialize(It.IsAny<ProviderPredicateDefinition>(), It.IsAny<string>(), It.IsAny<Action<string>?>(), It.IsAny<bool>()), Times.Never);
-        _sqlTableProvider.Verify(p => p.Deserialize(SqlTablePred, "/input", It.IsAny<Action<string>?>(), true), Times.Once);
+        _contentProvider.Verify(p => p.Deserialize(It.IsAny<ProviderPredicateDefinition>(), It.IsAny<string>(), It.IsAny<Action<string>?>(), It.IsAny<bool>(), It.IsAny<ConflictStrategy>()), Times.Never);
+        _sqlTableProvider.Verify(p => p.Deserialize(SqlTablePred, "/input", It.IsAny<Action<string>?>(), true, It.IsAny<ConflictStrategy>()), Times.Once);
         Assert.Single(result.DeserializeResults);
     }
 
@@ -321,8 +322,8 @@ public class SerializerOrchestratorTests
         sqlProvider.Setup(p => p.ProviderType).Returns("SqlTable");
         sqlProvider.Setup(p => p.ValidatePredicate(It.IsAny<ProviderPredicateDefinition>()))
             .Returns(ValidationResult.Success());
-        sqlProvider.Setup(p => p.Deserialize(It.IsAny<ProviderPredicateDefinition>(), It.IsAny<string>(), It.IsAny<Action<string>?>(), It.IsAny<bool>()))
-            .Returns((ProviderPredicateDefinition pred, string _, Action<string>? _, bool _) =>
+        sqlProvider.Setup(p => p.Deserialize(It.IsAny<ProviderPredicateDefinition>(), It.IsAny<string>(), It.IsAny<Action<string>?>(), It.IsAny<bool>(), It.IsAny<ConflictStrategy>()))
+            .Returns((ProviderPredicateDefinition pred, string _, Action<string>? _, bool _, ConflictStrategy _) =>
             {
                 callOrder.Add(pred.Table!);
                 return new ProviderDeserializeResult { Created = 1, TableName = pred.Table! };
@@ -359,8 +360,8 @@ public class SerializerOrchestratorTests
         contentProvider.Setup(p => p.ProviderType).Returns("Content");
         contentProvider.Setup(p => p.ValidatePredicate(It.IsAny<ProviderPredicateDefinition>()))
             .Returns(ValidationResult.Success());
-        contentProvider.Setup(p => p.Deserialize(It.IsAny<ProviderPredicateDefinition>(), It.IsAny<string>(), It.IsAny<Action<string>?>(), It.IsAny<bool>()))
-            .Returns((ProviderPredicateDefinition pred, string _, Action<string>? _, bool _) =>
+        contentProvider.Setup(p => p.Deserialize(It.IsAny<ProviderPredicateDefinition>(), It.IsAny<string>(), It.IsAny<Action<string>?>(), It.IsAny<bool>(), It.IsAny<ConflictStrategy>()))
+            .Returns((ProviderPredicateDefinition pred, string _, Action<string>? _, bool _, ConflictStrategy _) =>
             {
                 callOrder.Add($"Content:{pred.Name}");
                 return new ProviderDeserializeResult { Created = 1, TableName = "Content" };
@@ -370,8 +371,8 @@ public class SerializerOrchestratorTests
         sqlProvider.Setup(p => p.ProviderType).Returns("SqlTable");
         sqlProvider.Setup(p => p.ValidatePredicate(It.IsAny<ProviderPredicateDefinition>()))
             .Returns(ValidationResult.Success());
-        sqlProvider.Setup(p => p.Deserialize(It.IsAny<ProviderPredicateDefinition>(), It.IsAny<string>(), It.IsAny<Action<string>?>(), It.IsAny<bool>()))
-            .Returns((ProviderPredicateDefinition pred, string _, Action<string>? _, bool _) =>
+        sqlProvider.Setup(p => p.Deserialize(It.IsAny<ProviderPredicateDefinition>(), It.IsAny<string>(), It.IsAny<Action<string>?>(), It.IsAny<bool>(), It.IsAny<ConflictStrategy>()))
+            .Returns((ProviderPredicateDefinition pred, string _, Action<string>? _, bool _, ConflictStrategy _) =>
             {
                 callOrder.Add($"SqlTable:{pred.Table}");
                 return new ProviderDeserializeResult { Created = 1, TableName = pred.Table! };
@@ -415,7 +416,7 @@ public class SerializerOrchestratorTests
         sqlProvider.Setup(p => p.ProviderType).Returns("SqlTable");
         sqlProvider.Setup(p => p.ValidatePredicate(It.IsAny<ProviderPredicateDefinition>()))
             .Returns(ValidationResult.Success());
-        sqlProvider.Setup(p => p.Deserialize(It.IsAny<ProviderPredicateDefinition>(), It.IsAny<string>(), It.IsAny<Action<string>?>(), It.IsAny<bool>()))
+        sqlProvider.Setup(p => p.Deserialize(It.IsAny<ProviderPredicateDefinition>(), It.IsAny<string>(), It.IsAny<Action<string>?>(), It.IsAny<bool>(), It.IsAny<ConflictStrategy>()))
             .Returns(new ProviderDeserializeResult { Created = 1, TableName = "Test" });
 
         var mockCacheResolver = new Mock<ICacheResolver>();
@@ -451,7 +452,7 @@ public class SerializerOrchestratorTests
         sqlProvider.Setup(p => p.ProviderType).Returns("SqlTable");
         sqlProvider.Setup(p => p.ValidatePredicate(It.IsAny<ProviderPredicateDefinition>()))
             .Returns(ValidationResult.Success());
-        sqlProvider.Setup(p => p.Deserialize(It.IsAny<ProviderPredicateDefinition>(), It.IsAny<string>(), It.IsAny<Action<string>?>(), It.IsAny<bool>()))
+        sqlProvider.Setup(p => p.Deserialize(It.IsAny<ProviderPredicateDefinition>(), It.IsAny<string>(), It.IsAny<Action<string>?>(), It.IsAny<bool>(), It.IsAny<ConflictStrategy>()))
             .Returns(new ProviderDeserializeResult { Created = 1, TableName = "EcomPayments" });
 
         var mockCacheResolver = new Mock<ICacheResolver>();
@@ -519,7 +520,7 @@ public class SerializerOrchestratorTests
         sqlProvider.Setup(p => p.ProviderType).Returns("SqlTable");
         sqlProvider.Setup(p => p.ValidatePredicate(It.IsAny<ProviderPredicateDefinition>()))
             .Returns(ValidationResult.Success());
-        sqlProvider.Setup(p => p.Deserialize(It.IsAny<ProviderPredicateDefinition>(), It.IsAny<string>(), It.IsAny<Action<string>?>(), It.IsAny<bool>()))
+        sqlProvider.Setup(p => p.Deserialize(It.IsAny<ProviderPredicateDefinition>(), It.IsAny<string>(), It.IsAny<Action<string>?>(), It.IsAny<bool>(), It.IsAny<ConflictStrategy>()))
             .Returns(new ProviderDeserializeResult { Created = 1, TableName = "EcomOrderFlow" });
 
         var mockCacheResolver = new Mock<ICacheResolver>();
@@ -556,7 +557,7 @@ public class SerializerOrchestratorTests
         sqlProvider.Setup(p => p.ProviderType).Returns("SqlTable");
         sqlProvider.Setup(p => p.ValidatePredicate(It.IsAny<ProviderPredicateDefinition>()))
             .Returns(ValidationResult.Success());
-        sqlProvider.Setup(p => p.Deserialize(It.IsAny<ProviderPredicateDefinition>(), It.IsAny<string>(), It.IsAny<Action<string>?>(), It.IsAny<bool>()))
+        sqlProvider.Setup(p => p.Deserialize(It.IsAny<ProviderPredicateDefinition>(), It.IsAny<string>(), It.IsAny<Action<string>?>(), It.IsAny<bool>(), It.IsAny<ConflictStrategy>()))
             .Returns(new ProviderDeserializeResult { Created = 3, TableName = "EcomProductGroupField" });
 
         var mockSchemaSync = new Mock<EcomGroupFieldSchemaSync>(MockBehavior.Loose, new object[] { new Mock<ISqlExecutor>().Object });
@@ -587,7 +588,7 @@ public class SerializerOrchestratorTests
         sqlProvider.Setup(p => p.ProviderType).Returns("SqlTable");
         sqlProvider.Setup(p => p.ValidatePredicate(It.IsAny<ProviderPredicateDefinition>()))
             .Returns(ValidationResult.Success());
-        sqlProvider.Setup(p => p.Deserialize(It.IsAny<ProviderPredicateDefinition>(), It.IsAny<string>(), It.IsAny<Action<string>?>(), It.IsAny<bool>()))
+        sqlProvider.Setup(p => p.Deserialize(It.IsAny<ProviderPredicateDefinition>(), It.IsAny<string>(), It.IsAny<Action<string>?>(), It.IsAny<bool>(), It.IsAny<ConflictStrategy>()))
             .Returns(new ProviderDeserializeResult { Created = 3, TableName = "EcomProductGroupField" });
 
         var mockSchemaSync = new Mock<EcomGroupFieldSchemaSync>(MockBehavior.Loose, new object[] { new Mock<ISqlExecutor>().Object });
@@ -617,7 +618,7 @@ public class SerializerOrchestratorTests
         sqlProvider.Setup(p => p.ProviderType).Returns("SqlTable");
         sqlProvider.Setup(p => p.ValidatePredicate(It.IsAny<ProviderPredicateDefinition>()))
             .Returns(ValidationResult.Success());
-        sqlProvider.Setup(p => p.Deserialize(It.IsAny<ProviderPredicateDefinition>(), It.IsAny<string>(), It.IsAny<Action<string>?>(), It.IsAny<bool>()))
+        sqlProvider.Setup(p => p.Deserialize(It.IsAny<ProviderPredicateDefinition>(), It.IsAny<string>(), It.IsAny<Action<string>?>(), It.IsAny<bool>(), It.IsAny<ConflictStrategy>()))
             .Returns(new ProviderDeserializeResult { Created = 1, TableName = "EcomOrderFlow" });
 
         var mockSchemaSync = new Mock<EcomGroupFieldSchemaSync>(MockBehavior.Loose, new object[] { new Mock<ISqlExecutor>().Object });
@@ -654,7 +655,7 @@ public class SerializerOrchestratorTests
         sqlProvider.Setup(p => p.ProviderType).Returns("SqlTable");
         sqlProvider.Setup(p => p.ValidatePredicate(It.IsAny<ProviderPredicateDefinition>()))
             .Returns(ValidationResult.Success());
-        sqlProvider.Setup(p => p.Deserialize(It.IsAny<ProviderPredicateDefinition>(), It.IsAny<string>(), It.IsAny<Action<string>?>(), It.IsAny<bool>()))
+        sqlProvider.Setup(p => p.Deserialize(It.IsAny<ProviderPredicateDefinition>(), It.IsAny<string>(), It.IsAny<Action<string>?>(), It.IsAny<bool>(), It.IsAny<ConflictStrategy>()))
             .Returns(new ProviderDeserializeResult { Created = 1, TableName = "Test" });
 
         // CacheInvalidator that throws on "BadCache"
