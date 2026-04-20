@@ -1,0 +1,210 @@
+{
+  "outputDirectory": "Serializer",
+  "logLevel": "info",
+  "dryRun": false,
+  "strictMode": false,
+  "deploy": {
+    "outputSubfolder": "deploy",
+    "conflictStrategy": "source-wins",
+    "predicates": [
+      {
+        "name": "Content - Swift 2 (full baseline as shipped)",
+        "providerType": "Content",
+        "areaId": 3,
+        "path": "/",
+        "acknowledgedOrphanPageIds": [ 8308, 149, 15717, 295, 140 ],
+        "excludes": [
+          "/New Serialized Page"
+        ],
+        "excludeFields": [
+          "AreaDomain",
+          "AreaDomainLock",
+          "AreaNoindex",
+          "AreaNofollow",
+          "AreaRobotsTxt",
+          "AreaRobotsTxtIncludeSitemap",
+          "GoogleTagManagerID"
+        ],
+        "excludeXmlElements": [
+          "EmptyCartRedirectPage",
+          "ShoppingCartLink"
+        ],
+        "excludeAreaColumns": [
+          "AreaCdnHost",
+          "AreaCookieWarningTemplate"
+        ]
+      },
+      {
+        "name": "EcomCountries",
+        "providerType": "SqlTable",
+        "table": "EcomCountries",
+        "serviceCaches": [
+          "Dynamicweb.Ecommerce.International.CountryRelationService",
+          "Dynamicweb.Ecommerce.International.CountryService"
+        ]
+      },
+      {
+        "name": "EcomCountryText",
+        "providerType": "SqlTable",
+        "table": "EcomCountryText",
+        "serviceCaches": [
+          "Dynamicweb.Ecommerce.International.CountryService"
+        ]
+      },
+      {
+        "name": "EcomCurrencies",
+        "providerType": "SqlTable",
+        "table": "EcomCurrencies",
+        "serviceCaches": [
+          "Dynamicweb.Ecommerce.International.CurrencyService"
+        ]
+      },
+      {
+        "name": "EcomLanguages",
+        "providerType": "SqlTable",
+        "table": "EcomLanguages",
+        "serviceCaches": [
+          "Dynamicweb.Ecommerce.International.LanguageService"
+        ]
+      },
+      {
+        "name": "EcomVatGroups",
+        "providerType": "SqlTable",
+        "table": "EcomVatGroups",
+        "nameColumn": "VatGroupName",
+        "serviceCaches": [
+          "Dynamicweb.Ecommerce.International.VatGroupService"
+        ]
+      },
+      {
+        "name": "EcomVatCountryRelations",
+        "providerType": "SqlTable",
+        "table": "EcomVatCountryRelations",
+        "serviceCaches": [
+          "Dynamicweb.Ecommerce.International.VatGroupCountryRelationService"
+        ]
+      },
+      {
+        "name": "EcomShops",
+        "providerType": "SqlTable",
+        "table": "EcomShops"
+      },
+      {
+        "name": "EcomShopLanguageRelation",
+        "providerType": "SqlTable",
+        "table": "EcomShopLanguageRelation"
+      },
+      {
+        "name": "EcomShopGroupRelation",
+        "providerType": "SqlTable",
+        "table": "EcomShopGroupRelation"
+      },
+      {
+        "name": "EcomPayments",
+        "providerType": "SqlTable",
+        "table": "EcomPayments",
+        "nameColumn": "PaymentName",
+        "xmlColumns": [
+          "PaymentGatewayParameters",
+          "PaymentCheckoutParameters"
+        ],
+        "serviceCaches": [
+          "Dynamicweb.Ecommerce.Orders.PaymentService"
+        ]
+      },
+      {
+        "name": "EcomShippings",
+        "providerType": "SqlTable",
+        "table": "EcomShippings",
+        "nameColumn": "ShippingName",
+        "xmlColumns": [
+          "ShippingServiceParameters"
+        ],
+        "serviceCaches": [
+          "Dynamicweb.Ecommerce.Orders.ShippingService"
+        ]
+      },
+      {
+        "name": "EcomMethodCountryRelation",
+        "providerType": "SqlTable",
+        "table": "EcomMethodCountryRelation"
+      },
+      {
+        "name": "EcomOrderFlow",
+        "providerType": "SqlTable",
+        "table": "EcomOrderFlow",
+        "nameColumn": "OrderFlowName"
+      },
+      {
+        "name": "EcomOrderStates",
+        "providerType": "SqlTable",
+        "table": "EcomOrderStates",
+        "nameColumn": "OrderStateName"
+      },
+      {
+        "name": "EcomOrderStateRules",
+        "providerType": "SqlTable",
+        "table": "EcomOrderStateRules"
+      },
+      {
+        "name": "UrlPath",
+        "providerType": "SqlTable",
+        "table": "UrlPath",
+        "resolveLinksInColumns": [
+          "UrlPathRedirect"
+        ]
+      }
+    ]
+  },
+  "seed": {
+    "outputSubfolder": "seed",
+    "conflictStrategy": "destination-wins",
+    "predicates": [
+      {
+        "name": "EcomGroups",
+        "providerType": "SqlTable",
+        "table": "EcomGroups",
+        "nameColumn": "GroupName"
+      },
+      {
+        "name": "EcomProducts",
+        "providerType": "SqlTable",
+        "table": "EcomProducts",
+        "nameColumn": "ProductName"
+      },
+      {
+        "name": "EcomGroupProductRelation",
+        "providerType": "SqlTable",
+        "table": "EcomGroupProductRelation"
+      },
+      {
+        "name": "EcomVariantGroups",
+        "providerType": "SqlTable",
+        "table": "EcomVariantGroups",
+        "nameColumn": "VariantGroupName"
+      },
+      {
+        "name": "EcomVariantsOptions",
+        "providerType": "SqlTable",
+        "table": "EcomVariantsOptions",
+        "nameColumn": "VariantOptionName"
+      },
+      {
+        "name": "EcomVariantOptionsProductRelation",
+        "providerType": "SqlTable",
+        "table": "EcomVariantOptionsProductRelation"
+      },
+      {
+        "name": "EcomDiscount",
+        "providerType": "SqlTable",
+        "table": "EcomDiscount",
+        "nameColumn": "DiscountName"
+      },
+      {
+        "name": "EcomDiscountTranslation",
+        "providerType": "SqlTable",
+        "table": "EcomDiscountTranslation"
+      }
+    ]
+  }
+}
