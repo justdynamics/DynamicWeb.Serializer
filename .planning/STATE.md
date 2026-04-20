@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.4.0
 milestone_name: Full Page Fidelity
 status: executing
-stopped_at: Completed 37-01-PLAN.md
-last_updated: "2026-04-20T14:51:51.235Z"
+stopped_at: Completed 37-01.1-PLAN.md
+last_updated: "2026-04-20T16:13:28.203Z"
 last_activity: 2026-04-20
 progress:
   total_phases: 26
   completed_phases: 24
-  total_plans: 53
-  completed_plans: 48
+  total_plans: 54
+  completed_plans: 49
   percent: 91
 ---
 
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-04-03)
 ## Current Position
 
 Phase: 37 (production-ready-baseline) — EXECUTING
-Plan: 2 of 5
+Plan: 2 of 6
 Status: Ready to execute
 Last activity: 2026-04-20
 
@@ -110,6 +110,7 @@ Progress: [██████████] 100% (v0.4.0)
 | Phase 24 P01 | 2min | 2 tasks | 4 files |
 | Phase 25 P01 | 5min | 2 tasks | 8 files |
 | Phase 37 P37-01 | 95min | 3 tasks | 30 files |
+| Phase 37-production-ready-baseline P01.1 | 23min | 2 tasks | 22 files |
 
 ## Accumulated Context
 
@@ -131,6 +132,7 @@ Recent decisions affecting current work:
 - [Phase 23]: EcommerceNavigationParentType enum is in Dynamicweb.Content namespace (not Ecommerce.Navigation)
 - [Phase 24]: Area ItemType uses standard Item.SerializeTo/DeserializeFrom pattern; ItemType not set on target (must be pre-configured)
 - [Phase 37]: Phase 37-01: Deploy/Seed config structural split with legacy-flat pass-through shims, Seed icon=Flask, SerializeSubtreeCommand pinned to Deploy, SqlTable Seed-skip reuses existingChecksums, Content Seed-skip scoped to UPDATE path only
+- [Phase 37-production-ready-baseline]: Phase 37-01.1: Per-mode Item Type + XML Type admin UI — models/queries/commands carry DeploymentMode and route to ModeConfig dictionaries; legacy ExcludeFieldsByItemType + ExcludeXmlElementsByType aliases removed; tree splits ItemTypes/EmbeddedXml into four per-mode subtrees with unique NodeIds; ContentSerializer/ContentDeserializer pinned to Deploy explicitly (mode-threading deferred); ConfigPathResolver.TestOverridePath added as AsyncLocal test hook for node-provider tests.
 
 ### Pending Todos
 
@@ -142,6 +144,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-20T14:51:51.228Z
-Stopped at: Completed 37-01-PLAN.md
+Last session: 2026-04-20T16:13:28.197Z
+Stopped at: Completed 37-01.1-PLAN.md
 Resume file: None
