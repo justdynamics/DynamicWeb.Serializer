@@ -172,12 +172,14 @@ Plans:
 - [x] 37-03-PLAN.md — SqlTable `where` clause + SQL identifier whitelist + runtime-column auto-exclusion (FILTER-01, RUNTIME-COLS-01, SEED-002; F-02, F-06, F-07, F-08; D-07, D-08)
 - [x] 37-04-PLAN.md — DwCacheServiceRegistry + Strict mode with entry-point-aware defaults (CACHE-01, STRICT-01, SEED-001; F-10; D-16, D-17, D-18)
 - [x] 37-05-PLAN.md — Template asset manifest + LINK-02 two-pass cross-env link resolution (TEMPLATE-01, LINK-02; F-07, F-15, F-17; D-19..D-24)
+- [ ] 37-06-PLAN.md — Gap closure for SC-3 / CR-01: wire default SqlIdentifierValidator into 1-arg ConfigLoader.Load (FILTER-01, SEED-002)
 
 **Execution waves** (for /gsd-execute-phase):
 - Wave 1: 37-01
 - Wave 2: 37-01.1, 37-02, 37-03 (parallel — no file overlap between any pair)
 - Wave 3: 37-04 (touches ContentDeserializer + orchestrator + config; depends on 37-01/37-02/37-03 ordering for shared files)
 - Wave 4: 37-05 (touches ContentDeserializer + orchestrator + InternalLinkResolver; depends on all prior waves)
+- Wave 5: 37-06 (gap closure — depends on 37-03/37-05; no overlap with other plans)
 
 ## Progress
 
