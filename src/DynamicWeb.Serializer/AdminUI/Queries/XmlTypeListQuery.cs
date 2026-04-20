@@ -24,10 +24,12 @@ public sealed class XmlTypeListQuery : DataQueryModelBase<DataListViewModel<XmlT
 
         var config = ConfigLoader.Load(configPath);
         var dict = config.GetMode(Mode).ExcludeXmlElementsByType;
+        var mode = Mode;
         var items = dict
             .OrderBy(kv => kv.Key, StringComparer.OrdinalIgnoreCase)
             .Select(kv => new XmlTypeListModel
             {
+                Mode = mode,
                 TypeName = kv.Key,
                 ExcludedElementCount = kv.Value.Count
             })

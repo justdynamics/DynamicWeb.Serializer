@@ -18,18 +18,25 @@ public static class ConfigPathResolver
     };
 
     /// <summary>
-    /// Test-only override. When non-null, <see cref="FindConfigFile"/> returns this path directly
-    /// (skipping the normal candidate-path scan). Set by tests that exercise call sites which
-    /// don't expose an explicit ConfigPath parameter (e.g. the admin tree node provider).
+    /// Test-only override, per-async-flow. When non-null, <see cref="FindConfigFile"/> returns this
+    /// path directly (skipping the normal candidate-path scan). Uses <see cref="AsyncLocal{T}"/> so
+    /// parallel xUnit test workers don't leak overrides into unrelated tests that check the real
+    /// candidate-path resolution (e.g. <c>ConfigPathResolverTests</c>).
     /// </summary>
-    public static string? TestOverridePath { get; set; }
+    private static readonly AsyncLocal<string?> _testOverridePath = new();
+    public static string? TestOverridePath
+    {
+        get => _testOverridePath.Value;
+        set => _testOverridePath.Value = value;
+    }
 
     public static string DefaultPath => Path.GetFullPath(CandidatePaths[0]);
 
     public static string? FindConfigFile()
     {
-        if (TestOverridePath != null)
-            return File.Exists(TestOverridePath) ? Path.GetFullPath(TestOverridePath) : null;
+        var overridePath = TestOverridePath;
+        if (overridePath != null)
+            return File.Exists(overridePath) ? Path.GetFullPath(overridePath) : null;
 
         foreach (var path in CandidatePaths)
         {

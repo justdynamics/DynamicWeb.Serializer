@@ -43,9 +43,11 @@ public sealed class ItemTypeListQuery : DataQueryModelBase<DataListViewModel<Ite
             }
         }
 
+        var mode = Mode;
         var items = metadata.Items
             .Select(t => new ItemTypeListModel
             {
+                Mode = mode,
                 SystemName = t.SystemName,
                 DisplayName = t.Name,
                 Category = t.Category?.FullName ?? "",
