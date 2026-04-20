@@ -13,6 +13,19 @@ public sealed class SavePredicateCommand : CommandBase<PredicateEditModel>
     /// </summary>
     public string? ConfigPath { get; set; }
 
+    /// <summary>
+    /// Phase 37-03: identifier validator used to whitelist Table / NameColumn / ExcludeFields /
+    /// IncludeFields / XmlColumns. Tests inject a fixture loader; production path uses the
+    /// default ctor (live INFORMATION_SCHEMA lookup).
+    /// </summary>
+    public SqlIdentifierValidator? IdentifierValidator { get; set; }
+
+    /// <summary>
+    /// Phase 37-03: WHERE-clause validator. Tests can substitute a no-op if needed; production
+    /// callers use the default instance.
+    /// </summary>
+    public SqlWhereClauseValidator? WhereValidator { get; set; }
+
     public override CommandResult Handle()
     {
         if (Model is null)
@@ -93,6 +106,13 @@ public sealed class SavePredicateCommand : CommandBase<PredicateEditModel>
                 .Where(e => e.Length > 0)
                 .ToList();
 
+            // Phase 37-03: parse runtime-exclude opt-in list (SqlTable only, ignored for Content).
+            var includeFields = (Model.IncludeFields ?? string.Empty)
+                .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(e => e.Trim())
+                .Where(e => e.Length > 0)
+                .ToList();
+
             // Build predicate based on provider type
             ProviderPredicateDefinition predicate;
 
@@ -154,8 +174,22 @@ public sealed class SavePredicateCommand : CommandBase<PredicateEditModel>
                     ServiceCaches = serviceCaches,
                     ExcludeFields = excludeFields,
                     ExcludeXmlElements = excludeXmlElements,
-                    XmlColumns = xmlColumns
+                    XmlColumns = xmlColumns,
+                    // Phase 37-03: WHERE clause + runtime-exclude opt-in
+                    Where = string.IsNullOrWhiteSpace(Model.WhereClause) ? null : Model.WhereClause.Trim(),
+                    IncludeFields = includeFields
                 };
+
+                // Phase 37-03: validate identifiers + WHERE clause at save-time. Tests inject
+                // fixture validators; production call sites leave both null and we skip here —
+                // ConfigLoader.Load on next read will re-validate against the live schema.
+                if (IdentifierValidator != null)
+                {
+                    var whereValidator = WhereValidator ?? new SqlWhereClauseValidator();
+                    var validationError = RunSqlTableValidation(predicate, IdentifierValidator, whereValidator);
+                    if (validationError != null)
+                        return new() { Status = CommandResult.ResultType.Invalid, Message = validationError };
+                }
             }
 
             if (Model.Index < 0)
@@ -187,5 +221,56 @@ public sealed class SavePredicateCommand : CommandBase<PredicateEditModel>
         {
             return new() { Status = CommandResult.ResultType.Error, Message = ex.Message };
         }
+    }
+
+    /// <summary>
+    /// Phase 37-03: validate every identifier + Where clause on an SqlTable predicate. Returns
+    /// the first error as a user-facing string, or null if everything passes. Validation mirrors
+    /// ConfigLoader.ValidateIdentifiers so admin-UI saves and config-file loads have identical
+    /// gates.
+    /// </summary>
+    private static string? RunSqlTableValidation(
+        ProviderPredicateDefinition predicate,
+        SqlIdentifierValidator idValidator,
+        SqlWhereClauseValidator whereValidator)
+    {
+        try { idValidator.ValidateTable(predicate.Table!); }
+        catch (InvalidOperationException ex) { return ex.Message; }
+
+        if (!string.IsNullOrWhiteSpace(predicate.NameColumn))
+        {
+            try { idValidator.ValidateColumn(predicate.Table!, predicate.NameColumn!); }
+            catch (InvalidOperationException ex) { return ex.Message; }
+        }
+
+        foreach (var col in predicate.ExcludeFields)
+        {
+            try { idValidator.ValidateColumn(predicate.Table!, col); }
+            catch (InvalidOperationException ex) { return ex.Message; }
+        }
+
+        foreach (var col in predicate.IncludeFields)
+        {
+            try { idValidator.ValidateColumn(predicate.Table!, col); }
+            catch (InvalidOperationException ex) { return ex.Message; }
+        }
+
+        foreach (var col in predicate.XmlColumns)
+        {
+            try { idValidator.ValidateColumn(predicate.Table!, col); }
+            catch (InvalidOperationException ex) { return ex.Message; }
+        }
+
+        if (!string.IsNullOrWhiteSpace(predicate.Where))
+        {
+            try
+            {
+                var cols = idValidator.GetColumns(predicate.Table!);
+                whereValidator.Validate(predicate.Where!, cols);
+            }
+            catch (InvalidOperationException ex) { return ex.Message; }
+        }
+
+        return null;
     }
 }

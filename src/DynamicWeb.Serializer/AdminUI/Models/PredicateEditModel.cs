@@ -57,4 +57,12 @@ public sealed class PredicateEditModel : DataViewModelBase, IIdentifiable
 
     [ConfigurableProperty("Exclude Area Columns", explanation: "Area table columns to exclude from serialization.")]
     public string ExcludeAreaColumns { get; set; } = string.Empty;
+
+    [ConfigurableProperty("Where Clause",
+        explanation: "SqlTable only. SQL WHERE clause applied at serialize. Identifiers must exist in the target table schema. No semicolons, SQL comments, or subqueries. Example: AccessUserType = 2 AND AccessUserUserName IN ('Admin','Editors')")]
+    public string WhereClause { get; set; } = string.Empty;
+
+    [ConfigurableProperty("Include Fields",
+        explanation: "SqlTable only. Columns kept in serialization output even if they would be auto-excluded by the runtime-exclusion registry. One per line.")]
+    public string IncludeFields { get; set; } = string.Empty;
 }

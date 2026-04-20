@@ -55,16 +55,33 @@ public class SqlTableProvider : SerializationProviderBase
         var metadata = _metadataReader.GetTableMetadata(predicate, includeColumnDefinitions: true);
         Log($"Serializing table {metadata.TableName}", log);
 
-        var rows = _tableReader.ReadAllRows(metadata.TableName).ToList();
+        // Phase 37-03 (FILTER-01): forward predicate.Where to the reader. The clause is
+        // pre-validated at config-load / admin-UI save; the reader composes it literally.
+        var rows = _tableReader.ReadAllRows(metadata.TableName, predicate.Where).ToList();
         Log($"Read {rows.Count} rows from {metadata.TableName}", log);
 
         var writtenFiles = new List<string>();
         _fileStore.WriteMeta(outputRoot, metadata.TableName, metadata, writtenFiles);
 
         var xmlColumns = new HashSet<string>(predicate.XmlColumns, StringComparer.OrdinalIgnoreCase);
-        var excludeFields = predicate.ExcludeFields.Count > 0
-            ? new HashSet<string>(predicate.ExcludeFields, StringComparer.OrdinalIgnoreCase)
-            : null;
+
+        // Phase 37-03 (RUNTIME-COLS-01): runtime-only columns (e.g. UrlPathVisitsCount,
+        // EcomShops.ShopIndex*) are auto-excluded unless the predicate opts in via IncludeFields.
+        var autoExcluded = RuntimeExcludes.GetAutoExcludedColumns(metadata.TableName)
+            .Except(predicate.IncludeFields, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        if (autoExcluded.Count > 0)
+        {
+            Log(
+                $"Auto-excluding {autoExcluded.Count} runtime-only column(s) for [{metadata.TableName}]: " +
+                string.Join(", ", autoExcluded),
+                log);
+        }
+
+        var effectiveExcludes = new HashSet<string>(
+            predicate.ExcludeFields.Concat(autoExcluded),
+            StringComparer.OrdinalIgnoreCase);
+        var excludeFields = effectiveExcludes.Count > 0 ? effectiveExcludes : null;
 
         var usedNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var row in rows)

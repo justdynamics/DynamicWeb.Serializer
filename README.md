@@ -243,6 +243,82 @@ The config file at `Files/Serializer.config.json` is the source of truth. The ad
 }
 ```
 
+## SqlTable WHERE Clause (FILTER-01)
+
+SqlTable predicates accept an optional `where` clause to filter rows at serialize time. This is
+the intended way to include _some_ rows from a table without dragging in tenant-demo or
+imported-sample rows that happen to live in the same table.
+
+```json
+{
+  "name": "AccessUser-Roles",
+  "providerType": "SqlTable",
+  "table": "AccessUser",
+  "where": "AccessUserType = 2 AND AccessUserUserName IN ('Admin','Editors','CMS Editors')"
+}
+```
+
+### Validation
+
+Every identifier in the clause is validated against `INFORMATION_SCHEMA.COLUMNS` of the
+predicate's table at config-load and at admin-UI save. Clauses containing any of the following
+are rejected with a clear error:
+
+- `;` (statement terminator)
+- SQL comments (`--`, `/*`, `*/`)
+- DDL/DML keywords (`SELECT`, `UPDATE`, `DELETE`, `INSERT`, `MERGE`, `EXEC`, `EXECUTE`, `DROP`,
+  `TRUNCATE`, `ALTER`, `CREATE`, `GRANT`, `REVOKE`, `UNION`, `INTO`, `WAITFOR`, `SHUTDOWN`)
+- Extended / system stored procedure prefixes (`xp_`, `sp_executesql`)
+- Identifiers that are not columns on the target table
+
+Values are literal in the clause — wrap strings in single quotes. Parameterization of values
+is not supported; the validator expects literal-valued clauses (serializer reads source DB
+under admin trust, so value injection is a non-issue — the surface is identifier splicing,
+which the validator closes).
+
+## Runtime Exclusions (auto-applied at serialize)
+
+The serializer automatically excludes certain columns known to be runtime-only or
+environment-specific. These columns are stripped from serialize output even if the predicate
+does not list them in `excludeFields`.
+
+| Table     | Column                | Rationale                                                 |
+|-----------|-----------------------|-----------------------------------------------------------|
+| UrlPath   | UrlPathVisitsCount    | Visit counter, overwrites target on deploy (F-07)         |
+| EcomShops | ShopIndexRepository   | Env-specific search-index repository name (F-06)          |
+| EcomShops | ShopIndexName         | Env-specific search-index name                            |
+| EcomShops | ShopIndexDocumentType | Env-specific document type                                |
+| EcomShops | ShopIndexUpdate       | Runtime timestamp (last-updated tick)                     |
+| EcomShops | ShopIndexBuilder      | Env-specific index builder type                           |
+
+To opt back in on a specific predicate, set `includeFields` in that predicate's config — the
+listed columns override the auto-exclude and are written to YAML.
+
+```json
+{
+  "name": "Shops (with index)",
+  "providerType": "SqlTable",
+  "table": "EcomShops",
+  "includeFields": ["ShopIndexRepository", "ShopIndexName"]
+}
+```
+
+### Credentials are NOT auto-excluded in v0.5.0
+
+Payment gateway keys (`PaymentMerchantNum`, `PaymentGatewayMD5Key`) and carrier account tokens
+must be listed manually in `excludeFields` per predicate. The curated credential registry
+was deferred to v0.6.0 alongside the env-config workflow (see
+`.planning/phases/37-production-ready-baseline/DEFERRED.md`).
+
+**Before committing a baseline from a customer-filled Swift install**, run:
+
+```bash
+grep -rn "PaymentGatewayMD5Key\|PaymentMerchantNum\|CarrierAccount" SerializeRoot/
+```
+
+If any match returns a non-empty value, add the column to the predicate's `excludeFields` and
+re-run serialize.
+
 ## Folder Structure
 
 ```

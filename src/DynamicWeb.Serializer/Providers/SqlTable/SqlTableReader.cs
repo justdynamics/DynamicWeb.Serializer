@@ -18,11 +18,21 @@ public class SqlTableReader
 
     /// <summary>
     /// Read all rows from the specified table, mapping DBNull to null.
+    /// <para>
+    /// Phase 37-03 (FILTER-01): when <paramref name="whereClause"/> is non-empty, the SELECT
+    /// is composed as <c>SELECT * FROM [{table}] WHERE {whereClause}</c>. The whereClause
+    /// MUST have already passed <see cref="Configuration.SqlWhereClauseValidator"/>; this
+    /// method trusts its caller and composes the clause literally. Identifier values cannot
+    /// be parameterized in T-SQL so validation is the only defense.
+    /// </para>
     /// </summary>
-    public IEnumerable<Dictionary<string, object?>> ReadAllRows(string tableName)
+    public IEnumerable<Dictionary<string, object?>> ReadAllRows(string tableName, string? whereClause = null)
     {
         var cb = new CommandBuilder();
-        cb.Add($"SELECT * FROM [{tableName}]");
+        if (string.IsNullOrWhiteSpace(whereClause))
+            cb.Add($"SELECT * FROM [{tableName}]");
+        else
+            cb.Add($"SELECT * FROM [{tableName}] WHERE {whereClause}");
 
         using var reader = _sqlExecutor.ExecuteReader(cb);
         while (reader.Read())

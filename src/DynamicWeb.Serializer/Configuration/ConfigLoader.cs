@@ -14,7 +14,18 @@ public static class ConfigLoader
     // T-37-01-02: OutputSubfolder path-traversal guard. Alphanumeric + underscore + dash, 1..32 chars.
     private static readonly Regex _safeSubfolder = new("^[a-zA-Z0-9_-]{1,32}$", RegexOptions.Compiled);
 
-    public static SerializerConfiguration Load(string filePath)
+    public static SerializerConfiguration Load(string filePath) => Load(filePath, identifierValidator: null);
+
+    /// <summary>
+    /// Load a serializer config. When <paramref name="identifierValidator"/> is non-null,
+    /// every SqlTable predicate is checked: Table / NameColumn / ExcludeFields / IncludeFields /
+    /// XmlColumns identifiers must exist in INFORMATION_SCHEMA, and any Where clause must
+    /// pass <see cref="SqlWhereClauseValidator"/>. Errors across multiple predicates are
+    /// aggregated and thrown as a single <see cref="InvalidOperationException"/>.
+    /// Tests pass fixture validators; production call sites construct the default
+    /// <see cref="SqlIdentifierValidator"/> which queries the live DB.
+    /// </summary>
+    public static SerializerConfiguration Load(string filePath, SqlIdentifierValidator? identifierValidator)
     {
         if (!File.Exists(filePath))
             throw new FileNotFoundException($"Configuration file not found: '{filePath}'", filePath);
@@ -35,7 +46,7 @@ public static class ConfigLoader
 
         var (deploy, seed) = BuildModeConfigs(raw);
 
-        return new SerializerConfiguration
+        var config = new SerializerConfiguration
         {
             OutputDirectory = raw.OutputDirectory!,
             LogLevel = string.IsNullOrWhiteSpace(raw.LogLevel) ? "info" : raw.LogLevel,
@@ -43,6 +54,87 @@ public static class ConfigLoader
             Deploy = deploy,
             Seed = seed
         };
+
+        if (identifierValidator != null)
+            ValidateIdentifiers(config, identifierValidator, new SqlWhereClauseValidator());
+
+        return config;
+    }
+
+    /// <summary>
+    /// Phase 37-03: validate every SqlTable predicate identifier (table, columns in Exclude/
+    /// Include/Xml/NameColumn, and Where-clause references) against INFORMATION_SCHEMA via
+    /// the provided validator. Errors accumulate; a single aggregated exception is thrown at
+    /// the end if any predicate failed.
+    /// </summary>
+    private static void ValidateIdentifiers(
+        SerializerConfiguration config,
+        SqlIdentifierValidator idValidator,
+        SqlWhereClauseValidator whereValidator)
+    {
+        var errors = new List<string>();
+
+        void Check(ProviderPredicateDefinition p, string scope)
+        {
+            if (!string.Equals(p.ProviderType, "SqlTable", StringComparison.OrdinalIgnoreCase)) return;
+            if (string.IsNullOrWhiteSpace(p.Table))
+            {
+                errors.Add($"{scope}: SqlTable predicate '{p.Name}' is missing 'table'.");
+                return;
+            }
+
+            // 1. Table identifier.
+            try { idValidator.ValidateTable(p.Table!); }
+            catch (InvalidOperationException ex)
+            {
+                errors.Add($"{scope} '{p.Name}': {ex.Message}");
+                return; // subsequent column checks would be noise if the table itself is bad
+            }
+
+            // 2. Column-level identifiers — NameColumn, each ExcludeFields/IncludeFields/XmlColumns entry.
+            if (!string.IsNullOrWhiteSpace(p.NameColumn))
+            {
+                try { idValidator.ValidateColumn(p.Table!, p.NameColumn!); }
+                catch (InvalidOperationException ex) { errors.Add($"{scope} '{p.Name}': {ex.Message}"); }
+            }
+            foreach (var col in p.ExcludeFields)
+            {
+                try { idValidator.ValidateColumn(p.Table!, col); }
+                catch (InvalidOperationException ex) { errors.Add($"{scope} '{p.Name}': {ex.Message}"); }
+            }
+            foreach (var col in p.IncludeFields)
+            {
+                try { idValidator.ValidateColumn(p.Table!, col); }
+                catch (InvalidOperationException ex) { errors.Add($"{scope} '{p.Name}': {ex.Message}"); }
+            }
+            foreach (var col in p.XmlColumns)
+            {
+                try { idValidator.ValidateColumn(p.Table!, col); }
+                catch (InvalidOperationException ex) { errors.Add($"{scope} '{p.Name}': {ex.Message}"); }
+            }
+
+            // 3. WHERE clause — must parse + every identifier must be an existing column.
+            if (!string.IsNullOrWhiteSpace(p.Where))
+            {
+                try
+                {
+                    var cols = idValidator.GetColumns(p.Table!);
+                    whereValidator.Validate(p.Where!, cols);
+                }
+                catch (InvalidOperationException ex)
+                {
+                    errors.Add($"{scope} '{p.Name}': {ex.Message}");
+                }
+            }
+        }
+
+        foreach (var p in config.Deploy.Predicates) Check(p, "deploy.predicates");
+        foreach (var p in config.Seed.Predicates) Check(p, "seed.predicates");
+
+        if (errors.Count > 0)
+            throw new InvalidOperationException(
+                "Configuration is invalid — identifier / WHERE-clause validation failed:\n  - " +
+                string.Join("\n  - ", errors));
     }
 
     private static void Validate(RawSerializerConfiguration raw)

@@ -53,12 +53,14 @@ public sealed class PredicateEditScreen : EditScreenBase<PredicateEditModel>
                 EditorFor(m => m.Table).WithReloadOnChange(),
                 EditorFor(m => m.NameColumn),
                 EditorFor(m => m.CompareColumns),
+                EditorFor(m => m.WhereClause),
                 EditorFor(m => m.ServiceCaches)
             }));
             groups.Add(new("Filtering", new List<EditorBase>
             {
                 EditorFor(m => m.XmlColumns),
                 EditorFor(m => m.ExcludeFields),
+                EditorFor(m => m.IncludeFields),
                 EditorFor(m => m.ExcludeXmlElements)
             }));
         }
@@ -113,6 +115,22 @@ public sealed class PredicateEditScreen : EditScreenBase<PredicateEditModel>
         nameof(PredicateEditModel.ExcludeAreaColumns) => CreateAreaColumnSelectMultiDual(
             Model?.AreaId, Model?.ExcludeAreaColumns,
             "Exclude Area Columns", "Select area table columns to exclude from serialization."),
+        // Phase 37-03: SqlTable WHERE + runtime-exclude opt-in
+        nameof(PredicateEditModel.WhereClause) => new Textarea
+        {
+            Label = "Where Clause",
+            Explanation = "SQL WHERE clause applied at serialize. Identifiers must exist in the table schema. "
+                         + "No semicolons, comments, or subqueries. Example: AccessUserType = 2 AND AccessUserUserName IN ('Admin','Editors')"
+        },
+        nameof(PredicateEditModel.IncludeFields) => Model?.ProviderType == "SqlTable"
+            ? CreateColumnSelectMultiDual(Model?.Table, Model?.IncludeFields,
+                "Include Fields",
+                "Columns that stay in serialized output even if auto-excluded by the runtime-exclusion registry.")
+            : new Textarea
+            {
+                Label = "Include Fields",
+                Explanation = "One column per line. Columns kept even if auto-excluded by the runtime-exclusion registry."
+            },
         _ => null
     };
 
