@@ -112,7 +112,7 @@ public class SaveSerializerSettingsCommandTests : IDisposable
         {
             Model = new SerializerSettingsModel
             {
-                OutputDirectory = @"\NonExistent\Path\That\Does\Not\Exist",
+                OutputDirectory = "invalid|path*with?chars",
                 LogLevel = "info",
                 DryRun = false,
                 ConflictStrategy = "source-wins"

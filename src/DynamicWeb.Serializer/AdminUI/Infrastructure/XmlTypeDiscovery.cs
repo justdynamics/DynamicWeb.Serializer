@@ -151,7 +151,8 @@ public class XmlTypeDiscovery
             var children = doc.Root.Elements().ToList();
             var distinctNames = children.Select(e => e.Name.LocalName).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
 
-            if (distinctNames.Count <= 1 && children.Count > 0)
+            if (distinctNames.Count <= 1 && children.Count > 0
+                && children.Any(el => !string.IsNullOrEmpty(el.Attribute("name")?.Value)))
             {
                 // All children share one element name (e.g., <Parameter name="X">)
                 // Extract the "name" attribute values instead — these are the meaningful identifiers

@@ -276,6 +276,11 @@ public class SqlTableProviderDeserializeTests
         var mockMetadataReader = new Mock<DataGroupMetadataReader>(mockExecutor.Object) { CallBase = false };
         mockMetadataReader.Setup(x => x.GetTableMetadata(It.IsAny<ProviderPredicateDefinition>(), It.IsAny<bool>()))
             .Returns(TestMetadata);
+        mockMetadataReader.Setup(x => x.TableExists(It.IsAny<string>())).Returns(true);
+        mockMetadataReader.Setup(x => x.GetColumnTypes(It.IsAny<string>()))
+            .Returns(new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase));
+        mockMetadataReader.Setup(x => x.GetNotNullColumns(It.IsAny<string>()))
+            .Returns(new HashSet<string>(StringComparer.OrdinalIgnoreCase));
 
         // Set up ReadAllRows to return existing DB rows via mock reader
         var existingList = existingDbRows.ToList();

@@ -24,7 +24,7 @@ public class DataGroupMetadataReader
     /// Query column data types for type coercion during deserialization.
     /// Returns a dictionary mapping column name → SQL data type name.
     /// </summary>
-    public Dictionary<string, string> GetColumnTypes(string tableName)
+    public virtual Dictionary<string, string> GetColumnTypes(string tableName)
     {
         var types = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         var cb = new CommandBuilder();
@@ -44,7 +44,7 @@ public class DataGroupMetadataReader
     /// <summary>
     /// Query which columns are NOT NULL (cannot receive null values).
     /// </summary>
-    public HashSet<string> GetNotNullColumns(string tableName)
+    public virtual HashSet<string> GetNotNullColumns(string tableName)
     {
         var columns = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var cb = new CommandBuilder();
@@ -86,7 +86,7 @@ public class DataGroupMetadataReader
     /// <summary>
     /// Check whether a table exists in the current database.
     /// </summary>
-    public bool TableExists(string tableName)
+    public virtual bool TableExists(string tableName)
     {
         var cb = new CommandBuilder();
         cb.Add($"SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = '{tableName}'");
