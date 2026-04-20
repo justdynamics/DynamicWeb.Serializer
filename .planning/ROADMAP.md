@@ -164,9 +164,10 @@ Plans:
   6. Strict mode run on a baseline with any unresolved page link or missing template exits non-zero (SEED-001)
   7. Serialize fails with a pre-commit sweep error when the YAML tree contains Default.aspx?ID=N refs pointing outside the baseline (F-07, F-17 closed via D-22 pass 1)
   8. SqlTable predicates opt-in to link resolution via `resolveLinksInColumns`; UrlPath.UrlPathRedirect rewrites correctly source→target (D-22 pass 2)
-**Plans:** 1/5 plans executed
+**Plans:** 1/6 plans executed
 Plans:
 - [x] 37-01-PLAN.md — Deploy/Seed config split + files-written manifest cleanup (SEED-01, SEED-02, CLEANUP-01; F-01, F-04; D-01..D-06, D-10..D-12)
+- [ ] 37-01.1-PLAN.md — Per-mode Item Type + XML Type admin UI (follow-up to 37-01; closes D-02 for non-predicate config)
 - [ ] 37-02-PLAN.md — TargetSchemaCache unification (SCHEMA-02; F-12, F-14)
 - [ ] 37-03-PLAN.md — SqlTable `where` clause + SQL identifier whitelist + runtime-column auto-exclusion (FILTER-01, RUNTIME-COLS-01, SEED-002; F-02, F-06, F-07, F-08; D-07, D-08)
 - [ ] 37-04-PLAN.md — DwCacheServiceRegistry + Strict mode with entry-point-aware defaults (CACHE-01, STRICT-01, SEED-001; F-10; D-16, D-17, D-18)
@@ -174,7 +175,7 @@ Plans:
 
 **Execution waves** (for /gsd-execute-phase):
 - Wave 1: 37-01
-- Wave 2: 37-02, 37-03 (parallel — no file overlap)
+- Wave 2: 37-01.1, 37-02, 37-03 (parallel — no file overlap between any pair)
 - Wave 3: 37-04 (touches ContentDeserializer + orchestrator + config; depends on 37-01/37-02/37-03 ordering for shared files)
 - Wave 4: 37-05 (touches ContentDeserializer + orchestrator + InternalLinkResolver; depends on all prior waves)
 
