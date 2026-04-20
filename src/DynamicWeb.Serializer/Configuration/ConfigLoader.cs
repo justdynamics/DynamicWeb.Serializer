@@ -52,6 +52,7 @@ public static class ConfigLoader
             OutputDirectory = raw.OutputDirectory!,
             LogLevel = string.IsNullOrWhiteSpace(raw.LogLevel) ? "info" : raw.LogLevel,
             DryRun = raw.DryRun ?? false,
+            StrictMode = raw.StrictMode,
             Deploy = deploy,
             Seed = seed
         };
@@ -350,6 +351,9 @@ public static class ConfigLoader
         public string? OutputDirectory { get; set; }
         public string? LogLevel { get; set; }
         public bool? DryRun { get; set; }
+
+        /// <summary>Phase 37-04 STRICT-01: nullable → entry-point default when omitted.</summary>
+        public bool? StrictMode { get; set; }
 
         // Legacy top-level fields (migrated to Deploy.*)
         public string? ConflictStrategy { get; set; }

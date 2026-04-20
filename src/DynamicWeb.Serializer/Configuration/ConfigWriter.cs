@@ -31,6 +31,7 @@ public static class ConfigWriter
             OutputDirectory = config.OutputDirectory,
             LogLevel = config.LogLevel,
             DryRun = config.DryRun,
+            StrictMode = config.StrictMode,
             Deploy = ToPersistedMode(config.Deploy),
             Seed = ToPersistedMode(config.Seed)
         };
@@ -56,6 +57,10 @@ public static class ConfigWriter
         public string OutputDirectory { get; init; } = "";
         public string LogLevel { get; init; } = "info";
         public bool DryRun { get; init; }
+
+        /// <summary>Phase 37-04 STRICT-01: null is omitted via WhenWritingNull, equivalent to entry-point default.</summary>
+        public bool? StrictMode { get; init; }
+
         public PersistedModeSection Deploy { get; init; } = new();
         public PersistedModeSection Seed { get; init; } = new();
     }

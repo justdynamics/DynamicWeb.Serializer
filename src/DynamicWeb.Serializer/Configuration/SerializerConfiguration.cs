@@ -24,6 +24,15 @@ public record SerializerConfiguration
     public string LogLevel { get; init; } = "info";
     public bool DryRun { get; init; } = false;
 
+    /// <summary>
+    /// Phase 37-04 STRICT-01 / SEED-001: when non-null, explicitly opts in / out of strict mode.
+    /// <c>null</c> means "use entry-point default" (per D-16: CLI/API default ON, admin UI default OFF).
+    /// In strict mode every recoverable WARNING during deserialize (unresolvable link, missing
+    /// template, permission-fallback, schema-drift drop, FK-orphan) accumulates and throws a
+    /// single <see cref="Infrastructure.CumulativeStrictModeException"/> at end-of-run.
+    /// </summary>
+    public bool? StrictMode { get; init; }
+
     // -------------------------------------------------------------------------
     // Phase 37-01: Deploy + Seed ModeConfigs
     // -------------------------------------------------------------------------
