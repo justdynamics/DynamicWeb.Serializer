@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v0.4.0
 milestone_name: Full Page Fidelity
 status: executing
-stopped_at: Phase 37 context gathered
-last_updated: "2026-04-20T12:00:06.148Z"
-last_activity: 2026-04-20 -- Phase 37 planning complete
+stopped_at: Completed 37-01-PLAN.md
+last_updated: "2026-04-20T14:51:51.235Z"
+last_activity: 2026-04-20
 progress:
   total_phases: 26
   completed_phases: 24
   total_plans: 53
-  completed_plans: 47
-  percent: 89
+  completed_plans: 48
+  percent: 91
 ---
 
 # Project State
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-03)
 
 **Core value:** Developers can reliably move DynamicWeb database state between environments through source control, with serialized YAML files as the single source of truth.
-**Current focus:** Phase 37 - Production-Ready Baseline (v0.5.0, planned)
+**Current focus:** Phase 37 — production-ready-baseline
 
 ## Current Position
 
-Phase: 37 of 37 (1 of 1 in v0.5.0 milestone)
-Plan: 37-01-PLAN.md (not started)
+Phase: 37 (production-ready-baseline) — EXECUTING
+Plan: 2 of 5
 Status: Ready to execute
-Last activity: 2026-04-20 -- Phase 37 planning complete
+Last activity: 2026-04-20
 
 ## Recent Session — 2026-04-17 Autonomous Baseline Test
 
@@ -109,6 +109,7 @@ Progress: [██████████] 100% (v0.4.0)
 | Phase 23 P02 | 5min | 2 tasks | 1 files |
 | Phase 24 P01 | 2min | 2 tasks | 4 files |
 | Phase 25 P01 | 5min | 2 tasks | 8 files |
+| Phase 37 P37-01 | 95min | 3 tasks | 30 files |
 
 ## Accumulated Context
 
@@ -129,6 +130,7 @@ Recent decisions affecting current work:
 - Sub-object DTOs for logical groupings (SEO, URL settings, visibility, navigation) to keep YAML clean
 - [Phase 23]: EcommerceNavigationParentType enum is in Dynamicweb.Content namespace (not Ecommerce.Navigation)
 - [Phase 24]: Area ItemType uses standard Item.SerializeTo/DeserializeFrom pattern; ItemType not set on target (must be pre-configured)
+- [Phase 37]: Phase 37-01: Deploy/Seed config structural split with legacy-flat pass-through shims, Seed icon=Flask, SerializeSubtreeCommand pinned to Deploy, SqlTable Seed-skip reuses existingChecksums, Content Seed-skip scoped to UPDATE path only
 
 ### Pending Todos
 
@@ -140,6 +142,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-20T11:23:08.369Z
-Stopped at: Phase 37 context gathered
-Resume file: .planning/phases/37-production-ready-baseline/37-CONTEXT.md
+Last session: 2026-04-20T14:51:51.228Z
+Stopped at: Completed 37-01-PLAN.md
+Resume file: None
