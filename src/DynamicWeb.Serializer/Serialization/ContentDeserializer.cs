@@ -458,14 +458,18 @@ public class ContentDeserializer
             values.Add(_schemaCache.Coerce("Area", kvp.Key, kvp.Value) ?? DBNull.Value);
         }
 
+        // 2026-04-20: wrap in SET IDENTITY_INSERT so explicit AreaID writes succeed against
+        // a fresh target where Area.AreaId is an identity column. Keeping the areaId stable
+        // across env is required for predicate.areaId references to work.
         var cb = new CommandBuilder();
+        cb.Add("SET IDENTITY_INSERT [Area] ON; ");
         cb.Add($"INSERT INTO [Area] ({string.Join(", ", columns)}) VALUES (");
         for (int i = 0; i < values.Count; i++)
         {
             if (i > 0) cb.Add(", ");
             cb.Add("{0}", values[i]);
         }
-        cb.Add(")");
+        cb.Add("); SET IDENTITY_INSERT [Area] OFF;");
         Database.ExecuteNonQuery(cb);
     }
 
