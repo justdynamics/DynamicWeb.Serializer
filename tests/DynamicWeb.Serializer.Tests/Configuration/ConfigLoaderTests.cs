@@ -1110,6 +1110,50 @@ public class ConfigLoaderTests : IDisposable
 
     [Fact]
     [Trait("Category", "Phase37-04")]
+    public void Load_StrictModeTrue_RoundTrips()
+    {
+        var json = """
+            {
+              "outputDirectory": "/serialization",
+              "strictMode": true
+            }
+            """;
+        var path = WriteConfigFile(json);
+        var config = ConfigLoader.Load(path);
+        Assert.Equal(true, config.StrictMode);
+    }
+
+    [Fact]
+    [Trait("Category", "Phase37-04")]
+    public void Load_StrictModeFalse_RoundTrips()
+    {
+        var json = """
+            {
+              "outputDirectory": "/serialization",
+              "strictMode": false
+            }
+            """;
+        var path = WriteConfigFile(json);
+        var config = ConfigLoader.Load(path);
+        Assert.Equal(false, config.StrictMode);
+    }
+
+    [Fact]
+    [Trait("Category", "Phase37-04")]
+    public void Load_StrictModeOmitted_NullsOut()
+    {
+        var json = """
+            {
+              "outputDirectory": "/serialization"
+            }
+            """;
+        var path = WriteConfigFile(json);
+        var config = ConfigLoader.Load(path);
+        Assert.Null(config.StrictMode);
+    }
+
+    [Fact]
+    [Trait("Category", "Phase37-04")]
     public void Load_EmptyServiceCaches_Passes()
     {
         var json = """
