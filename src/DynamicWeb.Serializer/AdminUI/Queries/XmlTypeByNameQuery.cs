@@ -10,6 +10,15 @@ public sealed class XmlTypeByNameQuery : DataQueryIdentifiableModelBase<XmlTypeE
 {
     public string TypeName { get; set; } = string.Empty;
 
+    /// <summary>Optional config path override for tests -- bypasses ConfigPathResolver.</summary>
+    public string? ConfigPath { get; set; }
+
+    /// <summary>
+    /// Which <see cref="DeploymentMode"/> subtree this edit screen was opened under (Phase 37-01.1).
+    /// The lookup in <see cref="ModeConfig.ExcludeXmlElementsByType"/> is scoped to this mode.
+    /// </summary>
+    public DeploymentMode Mode { get; set; } = DeploymentMode.Deploy;
+
     protected override void SetKey(string key)
     {
         TypeName = key;
@@ -20,16 +29,18 @@ public sealed class XmlTypeByNameQuery : DataQueryIdentifiableModelBase<XmlTypeE
         if (string.IsNullOrWhiteSpace(TypeName))
             return null;
 
-        var configPath = ConfigPathResolver.FindConfigFile();
+        var configPath = ConfigPath ?? ConfigPathResolver.FindConfigFile();
         if (configPath == null) return null;
 
         var config = ConfigLoader.Load(configPath);
-        if (!config.ExcludeXmlElementsByType.TryGetValue(TypeName, out var excludedElements))
+        var modeConfig = config.GetMode(Mode);
+        if (!modeConfig.ExcludeXmlElementsByType.TryGetValue(TypeName, out var excludedElements))
             return null;
 
         return new XmlTypeEditModel
         {
             TypeName = TypeName,
+            Mode = Mode,
             ExcludedElements = string.Join("\n", excludedElements)
         };
     }

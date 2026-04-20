@@ -104,8 +104,11 @@ public class ContentSerializer
             : null;
 
         Log($"Serialized pages: {serializedPages.Count}");
+        // Phase 37-01.1: legacy flat alias removed; exclusion dicts are per-mode. ContentSerializer
+        // is currently Deploy-scoped (the orchestrator calls per-predicate Deploy configs). A
+        // follow-up plan will thread DeploymentMode into this class so Seed excludes are honoured.
         var serializedArea = _mapper.MapArea(area, serializedPages, excludeFields,
-            _configuration.ExcludeFieldsByItemType, excludeAreaColumns);
+            _configuration.Deploy.ExcludeFieldsByItemType, excludeAreaColumns);
         _store.WriteTree(serializedArea, _configuration.OutputDirectory);
         return serializedArea;
     }
@@ -137,7 +140,7 @@ public class ContentSerializer
                 .ToList();
 
             var columns = _mapper.BuildColumns(rowParagraphs, excludeFields, excludeXmlElements,
-                _configuration.ExcludeFieldsByItemType, _configuration.ExcludeXmlElementsByType);
+                _configuration.Deploy.ExcludeFieldsByItemType, _configuration.Deploy.ExcludeXmlElementsByType);
             var serializedGridRow = _mapper.MapGridRow(gridRow, columns);
             serializedGridRows.Add(serializedGridRow);
         }
@@ -158,7 +161,7 @@ public class ContentSerializer
 
         var permissions = _permissionMapper.MapPermissions(page.ID);
         return _mapper.MapPage(page, serializedGridRows, serializedChildren, permissions, excludeFields, excludeXmlElements,
-            _configuration.ExcludeFieldsByItemType, _configuration.ExcludeXmlElementsByType);
+            _configuration.Deploy.ExcludeFieldsByItemType, _configuration.Deploy.ExcludeXmlElementsByType);
     }
 
     private static void CountItems(IEnumerable<SerializedPage> pages, ref int pageCount, ref int gridRowCount, ref int paragraphCount)

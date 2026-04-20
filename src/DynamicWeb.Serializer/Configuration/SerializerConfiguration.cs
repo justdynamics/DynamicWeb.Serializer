@@ -80,27 +80,10 @@ public record SerializerConfiguration
         }
     }
 
-    /// <summary>Legacy alias for <c>Deploy.ExcludeFieldsByItemType</c>.</summary>
-    [JsonIgnore]
-    public Dictionary<string, List<string>> ExcludeFieldsByItemType
-    {
-        get => Deploy.ExcludeFieldsByItemType;
-        init
-        {
-            Deploy = Deploy with { ExcludeFieldsByItemType = value ?? new Dictionary<string, List<string>>() };
-        }
-    }
-
-    /// <summary>Legacy alias for <c>Deploy.ExcludeXmlElementsByType</c>.</summary>
-    [JsonIgnore]
-    public Dictionary<string, List<string>> ExcludeXmlElementsByType
-    {
-        get => Deploy.ExcludeXmlElementsByType;
-        init
-        {
-            Deploy = Deploy with { ExcludeXmlElementsByType = value ?? new Dictionary<string, List<string>>() };
-        }
-    }
+    // Phase 37-01.1: removed legacy aliases ExcludeFieldsByItemType and ExcludeXmlElementsByType.
+    // All admin UI / serializer call sites now read and write through config.Deploy.* or
+    // config.Seed.* explicitly so that the per-mode dictionaries can be independently edited via
+    // the admin tree. Tests and Content(De)Serializer continue to use Deploy explicitly.
 
     /// <summary>Legacy alias for <c>Deploy.ConflictStrategy</c>.</summary>
     [JsonIgnore]

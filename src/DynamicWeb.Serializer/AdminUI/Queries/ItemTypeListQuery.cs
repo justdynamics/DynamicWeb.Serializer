@@ -9,6 +9,15 @@ namespace DynamicWeb.Serializer.AdminUI.Queries;
 
 public sealed class ItemTypeListQuery : DataQueryModelBase<DataListViewModel<ItemTypeListModel>>
 {
+    /// <summary>Optional config path override for tests -- bypasses ConfigPathResolver.</summary>
+    public string? ConfigPath { get; set; }
+
+    /// <summary>
+    /// Which <see cref="DeploymentMode"/>'s excluded-field counts are shown on the list (Phase 37-01.1).
+    /// Set by the tree when the user opens "Deploy / Item Types" vs "Seed / Item Types".
+    /// </summary>
+    public DeploymentMode Mode { get; set; } = DeploymentMode.Deploy;
+
     public override DataListViewModel<ItemTypeListModel>? GetModel()
     {
         var metadata = ItemManager.Metadata.GetMetadata();
@@ -17,15 +26,15 @@ public sealed class ItemTypeListQuery : DataQueryModelBase<DataListViewModel<Ite
 
         // Load config for excluded field counts (may not exist)
         Dictionary<string, List<string>>? excludeMap = null;
-        var configPath = ConfigPathResolver.FindConfigFile();
+        var configPath = ConfigPath ?? ConfigPathResolver.FindConfigFile();
         if (configPath != null)
         {
             try
             {
                 var config = ConfigLoader.Load(configPath);
-                // Rebuild as case-insensitive for reliable lookups
+                // Phase 37-01.1: read from the mode-scoped ModeConfig; rebuild case-insensitive.
                 excludeMap = new Dictionary<string, List<string>>(
-                    config.ExcludeFieldsByItemType,
+                    config.GetMode(Mode).ExcludeFieldsByItemType,
                     StringComparer.OrdinalIgnoreCase);
             }
             catch

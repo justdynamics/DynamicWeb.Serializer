@@ -132,7 +132,10 @@ public sealed class SerializerSettingsNodeProvider : NavigationNodeProvider<Syst
                 catch { yield break; }
 
                 var sort = 0;
-                foreach (var typeName in config.ExcludeXmlElementsByType.Keys.OrderBy(k => k, StringComparer.OrdinalIgnoreCase))
+                // Phase 37-01.1: legacy alias removed. Task 2 of 37-01.1 will split this into
+                // per-mode subtrees (Deploy/XML Types and Seed/XML Types); for now the shared
+                // Embedded XML node enumerates Deploy's keys explicitly so the build stays green.
+                foreach (var typeName in config.Deploy.ExcludeXmlElementsByType.Keys.OrderBy(k => k, StringComparer.OrdinalIgnoreCase))
                 {
                     yield return new NavigationNode
                     {

@@ -9,6 +9,13 @@ public sealed class SaveXmlTypeCommand : CommandBase<XmlTypeEditModel>
     /// <summary>Optional override for testing -- bypasses ConfigPathResolver.</summary>
     public string? ConfigPath { get; set; }
 
+    /// <summary>
+    /// Which <see cref="DeploymentMode"/>'s <see cref="ModeConfig.ExcludeXmlElementsByType"/>
+    /// dictionary this save targets (Phase 37-01.1). Defaulted to Deploy for safety; the admin
+    /// UI's tree-to-edit-screen routing populates it explicitly from <see cref="XmlTypeEditModel.Mode"/>.
+    /// </summary>
+    public DeploymentMode Mode { get; set; } = DeploymentMode.Deploy;
+
     public override CommandResult Handle()
     {
         if (Model is null)
@@ -29,11 +36,18 @@ public sealed class SaveXmlTypeCommand : CommandBase<XmlTypeEditModel>
                 .Where(e => e.Length > 0)
                 .ToList();
 
-            // Update the dictionary entry for this type
-            var updated = new Dictionary<string, List<string>>(config.ExcludeXmlElementsByType, StringComparer.OrdinalIgnoreCase);
+            // Phase 37-01.1: route to the per-mode ModeConfig. Model.Mode takes precedence (set by
+            // the tree's edit-screen navigation); the command's own Mode is a safety default.
+            var mode = Model.Mode;
+            var modeConfig = config.GetMode(mode);
+
+            var updated = new Dictionary<string, List<string>>(modeConfig.ExcludeXmlElementsByType, StringComparer.OrdinalIgnoreCase);
             updated[Model.TypeName] = excludedElements;
 
-            var newConfig = config with { ExcludeXmlElementsByType = updated };
+            var updatedMode = modeConfig with { ExcludeXmlElementsByType = updated };
+            var newConfig = mode == DeploymentMode.Deploy
+                ? config with { Deploy = updatedMode }
+                : config with { Seed = updatedMode };
             ConfigWriter.Save(newConfig, configPath);
 
             return new() { Status = CommandResult.ResultType.Ok, Model = Model };

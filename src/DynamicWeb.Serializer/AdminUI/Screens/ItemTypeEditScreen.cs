@@ -130,5 +130,9 @@ public sealed class ItemTypeEditScreen : EditScreenBase<ItemTypeEditModel>
     protected override string GetScreenName() =>
         !string.IsNullOrWhiteSpace(Model?.SystemName) ? $"Item Type: {Model.SystemName}" : "Item Type";
 
-    protected override CommandBase<ItemTypeEditModel> GetSaveCommand() => new SaveItemTypeCommand();
+    protected override CommandBase<ItemTypeEditModel> GetSaveCommand() =>
+        // Phase 37-01.1: surface Model.Mode on the save command so save-routing lands in the correct
+        // ModeConfig dictionary even if the framework short-circuits and doesn't round-trip Mode
+        // through the model binding.
+        new SaveItemTypeCommand { Mode = Model?.Mode ?? DynamicWeb.Serializer.Configuration.DeploymentMode.Deploy };
 }

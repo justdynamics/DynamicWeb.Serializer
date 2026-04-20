@@ -137,5 +137,8 @@ public sealed class XmlTypeEditScreen : EditScreenBase<XmlTypeEditModel>
     protected override string GetScreenName() =>
         !string.IsNullOrWhiteSpace(Model?.TypeName) ? $"XML Type: {Model.TypeName}" : "XML Type";
 
-    protected override CommandBase<XmlTypeEditModel> GetSaveCommand() => new SaveXmlTypeCommand();
+    protected override CommandBase<XmlTypeEditModel> GetSaveCommand() =>
+        // Phase 37-01.1: surface Model.Mode on the save command so save-routing lands in the correct
+        // per-mode ModeConfig dictionary.
+        new SaveXmlTypeCommand { Mode = Model?.Mode ?? DynamicWeb.Serializer.Configuration.DeploymentMode.Deploy };
 }

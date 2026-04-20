@@ -708,9 +708,11 @@ public class ConfigLoaderTests : IDisposable
 
         var config = ConfigLoader.Load(path);
 
-        Assert.Equal(2, config.ExcludeFieldsByItemType.Count);
-        Assert.Equal(new List<string> { "NavigationTag", "AreaDomain" }, config.ExcludeFieldsByItemType["Swift_PageItemType"]);
-        Assert.Equal(new List<string> { "ModuleSettings" }, config.ExcludeFieldsByItemType["Swift_ParagraphItemType"]);
+        // Phase 37-01.1: legacy flat ExcludeFieldsByItemType alias removed — ConfigLoader migrates
+        // the top-level dict into Deploy.ExcludeFieldsByItemType, so assertions read through Deploy.
+        Assert.Equal(2, config.Deploy.ExcludeFieldsByItemType.Count);
+        Assert.Equal(new List<string> { "NavigationTag", "AreaDomain" }, config.Deploy.ExcludeFieldsByItemType["Swift_PageItemType"]);
+        Assert.Equal(new List<string> { "ModuleSettings" }, config.Deploy.ExcludeFieldsByItemType["Swift_ParagraphItemType"]);
     }
 
     [Fact]
@@ -729,8 +731,9 @@ public class ConfigLoaderTests : IDisposable
 
         var config = ConfigLoader.Load(path);
 
-        Assert.Equal(1, config.ExcludeXmlElementsByType.Count);
-        Assert.Equal(new List<string> { "sort", "pagesize" }, config.ExcludeXmlElementsByType["Dynamicweb.Frontend.ContentPage"]);
+        // Phase 37-01.1: assert via Deploy (see note above).
+        Assert.Single(config.Deploy.ExcludeXmlElementsByType);
+        Assert.Equal(new List<string> { "sort", "pagesize" }, config.Deploy.ExcludeXmlElementsByType["Dynamicweb.Frontend.ContentPage"]);
     }
 
     [Fact]
@@ -746,26 +749,34 @@ public class ConfigLoaderTests : IDisposable
 
         var config = ConfigLoader.Load(path);
 
-        Assert.NotNull(config.ExcludeFieldsByItemType);
-        Assert.Empty(config.ExcludeFieldsByItemType);
-        Assert.NotNull(config.ExcludeXmlElementsByType);
-        Assert.Empty(config.ExcludeXmlElementsByType);
+        // Phase 37-01.1: assert via Deploy (see note above).
+        Assert.NotNull(config.Deploy.ExcludeFieldsByItemType);
+        Assert.Empty(config.Deploy.ExcludeFieldsByItemType);
+        Assert.NotNull(config.Deploy.ExcludeXmlElementsByType);
+        Assert.Empty(config.Deploy.ExcludeXmlElementsByType);
     }
 
     [Fact]
     public void Save_ThenLoad_RoundTripsTypedDictionaries()
     {
+        // Phase 37-01.1: legacy flat ExcludeFieldsByItemType / ExcludeXmlElementsByType aliases
+        // removed. Typed exclusions now live under Deploy (and optionally Seed) ModeConfigs.
         var config = new SerializerConfiguration
         {
             OutputDirectory = _tempDir,
-            Predicates = new List<ProviderPredicateDefinition>(),
-            ExcludeFieldsByItemType = new Dictionary<string, List<string>>
+            Deploy = new ModeConfig
             {
-                ["Swift_PageItemType"] = new List<string> { "NavigationTag" }
-            },
-            ExcludeXmlElementsByType = new Dictionary<string, List<string>>
-            {
-                ["Dynamicweb.Frontend.ContentPage"] = new List<string> { "sort" }
+                OutputSubfolder = "deploy",
+                ConflictStrategy = ConflictStrategy.SourceWins,
+                Predicates = new List<ProviderPredicateDefinition>(),
+                ExcludeFieldsByItemType = new Dictionary<string, List<string>>
+                {
+                    ["Swift_PageItemType"] = new List<string> { "NavigationTag" }
+                },
+                ExcludeXmlElementsByType = new Dictionary<string, List<string>>
+                {
+                    ["Dynamicweb.Frontend.ContentPage"] = new List<string> { "sort" }
+                }
             }
         };
         var path = Path.Combine(_tempDir, "roundtrip.json");
@@ -773,9 +784,9 @@ public class ConfigLoaderTests : IDisposable
 
         var reloaded = ConfigLoader.Load(path);
 
-        Assert.Single(reloaded.ExcludeFieldsByItemType);
-        Assert.Equal(new List<string> { "NavigationTag" }, reloaded.ExcludeFieldsByItemType["Swift_PageItemType"]);
-        Assert.Single(reloaded.ExcludeXmlElementsByType);
-        Assert.Equal(new List<string> { "sort" }, reloaded.ExcludeXmlElementsByType["Dynamicweb.Frontend.ContentPage"]);
+        Assert.Single(reloaded.Deploy.ExcludeFieldsByItemType);
+        Assert.Equal(new List<string> { "NavigationTag" }, reloaded.Deploy.ExcludeFieldsByItemType["Swift_PageItemType"]);
+        Assert.Single(reloaded.Deploy.ExcludeXmlElementsByType);
+        Assert.Equal(new List<string> { "sort" }, reloaded.Deploy.ExcludeXmlElementsByType["Dynamicweb.Frontend.ContentPage"]);
     }
 }
