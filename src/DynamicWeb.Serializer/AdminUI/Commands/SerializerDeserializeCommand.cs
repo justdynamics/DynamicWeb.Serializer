@@ -20,6 +20,20 @@ public sealed class SerializerDeserializeCommand : CommandBase
     /// <summary>Deployment mode: "deploy" (default) or "seed". Case-insensitive.</summary>
     public string Mode { get; set; } = "deploy";
 
+    /// <summary>
+    /// Phase 37-04 STRICT-01: optional strict-mode override. Null = use config.StrictMode,
+    /// which itself falls back to the entry-point default (API/CLI default = true, per D-16).
+    /// Explicit true/false overrides both.
+    /// </summary>
+    public bool? StrictMode { get; set; }
+
+    /// <summary>
+    /// Phase 37-04: internal flag set by admin-UI action buttons to flip the entry-point
+    /// default to AdminUi (lenient). API/CLI callers leave this false so they get the
+    /// default-strict behavior. Not serialised to Management API.
+    /// </summary>
+    public bool IsAdminUiInvocation { get; set; } = false;
+
     private string? _logFile;
     private readonly List<string> _logLines = new();
 
@@ -72,6 +86,14 @@ public sealed class SerializerDeserializeCommand : CommandBase
             if (yamlCount == 0)
                 return new() { Status = CommandResult.ResultType.Error, Message = $"{modeRoot} contains no YAML files" };
 
+            // Phase 37-04: resolve strict-mode before orchestration.
+            var entryPoint = IsAdminUiInvocation
+                ? StrictModeResolver.EntryPoint.AdminUi
+                : StrictModeResolver.EntryPoint.Api;
+            var strict = StrictModeResolver.Resolve(entryPoint, config.StrictMode, StrictMode);
+            Log($"=== Strict mode: {strict} (entry-point: {entryPoint}) ===");
+            var escalator = new StrictModeEscalator(strict, Log);
+
             var orchestrator = ProviderRegistry.CreateOrchestrator(filesRoot);
             var result = orchestrator.DeserializeAll(
                 modeConfig.Predicates,
@@ -79,7 +101,9 @@ public sealed class SerializerDeserializeCommand : CommandBase
                 deploymentMode,
                 modeConfig.ConflictStrategy,
                 Log,
-                config.DryRun);
+                config.DryRun,
+                providerFilter: null,
+                escalator: escalator);
 
             // Build summary with advice and flush log
             var advice = AdviceGenerator.GenerateAdvice(result);

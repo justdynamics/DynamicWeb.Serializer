@@ -319,6 +319,84 @@ grep -rn "PaymentGatewayMD5Key\|PaymentMerchantNum\|CarrierAccount" SerializeRoo
 If any match returns a non-empty value, add the column to the predicate's `excludeFields` and
 re-run serialize.
 
+## Strict Mode (STRICT-01 / SEED-001)
+
+Strict mode converts recoverable warnings into hard failures, producing a non-zero exit
+for CI/CD pipelines. Warnings escalated in strict mode:
+
+- Unresolvable page ID in a `Default.aspx?ID=N` link
+- Missing template file (layout cshtml / grid-row JSON / item-type XML)
+- Unresolvable cache service name (caught at config-load via `DwCacheServiceRegistry`)
+- Permission-mapper fallback (group not found on target → Anonymous set to None)
+- Schema-drift drops (source column absent on target table)
+- FK orphan rows (row references a parent that is missing on target)
+- Cache invalidation failure (service throws during ClearCache)
+- Predicate validation skip (provider type unknown or validation failed)
+
+### Defaults by entry point (D-16)
+
+| Entry point              | Default | Rationale                                    |
+|--------------------------|---------|----------------------------------------------|
+| CLI commands             | ON      | CI/CD target — must fail loud on drift       |
+| Management API           | ON      | Same target as CLI                           |
+| Admin UI action buttons  | OFF     | Interactive exploration — warnings non-fatal |
+
+### Override precedence
+
+`request parameter > config.strictMode > entry-point default`
+
+Config file (applies to every entry point unless a request overrides):
+
+```json
+{
+  "outputDirectory": "Serializer",
+  "strictMode": false,
+  "deploy": { ... },
+  "seed": { ... }
+}
+```
+
+API override (forces a specific run regardless of config):
+
+```bash
+# Force strict for a specific deserialize run:
+curl -X POST https://target.example.com/Admin/Api/SerializerDeserialize \
+  -H "Authorization: Bearer CLD.your-api-key" \
+  -H "Content-Type: application/json" \
+  -d '{"StrictMode": true}'
+
+# Force lenient:
+curl ... -d '{"StrictMode": false}'
+```
+
+When strict mode fails, the run log records:
+
+```
+=== Strict mode: True (entry-point: Api) ===
+... (normal log output) ...
+WARNING: Unresolvable page ID 3421 in link
+WARNING: template 'eCom_Catalog' not found at Files/Templates/eCom_Catalog.cshtml
+ERROR: Strict mode: 2 warning(s) escalated to failure:
+  - Unresolvable page ID 3421 in link
+  - template 'eCom_Catalog' not found ...
+```
+
+The Management API response returns `HasErrors=true` and the aggregated error message,
+so CI/CD pipelines that check the HTTP status or JSON payload fail fast.
+
+### Adding a new cache service
+
+If strict mode fails on an unknown cache name:
+
+```
+Configuration is invalid — ServiceCaches validation failed:
+  - deploy.predicates 'EcomCountries': cache service 'Dynamicweb.Ecommerce.New.X' is not in DwCacheServiceRegistry.
+Supported (18 total): AreaService, CountryRelationService, ...
+```
+
+Open a PR appending a new entry to `src/DynamicWeb.Serializer/Infrastructure/DwCacheServiceRegistry.cs`.
+Each entry is a compile-time-typed direct `ClearCache()` call — no runtime reflection.
+
 ## Folder Structure
 
 ```

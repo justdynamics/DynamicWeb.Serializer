@@ -22,6 +22,7 @@ public sealed class SerializerSettingsEditScreen : EditScreenBase<SerializerSett
                 EditorFor(m => m.OutputDirectory),
                 EditorFor(m => m.LogLevel),
                 EditorFor(m => m.DryRun),
+                EditorFor(m => m.StrictMode),
                 EditorFor(m => m.ConflictStrategy)
             ]),
             new("Information",
@@ -51,7 +52,9 @@ public sealed class SerializerSettingsEditScreen : EditScreenBase<SerializerSett
                     {
                         Name = "Deserialize",
                         Icon = Icon.UploadAlt,
-                        NodeAction = RunCommandAction.For(new SerializerDeserializeCommand { Mode = "deploy" }).WithReloadOnSuccess()
+                        // Phase 37-04 D-16: admin UI is the interactive entry point — flip
+                        // IsAdminUiInvocation so the resolver falls back to AdminUi default (OFF).
+                        NodeAction = RunCommandAction.For(new SerializerDeserializeCommand { Mode = "deploy", IsAdminUiInvocation = true }).WithReloadOnSuccess()
                     }
                 }
             },
@@ -72,7 +75,8 @@ public sealed class SerializerSettingsEditScreen : EditScreenBase<SerializerSett
                     {
                         Name = "Deserialize (Seed)",
                         Icon = Icon.UploadAlt,
-                        NodeAction = RunCommandAction.For(new SerializerDeserializeCommand { Mode = "seed" }).WithReloadOnSuccess()
+                        // Phase 37-04 D-16: admin UI triggered — resolver uses AdminUi default (OFF).
+                        NodeAction = RunCommandAction.For(new SerializerDeserializeCommand { Mode = "seed", IsAdminUiInvocation = true }).WithReloadOnSuccess()
                     }
                 }
             }

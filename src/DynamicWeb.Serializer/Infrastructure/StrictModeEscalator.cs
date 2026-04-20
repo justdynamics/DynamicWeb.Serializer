@@ -50,6 +50,18 @@ public class StrictModeEscalator
     }
 
     /// <summary>
+    /// Record-only variant of <see cref="Escalate"/> — used by callers (e.g. the
+    /// SerializerOrchestrator log-wrapper) that have already emitted the log line
+    /// through a separate sink and only need the warning captured for the end-of-run
+    /// assertion. Respects the same cap as <see cref="Escalate"/>.
+    /// </summary>
+    public void RecordOnly(string warning)
+    {
+        if (_strict && _recordedWarnings.Count < MaxRecordedWarnings)
+            _recordedWarnings.Add(warning);
+    }
+
+    /// <summary>
     /// In strict mode with recorded warnings, throw a single aggregated
     /// <see cref="CumulativeStrictModeException"/>. No-op in lenient mode or when the
     /// buffer is empty. Called once at the end of a run (the orchestrator does this).

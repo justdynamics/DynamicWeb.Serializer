@@ -63,6 +63,7 @@ public sealed class SaveSerializerSettingsCommand : CommandBase<SerializerSettin
                 OutputDirectory = Model.OutputDirectory,
                 LogLevel = Model.LogLevel,
                 DryRun = Model.DryRun,
+                StrictMode = Model.StrictMode, // Phase 37-04 STRICT-01: null = entry-point default
                 Deploy = updatedDeploy,
                 Seed = existingConfig.Seed
             };

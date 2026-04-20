@@ -136,9 +136,17 @@ public class SerializerOrchestrator
         ConflictStrategy strategy,
         Action<string>? log = null,
         bool isDryRun = false,
-        string? providerFilter = null)
+        string? providerFilter = null,
+        StrictModeEscalator? escalator = null)
     {
-        log?.Invoke($"=== Mode: {mode} | Strategy: {strategy} ===");
+        // Phase 37-04 STRICT-01: wrap the caller's log so every "WARNING:" line flows
+        // through the escalator. Non-warning lines pass through untouched. Legacy
+        // callers that don't provide an escalator get StrictModeEscalator.Null, which
+        // is always-lenient — log-and-continue (v0.4.x parity).
+        escalator ??= StrictModeEscalator.Null;
+        var wrappedLog = WrapLogWithEscalator(log, escalator);
+
+        wrappedLog($"=== Mode: {mode} | Strategy: {strategy} | Strict: {escalator.IsStrict} ===");
 
         var results = new List<ProviderDeserializeResult>();
         var errors = new List<string>();
@@ -187,7 +195,7 @@ public class SerializerOrchestrator
             {
                 var msg = $"No provider registered for type '{predicate.ProviderType}' (predicate: {predicate.Name})";
                 errors.Add(msg);
-                log?.Invoke($"WARNING: Skipping predicate '{predicate.Name}' — no provider for type '{predicate.ProviderType}'");
+                wrappedLog($"WARNING: Skipping predicate '{predicate.Name}' — no provider for type '{predicate.ProviderType}'");
                 continue;
             }
 
@@ -196,11 +204,11 @@ public class SerializerOrchestrator
             if (!validation.IsValid)
             {
                 errors.AddRange(validation.Errors.Select(e => $"{predicate.Name}: {e}"));
-                log?.Invoke($"WARNING: Skipping predicate '{predicate.Name}' — validation failed: {string.Join(", ", validation.Errors)}");
+                wrappedLog($"WARNING: Skipping predicate '{predicate.Name}' — validation failed: {string.Join(", ", validation.Errors)}");
                 continue;
             }
 
-            var result = provider.Deserialize(predicate, inputRoot, log, isDryRun, strategy);
+            var result = provider.Deserialize(predicate, inputRoot, wrappedLog, isDryRun, strategy);
             results.Add(result);
 
             // Cache invalidation: clear configured service caches after successful deserialize.
@@ -208,17 +216,17 @@ public class SerializerOrchestrator
             {
                 if (_cacheInvalidator == null)
                 {
-                    log?.Invoke($"WARNING: Predicate '{predicate.Name}' declares {predicate.ServiceCaches.Count} service cache(s) but no CacheInvalidator is wired — caches will NOT be cleared");
+                    wrappedLog($"WARNING: Predicate '{predicate.Name}' declares {predicate.ServiceCaches.Count} service cache(s) but no CacheInvalidator is wired — caches will NOT be cleared");
                 }
                 else
                 {
                     try
                     {
-                        _cacheInvalidator.InvalidateCaches(predicate.ServiceCaches, log);
+                        _cacheInvalidator.InvalidateCaches(predicate.ServiceCaches, wrappedLog);
                     }
                     catch (Exception ex)
                     {
-                        log?.Invoke($"WARNING: Cache invalidation failed for predicate '{predicate.Name}': {ex.Message}");
+                        wrappedLog($"WARNING: Cache invalidation failed for predicate '{predicate.Name}': {ex.Message}");
                     }
                 }
             }
@@ -231,17 +239,58 @@ public class SerializerOrchestrator
             {
                 try
                 {
-                    log?.Invoke($"Running schema sync for {predicate.Name}...");
-                    _ecomSchemaSync.SyncSchema(log);
+                    wrappedLog($"Running schema sync for {predicate.Name}...");
+                    _ecomSchemaSync.SyncSchema(wrappedLog);
                 }
                 catch (Exception ex)
                 {
-                    log?.Invoke($"WARNING: Schema sync failed for predicate '{predicate.Name}': {ex.Message}");
+                    wrappedLog($"WARNING: Schema sync failed for predicate '{predicate.Name}': {ex.Message}");
                 }
             }
         }
 
+        // Phase 37-04 STRICT-01: end-of-run gate. In strict mode with any escalated warnings,
+        // this throws CumulativeStrictModeException. We catch and collect into Errors so the
+        // OrchestratorResult surfaces the failure without masking successful per-predicate work;
+        // the caller (CLI/API) inspects HasErrors and the exception text in the log.
+        try
+        {
+            escalator.AssertNoWarnings();
+        }
+        catch (CumulativeStrictModeException ex)
+        {
+            errors.Add(ex.Message);
+            wrappedLog($"ERROR: {ex.Message}");
+        }
+
         return new OrchestratorResult { DeserializeResults = results, Errors = errors };
+    }
+
+    /// <summary>
+    /// Phase 37-04: wrap the caller's log so every "WARNING:" line (from anywhere —
+    /// orchestrator, provider, ContentDeserializer, InternalLinkResolver, etc.) routes
+    /// through the escalator. Non-WARNING lines pass through unchanged. In strict mode
+    /// the warning is recorded for end-of-run assertion; the single log emission still
+    /// reaches the caller's sink so operators see every warning in real time.
+    /// </summary>
+    private static Action<string> WrapLogWithEscalator(Action<string>? callerLog, StrictModeEscalator escalator)
+    {
+        return msg =>
+        {
+            if (msg is null)
+            {
+                callerLog?.Invoke(string.Empty);
+                return;
+            }
+
+            // Forward to the caller's log first so the line appears in real-time output.
+            callerLog?.Invoke(msg);
+
+            // Route WARNING lines into the escalator's record buffer (strict) without a
+            // second log emission — we pass a null log sink to Escalate.
+            if (msg.TrimStart().StartsWith("WARNING", StringComparison.OrdinalIgnoreCase))
+                escalator.RecordOnly(msg);
+        };
     }
 }
 

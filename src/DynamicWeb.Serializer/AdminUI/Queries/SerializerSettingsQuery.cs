@@ -30,6 +30,7 @@ public sealed class SerializerSettingsQuery : DataQueryModelBase<SerializerSetti
             OutputDirectory = config.OutputDirectory,
             LogLevel = config.LogLevel,
             DryRun = config.DryRun,
+            StrictMode = config.StrictMode, // Phase 37-04 STRICT-01
             ConflictStrategy = config.Deploy.ConflictStrategy switch
             {
                 Configuration.ConflictStrategy.SourceWins => "source-wins",

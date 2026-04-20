@@ -16,6 +16,9 @@ public sealed class SerializerSettingsModel : DataViewModelBase
     [ConfigurableProperty("Dry Run", explanation: "When enabled, sync operations log what would happen without making changes")]
     public bool DryRun { get; set; } = false;
 
+    [ConfigurableProperty("Strict Mode", explanation: "When enabled, any WARNING emitted during deserialize (unresolvable link, missing template, unresolvable cache name, permission fallback, schema-drift drop, FK orphan) fails the run with a non-zero exit. Leave unset to use the entry-point default: ON for API/CLI (CI/CD target), OFF for admin UI (interactive).")]
+    public bool? StrictMode { get; set; }
+
     [ConfigurableProperty("Conflict Strategy", explanation: "How to handle conflicts when source and target differ")]
     public string ConflictStrategy { get; set; } = "source-wins";
 
