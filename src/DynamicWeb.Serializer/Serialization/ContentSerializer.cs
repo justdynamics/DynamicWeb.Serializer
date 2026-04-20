@@ -37,10 +37,16 @@ public class ContentSerializer
     /// Serializes all predicates defined in the configuration to disk.
     /// Clears the reference resolver cache between predicates.
     /// Logs a count summary of pages, grid rows, and paragraphs after all predicates are processed.
+    /// After all predicates complete (Phase 37-05 / TEMPLATE-01), scans the full serialized
+    /// page tree for template references and emits <c>templates.manifest.yml</c> so the
+    /// deserialize side can validate every cshtml / grid-row / item-type file exists on the
+    /// target environment. Task 2 of the plan adds a <c>BaselineLinkSweeper</c> pass here
+    /// (D-22 pass 1) — appended in that commit.
     /// </summary>
     public void Serialize()
     {
         int totalPages = 0, totalGridRows = 0, totalParagraphs = 0;
+        var allSerializedPages = new List<SerializedPage>();
 
         foreach (var predicate in _configuration.Predicates)
         {
@@ -48,7 +54,26 @@ public class ContentSerializer
             _referenceResolver.Clear();
 
             if (area != null)
+            {
                 CountItems(area.Pages, ref totalPages, ref totalGridRows, ref totalParagraphs);
+                allSerializedPages.AddRange(area.Pages);
+            }
+        }
+
+        // Phase 37-05 / TEMPLATE-01: emit templates.manifest.yml listing every cshtml /
+        // grid-row / item-type reference in the baseline, with per-reference source-page
+        // attribution. The manifest lives at the output root (alongside area folders) so
+        // ContentDeserializer can find it without knowing per-predicate subfolders.
+        try
+        {
+            var scanner = new TemplateReferenceScanner();
+            var refs = scanner.Scan(allSerializedPages);
+            new TemplateAssetManifest().Write(_configuration.OutputDirectory, refs);
+            Log($"Wrote {TemplateAssetManifest.ManifestFileName} with {refs.Count} template reference(s)");
+        }
+        catch (Exception ex)
+        {
+            Log($"WARNING: Failed to write template manifest: {ex.Message}");
         }
 
         Log($"Serialization complete: {totalPages} pages, {totalGridRows} grid rows, {totalParagraphs} paragraphs serialized.");

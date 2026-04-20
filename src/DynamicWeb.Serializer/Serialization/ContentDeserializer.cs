@@ -20,9 +20,10 @@ public class ContentDeserializer
     private readonly bool _isDryRun;
     private readonly string? _filesRoot;
     private readonly ConflictStrategy _conflictStrategy;
-    private readonly HashSet<string> _loggedTemplateMissing = new(StringComparer.OrdinalIgnoreCase);
     private readonly TargetSchemaCache _schemaCache;
     private readonly PermissionMapper _permissionMapper;
+    private readonly TemplateAssetManifest _templateManifest;
+    private readonly StrictModeEscalator _templateEscalator;
 
     /// <summary>
     /// When <see cref="ConflictStrategy.DestinationWins"/> (Phase 37-01 Seed mode), pages whose
@@ -52,6 +53,11 @@ public class ContentDeserializer
         _conflictStrategy = conflictStrategy;
         _permissionMapper = new PermissionMapper(log);
         _schemaCache = schemaCache ?? new TargetSchemaCache();
+        _templateManifest = new TemplateAssetManifest();
+        // Phase 37-05: manifest validation uses a lenient escalator by default — the
+        // orchestrator's strict-mode wrapper (Phase 37-04) will intercept the WARNING
+        // lines and escalate them at end-of-run when strict mode is active.
+        _templateEscalator = new StrictModeEscalator(strict: false, log: _log);
     }
 
     private void Log(string message) => _log?.Invoke(message);
@@ -103,6 +109,13 @@ public class ContentDeserializer
         int totalSkipped = 0;
         int totalFailed = 0;
         var allErrors = new List<string>();
+
+        // Phase 37-05 / TEMPLATE-01: pre-flight template manifest validation. Runs once
+        // before any page writes so operators see missing-template errors up-front rather
+        // than per-page during the run. Missing templates flow through the escalator —
+        // orchestrator's strict-mode log wrapper elevates WARNING lines to the cumulative
+        // exception when strict mode is active.
+        ValidateTemplateManifest();
 
         // Collect all areas and their deserialized page caches for cross-area link resolution
         var allAreaPages = new List<SerializedPage>();
@@ -192,10 +205,36 @@ public class ContentDeserializer
                 Log(error);
         }
 
-        if (_loggedTemplateMissing.Count > 0)
-            Log($"Template validation: {_loggedTemplateMissing.Count} missing template reference(s) detected — see warnings above");
-
         return aggregated;
+    }
+
+    /// <summary>
+    /// Phase 37-05 / TEMPLATE-01: read <c>templates.manifest.yml</c> from the output root
+    /// and verify every referenced cshtml / grid-row / item-type file exists on the target
+    /// filesystem. Runs before any page writes so operators see upfront whether templates
+    /// are in place. No-op when <see cref="_filesRoot"/> is null (unit tests typically
+    /// don't provide one) or no manifest is present (older baselines pre-Phase-37-05).
+    /// </summary>
+    private void ValidateTemplateManifest()
+    {
+        if (string.IsNullOrEmpty(_filesRoot)) return;
+
+        List<TemplateReference>? refs;
+        try
+        {
+            refs = _templateManifest.Read(_configuration.OutputDirectory);
+        }
+        catch (Exception ex)
+        {
+            Log($"WARNING: Could not read template manifest: {ex.Message}");
+            return;
+        }
+
+        if (refs == null || refs.Count == 0) return;
+
+        Log($"Validating {TemplateAssetManifest.ManifestFileName} ({refs.Count} reference(s))...");
+        var missing = _templateManifest.Validate(_filesRoot, refs, _templateEscalator);
+        Log($"Template validation: {refs.Count - missing} found, {missing} missing");
     }
 
     // -------------------------------------------------------------------------
@@ -506,8 +545,8 @@ public class ContentDeserializer
     /// </summary>
     private int DeserializePage(SerializedPage dto, WriteContext ctx)
     {
-        ValidatePageLayout(dto.Layout);
-        ValidateItemType(dto.ItemType);
+        // Phase 37-05: inline template validation removed — the manifest pre-flight
+        // (ValidateTemplateManifest) now covers all layout / item-type / grid-row refs.
 
         if (!ctx.PageGuidCache.TryGetValue(dto.PageUniqueId, out var existingId))
         {
@@ -683,8 +722,7 @@ public class ContentDeserializer
         Dictionary<Guid, int> gridRowCache,
         WriteContext ctx)
     {
-        ValidateGridRowDefinition(dto.DefinitionId);
-        ValidateItemType(dto.ItemType);
+        // Phase 37-05: inline validation removed — manifest pre-flight covers these refs.
 
         if (!gridRowCache.TryGetValue(dto.Id, out var existingGridRowId))
         {
@@ -846,7 +884,7 @@ public class ContentDeserializer
         Dictionary<Guid, int> paragraphCache,
         WriteContext ctx)
     {
-        ValidateItemType(dto.ItemType);
+        // Phase 37-05: inline validation removed — manifest pre-flight covers item types.
 
         if (!paragraphCache.TryGetValue(dto.ParagraphUniqueId, out var existingParagraphId))
         {
@@ -1087,76 +1125,6 @@ public class ContentDeserializer
 
         itemEntry.DeserializeFrom(contentFields);
         itemEntry.Save();
-    }
-
-    // -------------------------------------------------------------------------
-    // Template validation — warns when deserialized references point to missing files
-    // -------------------------------------------------------------------------
-
-    private void ValidatePageLayout(string? layout)
-    {
-        if (string.IsNullOrEmpty(_filesRoot) || string.IsNullOrEmpty(layout))
-            return;
-
-        var key = $"layout:{layout}";
-        if (_loggedTemplateMissing.Contains(key))
-            return;
-
-        // Layout templates live under Templates/Designs/{design}/{layout}
-        var designsDir = Path.Combine(_filesRoot, "Templates", "Designs");
-        if (!Directory.Exists(designsDir))
-            return;
-
-        foreach (var designDir in Directory.GetDirectories(designsDir))
-        {
-            if (File.Exists(Path.Combine(designDir, layout)))
-                return;
-        }
-
-        _loggedTemplateMissing.Add(key);
-        Log($"WARNING: Page layout template '{layout}' not found in any design folder under {designsDir}");
-    }
-
-    private void ValidateItemType(string? itemType)
-    {
-        if (string.IsNullOrEmpty(_filesRoot) || string.IsNullOrEmpty(itemType))
-            return;
-
-        var key = $"item:{itemType}";
-        if (_loggedTemplateMissing.Contains(key))
-            return;
-
-        var itemFile = Path.Combine(_filesRoot, "System", "Items", $"ItemType_{itemType}.xml");
-        if (File.Exists(itemFile))
-            return;
-
-        _loggedTemplateMissing.Add(key);
-        Log($"WARNING: Item type definition 'ItemType_{itemType}.xml' not found at {itemFile}");
-    }
-
-    private void ValidateGridRowDefinition(string? definitionId)
-    {
-        if (string.IsNullOrEmpty(_filesRoot) || string.IsNullOrEmpty(definitionId))
-            return;
-
-        var key = $"rowdef:{definitionId}";
-        if (_loggedTemplateMissing.Contains(key))
-            return;
-
-        // Row definitions live under Templates/Designs/{design}/Grid/Page/RowDefinitions/{id}.json
-        var designsDir = Path.Combine(_filesRoot, "Templates", "Designs");
-        if (!Directory.Exists(designsDir))
-            return;
-
-        foreach (var designDir in Directory.GetDirectories(designsDir))
-        {
-            var defFile = Path.Combine(designDir, "Grid", "Page", "RowDefinitions", $"{definitionId}.json");
-            if (File.Exists(defFile))
-                return;
-        }
-
-        _loggedTemplateMissing.Add(key);
-        Log($"WARNING: Grid row definition '{definitionId}.json' not found in any design folder under {designsDir}");
     }
 
     // -------------------------------------------------------------------------
