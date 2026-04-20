@@ -388,12 +388,18 @@ public class ContentDeserializer
                 case "datetime2":
                 case "smalldatetime":
                 case "date":
-                case "datetimeoffset":
                     if (string.IsNullOrWhiteSpace(s)) return DBNull.Value;
                     if (DateTime.TryParse(s, System.Globalization.CultureInfo.InvariantCulture,
                             System.Globalization.DateTimeStyles.AssumeUniversal | System.Globalization.DateTimeStyles.AdjustToUniversal,
                             out var dt))
                         return dt;
+                    break;
+                case "datetimeoffset":
+                    if (string.IsNullOrWhiteSpace(s)) return DBNull.Value;
+                    if (DateTimeOffset.TryParse(s, System.Globalization.CultureInfo.InvariantCulture,
+                            System.Globalization.DateTimeStyles.RoundtripKind,
+                            out var dto))
+                        return dto;
                     break;
                 case "bit":
                     if (bool.TryParse(s, out var b)) return b;
