@@ -2,6 +2,7 @@ using DynamicWeb.Serializer.Configuration;
 using DynamicWeb.Serializer.Infrastructure;
 using DynamicWeb.Serializer.Models;
 using DynamicWeb.Serializer.Providers.SqlTable;
+using DynamicWeb.Serializer.Serialization;
 
 namespace DynamicWeb.Serializer.Providers;
 
@@ -185,6 +186,37 @@ public class SerializerOrchestrator
             }
         }
 
+        // Phase 37-05 / LINK-02 pass 2 (D-22): when ANY SqlTable predicate has a non-empty
+        // ResolveLinksInColumns list, Content predicates MUST run BEFORE those SqlTable
+        // predicates so the source→target page ID map is built and available at write time.
+        // Chosen over the "second deserialize pass" alternative because it's a simple list
+        // reorder — no second sweep through SqlTable data needed.
+        var anySqlNeedsLinks = predicates.Any(p =>
+            string.Equals(p.ProviderType, "SqlTable", StringComparison.OrdinalIgnoreCase)
+            && p.ResolveLinksInColumns.Count > 0);
+        if (anySqlNeedsLinks)
+        {
+            var contentPredicates = predicates
+                .Where(p => string.Equals(p.ProviderType, "Content", StringComparison.OrdinalIgnoreCase))
+                .ToList();
+            var otherPredicates = predicates
+                .Where(p => !string.Equals(p.ProviderType, "Content", StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            if (contentPredicates.Count > 0)
+            {
+                predicates = contentPredicates.Concat(otherPredicates).ToList();
+                wrappedLog(
+                    $"LINK-02 ordering: running {contentPredicates.Count} Content predicate(s) " +
+                    "first so cross-env page ID map is available to SqlTable link resolution.");
+            }
+        }
+
+        // Accumulates the source→target page ID map across Content predicate runs.
+        // Populated when a ContentProvider returns a non-null SourceToTargetPageMap and
+        // consumed by subsequent SqlTable predicates whose ResolveLinksInColumns is non-empty.
+        var aggregatedPageMap = new Dictionary<int, int>();
+
         foreach (var predicate in predicates)
         {
             if (providerFilter != null &&
@@ -208,8 +240,25 @@ public class SerializerOrchestrator
                 continue;
             }
 
-            var result = provider.Deserialize(predicate, inputRoot, wrappedLog, isDryRun, strategy);
+            // Phase 37-05 / LINK-02: build an InternalLinkResolver from the accumulated map
+            // when this predicate is a SqlTable that opted in via ResolveLinksInColumns.
+            InternalLinkResolver? perRunResolver = null;
+            var needsLinks = string.Equals(predicate.ProviderType, "SqlTable", StringComparison.OrdinalIgnoreCase)
+                             && predicate.ResolveLinksInColumns.Count > 0
+                             && aggregatedPageMap.Count > 0;
+            if (needsLinks)
+                perRunResolver = new InternalLinkResolver(aggregatedPageMap, wrappedLog);
+
+            var result = provider.Deserialize(predicate, inputRoot, wrappedLog, isDryRun, strategy, perRunResolver);
             results.Add(result);
+
+            // Accumulate source→target map contributions from Content predicates so
+            // subsequent SqlTable predicates can use them for link resolution.
+            if (result.SourceToTargetPageMap != null)
+            {
+                foreach (var kvp in result.SourceToTargetPageMap)
+                    aggregatedPageMap.TryAdd(kvp.Key, kvp.Value);
+            }
 
             // Cache invalidation: clear configured service caches after successful deserialize.
             if (!isDryRun && predicate.ServiceCaches.Count > 0 && !result.HasErrors)

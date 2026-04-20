@@ -397,6 +397,68 @@ Supported (18 total): AreaService, CountryRelationService, ...
 Open a PR appending a new entry to `src/DynamicWeb.Serializer/Infrastructure/DwCacheServiceRegistry.cs`.
 Each entry is a compile-time-typed direct `ClearCache()` call — no runtime reflection.
 
+## Cross-environment link resolution (LINK-02)
+
+DW stores internal page references as numeric IDs (e.g. `Default.aspx?ID=5862`). Those IDs
+differ between environments — Swift 2.2's `/Shopping cart` page may be ID 5862 on source and
+ID 9421 on CleanDB. The serializer rewrites `Default.aspx?ID=N` references during deserialize
+using a source→target page ID map built by matching pages on their stable `PageUniqueId`
+(GUID).
+
+### Pre-commit link sweep (Pass 1)
+
+At serialize time, `BaselineLinkSweeper` walks every `Default.aspx?ID=N` and
+`"SelectedValue": "N"` reference in the YAML tree and verifies each target page is ALSO in
+the baseline. Orphaned references (pointing to pages excluded from the predicate or outside
+the serialized tree) cause serialize to fail with a multi-line breakdown:
+
+```
+Baseline link sweep found 2 unresolvable reference(s):
+  - ID 9579 in page 3fa... (/Footer) / PropertyFields.LinkButton: Default.aspx?ID=9579
+  - ID 9575 in page 5bc... (/Header) / Fields.CtaHref: Default.aspx?ID=9575
+Fix the source baseline: include the referenced pages in a predicate path, or remove the references.
+```
+
+Fix: either extend the Content predicate `path` to include the missing pages, or clear the
+orphaned reference at the source before re-serializing.
+
+### Content pages — built-in (Pass 2a)
+
+The `InternalLinkResolver` already rewrites `ShortCut`, `NavigationSettings.ProductPage`,
+ItemType string fields, and PropertyItem string fields on every deserialized page. No
+configuration required — `Default.aspx?ID=5862` in a Link/Button field or rich-text HTML is
+rewritten source→target automatically.
+
+### SqlTable columns — opt-in per predicate (Pass 2b)
+
+SqlTable columns holding `Default.aspx?ID=N` strings (e.g. `UrlPath.UrlPathRedirect`) must
+opt in via `resolveLinksInColumns`:
+
+```json
+{
+  "name": "UrlPath",
+  "providerType": "SqlTable",
+  "table": "UrlPath",
+  "resolveLinksInColumns": ["UrlPathRedirect"]
+}
+```
+
+At deserialize, the orchestrator runs Content predicates first (to build the source→target
+page ID map), then hands the map to SqlTableWriter for every opted-in column. The rewritten
+value flows through the existing parameterized MERGE — no SQL composition sees the raw
+rewrite (T-37-05-03 mitigated).
+
+Column names are validated at config-load against `INFORMATION_SCHEMA.COLUMNS` (same gate as
+`excludeFields` / `includeFields` from Phase 37-03).
+
+### Strict-mode interaction
+
+Unresolved references at deserialize log `WARNING: Unresolvable page ID N in link` and — in
+strict mode — escalate to `CumulativeStrictModeException` at end-of-run (via Phase 37-04's
+log-wrapper). A Content predicate referencing a page that's absent from the target DB
+(because it wasn't in the serialized baseline either) still flows through correctly when the
+sweep was satisfied but individual references cannot be mapped at deserialize time.
+
 ## Folder Structure
 
 ```

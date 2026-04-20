@@ -63,6 +63,10 @@ public sealed class PredicateEditScreen : EditScreenBase<PredicateEditModel>
                 EditorFor(m => m.IncludeFields),
                 EditorFor(m => m.ExcludeXmlElements)
             }));
+            groups.Add(new("Cross-Environment Link Resolution", new List<EditorBase>
+            {
+                EditorFor(m => m.ResolveLinksInColumns)
+            }));
         }
         // else: no ProviderType selected — show nothing below Configuration (D-09)
 
@@ -130,6 +134,18 @@ public sealed class PredicateEditScreen : EditScreenBase<PredicateEditModel>
             {
                 Label = "Include Fields",
                 Explanation = "One column per line. Columns kept even if auto-excluded by the runtime-exclusion registry."
+            },
+        // Phase 37-05: SqlTable cross-environment link resolution opt-in (LINK-02).
+        nameof(PredicateEditModel.ResolveLinksInColumns) => Model?.ProviderType == "SqlTable"
+            ? CreateColumnSelectMultiDual(Model?.Table, Model?.ResolveLinksInColumns,
+                "Resolve Links In Columns",
+                "Columns whose string values contain Default.aspx?ID=N references. At deserialize, " +
+                "source page IDs are rewritten to target page IDs using the cross-environment map. " +
+                "Example: UrlPathRedirect")
+            : new Textarea
+            {
+                Label = "Resolve Links In Columns",
+                Explanation = "One column per line. SqlTable only."
             },
         _ => null
     };

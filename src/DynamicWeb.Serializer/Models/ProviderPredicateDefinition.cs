@@ -73,4 +73,15 @@ public record ProviderPredicateDefinition
     /// <see cref="Configuration.RuntimeExcludes"/>. Case-insensitive.
     /// </summary>
     public List<string> IncludeFields { get; init; } = new();
+
+    /// <summary>
+    /// Optional per-SqlTable-predicate (Phase 37-05 / LINK-02 pass 2, D-22): column names whose
+    /// string values get <see cref="Serialization.InternalLinkResolver.ResolveInStringColumn"/>
+    /// applied at deserialize. Default.aspx?ID=N references in these columns are rewritten
+    /// source→target page ID using the cross-environment map built from Content-provider runs.
+    /// Example: <c>UrlPath</c> predicate with <c>ResolveLinksInColumns = ["UrlPathRedirect"]</c>
+    /// lets the <c>UrlPathRedirect</c> field survive cross-env deploys. Empty = no link
+    /// resolution for this table's columns.
+    /// </summary>
+    public List<string> ResolveLinksInColumns { get; init; } = new();
 }

@@ -35,8 +35,9 @@ public class StrictModeIntegrationTests
                 It.IsAny<string>(),
                 It.IsAny<Action<string>?>(),
                 It.IsAny<bool>(),
-                It.IsAny<ConflictStrategy>()))
-            .Returns((ProviderPredicateDefinition pred, string _, Action<string>? log, bool _, ConflictStrategy _) =>
+                It.IsAny<ConflictStrategy>(),
+                It.IsAny<DynamicWeb.Serializer.Serialization.InternalLinkResolver?>()))
+            .Returns((ProviderPredicateDefinition pred, string _, Action<string>? log, bool _, ConflictStrategy _, DynamicWeb.Serializer.Serialization.InternalLinkResolver? _) =>
             {
                 log?.Invoke(warningLine);
                 return new ProviderDeserializeResult { Created = 1, TableName = pred.Table! };
@@ -124,8 +125,8 @@ public class StrictModeIntegrationTests
         providerB.Setup(p => p.ValidatePredicate(It.IsAny<ProviderPredicateDefinition>()))
             .Returns(ValidationResult.Success());
         providerB.Setup(p => p.Deserialize(It.IsAny<ProviderPredicateDefinition>(),
-                It.IsAny<string>(), It.IsAny<Action<string>?>(), It.IsAny<bool>(), It.IsAny<ConflictStrategy>()))
-            .Returns((ProviderPredicateDefinition pred, string _, Action<string>? log, bool _, ConflictStrategy _) =>
+                It.IsAny<string>(), It.IsAny<Action<string>?>(), It.IsAny<bool>(), It.IsAny<ConflictStrategy>(), It.IsAny<DynamicWeb.Serializer.Serialization.InternalLinkResolver?>()))
+            .Returns((ProviderPredicateDefinition pred, string _, Action<string>? log, bool _, ConflictStrategy _, DynamicWeb.Serializer.Serialization.InternalLinkResolver? _) =>
             {
                 log?.Invoke("WARNING: B failure");
                 return new ProviderDeserializeResult { Created = 1, TableName = "Content" };

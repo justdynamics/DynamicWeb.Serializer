@@ -50,7 +50,12 @@ public sealed class PredicateByIndexQuery : DataQueryIdentifiableModelBase<Predi
             ExcludeFields = string.Join("\n", pred.ExcludeFields),
             XmlColumns = string.Join("\n", pred.XmlColumns),
             ExcludeXmlElements = string.Join("\n", pred.ExcludeXmlElements),
-            ExcludeAreaColumns = string.Join("\n", pred.ExcludeAreaColumns)
+            ExcludeAreaColumns = string.Join("\n", pred.ExcludeAreaColumns),
+            // Phase 37-03 / 37-05: round-trip WhereClause / IncludeFields / ResolveLinksInColumns
+            // so the admin UI shows the saved values when editing an existing SqlTable predicate.
+            WhereClause = pred.Where ?? string.Empty,
+            IncludeFields = string.Join("\n", pred.IncludeFields),
+            ResolveLinksInColumns = string.Join("\n", pred.ResolveLinksInColumns)
         };
     }
 }

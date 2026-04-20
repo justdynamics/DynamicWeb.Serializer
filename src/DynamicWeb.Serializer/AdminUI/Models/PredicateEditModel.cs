@@ -65,4 +65,8 @@ public sealed class PredicateEditModel : DataViewModelBase, IIdentifiable
     [ConfigurableProperty("Include Fields",
         explanation: "SqlTable only. Columns kept in serialization output even if they would be auto-excluded by the runtime-exclusion registry. One per line.")]
     public string IncludeFields { get; set; } = string.Empty;
+
+    [ConfigurableProperty("Resolve Links In Columns",
+        explanation: "SqlTable only. Column names (one per line) whose string values contain Default.aspx?ID=N references to DW pages. At deserialize, the source page ID is rewritten to the target page ID using the cross-environment map built from the Content predicates in this run. Example: UrlPathRedirect")]
+    public string ResolveLinksInColumns { get; set; } = string.Empty;
 }

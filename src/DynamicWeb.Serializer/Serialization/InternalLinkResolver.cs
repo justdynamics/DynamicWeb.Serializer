@@ -49,6 +49,14 @@ public class InternalLinkResolver
     }
 
     /// <summary>
+    /// Phase 37-05 / LINK-02 pass 2 alias: call sites in <see cref="Providers.SqlTable.SqlTableWriter"/>
+    /// invoke this to signal "rewriting the string value of a SqlTable column", which is
+    /// semantically distinct from the content-layer item-field pathway even though both
+    /// reduce to the same regex / map logic. No behavior change vs <see cref="ResolveLinks"/>.
+    /// </summary>
+    public string? ResolveInStringColumn(string? value) => ResolveLinks(value);
+
+    /// <summary>
     /// Scans the input string for Default.aspx?ID=NNN patterns and rewrites
     /// source page IDs to target page IDs using the injected map.
     /// Unresolvable IDs are preserved unchanged and a warning is logged.

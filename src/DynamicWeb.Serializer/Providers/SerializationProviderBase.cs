@@ -1,6 +1,7 @@
 using DynamicWeb.Serializer.Configuration;
 using DynamicWeb.Serializer.Infrastructure;
 using DynamicWeb.Serializer.Models;
+using DynamicWeb.Serializer.Serialization;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 
@@ -31,7 +32,8 @@ public abstract class SerializationProviderBase : ISerializationProvider
         string inputRoot,
         Action<string>? log = null,
         bool isDryRun = false,
-        ConflictStrategy strategy = ConflictStrategy.SourceWins);
+        ConflictStrategy strategy = ConflictStrategy.SourceWins,
+        InternalLinkResolver? linkResolver = null);
 
     public abstract ValidationResult ValidatePredicate(ProviderPredicateDefinition predicate);
 

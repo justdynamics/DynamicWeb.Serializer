@@ -1,5 +1,6 @@
 using DynamicWeb.Serializer.Configuration;
 using DynamicWeb.Serializer.Models;
+using DynamicWeb.Serializer.Serialization;
 
 namespace DynamicWeb.Serializer.Providers;
 
@@ -28,12 +29,20 @@ public interface ISerializationProvider
     /// pre-Phase-37 behavior — YAML overwrites target. <see cref="ConflictStrategy.DestinationWins"/>
     /// skips rows/pages whose natural key / PageUniqueId is already present on target.
     /// </param>
+    /// <param name="linkResolver">
+    /// Phase 37-05 / LINK-02 pass 2: optional cross-environment link resolver. SqlTableProvider
+    /// threads this into <see cref="SqlTable.SqlTableWriter.ApplyLinkResolution"/> so every
+    /// row, for every column listed in <see cref="ProviderPredicateDefinition.ResolveLinksInColumns"/>,
+    /// gets its Default.aspx?ID=N references rewritten source→target. Null = no rewrite (the
+    /// provider's current behaviour when no Content-provider has yet populated the map).
+    /// </param>
     ProviderDeserializeResult Deserialize(
         ProviderPredicateDefinition predicate,
         string inputRoot,
         Action<string>? log = null,
         bool isDryRun = false,
-        ConflictStrategy strategy = ConflictStrategy.SourceWins);
+        ConflictStrategy strategy = ConflictStrategy.SourceWins,
+        InternalLinkResolver? linkResolver = null);
 
     /// <summary>Validate that a predicate is correctly configured for this provider.</summary>
     ValidationResult ValidatePredicate(ProviderPredicateDefinition predicate);

@@ -1,5 +1,6 @@
 using Dynamicweb.Content;
 using DynamicWeb.Serializer.Configuration;
+using DynamicWeb.Serializer.Infrastructure;
 using DynamicWeb.Serializer.Models;
 using DynamicWeb.Serializer.Serialization;
 
@@ -97,8 +98,14 @@ public class ContentProvider : ISerializationProvider
         string inputRoot,
         Action<string>? log = null,
         bool isDryRun = false,
-        ConflictStrategy strategy = ConflictStrategy.SourceWins)
+        ConflictStrategy strategy = ConflictStrategy.SourceWins,
+        InternalLinkResolver? linkResolver = null)
     {
+        // ContentProvider ignores the injected linkResolver — its own deserialize path already
+        // builds and applies an InternalLinkResolver for item-field / PropertyItem rewriting.
+        // We still accept the parameter to satisfy the ISerializationProvider contract.
+        _ = linkResolver;
+
         var validation = ValidatePredicate(predicate);
         if (!validation.IsValid)
         {
@@ -135,6 +142,21 @@ public class ContentProvider : ISerializationProvider
             if (strategy == ConflictStrategy.DestinationWins)
                 log?.Invoke($"Content provider running in DestinationWins (Seed) mode — pages whose PageUniqueId is already present on target are preserved.");
 
+            // Phase 37-05 / LINK-02 pass 2: after a successful deserialize, build the
+            // source→target page ID map from the YAML tree (SourcePageId) + the target DB
+            // (by GUID match) so SqlTable predicates in the same orchestrator run can
+            // rewrite Default.aspx?ID=N references in configured columns. Skipped on dry-run
+            // or when the predicate didn't run (failed area resolution, etc.).
+            IReadOnlyDictionary<int, int>? map = null;
+            if (!isDryRun)
+            {
+                try { map = BuildSourceToTargetMap(contentDir); }
+                catch (Exception mapEx)
+                {
+                    log?.Invoke($"WARNING: Could not build source→target page map after Content deserialize: {mapEx.Message}");
+                }
+            }
+
             return new ProviderDeserializeResult
             {
                 Created = result.Created,
@@ -142,7 +164,8 @@ public class ContentProvider : ISerializationProvider
                 Skipped = result.Skipped,
                 Failed = result.Failed,
                 TableName = "Content",
-                Errors = result.Errors.ToList()
+                Errors = result.Errors.ToList(),
+                SourceToTargetPageMap = map
             };
         }
         catch (Exception ex)
@@ -154,6 +177,43 @@ public class ContentProvider : ISerializationProvider
                 Errors = new[] { ex.Message }
             };
         }
+    }
+
+    /// <summary>
+    /// Phase 37-05 / LINK-02 pass 2: construct the cross-environment page ID map by
+    /// reading every area's YAML tree under <paramref name="contentDir"/>, pairing each
+    /// page's <c>SourcePageId</c> with the target page resolved by <c>PageUniqueId</c>
+    /// (GUID lookup against the live DB). Returns an empty map if no YAML areas are
+    /// present or no pages matched.
+    /// </summary>
+    private static IReadOnlyDictionary<int, int> BuildSourceToTargetMap(string contentDir)
+    {
+        var allYamlPages = new List<SerializedPage>();
+        if (Directory.Exists(contentDir))
+        {
+            var store = new FileSystemStore();
+            foreach (var areaDir in Directory.GetDirectories(contentDir))
+            {
+                var areaYml = Path.Combine(areaDir, "area.yml");
+                if (!File.Exists(areaYml)) continue;
+                try
+                {
+                    var areaData = store.ReadTree(contentDir, Path.GetFileName(areaDir));
+                    allYamlPages.AddRange(areaData.Pages);
+                }
+                catch { /* best-effort — individual unreadable areas skipped */ }
+            }
+        }
+
+        var allGuidCache = new Dictionary<Guid, int>();
+        foreach (var masterArea in Services.Areas.GetAreas())
+        {
+            foreach (var page in Services.Pages.GetPagesByAreaID(masterArea.ID))
+                if (page.UniqueId != Guid.Empty)
+                    allGuidCache.TryAdd(page.UniqueId, page.ID);
+        }
+
+        return InternalLinkResolver.BuildSourceToTargetMap(allYamlPages, allGuidCache);
     }
 
     /// <summary>

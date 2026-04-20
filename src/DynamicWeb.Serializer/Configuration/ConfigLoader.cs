@@ -159,6 +159,12 @@ public static class ConfigLoader
                 try { idValidator.ValidateColumn(p.Table!, col); }
                 catch (InvalidOperationException ex) { errors.Add($"{scope} '{p.Name}': {ex.Message}"); }
             }
+            // Phase 37-05: ResolveLinksInColumns identifiers must be real columns on the table.
+            foreach (var col in p.ResolveLinksInColumns)
+            {
+                try { idValidator.ValidateColumn(p.Table!, col); }
+                catch (InvalidOperationException ex) { errors.Add($"{scope} '{p.Name}': {ex.Message}"); }
+            }
 
             // 3. WHERE clause — must parse + every identifier must be an existing column.
             if (!string.IsNullOrWhiteSpace(p.Where))
@@ -338,7 +344,8 @@ public static class ConfigLoader
         ExcludeXmlElements = raw.ExcludeXmlElements ?? new List<string>(),
         ExcludeAreaColumns = raw.ExcludeAreaColumns ?? new List<string>(),
         Where = string.IsNullOrWhiteSpace(raw.Where) ? null : raw.Where,
-        IncludeFields = raw.IncludeFields ?? new List<string>()
+        IncludeFields = raw.IncludeFields ?? new List<string>(),
+        ResolveLinksInColumns = raw.ResolveLinksInColumns ?? new List<string>()
     };
 
     // -------------------------------------------------------------------------
@@ -396,5 +403,9 @@ public static class ConfigLoader
         // Phase 37-03: SqlTable WHERE clause + runtime-exclude opt-in.
         public string? Where { get; set; }
         public List<string>? IncludeFields { get; set; }
+
+        // Phase 37-05 / LINK-02 pass 2: SqlTable column opt-in for at-deserialize
+        // Default.aspx?ID=N link rewriting (see ProviderPredicateDefinition).
+        public List<string>? ResolveLinksInColumns { get; set; }
     }
 }

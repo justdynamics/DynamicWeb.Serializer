@@ -1,6 +1,7 @@
 using DynamicWeb.Serializer.Configuration;
 using DynamicWeb.Serializer.Infrastructure;
 using DynamicWeb.Serializer.Models;
+using DynamicWeb.Serializer.Serialization;
 
 namespace DynamicWeb.Serializer.Providers.SqlTable;
 
@@ -136,7 +137,8 @@ public class SqlTableProvider : SerializationProviderBase
         string inputRoot,
         Action<string>? log = null,
         bool isDryRun = false,
-        ConflictStrategy strategy = ConflictStrategy.SourceWins)
+        ConflictStrategy strategy = ConflictStrategy.SourceWins,
+        InternalLinkResolver? linkResolver = null)
     {
         var validation = ValidatePredicate(predicate);
         if (!validation.IsValid)
@@ -215,6 +217,22 @@ public class SqlTableProvider : SerializationProviderBase
             FixNotNullDefaults(row, columnTypesDict, notNullColumns);
             if (predicate.XmlColumns.Count > 0)
                 CompactXmlColumns(row, predicate.XmlColumns);
+
+            // Phase 37-05 / LINK-02 pass 2 (D-22): rewrite Default.aspx?ID=N in opted-in
+            // string columns using the cross-environment page ID map built by preceding
+            // Content provider runs. No-op when no predicate column opted in or no resolver
+            // was threaded through by the orchestrator.
+            if (linkResolver != null && predicate.ResolveLinksInColumns.Count > 0)
+                _writer.ApplyLinkResolution(row, predicate.ResolveLinksInColumns, linkResolver);
+        }
+
+        if (predicate.ResolveLinksInColumns.Count > 0)
+        {
+            var status = linkResolver != null ? "active" : "predicate configured but no map available";
+            Log(
+                $"Link resolution for [{metadata.TableName}] ({status}): " +
+                string.Join(", ", predicate.ResolveLinksInColumns),
+                log);
         }
 
         // Disable FK constraints during deserialization to avoid ordering issues

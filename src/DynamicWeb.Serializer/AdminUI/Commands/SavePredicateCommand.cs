@@ -113,6 +113,13 @@ public sealed class SavePredicateCommand : CommandBase<PredicateEditModel>
                 .Where(e => e.Length > 0)
                 .ToList();
 
+            // Phase 37-05 / LINK-02: parse SqlTable link-resolution column opt-in.
+            var resolveLinksInColumns = (Model.ResolveLinksInColumns ?? string.Empty)
+                .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(e => e.Trim())
+                .Where(e => e.Length > 0)
+                .ToList();
+
             // Build predicate based on provider type
             ProviderPredicateDefinition predicate;
 
@@ -177,7 +184,9 @@ public sealed class SavePredicateCommand : CommandBase<PredicateEditModel>
                     XmlColumns = xmlColumns,
                     // Phase 37-03: WHERE clause + runtime-exclude opt-in
                     Where = string.IsNullOrWhiteSpace(Model.WhereClause) ? null : Model.WhereClause.Trim(),
-                    IncludeFields = includeFields
+                    IncludeFields = includeFields,
+                    // Phase 37-05: SqlTable link-resolution column opt-in (LINK-02).
+                    ResolveLinksInColumns = resolveLinksInColumns
                 };
 
                 // Phase 37-03: validate identifiers + WHERE clause at save-time. Tests inject
@@ -256,6 +265,13 @@ public sealed class SavePredicateCommand : CommandBase<PredicateEditModel>
         }
 
         foreach (var col in predicate.XmlColumns)
+        {
+            try { idValidator.ValidateColumn(predicate.Table!, col); }
+            catch (InvalidOperationException ex) { return ex.Message; }
+        }
+
+        // Phase 37-05: ResolveLinksInColumns must reference real columns on the table.
+        foreach (var col in predicate.ResolveLinksInColumns)
         {
             try { idValidator.ValidateColumn(predicate.Table!, col); }
             catch (InvalidOperationException ex) { return ex.Message; }

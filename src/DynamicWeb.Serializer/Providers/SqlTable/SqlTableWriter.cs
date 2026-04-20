@@ -1,6 +1,7 @@
 using System.Data;
 using System.Text;
 using DynamicWeb.Serializer.Models;
+using DynamicWeb.Serializer.Serialization;
 using Dynamicweb.Data;
 
 namespace DynamicWeb.Serializer.Providers.SqlTable;
@@ -159,6 +160,33 @@ public class SqlTableWriter
                 log?.Invoke($"    ERROR [{metadata.TableName}]: {ex.Message}");
             }
             return WriteOutcome.Failed;
+        }
+    }
+
+    /// <summary>
+    /// Phase 37-05 / LINK-02 pass 2 (D-22): rewrite <c>Default.aspx?ID=N</c> and
+    /// <c>"SelectedValue": "N"</c> references inside the listed string columns using the
+    /// supplied resolver. Runs BEFORE <see cref="BuildMergeCommand"/> so the rewritten
+    /// value flows through the existing parameterized MERGE — no SQL composition path
+    /// sees the raw rewrite (T-37-05-03 mitigated by the parameterized-binding layer).
+    /// No-op when <paramref name="resolver"/> is null or <paramref name="resolveInColumns"/>
+    /// is empty/null. Non-string values, missing columns, and empty strings are all skipped.
+    /// </summary>
+    public void ApplyLinkResolution(
+        Dictionary<string, object?> row,
+        IEnumerable<string>? resolveInColumns,
+        InternalLinkResolver? resolver)
+    {
+        if (resolver is null || resolveInColumns is null) return;
+
+        foreach (var col in resolveInColumns)
+        {
+            if (!row.TryGetValue(col, out var existing)) continue;
+            if (existing is not string s || s.Length == 0) continue;
+
+            var rewritten = resolver.ResolveInStringColumn(s);
+            if (!ReferenceEquals(rewritten, s) && rewritten != s)
+                row[col] = rewritten;
         }
     }
 
