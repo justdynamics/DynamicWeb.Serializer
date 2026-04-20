@@ -197,7 +197,9 @@ public static class ConfigLoader
         XmlColumns = raw.XmlColumns ?? new List<string>(),
         ExcludeFields = raw.ExcludeFields ?? new List<string>(),
         ExcludeXmlElements = raw.ExcludeXmlElements ?? new List<string>(),
-        ExcludeAreaColumns = raw.ExcludeAreaColumns ?? new List<string>()
+        ExcludeAreaColumns = raw.ExcludeAreaColumns ?? new List<string>(),
+        Where = string.IsNullOrWhiteSpace(raw.Where) ? null : raw.Where,
+        IncludeFields = raw.IncludeFields ?? new List<string>()
     };
 
     // -------------------------------------------------------------------------
@@ -248,5 +250,9 @@ public static class ConfigLoader
         public List<string>? ExcludeFields { get; set; }
         public List<string>? ExcludeXmlElements { get; set; }
         public List<string>? ExcludeAreaColumns { get; set; }
+
+        // Phase 37-03: SqlTable WHERE clause + runtime-exclude opt-in.
+        public string? Where { get; set; }
+        public List<string>? IncludeFields { get; set; }
     }
 }

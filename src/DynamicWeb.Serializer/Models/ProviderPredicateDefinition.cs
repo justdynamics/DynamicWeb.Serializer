@@ -57,4 +57,20 @@ public record ProviderPredicateDefinition
 
     /// <summary>Area SQL table column names to exclude from serialization. Content predicates only.</summary>
     public List<string> ExcludeAreaColumns { get; init; } = new();
+
+    /// <summary>
+    /// Optional WHERE clause for SqlTable predicates, applied at serialize time to filter rows
+    /// (FILTER-01 / Phase 37-03). Validated at config-load via SqlWhereClauseValidator — every
+    /// identifier must match INFORMATION_SCHEMA.COLUMNS of <see cref="Table"/>; banned tokens
+    /// (<c>;</c>, <c>--</c>, <c>/*</c>, <c>EXEC</c>, <c>xp_</c>, etc.) are rejected.
+    /// Example: <c>AccessUserType = 2 AND AccessUserUserName IN ('Admin','Editors')</c>.
+    /// </summary>
+    public string? Where { get; init; }
+
+    /// <summary>
+    /// Optional per-predicate column opt-in (Phase 37-03, RUNTIME-COLS-01): columns listed here
+    /// are KEPT in serialization output even if they would otherwise be auto-excluded by
+    /// <see cref="Configuration.RuntimeExcludes"/>. Case-insensitive.
+    /// </summary>
+    public List<string> IncludeFields { get; init; } = new();
 }
