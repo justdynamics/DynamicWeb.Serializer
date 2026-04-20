@@ -84,4 +84,13 @@ public record ProviderPredicateDefinition
     /// resolution for this table's columns.
     /// </summary>
     public List<string> ResolveLinksInColumns { get; init; } = new();
+
+    /// <summary>
+    /// Per-predicate Baseline link-sweep bypass (2026-04-20 follow-up to Phase 37-05 LINK-02).
+    /// Page IDs whose unresolvable references should be logged as warnings rather than raised
+    /// as fatal errors by the serialize-time <see cref="Infrastructure.BaselineLinkSweeper"/>.
+    /// Content predicates only. Use for known-broken source data that cannot be cleaned upstream
+    /// in time; any unresolvable NOT in this list still fails serialize.
+    /// </summary>
+    public List<int> AcknowledgedOrphanPageIds { get; init; } = new();
 }

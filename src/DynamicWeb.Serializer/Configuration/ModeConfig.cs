@@ -34,4 +34,14 @@ public record ModeConfig
     /// applied by <see cref="SerializerConfiguration.Seed"/> and by <see cref="ConfigLoader"/>.
     /// </summary>
     public ConflictStrategy ConflictStrategy { get; init; } = ConflictStrategy.SourceWins;
+
+    /// <summary>
+    /// Phase 37-05 LINK-02 pass-1 bypass (D-22 escape hatch, added 2026-04-20 follow-up):
+    /// page IDs whose unresolvable references the baseline link sweep should log as warnings
+    /// rather than raise as fatal errors. Use only for known-broken source data that cannot
+    /// be cleaned upstream in time for a deploy. Each listed ID is accepted as an acknowledged
+    /// orphan — any OTHER unresolvable reference still fails serialize. Empty list preserves
+    /// strict-by-default behavior.
+    /// </summary>
+    public List<int> AcknowledgedOrphanPageIds { get; init; } = new();
 }

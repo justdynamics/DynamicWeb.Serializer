@@ -80,19 +80,44 @@ public class ContentSerializer
         // Phase 37-05 / LINK-02 pass 1 (D-22): sweep the in-memory tree for Default.aspx?ID=N
         // references that don't resolve to a SerializedPage.SourcePageId in the same tree.
         // Orphan references are fatal — a baseline with broken links fails at runtime on the
-        // target environment and cannot be committed to git.
+        // target environment and cannot be committed to git. 2026-04-20 follow-up: per-mode
+        // AcknowledgedOrphanPageIds allows known-broken source data (that cannot be cleaned
+        // upstream in time) to pass as warnings. Any unresolvable NOT in the acknowledged set
+        // still fails.
         var sweeper = new BaselineLinkSweeper();
         var sweepResult = sweeper.Sweep(allSerializedPages);
         Log($"Link sweep: {sweepResult.ResolvedCount} internal link(s) verified, " +
-            $"{sweepResult.Unresolved.Count} unresolvable");
+            $"{sweepResult.Unresolved.Count} unresolvable " +
+            $"(ack deploy={_configuration.Deploy.AcknowledgedOrphanPageIds.Count}, seed={_configuration.Seed.AcknowledgedOrphanPageIds.Count})");
         if (sweepResult.Unresolved.Count > 0)
         {
-            var lines = sweepResult.Unresolved.Select(u =>
-                $"  - ID {u.UnresolvablePageId} in {u.SourcePageIdentifier} / {u.FieldName}: {u.Context}");
-            throw new InvalidOperationException(
-                $"Baseline link sweep found {sweepResult.Unresolved.Count} unresolvable reference(s):\n" +
-                string.Join("\n", lines) +
-                "\nFix the source baseline: include the referenced pages in a predicate path, or remove the references.");
+            var acknowledged = new HashSet<int>(
+                _configuration.Deploy.AcknowledgedOrphanPageIds
+                    .Concat(_configuration.Seed.AcknowledgedOrphanPageIds));
+            var (accepted, fatal) = sweepResult.Unresolved
+                .GroupBy(u => acknowledged.Contains(u.UnresolvablePageId))
+                .Aggregate(
+                    (Accepted: new List<UnresolvedLink>(), Fatal: new List<UnresolvedLink>()),
+                    (acc, grp) =>
+                    {
+                        if (grp.Key) acc.Accepted.AddRange(grp);
+                        else acc.Fatal.AddRange(grp);
+                        return acc;
+                    });
+
+            foreach (var u in accepted)
+                Log($"WARNING: acknowledged orphan ID {u.UnresolvablePageId} in {u.SourcePageIdentifier} / {u.FieldName}: {u.Context}");
+
+            if (fatal.Count > 0)
+            {
+                var lines = fatal.Select(u =>
+                    $"  - ID {u.UnresolvablePageId} in {u.SourcePageIdentifier} / {u.FieldName}: {u.Context}");
+                throw new InvalidOperationException(
+                    $"Baseline link sweep found {fatal.Count} unresolvable reference(s):\n" +
+                    string.Join("\n", lines) +
+                    "\nFix the source baseline: include the referenced pages in a predicate path, or remove the references. " +
+                    "Known-broken source refs may be listed under AcknowledgedOrphanPageIds in the mode config.");
+            }
         }
 
         Log($"Serialization complete: {totalPages} pages, {totalGridRows} grid rows, {totalParagraphs} paragraphs serialized.");

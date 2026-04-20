@@ -49,7 +49,8 @@ public static class ConfigWriter
         ConflictStrategy = mode.ConflictStrategy,
         Predicates = mode.Predicates,
         ExcludeFieldsByItemType = mode.ExcludeFieldsByItemType.Count > 0 ? mode.ExcludeFieldsByItemType : null,
-        ExcludeXmlElementsByType = mode.ExcludeXmlElementsByType.Count > 0 ? mode.ExcludeXmlElementsByType : null
+        ExcludeXmlElementsByType = mode.ExcludeXmlElementsByType.Count > 0 ? mode.ExcludeXmlElementsByType : null,
+        AcknowledgedOrphanPageIds = mode.AcknowledgedOrphanPageIds.Count > 0 ? mode.AcknowledgedOrphanPageIds : null
     };
 
     private sealed class PersistedConfiguration
@@ -72,5 +73,6 @@ public static class ConfigWriter
         public List<ProviderPredicateDefinition> Predicates { get; init; } = new();
         public Dictionary<string, List<string>>? ExcludeFieldsByItemType { get; init; }
         public Dictionary<string, List<string>>? ExcludeXmlElementsByType { get; init; }
+        public List<int>? AcknowledgedOrphanPageIds { get; init; }
     }
 }

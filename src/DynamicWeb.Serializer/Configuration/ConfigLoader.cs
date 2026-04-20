@@ -374,7 +374,8 @@ public static class ConfigLoader
             ConflictStrategy = ParseConflictStrategy(raw.ConflictStrategy, defaultStrategy),
             Predicates = raw.Predicates?.Select(BuildPredicate).ToList() ?? new List<ProviderPredicateDefinition>(),
             ExcludeFieldsByItemType = raw.ExcludeFieldsByItemType ?? new Dictionary<string, List<string>>(),
-            ExcludeXmlElementsByType = raw.ExcludeXmlElementsByType ?? new Dictionary<string, List<string>>()
+            ExcludeXmlElementsByType = raw.ExcludeXmlElementsByType ?? new Dictionary<string, List<string>>(),
+            AcknowledgedOrphanPageIds = raw.AcknowledgedOrphanPageIds ?? new List<int>()
         };
     }
 
@@ -409,7 +410,8 @@ public static class ConfigLoader
         ExcludeAreaColumns = raw.ExcludeAreaColumns ?? new List<string>(),
         Where = string.IsNullOrWhiteSpace(raw.Where) ? null : raw.Where,
         IncludeFields = raw.IncludeFields ?? new List<string>(),
-        ResolveLinksInColumns = raw.ResolveLinksInColumns ?? new List<string>()
+        ResolveLinksInColumns = raw.ResolveLinksInColumns ?? new List<string>(),
+        AcknowledgedOrphanPageIds = raw.AcknowledgedOrphanPageIds ?? new List<int>()
     };
 
     // -------------------------------------------------------------------------
@@ -444,6 +446,7 @@ public static class ConfigLoader
         public List<RawPredicateDefinition>? Predicates { get; set; }
         public Dictionary<string, List<string>>? ExcludeFieldsByItemType { get; set; }
         public Dictionary<string, List<string>>? ExcludeXmlElementsByType { get; set; }
+        public List<int>? AcknowledgedOrphanPageIds { get; set; }
     }
 
     private sealed class RawPredicateDefinition
@@ -471,5 +474,6 @@ public static class ConfigLoader
         // Phase 37-05 / LINK-02 pass 2: SqlTable column opt-in for at-deserialize
         // Default.aspx?ID=N link rewriting (see ProviderPredicateDefinition).
         public List<string>? ResolveLinksInColumns { get; set; }
+        public List<int>? AcknowledgedOrphanPageIds { get; set; }
     }
 }

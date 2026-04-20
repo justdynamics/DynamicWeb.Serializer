@@ -221,10 +221,16 @@ public class ContentProvider : ISerializationProvider
     /// </summary>
     private static SerializerConfiguration BuildSerializerConfiguration(ProviderPredicateDefinition predicate, string outputDirectory)
     {
+        // Propagate per-predicate AcknowledgedOrphanPageIds into the inner config's Deploy
+        // mode so ContentSerializer's baseline link sweep can honor it (2026-04-20 follow-up).
         return new SerializerConfiguration
         {
             OutputDirectory = outputDirectory,
-            Predicates = new List<ProviderPredicateDefinition> { predicate }
+            Deploy = new ModeConfig
+            {
+                Predicates = new List<ProviderPredicateDefinition> { predicate },
+                AcknowledgedOrphanPageIds = predicate.AcknowledgedOrphanPageIds
+            }
         };
     }
 }
