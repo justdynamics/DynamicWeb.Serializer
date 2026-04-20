@@ -46,7 +46,8 @@ public class SqlTableProvider : SerializationProviderBase
         var rows = _tableReader.ReadAllRows(metadata.TableName).ToList();
         Log($"Read {rows.Count} rows from {metadata.TableName}", log);
 
-        _fileStore.WriteMeta(outputRoot, metadata.TableName, metadata);
+        var writtenFiles = new List<string>();
+        _fileStore.WriteMeta(outputRoot, metadata.TableName, metadata, writtenFiles);
 
         var xmlColumns = new HashSet<string>(predicate.XmlColumns, StringComparer.OrdinalIgnoreCase);
         var excludeFields = predicate.ExcludeFields.Count > 0
@@ -88,7 +89,7 @@ public class SqlTableProvider : SerializationProviderBase
             }
 
             var identity = _tableReader.GenerateRowIdentity(row, metadata);
-            _fileStore.WriteRow(outputRoot, metadata.TableName, identity, row, usedNames);
+            _fileStore.WriteRow(outputRoot, metadata.TableName, identity, row, usedNames, writtenFiles);
         }
 
         Log($"Serialized {rows.Count} rows to _sql/{metadata.TableName}/", log);
@@ -96,7 +97,8 @@ public class SqlTableProvider : SerializationProviderBase
         return new SerializeResult
         {
             RowsSerialized = rows.Count,
-            TableName = metadata.TableName
+            TableName = metadata.TableName,
+            WrittenFiles = writtenFiles
         };
     }
 

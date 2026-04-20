@@ -30,10 +30,13 @@ public class FlatFileStore
     }
 
     /// <summary>
-    /// Write a single row as a YAML file to _sql/{tableName}/{rowIdentity}.yml.
+    /// Write a single row as a YAML file to _sql/{tableName}/{rowIdentity}.yml. When a non-null
+    /// <paramref name="writtenFiles"/> list is supplied, the resolved absolute path is appended
+    /// (Phase 37-01 Task 2 — fuels per-mode manifest cleanup).
     /// </summary>
     public void WriteRow(string outputRoot, string tableName, string rowIdentity,
-        Dictionary<string, object?> rowData, HashSet<string>? usedNames = null)
+        Dictionary<string, object?> rowData, HashSet<string>? usedNames = null,
+        List<string>? writtenFiles = null)
     {
         var directory = Path.Combine(outputRoot, "_sql", tableName);
         Directory.CreateDirectory(directory);
@@ -44,12 +47,16 @@ public class FlatFileStore
 
         var yaml = _serializer.Serialize(rowData);
         File.WriteAllText(filePath, yaml, Encoding.UTF8);
+
+        writtenFiles?.Add(Path.GetFullPath(filePath));
     }
 
     /// <summary>
-    /// Write table metadata as _meta.yml.
+    /// Write table metadata as _meta.yml. Appends the path to <paramref name="writtenFiles"/>
+    /// when supplied.
     /// </summary>
-    public void WriteMeta(string outputRoot, string tableName, TableMetadata metadata)
+    public void WriteMeta(string outputRoot, string tableName, TableMetadata metadata,
+        List<string>? writtenFiles = null)
     {
         var directory = Path.Combine(outputRoot, "_sql", tableName);
         Directory.CreateDirectory(directory);
@@ -57,6 +64,8 @@ public class FlatFileStore
         var filePath = Path.Combine(directory, "_meta.yml");
         var yaml = _serializer.Serialize(metadata);
         File.WriteAllText(filePath, yaml, Encoding.UTF8);
+
+        writtenFiles?.Add(Path.GetFullPath(filePath));
     }
 
     /// <summary>

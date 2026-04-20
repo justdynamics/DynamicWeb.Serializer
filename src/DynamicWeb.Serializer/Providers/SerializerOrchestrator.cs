@@ -1,4 +1,5 @@
 using DynamicWeb.Serializer.Configuration;
+using DynamicWeb.Serializer.Infrastructure;
 using DynamicWeb.Serializer.Models;
 using DynamicWeb.Serializer.Providers.SqlTable;
 
@@ -40,7 +41,7 @@ public class SerializerOrchestrator
         string outputRoot,
         Action<string>? log = null,
         string? providerFilter = null) =>
-        SerializeAll(predicates, outputRoot, DeploymentMode.Deploy, ConflictStrategy.SourceWins, log, providerFilter);
+        SerializeAll(predicates, outputRoot, DeploymentMode.Deploy, ConflictStrategy.SourceWins, log, providerFilter, manifestWriter: null, manifestCleaner: null);
 
     [Obsolete("Pass DeploymentMode and ConflictStrategy explicitly — see Phase 37-01.")]
     public OrchestratorResult DeserializeAll(
@@ -59,6 +60,10 @@ public class SerializerOrchestrator
     /// Serialize all predicates, scoped to the given mode. The mode/strategy pair is logged at the
     /// start of the run. Strategy is currently unused on the serialize path (it only affects
     /// deserialize conflict resolution), but is threaded through for symmetry with DeserializeAll.
+    /// When <paramref name="manifestWriter"/> / <paramref name="manifestCleaner"/> are supplied,
+    /// the orchestrator emits <c>{mode}-manifest.json</c> and deletes stale files under
+    /// <paramref name="outputRoot"/> after the run (Phase 37-01 Task 2). Exceptions bubble out
+    /// BEFORE the manifest step, so partial/failed runs leave stale files intact for debugging.
     /// </summary>
     public OrchestratorResult SerializeAll(
         List<ProviderPredicateDefinition> predicates,
@@ -66,7 +71,9 @@ public class SerializerOrchestrator
         DeploymentMode mode,
         ConflictStrategy strategy,
         Action<string>? log = null,
-        string? providerFilter = null)
+        string? providerFilter = null,
+        ManifestWriter? manifestWriter = null,
+        ManifestCleaner? manifestCleaner = null)
     {
         log?.Invoke($"=== Mode: {mode} | Strategy: {strategy} ===");
 
@@ -100,7 +107,17 @@ public class SerializerOrchestrator
             results.Add(result);
         }
 
-        return new OrchestratorResult { SerializeResults = results, Errors = errors };
+        int stale = 0;
+        if (manifestWriter != null || manifestCleaner != null)
+        {
+            var modeName = mode.ToString().ToLowerInvariant();
+            var allWritten = results.SelectMany(r => r.WrittenFiles).ToList();
+            manifestWriter?.Write(outputRoot, modeName, allWritten);
+            if (manifestCleaner != null)
+                stale = manifestCleaner.CleanStale(outputRoot, modeName, allWritten, log);
+        }
+
+        return new OrchestratorResult { SerializeResults = results, Errors = errors, StaleFilesDeleted = stale };
     }
 
     /// <summary>
@@ -236,6 +253,12 @@ public record OrchestratorResult
     public List<SerializeResult> SerializeResults { get; init; } = new();
     public List<ProviderDeserializeResult> DeserializeResults { get; init; } = new();
     public List<string> Errors { get; init; } = new();
+
+    /// <summary>
+    /// Stale files deleted by <see cref="ManifestCleaner"/> during post-serialize cleanup
+    /// (Phase 37-01 Task 2). Zero when no cleaner was wired or no stale files were found.
+    /// </summary>
+    public int StaleFilesDeleted { get; init; }
 
     public bool HasErrors =>
         Errors.Count > 0 ||

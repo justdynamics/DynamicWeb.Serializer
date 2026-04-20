@@ -63,15 +63,22 @@ public class ContentProvider : ISerializationProvider
             var serializer = new ContentSerializer(config, log: log);
             serializer.Serialize();
 
-            // Count serialized files for the result
-            var fileCount = Directory.Exists(contentDir)
-                ? Directory.GetFiles(contentDir, "*.yml", SearchOption.AllDirectories).Length
-                : 0;
+            // Track written files for the per-mode manifest (Phase 37-01 Task 2).
+            // ContentSerializer writes its tree exclusively under contentDir/_content — enumerating
+            // *.yml after the run captures everything emitted by the current predicate run. The
+            // manifest is per-mode so emissions from parallel predicates into the same mode folder
+            // all aggregate up into the OrchestratorResult pool.
+            var writtenFiles = Directory.Exists(contentDir)
+                ? Directory.GetFiles(contentDir, "*.yml", SearchOption.AllDirectories)
+                    .Select(Path.GetFullPath)
+                    .ToList()
+                : new List<string>();
 
             return new SerializeResult
             {
-                RowsSerialized = fileCount,
-                TableName = "Content"
+                RowsSerialized = writtenFiles.Count,
+                TableName = "Content",
+                WrittenFiles = writtenFiles
             };
         }
         catch (Exception ex)
