@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using DynamicWeb.Serializer.Infrastructure;
 using DynamicWeb.Serializer.Models;
 
 namespace DynamicWeb.Serializer.Configuration;
@@ -58,7 +59,52 @@ public static class ConfigLoader
         if (identifierValidator != null)
             ValidateIdentifiers(config, identifierValidator, new SqlWhereClauseValidator());
 
+        // Phase 37-04 / CACHE-01: every ServiceCaches entry on every predicate
+        // (Deploy + Seed) must resolve against DwCacheServiceRegistry. Unknown
+        // names would otherwise only surface mid-run as CacheInvalidator throws;
+        // we want them caught at config-load so the CI/CD pipeline fails fast.
+        ValidateServiceCaches(config);
+
         return config;
+    }
+
+    /// <summary>
+    /// Phase 37-04: resolve every <c>serviceCaches</c> entry against
+    /// <see cref="DwCacheServiceRegistry"/>. Errors accumulate and throw as a
+    /// single aggregated <see cref="InvalidOperationException"/> listing the
+    /// unknown name, the owning predicate, and the set of supported names.
+    /// </summary>
+    private static void ValidateServiceCaches(SerializerConfiguration config)
+    {
+        var errors = new List<string>();
+
+        void Check(ProviderPredicateDefinition p, string scope)
+        {
+            if (p.ServiceCaches.Count == 0) return;
+            foreach (var name in p.ServiceCaches)
+            {
+                if (DwCacheServiceRegistry.Resolve(name) is null)
+                    errors.Add($"{scope} '{p.Name}': cache service '{name}' is not in DwCacheServiceRegistry.");
+            }
+        }
+
+        foreach (var p in config.Deploy.Predicates) Check(p, "deploy.predicates");
+        foreach (var p in config.Seed.Predicates) Check(p, "seed.predicates");
+
+        if (errors.Count == 0) return;
+
+        var supported = DwCacheServiceRegistry.AllSupportedNames;
+        var previewCount = Math.Min(20, supported.Count);
+        var preview = string.Join(", ", supported.Take(previewCount));
+        var suffix = supported.Count > previewCount
+            ? $" (+{supported.Count - previewCount} more)"
+            : "";
+
+        throw new InvalidOperationException(
+            "Configuration is invalid — ServiceCaches validation failed:\n  - " +
+            string.Join("\n  - ", errors) +
+            $"\nSupported ({supported.Count} total): {preview}{suffix}.\n" +
+            "See DwCacheServiceRegistry.cs — add new entries by PR.");
     }
 
     /// <summary>

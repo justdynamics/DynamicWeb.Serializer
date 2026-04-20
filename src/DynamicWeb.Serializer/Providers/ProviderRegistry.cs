@@ -1,120 +1,8 @@
-using System.Reflection;
 using DynamicWeb.Serializer.Infrastructure;
 using DynamicWeb.Serializer.Providers.Content;
 using DynamicWeb.Serializer.Providers.SqlTable;
 
 namespace DynamicWeb.Serializer.Providers;
-
-/// <summary>
-/// Production ICacheResolver using DW AddInManager to resolve service caches.
-/// Replicates the pattern from DW10 LocalDeploymentProvider.ImportPackage:
-///   AddInManager.GetTypeUnvalidated{ICacheStorage}(name) + GetInstance{ICacheStorage}(name).ClearCache()
-/// Uses reflection to avoid compile-time dependency on AddInManager static methods,
-/// which allows this code to compile and be tested outside a full DW runtime.
-/// </summary>
-public class DwCacheResolver : ICacheResolver
-{
-    private static Type? _addInManagerType;
-    private static MethodInfo? _getTypeMethod;
-    private static MethodInfo? _getInstanceMethod;
-
-    /// <summary>
-    /// Lazily locate the AddInManager type and its generic methods.
-    /// </summary>
-    private static bool EnsureAddInManager()
-    {
-        if (_addInManagerType != null) return true;
-
-        _addInManagerType = AppDomain.CurrentDomain.GetAssemblies()
-            .Select(a =>
-            {
-                try { return a.GetType("Dynamicweb.Extensibility.AddInManager"); }
-                catch { return null; }
-            })
-            .FirstOrDefault(t => t != null);
-
-        if (_addInManagerType is null) return false;
-
-        // Find the ICacheStorage type
-        var cacheStorageType = AppDomain.CurrentDomain.GetAssemblies()
-            .Select(a =>
-            {
-                try { return a.GetType("Dynamicweb.Caching.ICacheStorage"); }
-                catch { return null; }
-            })
-            .FirstOrDefault(t => t != null);
-
-        if (cacheStorageType is null) return false;
-
-        // Resolve AddInManager.GetTypeUnvalidated<ICacheStorage>(string)
-        var getTypeGeneric = _addInManagerType.GetMethods(BindingFlags.Static | BindingFlags.Public)
-            .FirstOrDefault(m => m.Name == "GetTypeUnvalidated" && m.IsGenericMethodDefinition
-                                 && m.GetParameters().Length == 1
-                                 && m.GetParameters()[0].ParameterType == typeof(string));
-        _getTypeMethod = getTypeGeneric?.MakeGenericMethod(cacheStorageType);
-
-        // Resolve AddInManager.GetInstance<ICacheStorage>(string)
-        var getInstanceGeneric = _addInManagerType.GetMethods(BindingFlags.Static | BindingFlags.Public)
-            .FirstOrDefault(m => m.Name == "GetInstance" && m.IsGenericMethodDefinition
-                                 && m.GetParameters().Length == 1
-                                 && m.GetParameters()[0].ParameterType == typeof(string));
-        _getInstanceMethod = getInstanceGeneric?.MakeGenericMethod(cacheStorageType);
-
-        return _getTypeMethod != null && _getInstanceMethod != null;
-    }
-
-    public Type? GetCacheType(string serviceCacheName)
-    {
-        try
-        {
-            if (!EnsureAddInManager() || _getTypeMethod is null) return null;
-            return _getTypeMethod.Invoke(null, new object[] { serviceCacheName }) as Type;
-        }
-        catch
-        {
-            return null;
-        }
-    }
-
-    public ICacheInstance? GetCacheInstance(string serviceCacheName)
-    {
-        try
-        {
-            if (!EnsureAddInManager() || _getInstanceMethod is null) return null;
-            var instance = _getInstanceMethod.Invoke(null, new object[] { serviceCacheName });
-            if (instance is null) return null;
-
-            // Call ClearCache() via interface or reflection
-            var clearMethod = instance.GetType().GetMethod("ClearCache", BindingFlags.Instance | BindingFlags.Public);
-            if (clearMethod is null) return null;
-
-            return new DwCacheInstance(instance, clearMethod);
-        }
-        catch
-        {
-            return null;
-        }
-    }
-}
-
-/// <summary>
-/// Wraps a DW ICacheStorage instance to implement our testable ICacheInstance interface.
-/// Uses reflection to call ClearCache() to avoid compile-time coupling.
-/// </summary>
-public class DwCacheInstance : ICacheInstance
-{
-    private readonly object _instance;
-    private readonly MethodInfo _clearMethod;
-
-    public DwCacheInstance(object instance, MethodInfo clearMethod)
-    {
-        _instance = instance;
-        _clearMethod = clearMethod;
-    }
-
-    public void ClearCache()
-        => _clearMethod.Invoke(_instance, Array.Empty<object>());
-}
 
 /// <summary>
 /// Registry mapping provider type strings to provider instances.
@@ -177,7 +65,7 @@ public class ProviderRegistry
         var registry = CreateDefault(filesRoot);
         var sqlExecutor = new DwSqlExecutor();
         var fkResolver = new FkDependencyResolver(sqlExecutor);
-        var cacheInvalidator = new CacheInvalidator(new DwCacheResolver());
+        var cacheInvalidator = new CacheInvalidator();
         var ecomSchemaSync = new EcomGroupFieldSchemaSync(sqlExecutor);
         return new SerializerOrchestrator(registry, fkResolver, cacheInvalidator, ecomSchemaSync);
     }

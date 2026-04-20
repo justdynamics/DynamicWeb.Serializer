@@ -1,5 +1,6 @@
 using System.Data;
 using DynamicWeb.Serializer.Configuration;
+using DynamicWeb.Serializer.Infrastructure;
 using DynamicWeb.Serializer.Models;
 using DynamicWeb.Serializer.Providers;
 using DynamicWeb.Serializer.Providers.SqlTable;
@@ -419,12 +420,14 @@ public class SerializerOrchestratorTests
         sqlProvider.Setup(p => p.Deserialize(It.IsAny<ProviderPredicateDefinition>(), It.IsAny<string>(), It.IsAny<Action<string>?>(), It.IsAny<bool>(), It.IsAny<ConflictStrategy>()))
             .Returns(new ProviderDeserializeResult { Created = 1, TableName = "Test" });
 
-        var mockCacheResolver = new Mock<ICacheResolver>();
-        var mockCacheInstance = new Mock<ICacheInstance>();
-        mockCacheResolver.Setup(r => r.GetCacheType(It.IsAny<string>())).Returns(typeof(object));
-        mockCacheResolver.Setup(r => r.GetCacheInstance(It.IsAny<string>())).Returns(mockCacheInstance.Object);
+        // Phase 37-04: CacheInvalidator resolves via DwCacheServiceRegistry-shaped
+        // entries. Use fake typed entries so we can count Invoke() calls without
+        // triggering real DW ClearCache() side-effects on the typed service singletons.
+        var invokeCount = 0;
+        DwCacheServiceRegistry.CacheClearEntry MakeFake(string n) =>
+            new(n, $"Test.{n}", () => invokeCount++);
 
-        var cacheInvalidator = new CacheInvalidator(mockCacheResolver.Object);
+        var cacheInvalidator = new CacheInvalidator(name => MakeFake(name));
 
         var registry = new ProviderRegistry();
         registry.Register(sqlProvider.Object);
@@ -433,7 +436,7 @@ public class SerializerOrchestratorTests
         orchestrator.DeserializeAll(new List<ProviderPredicateDefinition> { pred1, pred2 }, "/input");
 
         // CacheA, CacheB from pred1, CacheC from pred2 = 3 cache clears
-        mockCacheInstance.Verify(c => c.ClearCache(), Times.Exactly(3));
+        Assert.Equal(3, invokeCount);
     }
 
     [Fact]
@@ -455,12 +458,9 @@ public class SerializerOrchestratorTests
         sqlProvider.Setup(p => p.Deserialize(It.IsAny<ProviderPredicateDefinition>(), It.IsAny<string>(), It.IsAny<Action<string>?>(), It.IsAny<bool>(), It.IsAny<ConflictStrategy>()))
             .Returns(new ProviderDeserializeResult { Created = 1, TableName = "EcomPayments" });
 
-        var mockCacheResolver = new Mock<ICacheResolver>();
-        var mockCacheInstance = new Mock<ICacheInstance>();
-        mockCacheResolver.Setup(r => r.GetCacheType(It.IsAny<string>())).Returns(typeof(object));
-        mockCacheResolver.Setup(r => r.GetCacheInstance(It.IsAny<string>())).Returns(mockCacheInstance.Object);
-
-        var cacheInvalidator = new CacheInvalidator(mockCacheResolver.Object);
+        var invokeCount = 0;
+        var cacheInvalidator = new CacheInvalidator(name =>
+            new DwCacheServiceRegistry.CacheClearEntry(name, $"Test.{name}", () => invokeCount++));
 
         var registry = new ProviderRegistry();
         registry.Register(sqlProvider.Object);
@@ -469,7 +469,7 @@ public class SerializerOrchestratorTests
         orchestrator.DeserializeAll(new List<ProviderPredicateDefinition> { pred }, "/input", isDryRun: true);
 
         // No cache invalidation during dry-run
-        mockCacheInstance.Verify(c => c.ClearCache(), Times.Never);
+        Assert.Equal(0, invokeCount);
     }
 
     [Fact]
@@ -523,9 +523,12 @@ public class SerializerOrchestratorTests
         sqlProvider.Setup(p => p.Deserialize(It.IsAny<ProviderPredicateDefinition>(), It.IsAny<string>(), It.IsAny<Action<string>?>(), It.IsAny<bool>(), It.IsAny<ConflictStrategy>()))
             .Returns(new ProviderDeserializeResult { Created = 1, TableName = "EcomOrderFlow" });
 
-        var mockCacheResolver = new Mock<ICacheResolver>();
-        var mockCacheInstance = new Mock<ICacheInstance>();
-        var cacheInvalidator = new CacheInvalidator(mockCacheResolver.Object);
+        var resolverCalls = 0;
+        var cacheInvalidator = new CacheInvalidator(_ =>
+        {
+            resolverCalls++;
+            return null;
+        });
 
         var registry = new ProviderRegistry();
         registry.Register(sqlProvider.Object);
@@ -535,8 +538,8 @@ public class SerializerOrchestratorTests
 
         Assert.Single(result.DeserializeResults);
         Assert.False(result.HasErrors);
-        // No cache calls for empty ServiceCaches
-        mockCacheResolver.Verify(r => r.GetCacheType(It.IsAny<string>()), Times.Never);
+        // Empty ServiceCaches → orchestrator short-circuits before calling the resolver.
+        Assert.Equal(0, resolverCalls);
     }
 
     // === Phase 25 Tests: Schema Sync ===
@@ -658,14 +661,13 @@ public class SerializerOrchestratorTests
         sqlProvider.Setup(p => p.Deserialize(It.IsAny<ProviderPredicateDefinition>(), It.IsAny<string>(), It.IsAny<Action<string>?>(), It.IsAny<bool>(), It.IsAny<ConflictStrategy>()))
             .Returns(new ProviderDeserializeResult { Created = 1, TableName = "Test" });
 
-        // CacheInvalidator that throws on "BadCache"
-        var mockCacheResolver = new Mock<ICacheResolver>();
-        mockCacheResolver.Setup(r => r.GetCacheType("BadCache")).Throws(new Exception("Cache resolve failed"));
-        var goodCacheInstance = new Mock<ICacheInstance>();
-        mockCacheResolver.Setup(r => r.GetCacheType("GoodCache")).Returns(typeof(object));
-        mockCacheResolver.Setup(r => r.GetCacheInstance("GoodCache")).Returns(goodCacheInstance.Object);
-
-        var cacheInvalidator = new CacheInvalidator(mockCacheResolver.Object);
+        // Phase 37-04: CacheInvalidator that throws on "BadCache" (resolver returns null → throw)
+        // but resolves "GoodCache" to a test entry whose Invoke tracks that it ran.
+        var goodInvoked = 0;
+        var cacheInvalidator = new CacheInvalidator(name =>
+            name.Equals("GoodCache", StringComparison.OrdinalIgnoreCase)
+                ? new DwCacheServiceRegistry.CacheClearEntry("GoodCache", "Test.GoodCache", () => goodInvoked++)
+                : null);
 
         var registry = new ProviderRegistry();
         registry.Register(sqlProvider.Object);
@@ -679,6 +681,6 @@ public class SerializerOrchestratorTests
         // Cache failure was logged
         Assert.Contains(logs, l => l.Contains("WARNING") && l.Contains("Cache invalidation failed"));
         // Good cache was still cleared
-        goodCacheInstance.Verify(c => c.ClearCache(), Times.Once);
+        Assert.Equal(1, goodInvoked);
     }
 }

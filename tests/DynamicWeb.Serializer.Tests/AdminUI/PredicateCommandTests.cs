@@ -217,7 +217,10 @@ public class PredicateCommandTests : IDisposable
                 Table = "EcomOrderFlow",
                 NameColumn = "OrderFlowName",
                 CompareColumns = "",
-                ServiceCaches = "Dynamicweb.Ecommerce.Orders.OrderFlowService\nDynamicweb.Ecommerce.Orders.OrderStateService"
+                // Phase 37-04 CACHE-01: cache names must resolve against DwCacheServiceRegistry.
+                // Use two registered entries (order-flows aren't a real DW cache — picked payment/
+                // shipping to verify the round-trip without introducing a new registry entry).
+                ServiceCaches = "Dynamicweb.Ecommerce.Orders.PaymentService\nDynamicweb.Ecommerce.Orders.ShippingService"
             }
         };
 
@@ -231,8 +234,8 @@ public class PredicateCommandTests : IDisposable
         Assert.Equal("EcomOrderFlow", pred.Table);
         Assert.Equal("OrderFlowName", pred.NameColumn);
         Assert.Equal(2, pred.ServiceCaches.Count);
-        Assert.Equal("Dynamicweb.Ecommerce.Orders.OrderFlowService", pred.ServiceCaches[0]);
-        Assert.Equal("Dynamicweb.Ecommerce.Orders.OrderStateService", pred.ServiceCaches[1]);
+        Assert.Equal("Dynamicweb.Ecommerce.Orders.PaymentService", pred.ServiceCaches[0]);
+        Assert.Equal("Dynamicweb.Ecommerce.Orders.ShippingService", pred.ServiceCaches[1]);
     }
 
     [Fact]

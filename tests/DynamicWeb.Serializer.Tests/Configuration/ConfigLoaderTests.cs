@@ -1006,4 +1006,130 @@ public class ConfigLoaderTests : IDisposable
         Assert.NotNull(pred.IncludeFields);
         Assert.Empty(pred.IncludeFields);
     }
+
+    // -------------------------------------------------------------------------
+    // Phase 37-04 CACHE-01: ServiceCaches validation against DwCacheServiceRegistry
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    [Trait("Category", "Phase37-04")]
+    public void Load_UnknownServiceCache_ThrowsWithSupportedList()
+    {
+        var json = """
+            {
+              "outputDirectory": "/serialization",
+              "deploy": {
+                "predicates": [
+                  {
+                    "name": "Payments",
+                    "providerType": "SqlTable",
+                    "table": "EcomPayments",
+                    "serviceCaches": ["Dynamicweb.Ecommerce.Orders.NotARealService"]
+                  }
+                ]
+              }
+            }
+            """;
+        var path = WriteConfigFile(json);
+
+        var ex = Assert.Throws<InvalidOperationException>(() => ConfigLoader.Load(path));
+        Assert.Contains("ServiceCaches validation failed", ex.Message);
+        Assert.Contains("Dynamicweb.Ecommerce.Orders.NotARealService", ex.Message);
+        Assert.Contains("'Payments'", ex.Message);
+        Assert.Contains("Supported", ex.Message);
+    }
+
+    [Fact]
+    [Trait("Category", "Phase37-04")]
+    public void Load_KnownServiceCaches_ShortAndFullNames_Loads()
+    {
+        var json = """
+            {
+              "outputDirectory": "/serialization",
+              "deploy": {
+                "predicates": [
+                  {
+                    "name": "Payments",
+                    "providerType": "SqlTable",
+                    "table": "EcomPayments",
+                    "serviceCaches": [
+                      "PaymentService",
+                      "Dynamicweb.Ecommerce.Orders.ShippingService"
+                    ]
+                  }
+                ]
+              }
+            }
+            """;
+        var path = WriteConfigFile(json);
+
+        var config = ConfigLoader.Load(path);
+
+        Assert.Equal(2, config.Deploy.Predicates[0].ServiceCaches.Count);
+    }
+
+    [Fact]
+    [Trait("Category", "Phase37-04")]
+    public void Load_UnknownServiceCacheInBothDeployAndSeed_AggregatesErrors()
+    {
+        var json = """
+            {
+              "outputDirectory": "/serialization",
+              "deploy": {
+                "predicates": [
+                  {
+                    "name": "BadDeploy",
+                    "providerType": "SqlTable",
+                    "table": "EcomPayments",
+                    "serviceCaches": ["Nonexistent.DeployCache"]
+                  }
+                ]
+              },
+              "seed": {
+                "predicates": [
+                  {
+                    "name": "BadSeed",
+                    "providerType": "SqlTable",
+                    "table": "EcomShippings",
+                    "serviceCaches": ["Nonexistent.SeedCache"]
+                  }
+                ]
+              }
+            }
+            """;
+        var path = WriteConfigFile(json);
+
+        var ex = Assert.Throws<InvalidOperationException>(() => ConfigLoader.Load(path));
+
+        // Both predicate scopes reported in the same exception.
+        Assert.Contains("deploy.predicates 'BadDeploy'", ex.Message);
+        Assert.Contains("seed.predicates 'BadSeed'", ex.Message);
+        Assert.Contains("Nonexistent.DeployCache", ex.Message);
+        Assert.Contains("Nonexistent.SeedCache", ex.Message);
+    }
+
+    [Fact]
+    [Trait("Category", "Phase37-04")]
+    public void Load_EmptyServiceCaches_Passes()
+    {
+        var json = """
+            {
+              "outputDirectory": "/serialization",
+              "deploy": {
+                "predicates": [
+                  {
+                    "name": "Plain",
+                    "providerType": "SqlTable",
+                    "table": "EcomOrderFlow",
+                    "serviceCaches": []
+                  }
+                ]
+              }
+            }
+            """;
+        var path = WriteConfigFile(json);
+
+        var config = ConfigLoader.Load(path); // no throw
+        Assert.Empty(config.Deploy.Predicates[0].ServiceCaches);
+    }
 }

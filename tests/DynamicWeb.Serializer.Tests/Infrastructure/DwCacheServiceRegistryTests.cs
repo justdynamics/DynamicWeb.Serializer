@@ -79,13 +79,15 @@ public class DwCacheServiceRegistryTests
     }
 
     [Fact]
-    public void AllSupportedNames_ContainsAtLeast10Services()
+    public void AllSupportedNames_ContainsAtLeast9Services()
     {
-        // Planner minimum: 10 services (the Swift 2.2 baseline's complete cache name inventory).
-        // Each service has a short name + full name, so the count is >= 20.
+        // Minimum: 9 DW services (AreaService + 6 ecommerce International + 2 ecommerce Orders).
+        // Each service has a short name + full name, so the count is >= 18.
+        // TranslationLanguageService referenced in swift2.2-baseline.json was dropped because
+        // it doesn't exist in DW 10.23.9's NuGet surface — see DwCacheServiceRegistry.cs comment.
         var names = DwCacheServiceRegistry.AllSupportedNames;
-        Assert.True(names.Count >= 20,
-            $"Expected >= 20 supported names (10 services * 2 forms each), got {names.Count}");
+        Assert.True(names.Count >= 18,
+            $"Expected >= 18 supported names (9 services * 2 forms each), got {names.Count}");
     }
 
     [Fact]
@@ -93,13 +95,15 @@ public class DwCacheServiceRegistryTests
     {
         // Concrete list pulled from swift2.2-baseline.json — the registry MUST cover
         // every cache name the baseline declares or deserializer runs will fail loud.
+        // NOTE: Dynamicweb.SystemTools.TranslationLanguageService is omitted — it doesn't
+        // exist in DW 10.23.9's NuGet surface (probably removed between DW versions).
+        // See DwCacheServiceRegistry.cs for the drop rationale.
         var baselineNames = new[]
         {
             "Dynamicweb.Ecommerce.International.CountryRelationService",
             "Dynamicweb.Ecommerce.International.CountryService",
             "Dynamicweb.Ecommerce.International.CurrencyService",
             "Dynamicweb.Ecommerce.International.LanguageService",
-            "Dynamicweb.SystemTools.TranslationLanguageService",
             "Dynamicweb.Ecommerce.International.VatGroupService",
             "Dynamicweb.Ecommerce.International.VatGroupCountryRelationService",
             "Dynamicweb.Ecommerce.Orders.PaymentService",
