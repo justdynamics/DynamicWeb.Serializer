@@ -789,4 +789,72 @@ public class ConfigLoaderTests : IDisposable
         Assert.Single(reloaded.Deploy.ExcludeXmlElementsByType);
         Assert.Equal(new List<string> { "sort" }, reloaded.Deploy.ExcludeXmlElementsByType["Dynamicweb.Frontend.ContentPage"]);
     }
+
+    // -------------------------------------------------------------------------
+    // Phase 37-03: Where + IncludeFields on SqlTable predicates
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public void Load_WithWhereClause_And_IncludeFields_RoundTrips()
+    {
+        var json = """
+            {
+              "outputDirectory": "/serialization",
+              "deploy": {
+                "outputSubfolder": "deploy",
+                "conflictStrategy": "source-wins",
+                "predicates": [
+                  {
+                    "name": "AccessUser-Roles",
+                    "providerType": "SqlTable",
+                    "table": "AccessUser",
+                    "where": "AccessUserType = 2 AND AccessUserUserName IN ('Admin','Editors')",
+                    "includeFields": ["AccessUserHostingId", "AccessUserHostingName"]
+                  }
+                ]
+              }
+            }
+            """;
+        var path = WriteConfigFile(json);
+
+        var config = ConfigLoader.Load(path);
+
+        Assert.Single(config.Deploy.Predicates);
+        var pred = config.Deploy.Predicates[0];
+        Assert.Equal("AccessUser-Roles", pred.Name);
+        Assert.Equal("AccessUser", pred.Table);
+        Assert.Equal("AccessUserType = 2 AND AccessUserUserName IN ('Admin','Editors')", pred.Where);
+        Assert.Equal(2, pred.IncludeFields.Count);
+        Assert.Equal("AccessUserHostingId", pred.IncludeFields[0]);
+        Assert.Equal("AccessUserHostingName", pred.IncludeFields[1]);
+    }
+
+    [Fact]
+    public void Load_WithoutWhereOrIncludeFields_DefaultsNullAndEmpty()
+    {
+        var json = """
+            {
+              "outputDirectory": "/serialization",
+              "deploy": {
+                "outputSubfolder": "deploy",
+                "conflictStrategy": "source-wins",
+                "predicates": [
+                  {
+                    "name": "Plain",
+                    "providerType": "SqlTable",
+                    "table": "AccessUser"
+                  }
+                ]
+              }
+            }
+            """;
+        var path = WriteConfigFile(json);
+
+        var config = ConfigLoader.Load(path);
+
+        var pred = config.Deploy.Predicates[0];
+        Assert.Null(pred.Where);
+        Assert.NotNull(pred.IncludeFields);
+        Assert.Empty(pred.IncludeFields);
+    }
 }
