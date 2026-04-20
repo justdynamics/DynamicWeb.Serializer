@@ -46,7 +46,35 @@ public static class ConfigLoader
     /// </summary>
     internal static readonly AsyncLocal<Action?> _testDefaultValidatorConstructedCallback = new();
 
-    public static SerializerConfiguration Load(string filePath) => Load(filePath, identifierValidator: null);
+    /// <summary>
+    /// Load a serializer config with default identifier validation enabled. Phase 37-06
+    /// gap closure: this overload used to pass <c>null</c> for the validator, silently
+    /// skipping the SQL-identifier allowlist gate. It now constructs a default
+    /// <see cref="SqlIdentifierValidator"/> (or uses <see cref="TestOverrideIdentifierValidator"/>
+    /// when tests install one) and delegates to the 2-arg overload with a NON-NULL
+    /// validator. All 22+ production call sites of <c>ConfigLoader.Load(path)</c> therefore
+    /// receive the identifier-validation gate by default, closing Phase-37 SC-3
+    /// (malicious table/column identifiers in Serializer.config.json are rejected before
+    /// any SQL runs).
+    /// </summary>
+    public static SerializerConfiguration Load(string filePath)
+    {
+        var overrideValidator = TestOverrideIdentifierValidator;
+        SqlIdentifierValidator validator;
+        if (overrideValidator != null)
+        {
+            validator = overrideValidator;
+        }
+        else
+        {
+            validator = new SqlIdentifierValidator();
+            // Phase 37-06 Task 1 spy hook — lets structural-integration tests prove the
+            // default validator was constructed without having to catch an unrelated
+            // DB-layer exception from INFORMATION_SCHEMA when no DW DB is reachable.
+            _testDefaultValidatorConstructedCallback.Value?.Invoke();
+        }
+        return Load(filePath, validator);
+    }
 
     /// <summary>
     /// Load a serializer config. When <paramref name="identifierValidator"/> is non-null,
@@ -56,6 +84,11 @@ public static class ConfigLoader
     /// aggregated and thrown as a single <see cref="InvalidOperationException"/>.
     /// Tests pass fixture validators; production call sites construct the default
     /// <see cref="SqlIdentifierValidator"/> which queries the live DB.
+    ///
+    /// Passing <c>null</c> explicitly SKIPS identifier validation — this path is intended
+    /// for unit tests that exercise non-validation behavior. Production code should call
+    /// the parameterless <see cref="Load(string)"/> overload, which supplies a default
+    /// validator automatically.
     /// </summary>
     public static SerializerConfiguration Load(string filePath, SqlIdentifierValidator? identifierValidator)
     {
