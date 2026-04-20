@@ -25,7 +25,10 @@ public sealed class SavePredicateCommand : CommandBase<PredicateEditModel>
         {
             var configPath = ConfigPath ?? ConfigPathResolver.FindOrCreateConfigFile();
             var config = ConfigLoader.Load(configPath);
-            var predicates = config.Predicates.ToList();
+            // Phase 37-01 D-02: predicates live under the mode the edit screen was opened for.
+            var mode = Model.Mode;
+            var modeConfig = config.GetMode(mode);
+            var predicates = modeConfig.Predicates.ToList();
 
             // D-02: ProviderType locked after creation — use existing type on update
             string providerType;
@@ -170,7 +173,12 @@ public sealed class SavePredicateCommand : CommandBase<PredicateEditModel>
                 return new() { Status = CommandResult.ResultType.Error, Message = "Invalid predicate index" };
             }
 
-            var updated = config with { Predicates = predicates };
+            // Phase 37-01 D-02: persist back to the ModeConfig the predicate belongs to. The other
+            // mode's config is left untouched.
+            var updatedMode = modeConfig with { Predicates = predicates };
+            var updated = mode == Configuration.DeploymentMode.Deploy
+                ? config with { Deploy = updatedMode }
+                : config with { Seed = updatedMode };
             ConfigWriter.Save(updated, configPath);
 
             return new() { Status = CommandResult.ResultType.Ok, Model = Model };

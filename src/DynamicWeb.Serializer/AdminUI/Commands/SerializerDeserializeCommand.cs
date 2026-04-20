@@ -7,14 +7,19 @@ using Dynamicweb.CoreUI.Data;
 namespace DynamicWeb.Serializer.AdminUI.Commands;
 
 /// <summary>
-/// API-callable command that triggers deserialization for ALL configured providers.
-/// Use via DW CLI: dw command SerializerDeserialize
-/// Or via Management API: POST /Admin/Api/SerializerDeserialize
+/// API-callable command that triggers deserialization for ALL configured providers in the given
+/// <see cref="Mode"/>. Phase 37-01 D-02/D-04: defaults to Deploy (source-wins); when Mode="seed",
+/// runs destination-wins — rows/pages whose natural key or PageUniqueId is already on target
+/// are preserved.
 ///
-/// Uses SerializerOrchestrator to dispatch predicates to correct providers (Content, SqlTable, etc.).
+/// Use via DW CLI: dw command SerializerDeserialize [mode=seed]
+/// Or via Management API: POST /Admin/Api/SerializerDeserialize?mode=seed
 /// </summary>
 public sealed class SerializerDeserializeCommand : CommandBase
 {
+    /// <summary>Deployment mode: "deploy" (default) or "seed". Case-insensitive.</summary>
+    public string Mode { get; set; } = "deploy";
+
     private string? _logFile;
     private readonly List<string> _logLines = new();
 
@@ -32,6 +37,16 @@ public sealed class SerializerDeserializeCommand : CommandBase
 
     public override CommandResult Handle()
     {
+        // T-37-01-03: parse mode string strictly before any path interpolation.
+        if (!Enum.TryParse<DeploymentMode>(Mode, ignoreCase: true, out var deploymentMode))
+        {
+            return new()
+            {
+                Status = CommandResult.ResultType.Invalid,
+                Message = $"Invalid mode '{Mode}'. Expected 'deploy' or 'seed' (case-insensitive)."
+            };
+        }
+
         try
         {
             var configPath = ConfigPathResolver.FindConfigFile();
@@ -39,23 +54,32 @@ public sealed class SerializerDeserializeCommand : CommandBase
                 return new() { Status = CommandResult.ResultType.Error, Message = "Serializer.config.json not found (also checked ContentSync.config.json)" };
 
             var config = ConfigLoader.Load(configPath);
+            var modeConfig = config.GetMode(deploymentMode);
 
             var filesRoot = Path.GetDirectoryName(configPath)!;
             var systemDir = Path.Combine(filesRoot, "System");
             var paths = config.EnsureDirectories(systemDir);
 
+            var modeRoot = Path.Combine(paths.SerializeRoot, modeConfig.OutputSubfolder);
+
             _logFile = LogFileWriter.CreateLogFile(paths.Log, "Deserialize");
-            Log("=== Serializer Deserialize (API) started ===");
+            Log($"=== Serializer Deserialize (API) started [mode: {deploymentMode}] ===");
 
-            if (!Directory.Exists(paths.SerializeRoot))
-                return new() { Status = CommandResult.ResultType.Error, Message = $"SerializeRoot not found: {paths.SerializeRoot}" };
+            if (!Directory.Exists(modeRoot))
+                return new() { Status = CommandResult.ResultType.Error, Message = $"Mode subfolder not found: {modeRoot}" };
 
-            var yamlCount = Directory.GetFiles(paths.SerializeRoot, "*.yml", SearchOption.AllDirectories).Length;
+            var yamlCount = Directory.GetFiles(modeRoot, "*.yml", SearchOption.AllDirectories).Length;
             if (yamlCount == 0)
-                return new() { Status = CommandResult.ResultType.Error, Message = "SerializeRoot contains no YAML files" };
+                return new() { Status = CommandResult.ResultType.Error, Message = $"{modeRoot} contains no YAML files" };
 
             var orchestrator = ProviderRegistry.CreateOrchestrator(filesRoot);
-            var result = orchestrator.DeserializeAll(config.Predicates, paths.SerializeRoot, Log, config.DryRun);
+            var result = orchestrator.DeserializeAll(
+                modeConfig.Predicates,
+                modeRoot,
+                deploymentMode,
+                modeConfig.ConflictStrategy,
+                Log,
+                config.DryRun);
 
             // Build summary with advice and flush log
             var advice = AdviceGenerator.GenerateAdvice(result);
@@ -83,7 +107,7 @@ public sealed class SerializerDeserializeCommand : CommandBase
             };
             FlushLog(_logFile, summary);
 
-            var message = result.Summary;
+            var message = $"[{deploymentMode}] {result.Summary}";
             if (result.HasErrors)
                 message += $" Errors: {string.Join("; ", result.Errors)}";
 

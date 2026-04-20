@@ -1,4 +1,5 @@
 using Dynamicweb.Application.UI;
+using DynamicWeb.Serializer.AdminUI.Models;
 using DynamicWeb.Serializer.AdminUI.Queries;
 using DynamicWeb.Serializer.AdminUI.Screens;
 using DynamicWeb.Serializer.Configuration;
@@ -16,7 +17,12 @@ public sealed class SerializerSettingsNodeProvider : NavigationNodeProvider<Syst
     // The Database root node ID under Settings > System > Database
     private const string DatabaseRootId = "Settings_Database";
     internal const string SerializeNodeId = "Serializer_Settings";
+    // Phase 37-01 D-02: the flat Predicates node is split into two mode-scoped nodes.
+    // The legacy PredicatesNodeId is kept as a constant for backwards compatibility of any
+    // path-provider that has not migrated, but it is no longer emitted under SerializeNodeId.
     internal const string PredicatesNodeId = "Serializer_Predicates";
+    internal const string DeployPredicatesNodeId = "Serializer_Deploy_Predicates";
+    internal const string SeedPredicatesNodeId = "Serializer_Seed_Predicates";
     internal const string EmbeddedXmlNodeId = "Serializer_EmbeddedXml";
     internal const string ItemTypesNodeId = "Serializer_ItemTypes";
     internal const string LogViewerNodeId = "Serializer_LogViewer";
@@ -50,15 +56,27 @@ public sealed class SerializerSettingsNodeProvider : NavigationNodeProvider<Syst
         }
         else if (parentNodePath.Last == SerializeNodeId)
         {
+            // Phase 37-01 D-02: Deploy + Seed are two sibling predicate-group nodes.
             yield return new NavigationNode
             {
-                Id = PredicatesNodeId,
-                Name = "Predicates",
+                Id = DeployPredicatesNodeId,
+                Name = "Deploy Predicates",
                 Icon = Icon.Filter,
                 Sort = 10,
                 HasSubNodes = true,
                 NodeAction = NavigateScreenAction.To<PredicateListScreen>()
-                    .With(new PredicateListQuery())
+                    .With(new PredicateListQuery { Mode = DeploymentMode.Deploy })
+            };
+
+            yield return new NavigationNode
+            {
+                Id = SeedPredicatesNodeId,
+                Name = "Seed Predicates",
+                Icon = Icon.Flask, // Flask = experimental / lab-like, fits one-time seed-content role
+                Sort = 11,
+                HasSubNodes = true,
+                NodeAction = NavigateScreenAction.To<PredicateListScreen>()
+                    .With(new PredicateListQuery { Mode = DeploymentMode.Seed })
             };
 
             yield return new NavigationNode
@@ -94,30 +112,15 @@ public sealed class SerializerSettingsNodeProvider : NavigationNodeProvider<Syst
                     .With(new LogViewerQuery())
             };
         }
-        else if (parentNodePath.Last == PredicatesNodeId)
+        else if (parentNodePath.Last == DeployPredicatesNodeId)
         {
-            var configPath = ConfigPathResolver.FindConfigFile();
-            if (configPath != null)
-            {
-                SerializerConfiguration config;
-                try { config = ConfigLoader.Load(configPath); }
-                catch { yield break; }
-
-                for (var i = 0; i < config.Predicates.Count; i++)
-                {
-                    var pred = config.Predicates[i];
-                    yield return new NavigationNode
-                    {
-                        Id = $"Serializer_Predicate_{i}",
-                        Name = pred.Name,
-                        Icon = pred.ProviderType == "SqlTable" ? Icon.Table : Icon.FileAlt,
-                        Sort = i,
-                        HasSubNodes = false,
-                        NodeAction = NavigateScreenAction.To<PredicateEditScreen>()
-                            .With(new PredicateByIndexQuery { ModelIdentifier = (i + 1).ToString() })
-                    };
-                }
-            }
+            foreach (var node in GetModePredicateNodes(DeploymentMode.Deploy, "Deploy"))
+                yield return node;
+        }
+        else if (parentNodePath.Last == SeedPredicatesNodeId)
+        {
+            foreach (var node in GetModePredicateNodes(DeploymentMode.Seed, "Seed"))
+                yield return node;
         }
         else if (parentNodePath.Last == EmbeddedXmlNodeId)
         {
@@ -155,6 +158,42 @@ public sealed class SerializerSettingsNodeProvider : NavigationNodeProvider<Syst
             var categoryPath = parentNodePath.Last[ItemTypeCatPrefix.Length..].Replace(NodeIdCategorySeparator, '/');
             foreach (var node in GetItemTypeCategoryNodes(categoryPath))
                 yield return node;
+        }
+    }
+
+    /// <summary>
+    /// Emits a child predicate node for each predicate in the given mode's ModeConfig. Node IDs
+    /// use the <c>Serializer_{ModeName}_Predicate_{index}</c> prefix so
+    /// <see cref="PredicateNavigationNodePathProvider"/> (and the query itself) can distinguish
+    /// which mode the predicate belongs to when the user drills into its edit screen.
+    /// </summary>
+    private static IEnumerable<NavigationNode> GetModePredicateNodes(DeploymentMode mode, string modeDisplayName)
+    {
+        var configPath = ConfigPathResolver.FindConfigFile();
+        if (configPath == null) yield break;
+
+        SerializerConfiguration config;
+        try { config = ConfigLoader.Load(configPath); }
+        catch { yield break; }
+
+        var modeConfig = config.GetMode(mode);
+        for (var i = 0; i < modeConfig.Predicates.Count; i++)
+        {
+            var pred = modeConfig.Predicates[i];
+            yield return new NavigationNode
+            {
+                Id = $"Serializer_{modeDisplayName}_Predicate_{i}",
+                Name = pred.Name,
+                Icon = pred.ProviderType == "SqlTable" ? Icon.Table : Icon.FileAlt,
+                Sort = i,
+                HasSubNodes = false,
+                NodeAction = NavigateScreenAction.To<PredicateEditScreen>()
+                    .With(new PredicateByIndexQuery
+                    {
+                        ModelIdentifier = (i + 1).ToString(),
+                        Mode = mode
+                    })
+            };
         }
     }
 

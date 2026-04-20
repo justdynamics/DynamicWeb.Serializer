@@ -21,22 +21,25 @@ public sealed class SerializerSettingsQuery : DataQueryModelBase<SerializerSetti
         if (idx >= 0)
             relativePath = configPath[(idx + wwwrootMarker.Length)..];
 
-        var predicateCount = config.Predicates.Count;
+        // Phase 37-01 D-02: count Deploy + Seed predicates separately for the summary.
+        var deployCount = config.Deploy.Predicates.Count;
+        var seedCount = config.Seed.Predicates.Count;
 
         return new SerializerSettingsModel
         {
             OutputDirectory = config.OutputDirectory,
             LogLevel = config.LogLevel,
             DryRun = config.DryRun,
-            ConflictStrategy = config.ConflictStrategy switch
+            ConflictStrategy = config.Deploy.ConflictStrategy switch
             {
                 Configuration.ConflictStrategy.SourceWins => "source-wins",
+                Configuration.ConflictStrategy.DestinationWins => "destination-wins",
                 _ => "source-wins"
             },
             ConfigFilePath = relativePath,
-            PredicatesSummary = predicateCount == 0
+            PredicatesSummary = (deployCount + seedCount) == 0
                 ? "No predicates configured. Nothing will be synced."
-                : $"{predicateCount} predicate(s) configured. Manage via the Predicates sub-node."
+                : $"{deployCount} deploy predicate(s), {seedCount} seed predicate(s) configured. Manage via the Deploy / Seed Predicates sub-nodes."
         };
     }
 }

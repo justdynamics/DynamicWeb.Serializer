@@ -1,3 +1,4 @@
+using DynamicWeb.Serializer.Configuration;
 using Dynamicweb.CoreUI.Data;
 using Dynamicweb.CoreUI.Data.Validation;
 
@@ -6,6 +7,13 @@ namespace DynamicWeb.Serializer.AdminUI.Models;
 public sealed class PredicateEditModel : DataViewModelBase, IIdentifiable
 {
     public int Index { get; set; } = -1;
+
+    /// <summary>
+    /// Which <see cref="DeploymentMode"/> this predicate lives under (Phase 37-01 D-02). Set by
+    /// <see cref="Queries.PredicateByIndexQuery"/>; read by
+    /// <see cref="Commands.SavePredicateCommand"/> to append / update the correct ModeConfig.
+    /// </summary>
+    public DeploymentMode Mode { get; set; } = DeploymentMode.Deploy;
 
     // DW framework treats "0" as "no identifier" — use 1-based for round-tripping
     public string GetId() => (Index + 1).ToString();

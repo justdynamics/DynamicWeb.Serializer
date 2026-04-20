@@ -8,6 +8,13 @@ public sealed class PredicateByIndexQuery : DataQueryIdentifiableModelBase<Predi
 {
     public int Index { get; set; } = -1;
 
+    /// <summary>
+    /// Which <see cref="DeploymentMode"/> the predicate belongs to (Phase 37-01 D-02). Defaulted
+    /// to Deploy so pre-Phase-37 call sites keep working; the tree supplies it explicitly for
+    /// Seed-mode navigation.
+    /// </summary>
+    public DeploymentMode Mode { get; set; } = DeploymentMode.Deploy;
+
     protected override void SetKey(int key)
     {
         // DW framework treats "0" as "no identifier" — identifiers are 1-based, convert back to 0-based
@@ -17,18 +24,20 @@ public sealed class PredicateByIndexQuery : DataQueryIdentifiableModelBase<Predi
     public override PredicateEditModel? GetModel()
     {
         if (Index < 0)
-            return new PredicateEditModel();
+            return new PredicateEditModel { Mode = Mode };
 
         var configPath = ConfigPathResolver.FindConfigFile();
         if (configPath == null) return null;
 
         var config = ConfigLoader.Load(configPath);
-        if (Index >= config.Predicates.Count) return null;
+        var predicates = config.GetMode(Mode).Predicates;
+        if (Index >= predicates.Count) return null;
 
-        var pred = config.Predicates[Index];
+        var pred = predicates[Index];
         return new PredicateEditModel
         {
             Index = Index,
+            Mode = Mode,
             Name = pred.Name,
             ProviderType = pred.ProviderType,
             AreaId = pred.AreaId,

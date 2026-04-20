@@ -36,21 +36,29 @@ public sealed class SerializeSubtreeCommand : CommandBase
             try
             {
                 // 3. Create temp SerializerConfiguration with single predicate targeting the page subtree (per D-05)
+                // Phase 37-01: ad-hoc subtree export is a Deploy-mode operation. It captures the
+                // current state of a targeted page subtree for a one-off share; Seed mode is not
+                // offered here because seed content is always shipped as part of a curated baseline
+                // and the destination-wins semantics don't fit a "send this page to a colleague" flow.
                 var tempConfig = new SerializerConfiguration
                 {
                     OutputDirectory = tempDir,
                     LogLevel = "info",
                     DryRun = false,
-                    ConflictStrategy = ConflictStrategy.SourceWins,
-                    Predicates = new List<ProviderPredicateDefinition>
+                    Deploy = new ModeConfig
                     {
-                        new ProviderPredicateDefinition
+                        OutputSubfolder = "deploy",
+                        ConflictStrategy = ConflictStrategy.SourceWins,
+                        Predicates = new List<ProviderPredicateDefinition>
                         {
-                            Name = "ad-hoc-serialize",
-                            ProviderType = "Content",
-                            Path = contentPath,
-                            AreaId = AreaId,
-                            Excludes = new List<string>()
+                            new ProviderPredicateDefinition
+                            {
+                                Name = "ad-hoc-serialize",
+                                ProviderType = "Content",
+                                Path = contentPath,
+                                AreaId = AreaId,
+                                Excludes = new List<string>()
+                            }
                         }
                     }
                 };

@@ -6,8 +6,15 @@ using Dynamicweb.CoreUI.Lists;
 
 namespace DynamicWeb.Serializer.AdminUI.Queries;
 
+/// <summary>
+/// Lists predicates for one <see cref="DeploymentMode"/> (Phase 37-01 D-02). The tree query-with
+/// clause supplies <see cref="Mode"/>; the list screen uses it to pick the matching ModeConfig
+/// and to title itself "Deploy Predicates" / "Seed Predicates".
+/// </summary>
 public sealed class PredicateListQuery : DataQueryModelBase<DataListViewModel<PredicateListModel>>
 {
+    public DeploymentMode Mode { get; set; } = DeploymentMode.Deploy;
+
     public override DataListViewModel<PredicateListModel>? GetModel()
     {
         var configPath = ConfigPathResolver.FindConfigFile();
@@ -15,7 +22,9 @@ public sealed class PredicateListQuery : DataQueryModelBase<DataListViewModel<Pr
             return new DataListViewModel<PredicateListModel>();
 
         var config = ConfigLoader.Load(configPath);
-        var items = config.Predicates.Select((p, i) =>
+        var predicates = config.GetMode(Mode).Predicates;
+        var mode = Mode;
+        var items = predicates.Select((p, i) =>
         {
             string type = p.ProviderType == "SqlTable" ? "SQL Table" : "Content";
             string target = p.ProviderType == "SqlTable"
@@ -25,6 +34,7 @@ public sealed class PredicateListQuery : DataQueryModelBase<DataListViewModel<Pr
             return new PredicateListModel
             {
                 Index = i,
+                Mode = mode,
                 Name = p.Name,
                 Type = type,
                 Target = target
@@ -34,7 +44,7 @@ public sealed class PredicateListQuery : DataQueryModelBase<DataListViewModel<Pr
         return new DataListViewModel<PredicateListModel>
         {
             Data = items,
-            TotalCount = config.Predicates.Count
+            TotalCount = predicates.Count
         };
     }
 }

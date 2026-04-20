@@ -8,6 +8,12 @@ public sealed class DeletePredicateCommand : CommandBase
     public int Index { get; set; }
 
     /// <summary>
+    /// Which <see cref="DeploymentMode"/> the predicate belongs to (Phase 37-01 D-02). Defaults
+    /// to Deploy so non-tree invocations keep the legacy Deploy-only behaviour.
+    /// </summary>
+    public DeploymentMode Mode { get; set; } = DeploymentMode.Deploy;
+
+    /// <summary>
     /// Optional override for testing — bypasses ConfigPathResolver.
     /// </summary>
     public string? ConfigPath { get; set; }
@@ -19,13 +25,17 @@ public sealed class DeletePredicateCommand : CommandBase
             return new() { Status = CommandResult.ResultType.Error, Message = "Config file not found" };
 
         var config = ConfigLoader.Load(configPath);
-        if (Index < 0 || Index >= config.Predicates.Count)
+        var modeConfig = config.GetMode(Mode);
+        if (Index < 0 || Index >= modeConfig.Predicates.Count)
             return new() { Status = CommandResult.ResultType.Error, Message = "Invalid predicate index" };
 
-        var predicates = config.Predicates.ToList();
+        var predicates = modeConfig.Predicates.ToList();
         predicates.RemoveAt(Index);
 
-        var updated = config with { Predicates = predicates };
+        var updatedMode = modeConfig with { Predicates = predicates };
+        var updated = Mode == DeploymentMode.Deploy
+            ? config with { Deploy = updatedMode }
+            : config with { Seed = updatedMode };
         ConfigWriter.Save(updated, configPath);
 
         return new() { Status = CommandResult.ResultType.Ok };

@@ -38,20 +38,41 @@ public sealed class SerializerSettingsEditScreen : EditScreenBase<SerializerSett
         {
             new ActionGroup
             {
-                Name = "Actions",
+                Name = "Deploy Actions",
                 Nodes = new List<ActionNode>
                 {
                     new()
                     {
                         Name = "Serialize",
                         Icon = Icon.DownloadAlt,
-                        NodeAction = RunCommandAction.For<SerializerSerializeCommand>().WithReloadOnSuccess()
+                        NodeAction = RunCommandAction.For(new SerializerSerializeCommand { Mode = "deploy" }).WithReloadOnSuccess()
                     },
                     new()
                     {
                         Name = "Deserialize",
                         Icon = Icon.UploadAlt,
-                        NodeAction = RunCommandAction.For<SerializerDeserializeCommand>().WithReloadOnSuccess()
+                        NodeAction = RunCommandAction.For(new SerializerDeserializeCommand { Mode = "deploy" }).WithReloadOnSuccess()
+                    }
+                }
+            },
+            // Phase 37-01 D-04: Seed requires explicit opt-in — expose via a dedicated action group
+            // so admins can't trigger a destination-wins deserialize by accident.
+            new ActionGroup
+            {
+                Name = "Seed Actions",
+                Nodes = new List<ActionNode>
+                {
+                    new()
+                    {
+                        Name = "Serialize (Seed)",
+                        Icon = Icon.DownloadAlt,
+                        NodeAction = RunCommandAction.For(new SerializerSerializeCommand { Mode = "seed" }).WithReloadOnSuccess()
+                    },
+                    new()
+                    {
+                        Name = "Deserialize (Seed)",
+                        Icon = Icon.UploadAlt,
+                        NodeAction = RunCommandAction.For(new SerializerDeserializeCommand { Mode = "seed" }).WithReloadOnSuccess()
                     }
                 }
             }

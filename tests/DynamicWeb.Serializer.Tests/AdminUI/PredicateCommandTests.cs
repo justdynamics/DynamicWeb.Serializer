@@ -728,4 +728,106 @@ public class PredicateCommandTests : IDisposable
         var config = ConfigLoader.Load(_configPath);
         Assert.Empty(config.Predicates);
     }
+
+    // -------------------------------------------------------------------------
+    // Phase 37-01 D-02: SavePredicateCommand routes to the correct ModeConfig
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public void Save_PredicateInDeployMode_AppendsToDeployPredicates()
+    {
+        CreateSeedConfig(new List<ProviderPredicateDefinition>());
+
+        var cmd = new SavePredicateCommand
+        {
+            ConfigPath = _configPath,
+            Model = new PredicateEditModel
+            {
+                Index = -1,
+                Mode = DeploymentMode.Deploy,
+                Name = "Deploy1",
+                ProviderType = "Content",
+                AreaId = 1,
+                PageId = 10
+            }
+        };
+
+        var result = cmd.Handle();
+
+        Assert.Equal(CommandResult.ResultType.Ok, result.Status);
+        var config = ConfigLoader.Load(_configPath);
+        Assert.Single(config.Deploy.Predicates);
+        Assert.Equal("Deploy1", config.Deploy.Predicates[0].Name);
+        Assert.Empty(config.Seed.Predicates);
+    }
+
+    [Fact]
+    public void Save_PredicateInSeedMode_AppendsToSeedPredicates()
+    {
+        // Seed a config with one existing Deploy predicate so we can prove Seed.Save doesn't leak into Deploy.
+        CreateSeedConfig(new List<ProviderPredicateDefinition>
+        {
+            new() { Name = "DeployExisting", ProviderType = "Content", Path = "/d", AreaId = 1, PageId = 10 }
+        });
+
+        var cmd = new SavePredicateCommand
+        {
+            ConfigPath = _configPath,
+            Model = new PredicateEditModel
+            {
+                Index = -1,
+                Mode = DeploymentMode.Seed,
+                Name = "Seed1",
+                ProviderType = "Content",
+                AreaId = 1,
+                PageId = 10
+            }
+        };
+
+        var result = cmd.Handle();
+
+        Assert.Equal(CommandResult.ResultType.Ok, result.Status);
+        var config = ConfigLoader.Load(_configPath);
+        Assert.Single(config.Seed.Predicates);
+        Assert.Equal("Seed1", config.Seed.Predicates[0].Name);
+        // Deploy side must be preserved exactly.
+        Assert.Single(config.Deploy.Predicates);
+        Assert.Equal("DeployExisting", config.Deploy.Predicates[0].Name);
+    }
+
+    [Fact]
+    public void Delete_PredicateInSeedMode_RemovesFromSeedOnly()
+    {
+        // Seed a config with one existing Deploy predicate so we can prove Delete.Seed doesn't touch Deploy.
+        CreateSeedConfig(new List<ProviderPredicateDefinition>
+        {
+            new() { Name = "DeployExisting", ProviderType = "Content", Path = "/d", AreaId = 1, PageId = 10 }
+        });
+
+        // Add a Seed-mode predicate
+        new SavePredicateCommand
+        {
+            ConfigPath = _configPath,
+            Model = new PredicateEditModel
+            {
+                Index = -1, Mode = DeploymentMode.Seed, Name = "SeedOnly",
+                ProviderType = "Content", AreaId = 1, PageId = 10
+            }
+        }.Handle();
+
+        var del = new DeletePredicateCommand
+        {
+            ConfigPath = _configPath,
+            Mode = DeploymentMode.Seed,
+            Index = 0
+        };
+
+        var result = del.Handle();
+
+        Assert.Equal(CommandResult.ResultType.Ok, result.Status);
+        var config = ConfigLoader.Load(_configPath);
+        Assert.Empty(config.Seed.Predicates);
+        Assert.Single(config.Deploy.Predicates);
+        Assert.Equal("DeployExisting", config.Deploy.Predicates[0].Name);
+    }
 }
