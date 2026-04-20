@@ -1,4 +1,3 @@
-using System.Globalization;
 using DynamicWeb.Serializer.Configuration;
 using DynamicWeb.Serializer.Infrastructure;
 using DynamicWeb.Serializer.Models;
@@ -17,16 +16,29 @@ public class SqlTableProvider : SerializationProviderBase
     private readonly SqlTableReader _tableReader;
     private readonly FlatFileStore _fileStore;
     private readonly SqlTableWriter _writer;
+    private readonly TargetSchemaCache _schemaCache;
 
     public override string ProviderType => "SqlTable";
     public override string DisplayName => "SQL Table Provider";
 
-    public SqlTableProvider(DataGroupMetadataReader metadataReader, SqlTableReader tableReader, FlatFileStore fileStore, SqlTableWriter writer)
+    /// <summary>
+    /// Creates the provider. <paramref name="schemaCache"/> is the Phase 37-02 unified target
+    /// schema / type coercion cache; defaults to a fresh instance backed by the live
+    /// INFORMATION_SCHEMA loader. Pass a shared instance to coalesce schema queries across
+    /// providers within the same deserialize run.
+    /// </summary>
+    public SqlTableProvider(
+        DataGroupMetadataReader metadataReader,
+        SqlTableReader tableReader,
+        FlatFileStore fileStore,
+        SqlTableWriter writer,
+        TargetSchemaCache? schemaCache = null)
     {
         _metadataReader = metadataReader;
         _tableReader = tableReader;
         _fileStore = fileStore;
         _writer = writer;
+        _schemaCache = schemaCache ?? new TargetSchemaCache();
     }
 
     public override SerializeResult Serialize(ProviderPredicateDefinition predicate, string outputRoot, Action<string>? log = null)
@@ -149,13 +161,41 @@ public class SqlTableProvider : SerializationProviderBase
         var yamlRows = _fileStore.ReadAllRows(inputRoot, metadata.TableName).ToList();
         Log($"Deserializing {yamlRows.Count} rows into {metadata.TableName} (isDryRun={isDryRun})", log);
 
-        // Coerce YAML string values to proper .NET types for SQL parameterization
-        var columnTypes = _metadataReader.GetColumnTypes(metadata.TableName);
+        // Phase 37-02: unified schema-drift + type coercion via TargetSchemaCache.
+        // Target columns absent from the live target schema are stripped from each row
+        // before composing MERGE SQL (prevents "Invalid column name" on cross-env deploys);
+        // remaining string values are coerced to proper .NET types for SQL parameterization.
+        var targetCols = _schemaCache.GetColumns(metadata.TableName);
+        var columnTypes = _schemaCache.GetColumnTypes(metadata.TableName);
         var notNullColumns = _metadataReader.GetNotNullColumns(metadata.TableName);
+        // FixNotNullDefaults takes a mutable Dictionary<string,string> — materialize once.
+        var columnTypesDict = columnTypes.Count > 0
+            ? new Dictionary<string, string>(columnTypes, StringComparer.OrdinalIgnoreCase)
+            : _metadataReader.GetColumnTypes(metadata.TableName);
         foreach (var row in yamlRows)
         {
-            CoerceRowTypes(row, columnTypes);
-            FixNotNullDefaults(row, columnTypes, notNullColumns);
+            // Filter target-missing columns (warn once per missing column across all rows).
+            if (targetCols.Count > 0)
+            {
+                var keysToRemove = row.Keys.Where(k => !targetCols.Contains(k)).ToList();
+                foreach (var k in keysToRemove)
+                {
+                    _schemaCache.LogMissingColumnOnce(metadata.TableName, k, log);
+                    row.Remove(k);
+                }
+            }
+
+            // Coerce remaining column values via the shared cache.
+            foreach (var col in row.Keys.ToList())
+            {
+                var coerced = _schemaCache.Coerce(metadata.TableName, col, row[col]);
+                // Coerce returns DBNull.Value for null/DBNull/empty-non-string cases; the downstream
+                // row shape uses null (not DBNull) to represent "no value", so re-normalize here —
+                // preserves the pre-refactor semantic contract of the row dictionary.
+                row[col] = coerced == DBNull.Value ? null : coerced;
+            }
+
+            FixNotNullDefaults(row, columnTypesDict, notNullColumns);
             if (predicate.XmlColumns.Count > 0)
                 CompactXmlColumns(row, predicate.XmlColumns);
         }
@@ -267,62 +307,6 @@ public class SqlTableProvider : SerializationProviderBase
             Errors = errors
         };
     }
-
-    /// <summary>
-    /// Coerce YAML-deserialized values (mostly strings) to proper .NET types
-    /// so SQL parameterized queries receive the correct type.
-    /// </summary>
-    private static void CoerceRowTypes(Dictionary<string, object?> row, Dictionary<string, string> columnTypes)
-    {
-        foreach (var col in columnTypes)
-        {
-            if (!row.TryGetValue(col.Key, out var value) || value is null)
-                continue;
-
-            // Already correct type from YAML (int, bool, etc.)
-            if (value is not string str)
-            {
-                // YAML may deserialize integers as int but SQL expects long for bigint
-                if (col.Value.Equals("bigint", StringComparison.OrdinalIgnoreCase) && value is int intVal)
-                    row[col.Key] = (long)intVal;
-                continue;
-            }
-
-            if (string.IsNullOrEmpty(str))
-            {
-                // Empty string for non-string types should be null
-                if (!IsStringType(col.Value))
-                    row[col.Key] = null;
-                continue;
-            }
-
-            row[col.Key] = col.Value.ToLowerInvariant() switch
-            {
-                "int" => int.TryParse(str, out var i) ? i : value,
-                "bigint" => long.TryParse(str, out var l) ? l : value,
-                "smallint" => short.TryParse(str, out var s) ? s : value,
-                "tinyint" => byte.TryParse(str, out var b) ? b : value,
-                "bit" => str.Equals("true", StringComparison.OrdinalIgnoreCase) || str == "1" ? true
-                       : str.Equals("false", StringComparison.OrdinalIgnoreCase) || str == "0" ? false
-                       : value,
-                "decimal" or "numeric" or "money" or "smallmoney" =>
-                    decimal.TryParse(str, CultureInfo.InvariantCulture, out var d) ? d : value,
-                "float" => double.TryParse(str, CultureInfo.InvariantCulture, out var f) ? f : value,
-                "real" => float.TryParse(str, CultureInfo.InvariantCulture, out var r) ? r : value,
-                "datetime" or "datetime2" or "smalldatetime" =>
-                    DateTime.TryParse(str, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var dt) ? dt : value,
-                "datetimeoffset" =>
-                    DateTimeOffset.TryParse(str, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var dto) ? dto : value,
-                "uniqueidentifier" => Guid.TryParse(str, out var g) ? g : value,
-                "varbinary" or "binary" or "image" =>
-                    Convert.TryFromBase64String(str, new byte[str.Length], out _) ? Convert.FromBase64String(str) : value,
-                _ => value // nvarchar, varchar, ntext, text, xml etc. stay as string
-            };
-        }
-    }
-
-    private static bool IsStringType(string sqlType) =>
-        sqlType.ToLowerInvariant() is "nvarchar" or "varchar" or "nchar" or "char" or "ntext" or "text" or "xml";
 
     /// <summary>
     /// Replace null values with type-appropriate defaults for NOT NULL columns.

@@ -1,4 +1,5 @@
 using System.Data;
+using DynamicWeb.Serializer.Infrastructure;
 using DynamicWeb.Serializer.Models;
 using DynamicWeb.Serializer.Providers.SqlTable;
 using Dynamicweb.Data;
@@ -316,7 +317,15 @@ public class SqlTableProviderDeserializeTests
         // SqlTableWriter mock — pass required constructor arg
         var writerMock = new Mock<SqlTableWriter>(mockExecutor.Object) { CallBase = false };
 
-        var provider = new SqlTableProvider(mockMetadataReader.Object, tableReader, fileStore, writerMock.Object);
+        // Phase 37-02: schema cache uses a fixture loader that mirrors the mock metadata —
+        // prevents the default loader from hitting the live Database in unit tests. Returning
+        // an empty set for unknown tables means the existing behavior (no column filtering) is
+        // preserved for these legacy tests.
+        var schemaCache = new TargetSchemaCache(_ =>
+            (new HashSet<string>(TestMetadata.AllColumns, StringComparer.OrdinalIgnoreCase),
+             new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)));
+        var provider = new SqlTableProvider(
+            mockMetadataReader.Object, tableReader, fileStore, writerMock.Object, schemaCache);
 
         return (provider, mockExecutor, writerMock, tempDir);
     }

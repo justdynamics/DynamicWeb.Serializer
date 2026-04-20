@@ -1,4 +1,5 @@
 using System.Reflection;
+using DynamicWeb.Serializer.Infrastructure;
 using DynamicWeb.Serializer.Providers.Content;
 using DynamicWeb.Serializer.Providers.SqlTable;
 
@@ -125,6 +126,10 @@ public class ProviderRegistry
 
     /// <summary>
     /// Creates a registry with all standard providers (Content + SqlTable) pre-registered.
+    /// A single <see cref="TargetSchemaCache"/> instance is constructed and passed to the
+    /// SqlTable provider (Phase 37-02); ContentProvider continues to construct its own
+    /// ContentDeserializer per-predicate which instantiates a fresh cache since the Area
+    /// write path is independent of the SqlTable path.
     /// </summary>
     /// <param name="filesRoot">Optional Files/ root directory for ContentProvider template validation.</param>
     public static ProviderRegistry CreateDefault(string? filesRoot = null)
@@ -134,13 +139,15 @@ public class ProviderRegistry
         // Content provider
         registry.Register(new ContentProvider(filesRoot));
 
-        // SqlTable provider
+        // SqlTable provider (shares the TargetSchemaCache across all SqlTable predicates
+        // in this registry lifetime — one INFORMATION_SCHEMA query per distinct table).
         var sqlExecutor = new DwSqlExecutor();
         var metadataReader = new DataGroupMetadataReader(sqlExecutor);
         var tableReader = new SqlTableReader(sqlExecutor);
         var fileStore = new FlatFileStore();
         var writer = new SqlTableWriter(sqlExecutor);
-        registry.Register(new SqlTableProvider(metadataReader, tableReader, fileStore, writer));
+        var schemaCache = new TargetSchemaCache();
+        registry.Register(new SqlTableProvider(metadataReader, tableReader, fileStore, writer, schemaCache));
 
         return registry;
     }
