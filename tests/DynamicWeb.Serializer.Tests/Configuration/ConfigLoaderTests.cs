@@ -830,6 +830,155 @@ public class ConfigLoaderTests : IDisposable
     }
 
     [Fact]
+    public void Load_WithFixtureValidator_BadTableIdentifier_Throws()
+    {
+        var json = """
+            {
+              "outputDirectory": "/serialization",
+              "deploy": {
+                "outputSubfolder": "deploy",
+                "conflictStrategy": "source-wins",
+                "predicates": [
+                  { "name": "Bad", "providerType": "SqlTable", "table": "NotARealTable" }
+                ]
+              }
+            }
+            """;
+        var path = WriteConfigFile(json);
+
+        var validator = new SqlIdentifierValidator(
+            tableLoader: () => new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "AccessUser" },
+            columnLoader: _ => new HashSet<string>(StringComparer.OrdinalIgnoreCase));
+
+        var ex = Assert.Throws<InvalidOperationException>(
+            () => ConfigLoader.Load(path, validator));
+        Assert.Contains("INFORMATION_SCHEMA", ex.Message);
+        Assert.Contains("NotARealTable", ex.Message);
+    }
+
+    [Fact]
+    public void Load_WithFixtureValidator_BadExcludeFieldIdentifier_Throws()
+    {
+        var json = """
+            {
+              "outputDirectory": "/serialization",
+              "deploy": {
+                "outputSubfolder": "deploy",
+                "conflictStrategy": "source-wins",
+                "predicates": [
+                  {
+                    "name": "X", "providerType": "SqlTable", "table": "AccessUser",
+                    "excludeFields": ["NonExistentColumn"]
+                  }
+                ]
+              }
+            }
+            """;
+        var path = WriteConfigFile(json);
+
+        var validator = new SqlIdentifierValidator(
+            tableLoader: () => new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "AccessUser" },
+            columnLoader: _ => new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "AccessUserType" });
+
+        var ex = Assert.Throws<InvalidOperationException>(
+            () => ConfigLoader.Load(path, validator));
+        Assert.Contains("NonExistentColumn", ex.Message);
+    }
+
+    [Fact]
+    public void Load_WithFixtureValidator_BadWhereIdentifier_Throws()
+    {
+        var json = """
+            {
+              "outputDirectory": "/serialization",
+              "deploy": {
+                "outputSubfolder": "deploy",
+                "conflictStrategy": "source-wins",
+                "predicates": [
+                  {
+                    "name": "X", "providerType": "SqlTable", "table": "AccessUser",
+                    "where": "NonExistentColumn = 1"
+                  }
+                ]
+              }
+            }
+            """;
+        var path = WriteConfigFile(json);
+
+        var validator = new SqlIdentifierValidator(
+            tableLoader: () => new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "AccessUser" },
+            columnLoader: _ => new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "AccessUserType" });
+
+        var ex = Assert.Throws<InvalidOperationException>(
+            () => ConfigLoader.Load(path, validator));
+        Assert.Contains("NonExistentColumn", ex.Message);
+    }
+
+    [Fact]
+    public void Load_WithFixtureValidator_AggregatesMultipleErrors()
+    {
+        var json = """
+            {
+              "outputDirectory": "/serialization",
+              "deploy": {
+                "outputSubfolder": "deploy",
+                "conflictStrategy": "source-wins",
+                "predicates": [
+                  { "name": "A", "providerType": "SqlTable", "table": "UnknownTableA" },
+                  { "name": "B", "providerType": "SqlTable", "table": "UnknownTableB" },
+                  { "name": "C", "providerType": "SqlTable", "table": "UnknownTableC" }
+                ]
+              }
+            }
+            """;
+        var path = WriteConfigFile(json);
+
+        var validator = new SqlIdentifierValidator(
+            tableLoader: () => new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "AccessUser" },
+            columnLoader: _ => new HashSet<string>(StringComparer.OrdinalIgnoreCase));
+
+        var ex = Assert.Throws<InvalidOperationException>(
+            () => ConfigLoader.Load(path, validator));
+        Assert.Contains("UnknownTableA", ex.Message);
+        Assert.Contains("UnknownTableB", ex.Message);
+        Assert.Contains("UnknownTableC", ex.Message);
+    }
+
+    [Fact]
+    public void Load_WithFixtureValidator_ValidSqlTableConfig_LoadsSuccessfully()
+    {
+        var json = """
+            {
+              "outputDirectory": "/serialization",
+              "deploy": {
+                "outputSubfolder": "deploy",
+                "conflictStrategy": "source-wins",
+                "predicates": [
+                  {
+                    "name": "AU", "providerType": "SqlTable", "table": "AccessUser",
+                    "where": "AccessUserType = 2 AND AccessUserUserName IN ('Admin','Editors')",
+                    "excludeFields": ["AccessUserPassword"],
+                    "includeFields": ["AccessUserHostingName"]
+                  }
+                ]
+              }
+            }
+            """;
+        var path = WriteConfigFile(json);
+
+        var validator = new SqlIdentifierValidator(
+            tableLoader: () => new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "AccessUser" },
+            columnLoader: _ => new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                "AccessUserType", "AccessUserUserName", "AccessUserPassword", "AccessUserHostingName"
+            });
+
+        var config = ConfigLoader.Load(path, validator);
+
+        Assert.Single(config.Deploy.Predicates);
+    }
+
+    [Fact]
     public void Load_WithoutWhereOrIncludeFields_DefaultsNullAndEmpty()
     {
         var json = """

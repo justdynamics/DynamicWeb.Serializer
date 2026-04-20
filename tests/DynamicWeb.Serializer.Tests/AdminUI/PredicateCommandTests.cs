@@ -795,6 +795,132 @@ public class PredicateCommandTests : IDisposable
         Assert.Equal("DeployExisting", config.Deploy.Predicates[0].Name);
     }
 
+    // -------------------------------------------------------------------------
+    // Phase 37-03: WhereClause + IncludeFields round-trip + validation
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public void Save_SqlTable_WhereClauseAndIncludeFields_RoundTrip()
+    {
+        CreateSeedConfig(new List<ProviderPredicateDefinition>());
+
+        // Validator must be bypassed for this unit test (no live DB). SavePredicateCommand
+        // exposes IdentifierValidator / WhereValidator hooks that default to production
+        // validators; tests inject fixture validators that accept anything.
+        var cmd = new SavePredicateCommand
+        {
+            ConfigPath = _configPath,
+            IdentifierValidator = new SqlIdentifierValidator(
+                tableLoader: () => new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "AccessUser" },
+                columnLoader: _ => new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+                {
+                    "AccessUserType", "AccessUserUserName", "AccessUserHostingName"
+                }),
+            WhereValidator = new SqlWhereClauseValidator(),
+            Model = new PredicateEditModel
+            {
+                Index = -1,
+                Name = "AU-Roles",
+                ProviderType = "SqlTable",
+                Table = "AccessUser",
+                WhereClause = "AccessUserType = 2 AND AccessUserUserName IN ('Admin','Editors')",
+                IncludeFields = "AccessUserHostingName"
+            }
+        };
+
+        var result = cmd.Handle();
+
+        Assert.Equal(CommandResult.ResultType.Ok, result.Status);
+        var config = ConfigLoader.Load(_configPath);
+        var pred = config.Deploy.Predicates[0];
+        Assert.Equal("AccessUserType = 2 AND AccessUserUserName IN ('Admin','Editors')", pred.Where);
+        Assert.Single(pred.IncludeFields);
+        Assert.Equal("AccessUserHostingName", pred.IncludeFields[0]);
+    }
+
+    [Fact]
+    public void Save_InvalidWhereClause_ReturnsInvalid()
+    {
+        CreateSeedConfig(new List<ProviderPredicateDefinition>());
+
+        var cmd = new SavePredicateCommand
+        {
+            ConfigPath = _configPath,
+            IdentifierValidator = new SqlIdentifierValidator(
+                tableLoader: () => new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "AccessUser" },
+                columnLoader: _ => new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "AccessUserType" }),
+            WhereValidator = new SqlWhereClauseValidator(),
+            Model = new PredicateEditModel
+            {
+                Index = -1,
+                Name = "BadWhere",
+                ProviderType = "SqlTable",
+                Table = "AccessUser",
+                WhereClause = "AccessUserType = 2; DROP TABLE X"
+            }
+        };
+
+        var result = cmd.Handle();
+
+        Assert.Equal(CommandResult.ResultType.Invalid, result.Status);
+        Assert.Contains(";", result.Message);
+    }
+
+    [Fact]
+    public void Save_InvalidTableIdentifier_ReturnsInvalid()
+    {
+        CreateSeedConfig(new List<ProviderPredicateDefinition>());
+
+        var cmd = new SavePredicateCommand
+        {
+            ConfigPath = _configPath,
+            IdentifierValidator = new SqlIdentifierValidator(
+                tableLoader: () => new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "AccessUser" },
+                columnLoader: _ => new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "AccessUserType" }),
+            WhereValidator = new SqlWhereClauseValidator(),
+            Model = new PredicateEditModel
+            {
+                Index = -1,
+                Name = "BadTable",
+                ProviderType = "SqlTable",
+                Table = "NotARealTable"
+            }
+        };
+
+        var result = cmd.Handle();
+
+        Assert.Equal(CommandResult.ResultType.Invalid, result.Status);
+        Assert.Contains("INFORMATION_SCHEMA", result.Message);
+    }
+
+    [Fact]
+    public void Save_InvalidIncludeFieldIdentifier_ReturnsInvalid()
+    {
+        CreateSeedConfig(new List<ProviderPredicateDefinition>());
+
+        var cmd = new SavePredicateCommand
+        {
+            ConfigPath = _configPath,
+            IdentifierValidator = new SqlIdentifierValidator(
+                tableLoader: () => new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "AccessUser" },
+                columnLoader: _ => new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "AccessUserType" }),
+            WhereValidator = new SqlWhereClauseValidator(),
+            Model = new PredicateEditModel
+            {
+                Index = -1,
+                Name = "BadInclude",
+                ProviderType = "SqlTable",
+                Table = "AccessUser",
+                IncludeFields = "NonexistentColumn"
+            }
+        };
+
+        var result = cmd.Handle();
+
+        Assert.Equal(CommandResult.ResultType.Invalid, result.Status);
+        Assert.Contains("INFORMATION_SCHEMA", result.Message);
+    }
+
     [Fact]
     public void Delete_PredicateInSeedMode_RemovesFromSeedOnly()
     {

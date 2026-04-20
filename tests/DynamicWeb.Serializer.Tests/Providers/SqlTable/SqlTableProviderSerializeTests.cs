@@ -123,6 +123,162 @@ public class SqlTableProviderSerializeTests
         Assert.True(rows[0].ContainsKey("SettingsXml"));
     }
 
+    // -------------------------------------------------------------------------
+    // Phase 37-03: RuntimeExcludes auto-applies at serialize; IncludeFields opts back in
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public void Serialize_RuntimeExcludes_EcomShops_AutoStripsIndexColumns()
+    {
+        var row = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["ShopId"] = "Shop1",
+            ["ShopName"] = "Default",
+            ["ShopIndexRepository"] = "ProductsBackend",
+            ["ShopIndexName"] = "Products.index",
+            ["ShopIndexDocumentType"] = "Product"
+        };
+
+        var predicate = new ProviderPredicateDefinition
+        {
+            Name = "Shops",
+            ProviderType = "SqlTable",
+            Table = "EcomShops",
+            NameColumn = "ShopName"
+            // no explicit ExcludeFields, no IncludeFields
+        };
+
+        var metadata = new TableMetadata
+        {
+            TableName = "EcomShops",
+            NameColumn = "ShopName",
+            KeyColumns = new List<string> { "ShopId" },
+            IdentityColumns = new List<string>(),
+            AllColumns = new List<string> { "ShopId", "ShopName", "ShopIndexRepository", "ShopIndexName", "ShopIndexDocumentType" }
+        };
+
+        var (provider, _, outputRoot) = CreateProviderForSerializeCustom(new[] { row }, metadata,
+            new[] { "ShopId", "ShopName", "ShopIndexRepository", "ShopIndexName", "ShopIndexDocumentType" });
+
+        var result = provider.Serialize(predicate, outputRoot);
+
+        Assert.Equal(1, result.RowsSerialized);
+
+        var fileStore = new FlatFileStore();
+        var rows = fileStore.ReadAllRows(outputRoot, "EcomShops").ToList();
+        Assert.Single(rows);
+        Assert.False(rows[0].ContainsKey("ShopIndexRepository"));
+        Assert.False(rows[0].ContainsKey("ShopIndexName"));
+        Assert.False(rows[0].ContainsKey("ShopIndexDocumentType"));
+        // Non-runtime columns still present
+        Assert.True(rows[0].ContainsKey("ShopName"));
+    }
+
+    [Fact]
+    public void Serialize_RuntimeExcludes_IncludeFieldsOptsBackIn()
+    {
+        var row = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["ShopId"] = "Shop1",
+            ["ShopName"] = "Default",
+            ["ShopIndexRepository"] = "ProductsBackend",
+            ["ShopIndexName"] = "Products.index",
+            ["ShopIndexDocumentType"] = "Product"
+        };
+
+        var predicate = new ProviderPredicateDefinition
+        {
+            Name = "Shops",
+            ProviderType = "SqlTable",
+            Table = "EcomShops",
+            NameColumn = "ShopName",
+            IncludeFields = new List<string> { "ShopIndexRepository" }
+        };
+
+        var metadata = new TableMetadata
+        {
+            TableName = "EcomShops",
+            NameColumn = "ShopName",
+            KeyColumns = new List<string> { "ShopId" },
+            IdentityColumns = new List<string>(),
+            AllColumns = new List<string> { "ShopId", "ShopName", "ShopIndexRepository", "ShopIndexName", "ShopIndexDocumentType" }
+        };
+
+        var (provider, _, outputRoot) = CreateProviderForSerializeCustom(new[] { row }, metadata,
+            new[] { "ShopId", "ShopName", "ShopIndexRepository", "ShopIndexName", "ShopIndexDocumentType" });
+
+        _ = provider.Serialize(predicate, outputRoot);
+
+        var fileStore = new FlatFileStore();
+        var rows = fileStore.ReadAllRows(outputRoot, "EcomShops").ToList();
+        Assert.True(rows[0].ContainsKey("ShopIndexRepository"), "IncludeFields should re-include ShopIndexRepository");
+        Assert.False(rows[0].ContainsKey("ShopIndexName"));
+        Assert.False(rows[0].ContainsKey("ShopIndexDocumentType"));
+    }
+
+    [Fact]
+    public void Serialize_PassesWhereClauseToReader()
+    {
+        // Verify SqlTableProvider forwards predicate.Where to SqlTableReader.ReadAllRows.
+        var row = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["Id"] = 1,
+            ["Name"] = "Admin",
+            ["Description"] = "",
+            ["SettingsXml"] = ""
+        };
+
+        var predicate = new ProviderPredicateDefinition
+        {
+            Name = "Roles",
+            ProviderType = "SqlTable",
+            Table = "TestTable",
+            NameColumn = "Name",
+            Where = "Id = 1"
+        };
+
+        var (provider, mockExecutor, outputRoot) = CreateProviderForSerialize(new[] { row });
+
+        _ = provider.Serialize(predicate, outputRoot);
+
+        // Capture the CommandBuilder from the reader path and verify WHERE was composed.
+        // (We already proved the SQL composition in SqlTableReaderWhereClauseTests; here we
+        // just confirm the provider passed Where through rather than dropping it.)
+        mockExecutor.Verify(
+            x => x.ExecuteReader(It.Is<Dynamicweb.Data.CommandBuilder>(
+                cb => cb.ToString().Contains("WHERE Id = 1"))),
+            Times.AtLeastOnce);
+    }
+
+    private static (SqlTableProvider provider, Mock<ISqlExecutor> executor, string outputRoot)
+        CreateProviderForSerializeCustom(
+            IEnumerable<Dictionary<string, object?>> rows,
+            TableMetadata metadata,
+            string[] columnNames)
+    {
+        var mockExecutor = new Mock<ISqlExecutor>();
+        var mockMetadataReader = new Mock<DataGroupMetadataReader>(mockExecutor.Object) { CallBase = false };
+        mockMetadataReader.Setup(x => x.GetTableMetadata(It.IsAny<ProviderPredicateDefinition>(), It.IsAny<bool>()))
+            .Returns(metadata);
+
+        var rowList = rows.ToList();
+        var dbReaderMock = CreateMockDataReader(
+            columnNames,
+            rowList.Select(r => columnNames.Select(col => r.GetValueOrDefault(col) ?? DBNull.Value).ToArray()).ToArray());
+        mockExecutor.Setup(x => x.ExecuteReader(It.IsAny<Dynamicweb.Data.CommandBuilder>()))
+            .Returns(dbReaderMock.Object);
+
+        var tableReader = new SqlTableReader(mockExecutor.Object);
+        var fileStore = new FlatFileStore();
+
+        var tempDir = Path.Combine(Path.GetTempPath(), $"contentsync_serialize_{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+
+        var writerMock = new Mock<SqlTableWriter>(mockExecutor.Object) { CallBase = false };
+        var provider = new SqlTableProvider(mockMetadataReader.Object, tableReader, fileStore, writerMock.Object);
+        return (provider, mockExecutor, tempDir);
+    }
+
     #region Helper Methods
 
     private static (SqlTableProvider provider, Mock<ISqlExecutor> executor, string outputRoot)
