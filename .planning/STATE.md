@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v0.4.0
 milestone_name: Full Page Fidelity
-status: executing
-stopped_at: Completed 37-05-PLAN.md
-last_updated: "2026-04-20T20:04:24.171Z"
-last_activity: 2026-04-20 -- Phase 37 planning complete
+status: verifying
+stopped_at: Completed 37-06-PLAN.md (all Phase 37 plans complete)
+last_updated: "2026-04-20T20:29:23.500Z"
+last_activity: 2026-04-20
 progress:
   total_phases: 26
-  completed_phases: 24
+  completed_phases: 25
   total_plans: 55
-  completed_plans: 53
-  percent: 96
+  completed_plans: 54
+  percent: 98
 ---
 
 # Project State
@@ -27,8 +27,8 @@ See: .planning/PROJECT.md (updated 2026-04-03)
 
 Phase: 37 (production-ready-baseline) — EXECUTING
 Plan: 6 of 6
-Status: Ready to execute
-Last activity: 2026-04-20 -- Phase 37 planning complete
+Status: Phase complete — ready for verification
+Last activity: 2026-04-20
 
 ## Recent Session — 2026-04-17 Autonomous Baseline Test
 
@@ -115,6 +115,7 @@ Progress: [██████████] 100% (v0.4.0)
 | Phase 37-production-ready-baseline P37-03 | 24min | 3 tasks | 17 files |
 | Phase 37-production-ready-baseline P37-04 | 105min | 3 tasks | 19 files |
 | Phase 37-production-ready-baseline P37-05 | 48min | 3 tasks | 19 files |
+| Phase 37-production-ready-baseline P37-06 | 5min | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -141,6 +142,7 @@ Recent decisions affecting current work:
 - [Phase 37-production-ready-baseline]: Phase 37-03: SqlIdentifierValidator + SqlWhereClauseValidator whitelist identifiers against INFORMATION_SCHEMA; RuntimeExcludes ships flat curated map (UrlPath.UrlPathVisitsCount + EcomShops.ShopIndex* per F-06/F-07) per D-07 no Runtime/Credential split; predicate.Where + predicate.IncludeFields round-trip through ConfigLoader/ConfigWriter; ConfigLoader.Load(path, validator?) overload aggregates errors across Deploy+Seed SqlTable predicates; SavePredicateCommand exposes IdentifierValidator/WhereValidator hooks; StripStringLiterals elides quoted content entirely (space separator, not 'x' fillers) to avoid tokenizer false positives while raw-clause BannedTokens scan still catches literal injection
 - [Phase 37-production-ready-baseline]: Phase 37-04: DwCacheServiceRegistry curated static map (9 services via DW10 Dynamicweb.Ecommerce.Services static locator + Services.Areas + VatGroupCountryRelationService via DependencyResolver) replaces AddInManager-based ICacheResolver (F-10 silent skips); TranslationLanguageService dropped (absent from DW 10.23.9 NuGet). StrictModeEscalator + CumulativeStrictModeException + StrictModeResolver (D-16: CLI/API default ON, AdminUi default OFF; request>config>entry-point-default). Log-wrapper pattern at orchestrator boundary intercepts every 'WARNING:' line from any downstream code — chose over ctor-threading 5 classes for smallest diff. SerializerConfiguration.StrictMode (bool?) round-trips via ConfigLoader/ConfigWriter. SerializerDeserializeCommand.IsAdminUiInvocation flag distinguishes admin-UI entry point from API default.
 - [Phase 37-production-ready-baseline]: Phase 37-05 (TEMPLATE-01 + LINK-02): TemplateAssetManifest + TemplateReferenceScanner + BaselineLinkSweeper close the last two baseline-correctness gaps. Pre-flight manifest validation at start of Deserialize replaces ~80 LOC of per-page inline template validation. BaselineLinkSweeper fails serialize at source when the baseline has orphan Default.aspx?ID= refs. SqlTable predicates opt in to at-deserialize link resolution via resolveLinksInColumns — orchestrator reorders Content-first (approach A) and threads aggregated source->target map into SqlTableWriter.ApplyLinkResolution. ISerializationProvider.Deserialize gained optional InternalLinkResolver? 6th param; every Moq .Setup/.Verify/.Returns lambda was updated inline (Rule 3 blocker).
+- [Phase 37-production-ready-baseline]: Phase 37-06 (gap closure for SC-3/CR-01): wired default SqlIdentifierValidator into the 1-arg ConfigLoader.Load(path) overload — all 22 production call sites now enforce identifier allowlisting without call-site changes. Added TestOverrideIdentifierValidator AsyncLocal (mirrors ConfigPathResolver.TestOverridePath) + internal _testDefaultValidatorConstructedCallback spy hook (InternalsVisibleTo narrows exposure to test assembly only per T-37-06-03). ConfigLoaderValidatorFixtureBase abstract test-helper class installs a permissive union-allowlist AsyncLocal override in per-class ctor/Dispose — 4 test classes inherit it (ConfigLoaderTests, DeployModeConfigLoaderTests, PredicateCommandTests, SaveSerializerSettingsCommandTests); 6 Content-only test classes audited and left alone. Test 2 uses a spy-callback direct proof rather than Assert.ThrowsAny to avoid coupling to DB-layer exception shape when INFORMATION_SCHEMA is unreachable. 620/620 tests passing (baseline 618 + 2 new SC-3 tests).
 
 ### Pending Todos
 
@@ -152,6 +154,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-20T18:21:34.859Z
-Stopped at: Completed 37-05-PLAN.md
+Last session: 2026-04-20T20:29:23.493Z
+Stopped at: Completed 37-06-PLAN.md (all Phase 37 plans complete)
 Resume file: None
