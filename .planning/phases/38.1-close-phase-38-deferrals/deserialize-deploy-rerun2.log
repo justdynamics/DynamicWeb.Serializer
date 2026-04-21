@@ -1,0 +1,10 @@
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0  0     0    0     0    0     0      0      0 --:--:--  0:00:01 --:--:--     0100   526    0   526    0     0    243      0 --:--:--  0:00:02 --:--:--   243100   526    0   526    0     0    243      0 --:--:--  0:00:02 --:--:--   243HTTP/1.1 400 Bad Request
+Content-Type: application/json; charset=utf-8
+Date: Tue, 21 Apr 2026 21:03:10 GMT
+Server: Kestrel
+Set-Cookie: DW_Session_ID=492089ff07294ee19447e53c51e1fbb3b8e7b73cc347484ca3181cdf8df732deefe318feb105427bb8c3e4d87e7fb501; path=/; samesite=strict; httponly
+Transfer-Encoding: chunked
+
+{"status":"error","message":"[Deploy] Deserialized: 1 created, 31 updated, 884 skipped, 0 failed across 17 predicates. Errors: 1 Errors: Strict mode: 1 warning(s) escalated to failure:\n  -   WARNING: Could not re-enable FK constraints for [EcomShopGroupRelation]: The ALTER TABLE statement conflicted with the FOREIGN KEY constraint \"DW_FK_EcomShopGroupRelation_EcomShops\". The conflict occurred in database \"Swift-CleanDB\", table \"dbo.EcomShops\", column 'ShopId'.","exception":null,"model":null,"modelIdentifier":null}

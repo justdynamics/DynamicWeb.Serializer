@@ -1,0 +1,33 @@
+Changed database context to 'Swift-CleanDB'.
+Checking identity information: current identity value '0'.
+DBCC execution completed. If DBCC printed error messages, contact your system administrator.
+Checking identity information: current identity value '0'.
+DBCC execution completed. If DBCC printed error messages, contact your system administrator.
+Checking identity information: current identity value '0'.
+DBCC execution completed. If DBCC printed error messages, contact your system administrator.
+Checking identity information: current identity value '0'.
+DBCC execution completed. If DBCC printed error messages, contact your system administrator.
+Checking identity information: current identity value '1'.
+DBCC execution completed. If DBCC printed error messages, contact your system administrator.
+Checking identity information: current identity value '9'.
+DBCC execution completed. If DBCC printed error messages, contact your system administrator.
+Checking identity information: current identity value '5'.
+DBCC execution completed. If DBCC printed error messages, contact your system administrator.
+Checking identity information: current identity value '17'.
+DBCC execution completed. If DBCC printed error messages, contact your system administrator.
+Checking identity information: current identity value '2'.
+DBCC execution completed. If DBCC printed error messages, contact your system administrator.
+Checking identity information: current identity value '4'.
+DBCC execution completed. If DBCC printed error messages, contact your system administrator.
+Checking identity information: current identity value '14'.
+DBCC execution completed. If DBCC printed error messages, contact your system administrator.
+T             N          
+------------- -----------
+Area                    0
+Page                    0
+Paragraph               0
+GridRow                 0
+EcomShops               0
+EcomCountries           0
+EcomProducts            0
+UrlPath                 0

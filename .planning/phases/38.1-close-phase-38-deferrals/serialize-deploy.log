@@ -1,0 +1,10 @@
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0  0     0    0     0    0     0      0      0 --:--:--  0:00:01 --:--:--     0  0     0    0     0    0     0      0      0 --:--:--  0:00:02 --:--:--     0  0     0    0     0    0     0      0      0 --:--:--  0:00:03 --:--:--     0  0     0    0     0    0     0      0      0 --:--:--  0:00:04 --:--:--     0  0     0    0     0    0     0      0      0 --:--:--  0:00:05 --:--:--     0100   345    0   345    0     0     58      0 --:--:--  0:00:05 --:--:--    72100   345    0   345    0     0     58      0 --:--:--  0:00:05 --:--:--    92HTTP/1.1 200 OK
+Content-Type: application/json; charset=utf-8
+Date: Tue, 21 Apr 2026 20:53:51 GMT
+Server: Kestrel
+Set-Cookie: DW_Session_ID=d5a02f4e7a6544cbaed405b71580d41fa57f4745ac0c4639a6cdc8f5294f221e6ab27ab8f9884df79fbc64ca24946132; path=/; samesite=strict; httponly
+Transfer-Encoding: chunked
+
+{"status":"ok","message":"Serialization complete (Deploy). 1493 YAML files written to C:\\Projects\\Solutions\\swift.test.forsync\\Swift2.2\\Dynamicweb.Host.Suite\\wwwroot\\Files\\System\\Serializer\\SerializeRoot\\deploy. Serialized: 1477 rows across 17 predicates Cleaned 1 stale file(s).","exception":null,"model":null,"modelIdentifier":null}

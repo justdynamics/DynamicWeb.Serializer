@@ -1,0 +1,9 @@
+=== DynamicWeb.Serializer Frontend Smoke Test ===
+Host:       https://localhost:58217
+AreaID:     3
+LangPrefix: C:/Program Files/Git/en-us
+SqlServer:  localhost\SQLEXPRESS
+Database:   Swift-CleanDB
+Auth:       Integrated Security
+
+No active pages found under area 3. Nothing to test.
