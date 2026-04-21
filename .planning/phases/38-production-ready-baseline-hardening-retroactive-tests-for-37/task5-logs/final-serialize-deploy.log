@@ -1,0 +1,1 @@
+{"status":"error","message":"Serialization complete (Deploy). 932 YAML files written to C:\\Projects\\Solutions\\swift.test.forsync\\Swift2.2\\Dynamicweb.Host.Suite\\wwwroot\\Files\\System\\Serializer\\SerializeRoot\\deploy. Serialized: 916 rows across 17 predicates Cleaned 849 stale file(s). Errors: ","exception":null,"model":null,"modelIdentifier":null}

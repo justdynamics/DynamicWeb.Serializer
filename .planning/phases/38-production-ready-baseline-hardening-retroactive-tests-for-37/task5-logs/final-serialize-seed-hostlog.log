@@ -1,0 +1,113 @@
+=== SERIALIZER SUMMARY ===
+{
+  "operation": "Serialize",
+  "timestamp": "2026-04-21T16:57:12.9857878Z",
+  "dryRun": false,
+  "predicates": [
+    {
+      "name": "EcomGroups",
+      "table": "EcomGroups",
+      "created": 316,
+      "updated": 0,
+      "skipped": 0,
+      "failed": 0,
+      "errors": []
+    },
+    {
+      "name": "EcomProducts",
+      "table": "EcomProducts",
+      "created": 2051,
+      "updated": 0,
+      "skipped": 0,
+      "failed": 0,
+      "errors": []
+    },
+    {
+      "name": "EcomGroupProductRelation",
+      "table": "EcomGroupProductRelation",
+      "created": 729,
+      "updated": 0,
+      "skipped": 0,
+      "failed": 0,
+      "errors": []
+    },
+    {
+      "name": "EcomVariantGroups",
+      "table": "EcomVariantGroups",
+      "created": 8,
+      "updated": 0,
+      "skipped": 0,
+      "failed": 0,
+      "errors": []
+    },
+    {
+      "name": "EcomVariantsOptions",
+      "table": "EcomVariantsOptions",
+      "created": 70,
+      "updated": 0,
+      "skipped": 0,
+      "failed": 0,
+      "errors": []
+    },
+    {
+      "name": "EcomVariantOptionsProductRelation",
+      "table": "EcomVariantOptionsProductRelation",
+      "created": 309,
+      "updated": 0,
+      "skipped": 0,
+      "failed": 0,
+      "errors": []
+    },
+    {
+      "name": "EcomDiscount",
+      "table": "EcomDiscount",
+      "created": 3,
+      "updated": 0,
+      "skipped": 0,
+      "failed": 0,
+      "errors": []
+    },
+    {
+      "name": "EcomDiscountTranslation",
+      "table": "EcomDiscountTranslation",
+      "created": 3,
+      "updated": 0,
+      "skipped": 0,
+      "failed": 0,
+      "errors": []
+    }
+  ],
+  "totalCreated": 3489,
+  "totalUpdated": 0,
+  "totalSkipped": 0,
+  "totalFailed": 0,
+  "errors": [],
+  "advice": []
+}
+=== END SUMMARY ===
+[2026-04-21 18:57:05.593] === Serializer Serialize (API) started [mode: Seed] ===
+[2026-04-21 18:57:05.594] === Mode: Seed | Strategy: DestinationWins ===
+[2026-04-21 18:57:05.712] Serializing table EcomGroups
+[2026-04-21 18:57:05.716] Read 316 rows from EcomGroups
+[2026-04-21 18:57:06.211] Serialized 316 rows to _sql/EcomGroups/
+[2026-04-21 18:57:06.361] Serializing table EcomProducts
+[2026-04-21 18:57:06.405] Read 2051 rows from EcomProducts
+[2026-04-21 18:57:10.732] Serialized 2051 rows to _sql/EcomProducts/
+[2026-04-21 18:57:10.781] Serializing table EcomGroupProductRelation
+[2026-04-21 18:57:10.782] Read 729 rows from EcomGroupProductRelation
+[2026-04-21 18:57:11.650] Serialized 729 rows to _sql/EcomGroupProductRelation/
+[2026-04-21 18:57:11.858] Serializing table EcomVariantGroups
+[2026-04-21 18:57:11.864] Read 8 rows from EcomVariantGroups
+[2026-04-21 18:57:11.872] Serialized 8 rows to _sql/EcomVariantGroups/
+[2026-04-21 18:57:12.092] Serializing table EcomVariantsOptions
+[2026-04-21 18:57:12.094] Read 70 rows from EcomVariantsOptions
+[2026-04-21 18:57:12.223] Serialized 70 rows to _sql/EcomVariantsOptions/
+[2026-04-21 18:57:12.284] Serializing table EcomVariantOptionsProductRelation
+[2026-04-21 18:57:12.285] Read 309 rows from EcomVariantOptionsProductRelation
+[2026-04-21 18:57:12.700] Serialized 309 rows to _sql/EcomVariantOptionsProductRelation/
+[2026-04-21 18:57:12.878] Serializing table EcomDiscount
+[2026-04-21 18:57:12.880] Read 3 rows from EcomDiscount
+[2026-04-21 18:57:12.886] Serialized 3 rows to _sql/EcomDiscount/
+[2026-04-21 18:57:12.945] Serializing table EcomDiscountTranslation
+[2026-04-21 18:57:12.946] Read 3 rows from EcomDiscountTranslation
+[2026-04-21 18:57:12.949] Serialized 3 rows to _sql/EcomDiscountTranslation/
