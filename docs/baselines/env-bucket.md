@@ -202,6 +202,35 @@ bootstrap version and the current DW 10.24.7 release:
 | `AreaLayoutPhone`   | `nvarchar(255)` | Legacy mobile-specific template path; superseded by responsive templates. |
 | `AreaLayoutTablet`  | `nvarchar(255)` | Legacy tablet-specific template path; superseded by responsive templates. |
 
+### Expanded scope — 7 additional drift columns observed (Phase 38.1 B.3.1, 2026-04-21)
+
+The Phase 38 live E2E round-trip surfaced **seven more drift columns**
+across `EcomGroups` and `EcomProducts` that were not in the original
+B.3 investigation's Area-only scope. The `TargetSchemaCache`
+warn-and-skip mechanism handles them identically to the three Area
+columns above — all row data writes successfully; strict mode then
+escalates the warning count at end-of-run.
+
+| Source Column                              | Table                | Known use                                                |
+| ------------------------------------------ | -------------------- | -------------------------------------------------------- |
+| `GroupPageIDRel`                           | `EcomGroups`         | Legacy group→page relation; superseded by navigation FK. |
+| `ProductPeriodId`                          | `EcomProducts`       | Legacy subscription-period FK; feature removed.          |
+| `ProductVariantGroupCounter`               | `EcomProducts`       | Legacy variant-group cache column; replaced by live count. |
+| `ProductPriceMatrixPeriod`                 | `EcomProducts`       | Legacy matrix-pricing period FK; superseded by PriceMatrix module. |
+| `ProductOptimizedFor`                      | `EcomProducts`       | Legacy storefront optimization hint; removed. |
+| `MyVolume`                                 | `EcomProducts`       | Legacy custom product field; not part of DW core shape. |
+| `MyDouble`                                 | `EcomProducts`       | Legacy custom product field; not part of DW core shape. |
+
+Source: `.planning/phases/38-production-ready-baseline-hardening-retroactive-tests-for-37/38-05-e2e-results.md` §"Deserialize Seed strict mode escalations".
+
+Resolution is the same as the three Area columns: align DW NuGet
+versions between source and target hosts (preferred) OR proactively
+drop the columns on the source DB after confirming they are empty.
+The serializer still does **not** ship a `knownEnvSchemaDrift`
+allowlist (rejected in Phase 38 B.3 and reaffirmed in Phase 38.1
+B.3.1 D-38.1-08); operational version alignment is the supported
+path.
+
 Investigation notes:
 `.planning/phases/38-production-ready-baseline-hardening-retroactive-tests-for-37/38-03-b3-investigation.md`.
 
