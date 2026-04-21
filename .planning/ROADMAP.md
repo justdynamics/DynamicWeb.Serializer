@@ -258,14 +258,14 @@ Plans:
   7. A new smoke tool exits 0 when the CleanDB frontend serves all expected pages as 2xx/3xx, non-zero with a report on any 5xx
   8. Swift2.2-baseline.md has a "known pre-existing source-data bugs" section; env-bucket.md explains Friendly URL + GlobalSettings.config + secrets are per-env infra
 
-**Plans:** 4/5 plans executed
+**Plans:** 5/5 plans complete
 
 Plans:
 - [x] 38-01-PLAN.md — Wave 1 quick wins: D.1 query-param binding, D.2 HTTP 400 bug, E.1 baseline doc extension, E.2 env-bucket.md (D.1, D.2, E.1, E.2)
 - [x] 38-02-PLAN.md — Wave 2 retroactive tests + consolidation: A.3 AcknowledgedOrphanPageIds consolidation → A.1 TDD tests → A.2 ISqlExecutor seam + IDENTITY_INSERT test → B.5 paragraph-anchor sweep fix (A.1, A.2, A.3, B.5)
 - [x] 38-03-PLAN.md — Wave 3 investigations + data-loss fix: C.1 FlatFileStore monotonic-counter dedup, B.1/B.2 SQL cleanup for 3 orphan templates, B.3 schema-drift investigation, B.4 FK re-enable investigation, live E2E gate (B.1, B.2, B.3, B.4, C.1)
 - [x] 38-04-PLAN.md — Wave 4 smoke tool: tools/smoke/Test-BaselineFrontend.ps1 + README.md (D.3)
-- [ ] 38-05-PLAN.md — Wave 5 final (manual sign-off): restore strictMode default ON + remove acknowledgedOrphanPageIds workaround + final live E2E (D-38-16)
+- [x] 38-05-PLAN.md — Wave 5 final (manual sign-off): restore strictMode default ON + remove acknowledgedOrphanPageIds workaround + final live E2E (D-38-16)
 
 **Execution waves** (for /gsd-execute-phase):
 - Wave 1: 38-01
