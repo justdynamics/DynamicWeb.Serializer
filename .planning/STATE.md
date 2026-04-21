@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v0.4.0
 milestone_name: Full Page Fidelity
-status: executing
-stopped_at: Phase 38.1 Plan 01 executed — 4 named deferrals CLOSED, wider gap open-with-gap; awaiting orchestrator gap-closure planning
-last_updated: "2026-04-21T21:16:35.649Z"
-last_activity: 2026-04-21 -- Phase 38.1 execution started
+status: verifying
+stopped_at: Completed 38.1-02-PLAN.md — scripts 08 and 09 ready for Plan 04 pipeline
+last_updated: "2026-04-21T23:27:17.663Z"
+last_activity: 2026-04-21
 progress:
   total_phases: 28
-  completed_phases: 27
-  total_plans: 61
-  completed_plans: 60
-  percent: 98
+  completed_phases: 26
+  total_plans: 65
+  completed_plans: 61
+  percent: 94
 ---
 
 # Project State
@@ -27,8 +27,8 @@ See: .planning/PROJECT.md (updated 2026-04-03)
 
 Phase: 38.1 (close-phase-38-deferrals) — EXECUTING
 Plan: 1 of 1
-Status: Executing Phase 38.1
-Last activity: 2026-04-21 -- Phase 38.1 execution started
+Status: Phase complete — ready for verification
+Last activity: 2026-04-21
 
 ## Recent Session — 2026-04-17 Autonomous Baseline Test
 
@@ -118,6 +118,7 @@ Progress: [██████████] 100% (v0.4.0)
 | Phase 37-production-ready-baseline P37-05 | 48min | 3 tasks | 19 files |
 | Phase 37-production-ready-baseline P37-06 | 5min | 2 tasks | 7 files |
 | Phase 38.1 P01 | 240 | 6 tasks | 11 files |
+| Phase 38.1 P02 | 18min | 3 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -152,6 +153,7 @@ Recent decisions affecting current work:
 - [Phase 37-production-ready-baseline]: Phase 37-06 (gap closure for SC-3/CR-01): wired default SqlIdentifierValidator into the 1-arg ConfigLoader.Load(path) overload — all 22 production call sites now enforce identifier allowlisting without call-site changes. Added TestOverrideIdentifierValidator AsyncLocal (mirrors ConfigPathResolver.TestOverridePath) + internal _testDefaultValidatorConstructedCallback spy hook (InternalsVisibleTo narrows exposure to test assembly only per T-37-06-03). ConfigLoaderValidatorFixtureBase abstract test-helper class installs a permissive union-allowlist AsyncLocal override in per-class ctor/Dispose — 4 test classes inherit it (ConfigLoaderTests, DeployModeConfigLoaderTests, PredicateCommandTests, SaveSerializerSettingsCommandTests); 6 Content-only test classes audited and left alone. Test 2 uses a spy-callback direct proof rather than Assert.ThrowsAny to avoid coupling to DB-layer exception shape when INFORMATION_SCHEMA is unreachable. 620/620 tests passing (baseline 618 + 2 new SC-3 tests).
 - [Phase 38.1]: D-38.1-19 live E2E: 4 named deferrals (B.5.1, B.4.1, B.3.1, GRID-01) all CLOSED; wider pre-existing content-link orphan gap (20 page IDs × 47 occurrences + 10 PropertyItem GUIDs) surfaced by Phase 38-05's acknowledgedOrphanPageIds removal — needs B.5.2 + ITEM-01 follow-up; disposition open-with-gap
 - [Phase 38.1]: D-38.1-16/17/18 ENVIRONMENT bucket renamed to NOT-SERIALIZED across Swift2.2-baseline.md, env-bucket.md, .planning/STATE.md; one ALLCAPS ENVIRONMENT intentionally retained in 'formerly ENVIRONMENT' rationale blockquote per acceptance regex
+- [Phase 38.1]: Plan 02: D-38.1-02-01 script 09 scope extended 2→10 pages (Rule 2); D-38.1-02-02 live SQL unavailable, investigation substituted evidence-based artifact (Rule 3); dynamic-SQL sweep pattern for script 08 (no pre-catalog needed, matches script 01 ID-15717 precedent); idempotent zero-case commits empty transaction for Plan 04 pipeline safety
 
 ### Pending Todos
 
@@ -163,6 +165,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-21T21:16:03.456Z
-Stopped at: Phase 38.1 Plan 01 executed — 4 named deferrals CLOSED, wider gap open-with-gap; awaiting orchestrator gap-closure planning
+Last session: 2026-04-21T23:27:17.657Z
+Stopped at: Completed 38.1-02-PLAN.md — scripts 08 and 09 ready for Plan 04 pipeline
 Resume file: None

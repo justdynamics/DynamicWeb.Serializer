@@ -294,11 +294,11 @@ Plans:
   3. Zero escalated warnings for the 4 deferred items (B.5.1, B.4.1, B.3.1, GRID-01)
   4. Optional: extract shared paragraph-ID collector helper between `BaselineLinkSweeper` and `InternalLinkResolver` (carried from checker warning W6)
 
-**Plans:** 5 plans (1 original + 4 gap-closure plans inserted 2026-04-21)
+**Plans:** 2/5 plans executed
 
 Plans:
 - [x] 38.1-01-PLAN.md — Single-plan 6-task sequence: B.5.1 SelectedValue sweeper → B.4.1 SHOP19 cleanup SQL → B.3.1 env-bucket.md drift columns → GRID-01 stale GridRow SQL → W6 ParagraphIdCollector extraction → NOT-SERIALIZED rename + live E2E (closed 4 named deferrals; open-with-gap on wider 57-escalation surface — see 38.1-VERIFICATION.md)
-- [ ] 38.1-02-PLAN.md — Gap closure Wave 1a: investigation of 20 orphan page IDs + scripts 08 (null-orphan-page-link-refs) and 09 (fix-misconfigured-property-pages for PageID 88/103) + README rows 08 & 09
+- [x] 38.1-02-PLAN.md — Gap closure Wave 1a: investigation of 20 orphan page IDs + scripts 08 (null-orphan-page-link-refs) and 09 (fix-misconfigured-property-pages for PageID 88/103) + README rows 08 & 09
 - [ ] 38.1-03-PLAN.md — Gap closure Wave 1b (parallel with 02): cleandb-align-schema.sql (10 idempotent ALTER) + tools/e2e/full-clean-roundtrip.ps1 unattended pipeline + tools/e2e/README.md
 - [ ] 38.1-04-PLAN.md — Gap closure Wave 2: run full pipeline end-to-end + capture 38.1-02-e2e-results.md with disposition CLOSED
 - [ ] 38.1-05-PLAN.md — Gap closure Wave 3: docs/findings/swift22-cleanup-overview.md (email-able full cleanup surface inventory)
