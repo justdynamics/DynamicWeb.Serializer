@@ -7,23 +7,25 @@
 
 ---
 
-## Relationship to the DEPLOYMENT/SEED/ENVIRONMENT split
+## Relationship to the DEPLOYMENT/SEED/NOT-SERIALIZED split
 
-This document covers the **ENVIRONMENT** bucket of the three-bucket split defined
-in the Swift 2.2 baseline workflow (DEPLOYMENT / SEED / ENVIRONMENT). Each bucket
-has a distinct ownership boundary:
+This document covers the **NOT-SERIALIZED** bucket of the three-bucket split
+defined in the Swift 2.2 baseline workflow (DEPLOYMENT / SEED / NOT-SERIALIZED;
+the bucket was renamed from its prior label in Phase 38.1 per D-38.1-16 — see
+Swift2.2-baseline.md § "The three-bucket split" for the migration note). Each
+bucket has a distinct ownership boundary:
 
 | Bucket | Owned by | Captured in | Example contents |
 |--------|----------|-------------|------------------|
 | **DEPLOYMENT** | Baseline author | YAML under `baselines/<baseline>/_content/` and predicate-scoped SQL tables | Page tree, item types, grid rows, shop/payment/shipping definitions, VAT groups |
 | **SEED** | Baseline author initially, end-user thereafter | YAML under `baselines/<baseline>/_sql/` via Seed-mode predicates | Newsletter body copy, FAQ text, customer-editable welcome content |
-| **ENVIRONMENT** | Per-env operator | Filesystem config + Azure Key Vault + per-env Area fields (not serialized) | GlobalSettings.config, secrets, AreaDomain, GoogleTagManagerID |
+| **NOT-SERIALIZED** | Per-env operator | Filesystem config + Azure Key Vault + per-env Area fields (not serialized) | GlobalSettings.config, secrets, AreaDomain, GoogleTagManagerID |
 
 See [Swift2.2-baseline.md § The three-bucket split](Swift2.2-baseline.md#the-three-bucket-split)
 for the DEPLOYMENT/SEED boundaries and how they flow through the serializer's
-Deploy and Seed modes. This document enumerates what lives in the ENVIRONMENT
-bucket — the bits that the serializer **never** captures, and that therefore
-must be configured on each target host.
+Deploy and Seed modes. This document enumerates what lives in the
+NOT-SERIALIZED bucket — the bits that the serializer **never** captures, and
+that therefore must be configured on each target host.
 
 ---
 
@@ -36,7 +38,7 @@ per environment at deploy time. This document lists those environment-specific
 concerns and points to where they live.
 
 If you treat the serializer as the single source of truth for a DW install and
-forget the ENVIRONMENT bucket, your deploy will look correct in admin but the
+forget the NOT-SERIALIZED bucket, your deploy will look correct in admin but the
 storefront URL will not resolve, the payment gateways will be unauthenticated,
 and the Swift design-system templates will be absent from the Files volume.
 This document is the checklist that closes those gaps.

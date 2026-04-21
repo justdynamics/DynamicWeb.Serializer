@@ -37,7 +37,7 @@ Every piece of data in Swift 2.2 belongs to one of three buckets.
 |--------|-------------|-------------------|--------------|
 | **DEPLOYMENT** | Developer / DW template | Overwrite target (source wins) | **YES** |
 | **SEED** | Developer initially, end-user thereafter | Apply once if absent; never overwrite | Partial (see gaps) |
-| **ENVIRONMENT** | Ops / infrastructure | Never in baseline; per-env config | No |
+| **NOT-SERIALIZED** | Ops / infrastructure | Never in baseline; per-env config | No |
 
 **DEPLOYMENT** data is what this baseline is for. Payment method *definitions*,
 currency codes, country lists, VAT rates, shop structure, service-page
@@ -49,10 +49,17 @@ newsletter email templates. The current serializer **does not have a
 safe mode for this** — deserializing would overwrite customer edits. See
 `D2-SEED-CONTENT-MODE` in the companion improvement plan.
 
-**ENVIRONMENT** data is per-instance infrastructure: the shop's live domain,
+**NOT-SERIALIZED** data is per-instance infrastructure: the shop's live domain,
 payment gateway API keys, Azure storage CDN hostnames, Google Tag Manager
 IDs, analytics tokens. This stays in Azure App Service configuration or
 Azure Key Vault — never in git.
+
+> **NOT-SERIALIZED** (formerly "ENVIRONMENT"): data that lives outside any
+> baseline YAML because it varies per environment and is owned by the target
+> host's operator. If it can appear in a YAML file, it is by definition
+> DEPLOYMENT or SEED, not NOT-SERIALIZED. The bucket was renamed in Phase
+> 38.1 (D-38.1-16) because the previous label invited confusion with generic
+> lowercase "environment" usage elsewhere in the docs.
 
 ## The Swift 2.2 contamination problem
 

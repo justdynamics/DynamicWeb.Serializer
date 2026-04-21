@@ -4,14 +4,14 @@ milestone: v0.4.0
 milestone_name: Full Page Fidelity
 status: executing
 stopped_at: Phase 38.1 context gathered
-last_updated: "2026-04-21T19:33:36.665Z"
-last_activity: 2026-04-21
+last_updated: "2026-04-21T20:37:52.196Z"
+last_activity: 2026-04-21 -- Phase 38.1 execution started
 progress:
   total_phases: 28
   completed_phases: 26
-  total_plans: 60
+  total_plans: 61
   completed_plans: 59
-  percent: 98
+  percent: 97
 ---
 
 # Project State
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-03)
 
 **Core value:** Developers can reliably move DynamicWeb database state between environments through source control, with serialized YAML files as the single source of truth.
-**Current focus:** Phase 38 — Production-Ready Baseline Hardening
+**Current focus:** Phase 38.1 — close-phase-38-deferrals
 
 ## Current Position
 
-Phase: 38
-Plan: Not started
-Status: Executing Phase 38
-Last activity: 2026-04-21
+Phase: 38.1 (close-phase-38-deferrals) — EXECUTING
+Plan: 1 of 1
+Status: Executing Phase 38.1
+Last activity: 2026-04-21 -- Phase 38.1 execution started
 
 ## Recent Session — 2026-04-17 Autonomous Baseline Test
 
@@ -39,7 +39,7 @@ Last activity: 2026-04-21
     deployment config
 
   - `docs/baselines/Swift2.2-baseline.md` — reasoning doc with the
-    DEPLOYMENT / SEED / ENVIRONMENT three-bucket split
+    DEPLOYMENT / SEED / NOT-SERIALIZED three-bucket split
 
   - `baselines/Swift2.2/` — 1570 YAML files from live serialize run
   - Verified via full round-trip: Swift 2.2 → YAML → CleanDB, frontend renders
