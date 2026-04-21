@@ -125,11 +125,23 @@ public class FlatFileStore
         if (usedNames.Add(sanitized))
             return sanitized;
 
-        // Collision: append first 6 chars of MD5 of original identity
-        var hash = Convert.ToHexString(
-            MD5.HashData(Encoding.UTF8.GetBytes(originalIdentity))).ToLowerInvariant();
-        var deduped = $"{sanitized} [{hash[..6]}]";
-        usedNames.Add(deduped);
-        return deduped;
+        // Phase 38 C.1 (D-38-10): monotonic-counter dedup. For N rows with
+        // identical originalIdentity (e.g., N empty-name EcomProducts), emit
+        // N distinct filenames instead of collapsing to 1. The previous
+        // hash-of-identity approach silently dropped duplicates via file overwrite
+        // (HashSet.Add returned false and was ignored).
+        // Scope note: ORDER BY in SqlTableReader is OUT OF SCOPE for this fix
+        // (deferred per RESEARCH Open Question 4 RESOLVED + checker warning W1).
+        // This fix stays within DeduplicateFileName only.
+        var hashPrefix = Convert.ToHexString(
+            MD5.HashData(Encoding.UTF8.GetBytes(originalIdentity))).ToLowerInvariant()[..6];
+        for (int n = 1; n < 100_000; n++)
+        {
+            var candidate = $"{sanitized} [{hashPrefix}-{n}]";
+            if (usedNames.Add(candidate))
+                return candidate;
+        }
+        throw new InvalidOperationException(
+            $"Exhausted 100000 filename variants for identity '{originalIdentity}' — refuse to silently drop rows.");
     }
 }
