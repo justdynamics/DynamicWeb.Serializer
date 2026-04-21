@@ -72,22 +72,40 @@ PRINT '=== Extended scan — non-ItemType locations (Page.Layout, Paragraph.Item
 -- or Page.Layout / Page.Master columns (not just ItemType_Swift-v2_*).
 -- Targeted updates on well-known DW columns:
 
+-- Page.PageLayout: string path to the layout .cshtml — this is where
+-- `Swift-v2_PageNoLayout.cshtml` actually lives on Swift 2.2.
+-- Dynamic SQL so SQL Server does not compile-time-validate missing column
+-- references across hosts with different schema versions.
 IF COL_LENGTH('Page', 'PageLayout') IS NOT NULL
-    UPDATE [Page]
+    EXEC sp_executesql N'UPDATE [Page]
        SET PageLayout = NULL
-     WHERE CAST(PageLayout AS NVARCHAR(MAX)) LIKE '%Swift-v2_PageNoLayout.cshtml%';
+     WHERE CAST(PageLayout AS NVARCHAR(MAX)) LIKE ''%Swift-v2_PageNoLayout.cshtml%''';
 
-IF COL_LENGTH('Page', 'PageMasterPage') IS NOT NULL
-    UPDATE [Page]
-       SET PageMasterPage = NULL
-     WHERE CAST(PageMasterPage AS NVARCHAR(MAX)) LIKE '%Swift-v2_PageNoLayout.cshtml%';
+-- Note: DW's Page.MasterPage link is stored as an INT FK column
+-- `PageMasterPageId` (not a string template path). No string-column scan is
+-- meaningful here. The originally planned `PageMasterPage` UPDATE has been
+-- removed (Phase 38-03 Task 5 fix: Rule 1 — column never existed on any
+-- supported DW schema, so the UPDATE was invalid SQL).
 
 -- Paragraph.ItemType references (grid-row templates point at ItemType records,
 -- not raw cshtml, but scan as a safety net):
 IF COL_LENGTH('Paragraph', 'ParagraphItemType') IS NOT NULL
-    UPDATE [Paragraph]
+    EXEC sp_executesql N'UPDATE [Paragraph]
        SET ParagraphItemType = NULL
-     WHERE ParagraphItemType IN ('1ColumnEmail', '2ColumnsEmail');
+     WHERE ParagraphItemType IN (''1ColumnEmail'', ''2ColumnsEmail'')';
+
+-- GridRow.GridRowDefinitionId — discovered during Phase 38-03 Task 5 E2E:
+-- the actual storage location for `1ColumnEmail` and `2ColumnsEmail` grid-row
+-- template references on Swift 2.2 (142 rows as of 2026-04-21).
+-- Plan 38-03 Task 2 originally scanned only ItemType_Swift-v2_* + Page.PageLayout
+-- + Paragraph.ParagraphItemType, missing this GridRow column.
+-- Rule 1 extension added during live E2E run.
+-- Note: GridRowDefinitionId is NOT NULL, so we set to '' rather than NULL.
+-- Empty string is a valid no-template value for this column.
+IF COL_LENGTH('GridRow', 'GridRowDefinitionId') IS NOT NULL
+    EXEC sp_executesql N'UPDATE [GridRow]
+       SET GridRowDefinitionId = ''''
+     WHERE GridRowDefinitionId IN (''1ColumnEmail'', ''2ColumnsEmail'')';
 
 PRINT '';
 PRINT '=== Verify — expected 0 rows across ItemType_Swift-v2_* for each template name ===';
@@ -115,15 +133,22 @@ ELSE
 
 PRINT '';
 PRINT '=== Non-ItemType verify (expected 0 each) ===';
+-- Dynamic SQL so SQL Server does not compile-time-validate column refs
+-- against the wrong schema version.
 IF COL_LENGTH('Page', 'PageLayout') IS NOT NULL
-    SELECT 'Page.PageLayout' AS Loc, COUNT(*) AS remaining
-      FROM [Page] WHERE CAST(PageLayout AS NVARCHAR(MAX)) LIKE '%Swift-v2_PageNoLayout.cshtml%';
-IF COL_LENGTH('Page', 'PageMasterPage') IS NOT NULL
-    SELECT 'Page.PageMasterPage' AS Loc, COUNT(*) AS remaining
-      FROM [Page] WHERE CAST(PageMasterPage AS NVARCHAR(MAX)) LIKE '%Swift-v2_PageNoLayout.cshtml%';
+    EXEC sp_executesql N'SELECT ''Page.PageLayout'' AS Loc, COUNT(*) AS remaining
+      FROM [Page] WHERE CAST(PageLayout AS NVARCHAR(MAX)) LIKE ''%Swift-v2_PageNoLayout.cshtml%''';
+
+-- Page.MasterPage link is an INT FK (`PageMasterPageId`), never a cshtml path.
+-- No string-column verify is meaningful.
+
 IF COL_LENGTH('Paragraph', 'ParagraphItemType') IS NOT NULL
-    SELECT 'Paragraph.ParagraphItemType' AS Loc, COUNT(*) AS remaining
-      FROM [Paragraph] WHERE ParagraphItemType IN ('1ColumnEmail', '2ColumnsEmail');
+    EXEC sp_executesql N'SELECT ''Paragraph.ParagraphItemType'' AS Loc, COUNT(*) AS remaining
+      FROM [Paragraph] WHERE ParagraphItemType IN (''1ColumnEmail'', ''2ColumnsEmail'')';
+
+IF COL_LENGTH('GridRow', 'GridRowDefinitionId') IS NOT NULL
+    EXEC sp_executesql N'SELECT ''GridRow.GridRowDefinitionId'' AS Loc, COUNT(*) AS remaining
+      FROM [GridRow] WHERE GridRowDefinitionId IN (''1ColumnEmail'', ''2ColumnsEmail'')';
 
 COMMIT TRAN;
 PRINT '';
