@@ -662,32 +662,39 @@ exit 0
 
 **Confirmation plan for A1–A6:** A1 and A4 have explicit investigation tasks in the plan; A2 is a D-38-08 investigation; A3 will surface via the "verify after cleanup" step (mirroring `01-null-orphan-page-refs.sql:71-82`); A5 is user discretion; A6 is verified from code inspection alone.
 
-## Open Questions
+## Open Questions (RESOLVED)
+
+> All 5 open questions have been resolved during planning. Each question carries an inline **RESOLVED** marker pointing at the plan/task that addresses it.
 
 1. **A.2 test strategy: ISqlExecutor refactor vs live DW fixture.**
    - What we know: `ContentDeserializer.CreateAreaFromProperties:473` calls `Database.ExecuteNonQuery` directly. No existing `ISqlExecutor` parameter.
    - What's unclear: Whether to (a) introduce `ISqlExecutor` on ContentDeserializer (mirrors SqlTableWriter — ~20 LOC refactor), (b) test against a live CleanDB instance, or (c) add an in-memory SQLite adapter.
    - Recommendation: (a). Matches existing Phase 37 patterns; keeps CI test-time fast; the seam is useful for future Area-write tests.
+   - **RESOLVED:** Plan 38-02 Task 3 implements option (a) — adds `ISqlExecutor? sqlExecutor = null` ctor parameter on `ContentDeserializer`, routes `CreateAreaFromProperties` + `UpdateAreaFromProperties` through the seam, and drives the regression test with `Mock<ISqlExecutor>` + `.Callback` to capture command text. `[InternalsVisibleTo("DynamicWeb.Serializer.Tests")]` already present in the Serializer csproj (line 34).
 
 2. **D.1 exact fix form.**
    - What we know: Current `Mode` property is a public-setter string on `CommandBase`. Only JSON body works today per REPORT.md.
    - What's unclear: Whether DW's `CommandBase` framework has a native `[FromQuery]` attribute, a convention for reading `Dynamicweb.Context.Current.Request["mode"]`, or requires manual investigation.
    - Recommendation: First task writes the failing test (curl with `?mode=seed`), second task applies whichever fix is shortest. If no native convention exists, fall back to `Dynamicweb.Context.Current.Request["mode"]` inside `Handle()` before the enum parse.
+   - **RESOLVED:** Plan 38-01 Task 1, hardened per checker blocker B4 (2026-04-21). D-38-11 locks the decision that `?mode=seed` binding is broken today — the fix is UNCONDITIONAL. Task 1 writes a failing test first (RED), then applies the `Dynamicweb.Context.Current?.Request?["mode"]` fallback inside `Handle()` (GREEN). No curl-probe escape hatch; the fix always lands. Plan 38-01 Task 2 mirrors the same change onto `SerializerDeserializeCommand`.
 
 3. **B.3 resolution: upgrade CleanDB or add allowlist.**
    - What we know: 3 Area columns (AreaHtmlType, AreaLayoutPhone, AreaLayoutTablet) exist in Swift 2.2 but not CleanDB. Baselines YAML at `baselines/Swift2.2/_content/Swift 2/area.yml:43/58/59` has them as empty strings already.
    - What's unclear: Whether these columns are present in the current DW 10.8.4 NuGet schema — if yes, CleanDB is just on an older DW version (operational fix); if no, these are Swift-specific schema extensions (code allowlist fix).
    - Recommendation: Planner's first B.3 task queries the DW 10.8.4 schema definition (via `INFORMATION_SCHEMA` on a fresh 10.8.4 install, or by grepping the DW NuGet's SQL migration scripts) before deciding fix shape. If operational: document the CleanDB upgrade in env-bucket.md (E.2). If code: add `knownEnvSchemaDrift` config (new field on ModeConfig or Content predicate).
+   - **RESOLVED:** Plan 38-03 Task 3 is an investigation checkpoint that records Outcome A (operational) or Outcome B (code) in the plan SUMMARY. If Outcome A: env-bucket.md is updated to document the recommended CleanDB upgrade path — the actual CleanDB upgrade is a **customer-operations concern, NOT part of Plan 38-03 scope** (clarified per checker warning W4). If Outcome B: an inline allowlist field is added if the fix fits <30 LOC + 1 test; otherwise deferred to a decimal phase per Plan 38-03's escalation block (see blocker B5 resolution).
 
 4. **C.1 scope: also add ORDER BY to SqlTableReader?**
    - What we know: Current `SqlTableReader.ReadAllRows` does `SELECT * FROM [{table}]` with no ORDER BY. Row order is non-deterministic on SQL Server.
    - What's unclear: Whether run-to-run determinism of YAML filenames across environments is a hard requirement for the baseline workflow, or nice-to-have.
    - Recommendation: Scope the C.1 fix tightly to DeduplicateFileName; add `ORDER BY [key columns]` to ReadAllRows only if it's free (one-line change) and doesn't regress any existing tests. Mark as a "quality improvement" in the PLAN not a requirement.
+   - **RESOLVED:** Plan 38-03 Task 1 scope is **DeduplicateFileName only**. ORDER BY in SqlTableReader for run-to-run determinism is **OUT OF SCOPE for Phase 38 — deferred as a follow-up if empirically needed**. This is documented inline in Plan 38-03 Task 1 per checker warning W1.
 
 5. **D.2 real root cause.**
    - What we know: User's description (CONTEXT D-38-12) says the bug is the literal `"Errors: "` string being present. Code inspection shows the literal only appears when `Errors.Count > 0`.
    - What's unclear: Whether the observed HTTP 400 came from a different code path (e.g., a framework-level middleware that scans the response body for "Errors:"), or whether the description is imprecise and the actual trigger is `result.HasErrors` becoming true via a non-fatal path.
    - Recommendation: Plan's first D.2 task reproduces the HTTP 400 via curl against a clean CleanDB + empty Serializer state; log the full orchestrator result to determine whether `Errors.Count > 0` OR whether a framework layer is interposing. Fix should be the specific condition that produced the status flip.
+   - **RESOLVED:** Plan 38-01 Task 1 first step reproduces the D.2 root cause via a synthetic `OrchestratorResult` test helper (per checker blocker B3, hardened 2026-04-21). The helper constructs an `OrchestratorResult` with `Errors = []` and `SerializeResults = []`, then the test asserts `result.Status == CommandResult.ResultType.Ok` **unconditionally** — no environment-dependent branching. The same parity test applies to `SerializerDeserializeCommand` in Task 2. If the orchestrator result cannot satisfy the assertion, that IS the D.2 regression surfacing — fix it, don't branch around it.
 
 ## Environment Availability
 

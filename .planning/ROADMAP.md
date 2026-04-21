@@ -92,7 +92,8 @@
 - TEMPLATE-01 is manifest-only; no template content in the baseline (D-19, D-20)
 - LINK-02 runs TWO passes: serialize-time pre-commit sweep + deserialize-time SqlTable column resolution (D-22)
 
-- [x] **Phase 37: Production-Ready Baseline** - Deploy/Seed config bifurcation, schema tolerance unification, SqlTable filtering with identifier whitelist, cache invalidation rework, strict mode, template manifest, cross-env link resolution. Re-planned 2026-04-20 from CONTEXT.md. (completed 2026-04-20)
+- [x] **Phase 37: Production-Ready Baseline** - Deploy/Seed config bifurcation, schema tolerance unification, SqlTable filtering with identifier whitelist, cache invalidation rework, strict mode, template manifest, cross-env link resolution. Re-planned 2026-04-20 from CONTEXT.md.
+ (completed 2026-04-20)
 
 ## Phase Details
 
@@ -257,7 +258,18 @@ Plans:
   7. A new smoke tool exits 0 when the CleanDB frontend serves all expected pages as 2xx/3xx, non-zero with a report on any 5xx
   8. Swift2.2-baseline.md has a "known pre-existing source-data bugs" section; env-bucket.md explains Friendly URL + GlobalSettings.config + secrets are per-env infra
 
-**Plans:** 0 plans (run /gsd-plan-phase 38 to break down)
+**Plans:** 5 plans
 
 Plans:
-- [ ] TBD
+- [ ] 38-01-PLAN.md — Wave 1 quick wins: D.1 query-param binding, D.2 HTTP 400 bug, E.1 baseline doc extension, E.2 env-bucket.md (D.1, D.2, E.1, E.2)
+- [ ] 38-02-PLAN.md — Wave 2 retroactive tests + consolidation: A.3 AcknowledgedOrphanPageIds consolidation → A.1 TDD tests → A.2 ISqlExecutor seam + IDENTITY_INSERT test → B.5 paragraph-anchor sweep fix (A.1, A.2, A.3, B.5)
+- [ ] 38-03-PLAN.md — Wave 3 investigations + data-loss fix: C.1 FlatFileStore monotonic-counter dedup, B.1/B.2 SQL cleanup for 3 orphan templates, B.3 schema-drift investigation, B.4 FK re-enable investigation, live E2E gate (B.1, B.2, B.3, B.4, C.1)
+- [ ] 38-04-PLAN.md — Wave 4 smoke tool: tools/smoke/Test-BaselineFrontend.ps1 + README.md (D.3)
+- [ ] 38-05-PLAN.md — Wave 5 final (manual sign-off): restore strictMode default ON + remove acknowledgedOrphanPageIds workaround + final live E2E (D-38-16)
+
+**Execution waves** (for /gsd-execute-phase):
+- Wave 1: 38-01
+- Wave 2: 38-02 (no file overlap with Wave 1; independent)
+- Wave 3: 38-03 (depends_on: [02] — needs A.3 post-state for serialize verification)
+- Wave 4: 38-04 (depends_on: [03] — exercises post-deserialize CleanDB)
+- Wave 5: 38-05 (depends_on: [01, 02, 03, 04] — gating final E2E + D-38-16 config flip)
