@@ -16,6 +16,7 @@ Re-runnable SQL scripts to clean up "obviously wrong" data in a Swift 2.2 Dynami
 | 03 | `03-delete-orphan-areas.sql` | Delete 267 pages across 5 deleted areas (AreaIds 11, 12, 13, 25, 27) that no longer exist in the Area table. Non-renderable, invisible in admin UI. |
 | 04 | `04-delete-soft-deleted-pages.sql` | Hard-delete all pages where `PageDeleted=1` along with their paragraph/grid-row children. Usually overlaps with 03; run both to be safe. |
 | 05 | `05-null-stale-template-refs.sql` | Nulls paragraph/item-field references to 3 orphan template names (1ColumnEmail, 2ColumnsEmail, Swift-v2_PageNoLayout.cshtml) that no longer ship with upstream Swift. Closes Phase 38 D-38-06 (B.1/B.2). |
+| 06 | *(pending)* `06-delete-orphan-ecomshopgrouprelation.sql` | Deferred to Phase 38.1. Deletes 1 orphan row in `EcomShopGroupRelation` (`ShopGroupShopId='SHOP19'` pointing at non-existent shop). Phase 38 B.4 (`D-38-08`) investigation confirmed this is upstream source-data corruption, not a serializer bug; the fix is a new cleanup script, but creating it is outside Plan 38-03's `files_modified` list. See `docs/baselines/Swift2.2-baseline.md` § "One orphan EcomShopGroupRelation row" for full diagnosis. |
 | 99 | `99-verify.sql` | Row counts + re-scan for remaining orphan refs. Run after 01-05 to confirm clean state. |
 
 ## Expected Swift 2.2 "before" state

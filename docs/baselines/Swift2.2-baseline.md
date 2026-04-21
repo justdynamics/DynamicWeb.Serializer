@@ -233,6 +233,51 @@ to prevent the sweep from escalating the false-positive. **Remove this entry onc
 B.5 ships** (tracked in Phase 38 D-38-16 as the final cleanup step before restoring
 `strictMode: true` default).
 
+### One orphan EcomShopGroupRelation row (Phase 38 B.4 finding, 2026-04-21)
+
+`[EcomShopGroupRelation]` contains one row whose `ShopGroupShopId` points at a
+shop that does not exist in `[EcomShops]`:
+
+| ShopGroupShopId | ShopGroupGroupId | Referenced shop |
+| --------------- | ---------------- | --------------- |
+| `SHOP19`        | `GROUP253`       | `SHOP19` — does not exist in `[EcomShops]` |
+
+The 9 live shops in Swift 2.2 are `SHOP1, SHOP5, SHOP6, SHOP7, SHOP8, SHOP9,
+SHOP14, SHOP27, SHOP28`. `SHOP19` was deleted from `[EcomShops]` at some point
+but the relation row in `[EcomShopGroupRelation]` was not cascaded.
+
+**Symptom:** when the serializer deserializes `[EcomShopGroupRelation]` into
+CleanDB (or any fresh target), `SqlTableWriter.EnableForeignKeys` runs
+`ALTER TABLE [EcomShopGroupRelation] WITH CHECK CHECK CONSTRAINT ALL` which
+validates every row against `[EcomShops].[ShopId]`. The orphan `SHOP19` row
+fails validation, producing the warning:
+
+```
+WARNING: Could not re-enable FK constraints for [EcomShopGroupRelation]:
+  The ALTER TABLE statement conflicted with the FOREIGN KEY constraint
+  "DW_FK_EcomShopGroupRelation_EcomShops"
+```
+
+This matches the warning seen in the 2026-04-20 E2E round-trip
+(`.planning/sessions/2026-04-20-e2e-baseline-roundtrip/REPORT.md` line 157).
+
+**Root cause:** pre-existing bad data in the Swift 2.2 source DB, not a
+serializer bug and **not** caused by `tools/purge-cleandb.sql` (the purge
+correctly uses `CHECK CONSTRAINT ALL` without the `WITH CHECK` validator, and
+leaves no orphans of its own — it just deletes everything).
+
+**Fix:** upstream source cleanup — delete the orphan row from Swift 2.2's
+`[EcomShopGroupRelation]` via a new `06-delete-orphan-ecomshopgrouprelation.sql`
+cleanup script. That script is **deferred to a Phase-38-decimal follow-up
+(tentatively 38.1)** per Plan 38-03's escalation rule: the fix requires a new
+file under `tools/swift22-cleanup/` that is outside Plan 38-03's
+`files_modified` list. Investigation notes in
+`.planning/phases/38-production-ready-baseline-hardening-retroactive-tests-for-37/38-03-b4-investigation.md`.
+
+Once the source is cleaned, the next serialize will drop
+`baselines/Swift2.2/_sql/EcomShopGroupRelation/GROUP253$$SHOP19.yml` (the YAML
+for this orphan row), and the FK warning stops firing on any deserialize.
+
 ## Azure deployment assumptions
 
 This baseline assumes the following Azure setup:
