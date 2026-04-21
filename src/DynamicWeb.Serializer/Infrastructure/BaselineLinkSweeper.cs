@@ -43,11 +43,16 @@ public class BaselineLinkSweeper
         var validSourceIds = new HashSet<int>();
         CollectSourceIds(allPages, validSourceIds);
 
+        // Phase 38 B.5 (D-38-09): also collect paragraph source IDs so the sweeper can
+        // validate the #Y anchor in Default.aspx?ID=X#Y refs, not just the page X.
+        var validParagraphIds = new HashSet<int>();
+        CollectSourceParagraphIds(allPages, validParagraphIds);
+
         var unresolved = new List<UnresolvedLink>();
         int resolved = 0;
 
         foreach (var page in allPages)
-            WalkPage(page, PageIdent(page), validSourceIds, unresolved, ref resolved);
+            WalkPage(page, PageIdent(page), validSourceIds, validParagraphIds, unresolved, ref resolved);
 
         return new SweepResult(unresolved, resolved);
     }
@@ -64,26 +69,44 @@ public class BaselineLinkSweeper
         }
     }
 
+    // Phase 38 B.5 (D-38-09): collect paragraph source IDs so the sweeper can
+    // validate the #Y anchor in Default.aspx?ID=X#Y refs, not just the page X.
+    // Note: per checker warning W6, this duplicates InternalLinkResolver's walker
+    // shape. Acceptable for the surgical scope of B.5 — extracting a shared helper
+    // is deferred as an optional refactor.
+    private static void CollectSourceParagraphIds(IEnumerable<SerializedPage> pages, HashSet<int> acc)
+    {
+        foreach (var p in pages)
+        {
+            foreach (var row in p.GridRows)
+                foreach (var col in row.Columns)
+                    foreach (var para in col.Paragraphs)
+                        if (para.SourceParagraphId.HasValue) acc.Add(para.SourceParagraphId.Value);
+            CollectSourceParagraphIds(p.Children, acc);
+        }
+    }
+
     private void WalkPage(
         SerializedPage page,
         string ident,
         HashSet<int> validIds,
+        HashSet<int> validParagraphIds,
         List<UnresolvedLink> unresolved,
         ref int resolved)
     {
-        CheckField(page.ShortCut, ident, "ShortCut", validIds, unresolved, ref resolved);
+        CheckField(page.ShortCut, ident, "ShortCut", validIds, validParagraphIds, unresolved, ref resolved);
 
         if (page.NavigationSettings != null)
             CheckField(page.NavigationSettings.ProductPage, ident,
-                "NavigationSettings.ProductPage", validIds, unresolved, ref resolved);
+                "NavigationSettings.ProductPage", validIds, validParagraphIds, unresolved, ref resolved);
 
         foreach (var kvp in page.Fields)
             if (kvp.Value is string s)
-                CheckField(s, ident, $"Fields.{kvp.Key}", validIds, unresolved, ref resolved);
+                CheckField(s, ident, $"Fields.{kvp.Key}", validIds, validParagraphIds, unresolved, ref resolved);
 
         foreach (var kvp in page.PropertyFields)
             if (kvp.Value is string s)
-                CheckField(s, ident, $"PropertyFields.{kvp.Key}", validIds, unresolved, ref resolved);
+                CheckField(s, ident, $"PropertyFields.{kvp.Key}", validIds, validParagraphIds, unresolved, ref resolved);
 
         // Walk paragraphs
         foreach (var row in page.GridRows)
@@ -96,13 +119,13 @@ public class BaselineLinkSweeper
                     foreach (var kvp in para.Fields)
                         if (kvp.Value is string s)
                             CheckField(s, paraIdent, $"Fields.{kvp.Key}",
-                                validIds, unresolved, ref resolved);
+                                validIds, validParagraphIds, unresolved, ref resolved);
                 }
             }
         }
 
         foreach (var c in page.Children)
-            WalkPage(c, PageIdent(c), validIds, unresolved, ref resolved);
+            WalkPage(c, PageIdent(c), validIds, validParagraphIds, unresolved, ref resolved);
     }
 
     private static void CheckField(
@@ -110,6 +133,7 @@ public class BaselineLinkSweeper
         string sourceIdent,
         string fieldName,
         HashSet<int> validIds,
+        HashSet<int> validParagraphIds,
         List<UnresolvedLink> unresolved,
         ref int resolved)
     {
@@ -117,11 +141,29 @@ public class BaselineLinkSweeper
 
         foreach (Match m in InternalLinkPattern.Matches(value))
         {
-            if (!int.TryParse(m.Groups[2].Value, out var id)) continue;
-            if (validIds.Contains(id)) { resolved++; continue; }
-            unresolved.Add(new UnresolvedLink(sourceIdent, fieldName, id, m.Value));
+            if (!int.TryParse(m.Groups[2].Value, out var pageId)) continue;
+            if (!validIds.Contains(pageId))
+            {
+                unresolved.Add(new UnresolvedLink(sourceIdent, fieldName, pageId, m.Value));
+                continue;
+            }
+            // Page resolved — validate the optional #paragraph anchor.
+            // Phase 38 B.5 (D-38-09): paragraph anchor must resolve against the
+            // SerializedParagraph.SourceParagraphId set collected above. Both parts
+            // (page + anchor) must resolve.
+            if (m.Groups[4].Success && int.TryParse(m.Groups[4].Value, out var paraId))
+            {
+                if (!validParagraphIds.Contains(paraId))
+                {
+                    unresolved.Add(new UnresolvedLink(sourceIdent, fieldName, paraId, m.Value));
+                    continue;
+                }
+            }
+            resolved++;
         }
 
+        // SelectedValue (JSON form) handling — UNCHANGED. Per Pitfall 3, do NOT
+        // extend this pattern; ButtonEditor JSON #anchor suffixes are deferred.
         foreach (Match m in SelectedValuePattern.Matches(value))
         {
             if (!int.TryParse(m.Groups[2].Value, out var id)) continue;

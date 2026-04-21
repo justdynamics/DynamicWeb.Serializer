@@ -193,8 +193,32 @@ public class BaselineLinkSweeperTests
     [Fact]
     public void Sweep_AnchorFragment_StripsFragment_AndResolvesPage()
     {
+        // Phase 38 B.5 (D-38-09) update: the sweep now validates the #paragraph anchor
+        // against the SourceParagraphId set. Fixture updated so page 200 contains
+        // paragraph 42 — both parts of Default.aspx?ID=200#42 resolve.
+        var rowWithPara42 = new SerializedGridRow
+        {
+            Id = Guid.NewGuid(),
+            SortOrder = 1,
+            Columns = new()
+            {
+                new SerializedGridColumn
+                {
+                    Id = 1, Width = 12,
+                    Paragraphs = new()
+                    {
+                        new SerializedParagraph
+                        {
+                            ParagraphUniqueId = Guid.NewGuid(),
+                            SourceParagraphId = 42,
+                            SortOrder = 1
+                        }
+                    }
+                }
+            }
+        };
         var page1 = MakePage(sourceId: 100, shortCut: "Default.aspx?ID=200#42");
-        var page2 = MakePage(sourceId: 200);
+        var page2 = MakePage(sourceId: 200, gridRows: new() { rowWithPara42 });
 
         var result = new BaselineLinkSweeper().Sweep(new List<SerializedPage> { page1, page2 });
 
