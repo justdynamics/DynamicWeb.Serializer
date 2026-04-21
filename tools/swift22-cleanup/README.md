@@ -1,0 +1,60 @@
+# Swift 2.2 Data Cleanup Scripts
+
+Re-runnable SQL scripts to clean up "obviously wrong" data in a Swift 2.2 DynamicWeb database before serializing it as a deployment baseline.
+
+**Author:** 2026-04-21 autonomous session
+**Target DB:** Any Swift 2.2 instance on SQL Server (tested on `localhost\SQLEXPRESS`, DB `Swift-2.2`)
+**Source findings:** `.planning/sessions/2026-04-20-e2e-baseline-roundtrip/REPORT.md` — Phase 37 autonomous E2E round-trip surfaced these issues via `BaselineLinkSweeper`, `SqlIdentifierValidator`, and direct DB analysis.
+
+## What these scripts do
+
+| # | Script | Fixes |
+|---|--------|-------|
+| 00 | `00-backup.sql` | Snapshots every table mutated by 01-04 into `*_BAK_YYYYMMDD` tables in the same DB. Safe to re-run (overwrites prior backup). |
+| 01 | `01-null-orphan-page-refs.sql` | Null out 77 paragraph/item-field references to 5 known-broken page IDs (8308, 149, 15717, 295, 140). Result: `BaselineLinkSweeper` no longer needs `AcknowledgedOrphanPageIds` to serialize this baseline. |
+| 02 | `02-delete-test-page.sql` | Hard-delete page 8451 ("New Serialized Page") + its subtree — test artifact from prior serializer development. |
+| 03 | `03-delete-orphan-areas.sql` | Delete 267 pages across 5 deleted areas (AreaIds 11, 12, 13, 25, 27) that no longer exist in the Area table. Non-renderable, invisible in admin UI. |
+| 04 | `04-delete-soft-deleted-pages.sql` | Hard-delete all pages where `PageDeleted=1` along with their paragraph/grid-row children. Usually overlaps with 03; run both to be safe. |
+| 99 | `99-verify.sql` | Row counts + re-scan for remaining orphan refs. Run after 01-04 to confirm clean state. |
+
+## Expected Swift 2.2 "before" state
+
+| Metric | Value |
+|--------|-------|
+| Orphan Default.aspx?ID refs | 77 occurrences across 8 ItemType_Swift-v2_* tables |
+| Test-only page `/New Serialized Page` (8451) | 1 page + descendants |
+| Pages in deleted areas (11,12,13,25,27) | ~267 |
+| Soft-deleted pages (PageDeleted=1) | ~238 |
+| Empty-name product translations (NOT cleaned) | 1091 — legitimate DW "not localized yet" state |
+
+## Run order
+
+```bash
+# From a shell with sqlcmd on PATH
+DB='Swift-2.2'                            # Target DB name
+SERVER='localhost\SQLEXPRESS'              # SQL Server instance
+
+sqlcmd -S "$SERVER" -E -d "$DB" -i tools/swift22-cleanup/00-backup.sql
+sqlcmd -S "$SERVER" -E -d "$DB" -i tools/swift22-cleanup/01-null-orphan-page-refs.sql
+sqlcmd -S "$SERVER" -E -d "$DB" -i tools/swift22-cleanup/02-delete-test-page.sql
+sqlcmd -S "$SERVER" -E -d "$DB" -i tools/swift22-cleanup/03-delete-orphan-areas.sql
+sqlcmd -S "$SERVER" -E -d "$DB" -i tools/swift22-cleanup/04-delete-soft-deleted-pages.sql
+sqlcmd -S "$SERVER" -E -d "$DB" -i tools/swift22-cleanup/99-verify.sql
+```
+
+## Rollback
+
+If anything goes wrong, restore from the `*_BAK_YYYYMMDD` tables created by `00-backup.sql`:
+
+```sql
+-- Example: rollback Paragraph table (find backup suffix from 00-backup output)
+TRUNCATE TABLE Paragraph;
+INSERT INTO Paragraph SELECT * FROM Paragraph_BAK_20260421;
+```
+
+## Not covered (intentional)
+
+- **Empty-name product translations** (1091 rows) — real DW "not localized yet" state, NOT garbage
+- **Area 26 "Digital Assets Portal"** — separate future baseline per user decision 2026-04-21
+- **Duplicate page MenuTexts** — not true duplicates, just similar names in different subtrees
+- **Env-specific config** (AreaDomain, GTM ID, CDN host, payment credentials) — handled by the env-bucket split, not this cleanup

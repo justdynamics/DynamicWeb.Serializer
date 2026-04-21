@@ -12,10 +12,8 @@
         "providerType": "Content",
         "areaId": 3,
         "path": "/",
-        "acknowledgedOrphanPageIds": [ 8308, 149, 15717, 295, 140 ],
-        "excludes": [
-          "/New Serialized Page"
-        ],
+        "acknowledgedOrphanPageIds": [ 15717 ],
+        "excludes": [],
         "excludeFields": [
           "AreaDomain",
           "AreaDomainLock",
