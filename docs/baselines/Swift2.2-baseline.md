@@ -175,6 +175,64 @@ see memory: `feedback_content_not_sql.md`)
 | Area 26 "Digital Assets Portal" | Separate product, not part of the Swift 2.2 storefront baseline. |
 | Newsletter/system email **content** | Body copy is seed content. Page structure is captured via Content predicate; end-user editable body text will be overwritten on deploy — **known issue**, see gap `D2-SEED-CONTENT-MODE`. |
 
+## Pre-existing source-data bugs caught by Phase 37 validators
+
+The Swift 2.2 database as shipped contains several stale-data issues that Phase 37's
+validators surface at serialize time. All are upstream data problems, not serializer
+bugs. Cleaned on 2026-04-21 via `tools/swift22-cleanup/` (see that directory's
+README for run order).
+
+### Three column-name mistakes (caught by SqlIdentifierValidator)
+
+The pre-Phase-37 `swift2.2-baseline.json` referenced three columns that do not exist
+on the actual Swift 2.2 schema. SqlIdentifierValidator (Phase 37-03) now catches
+these at config load before any SQL is generated:
+
+| Wrong name (old baseline) | Correct name | Location |
+|---------------------------|--------------|----------|
+| `VatName`                 | `VatGroupName` | EcomVatGroups predicate `nameColumn` |
+| `ShopAutoId`              | `PaymentAutoId` | EcomPayments predicate `excludeFields` |
+| `ShippingParameters`      | `ShippingServiceParameters` | EcomShippings predicate `xmlColumns` |
+
+Fixed in the current `swift2.2-combined.json`. Any future baseline author who
+mistypes a column name will be rejected at config load with a validator error
+pointing at the exact `predicate.name` and `field` — no silent-drop behavior.
+
+### Five orphan page references (caught by BaselineLinkSweeper)
+
+Five `Default.aspx?ID=N` references in the source data point at pages that no
+longer exist in area 3 (Swift 2). Cleaned by `tools/swift22-cleanup/01-null-orphan-page-refs.sql`:
+
+| Page ID | Where referenced | Reason |
+|---------|------------------|--------|
+| 8308    | Paragraph item-field links | page deleted from DB |
+| 149     | Paragraph item-field links | page deleted from DB |
+| 15717   | Paragraph item-field links | paragraph anchor (not an orphan — see below) |
+| 295     | Paragraph item-field links | page deleted from DB |
+| 140     | Paragraph item-field links | page deleted from DB |
+
+### Orphan areas + soft-deleted pages (found via direct DB analysis)
+
+- **267 orphan-area pages** — pages whose `PageAreaID` refers to an Area that no
+  longer exists. Deleted by `tools/swift22-cleanup/03-delete-orphan-areas.sql`.
+- **238 soft-deleted pages** — pages with `PageDeleted = 1` still present in the
+  DB. Deleted by `tools/swift22-cleanup/04-delete-soft-deleted-pages.sql`.
+
+Both scripts are idempotent: re-running on an already-cleaned DB affects zero
+rows. The counts above are from the 2026-04-21 run against the shipped Swift 2.2
+instance at port 54035.
+
+### Temporary: `acknowledgedOrphanPageIds: [15717]` on the Content predicate
+
+After running the cleanup scripts, one `Default.aspx?ID=4897#15717` reference
+remains. `15717` is a **paragraph anchor**, not a page ID — BaselineLinkSweeper
+incorrectly treats it as a page reference. Phase 38 B.5 fixes the sweeper to
+validate paragraph anchors against the serialized paragraph set. Until B.5 lands,
+the `acknowledgedOrphanPageIds: [15717]` entry on the Content predicate is required
+to prevent the sweep from escalating the false-positive. **Remove this entry once
+B.5 ships** (tracked in Phase 38 D-38-16 as the final cleanup step before restoring
+`strictMode: true` default).
+
 ## Azure deployment assumptions
 
 This baseline assumes the following Azure setup:
