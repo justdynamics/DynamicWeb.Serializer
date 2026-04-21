@@ -233,6 +233,7 @@ Plans:
 - `B.2`: Missing page-layout template `Swift-v2_PageNoLayout.cshtml` — same investigation as B.1
 - `B.3`: 3 schema-drift Area columns (`AreaHtmlType`, `AreaLayoutPhone`, `AreaLayoutTablet`) on CleanDB — determine whether CleanDB is on an older DW version (remediable) or whether Swift 2.2 adds columns DW core doesn't ship (permanent drift, document as such)
 - `B.4`: FK re-enable warning on `EcomShopGroupRelation → EcomShops.ShopId` during deserialize — determine whether it fires in production deploys or only after an aggressive purge
+- `B.5`: BaselineLinkSweeper false-positive on paragraph anchors. Pattern `Default.aspx?ID=4897#15717` treats `15717` as a separate page ID even though it's a paragraph anchor. Fix: either skip the anchor portion in the sweep, or validate the anchor against serialized paragraph SourceIds. Discovered 2026-04-21 after Swift 2.2 data cleanup reduced orphans to exactly this 1 false-positive.
 
 **Group C — Investigate real data loss** (silent, worst-case)
 - `C.1`: EcomProducts serialize emitted 582 rows, Swift 2.2 has 2051. Diagnose where 1469 products vanished — candidate theories: empty-name products filtered silently, duplicate-NameColumn collision causing file overwrites, `SkipOnUnchanged` bug in the checksums lookup
