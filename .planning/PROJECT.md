@@ -176,4 +176,4 @@ This document evolves at phase transitions and milestone boundaries.
 - **v1.3 Permissions** — Permission serialization/deserialization with safety fallback (2026-03-23)
 
 ---
-*Last updated: 2026-04-03 — milestone v0.4.0 started (full page fidelity)*
+*Last updated: 2026-04-21 — Phase 38 Production-Ready Baseline Hardening complete (code change gated-closed-on-38.1 for live strict-mode pass; C.1 silent data-loss fix verified 2051→2051)*
