@@ -47,6 +47,27 @@ public sealed class SerializerSerializeCommand : CommandBase
             };
         }
 
+        // D-38-11: DW CommandBase does not bind query params by default for POST.
+        // Fallback: if Mode stayed at the "deploy" default, check the query string.
+        // The fallback ALWAYS lands regardless of local curl probe results — D-38-11 is
+        // the locked decision that `?mode=seed` binding is broken today.
+        if (string.Equals(Mode, "deploy", StringComparison.OrdinalIgnoreCase))
+        {
+            var fromQuery = Dynamicweb.Context.Current?.Request?["mode"];
+            if (!string.IsNullOrEmpty(fromQuery))
+            {
+                Mode = fromQuery;
+                if (!Enum.TryParse<DeploymentMode>(Mode, ignoreCase: true, out deploymentMode))
+                {
+                    return new()
+                    {
+                        Status = CommandResult.ResultType.Invalid,
+                        Message = $"Invalid mode '{Mode}'. Expected 'deploy' or 'seed' (case-insensitive)."
+                    };
+                }
+            }
+        }
+
         try
         {
             var configPath = ConfigPathResolver.FindConfigFile();
@@ -111,15 +132,38 @@ public sealed class SerializerSerializeCommand : CommandBase
             if (result.HasErrors)
                 message += $" Errors: {string.Join("; ", result.Errors)}";
 
-            return new CommandResult
-            {
-                Status = result.HasErrors ? CommandResult.ResultType.Error : CommandResult.ResultType.Ok,
-                Message = message
-            };
+            // D-38-12: HTTP status is driven by result.HasErrors (Errors.Count > 0 ||
+            // SerializeResults.Any(r => r.HasErrors)). A zero-error result MUST map to Ok
+            // regardless of Message content. The test in SerializerSerializeCommandTests
+            // (Handle_ZeroErrors_SynthOrchestratorResult_ReturnsOk) uses SynthOrchestratorResult
+            // to assert this unconditionally — no environment-dependent branching.
+            return MapStatusFromResult(result, message);
         }
         catch (Exception ex)
         {
             return new() { Status = CommandResult.ResultType.Error, Message = $"Serialization failed: {ex.Message}" };
         }
+    }
+
+    /// <summary>
+    /// D-38-12 test seam: exposes the status-mapping branch of <see cref="Handle"/> so
+    /// <c>SerializerSerializeCommandTests.Handle_ZeroErrors_SynthOrchestratorResult_ReturnsOk</c>
+    /// can assert the zero-error == Ok invariant unconditionally against a synthetic
+    /// <see cref="OrchestratorResult"/>, without running the full serialize pipeline.
+    /// </summary>
+    internal static CommandResult InvokeMapStatusForTest(OrchestratorResult result)
+        => MapStatusFromResult(result, result.Summary ?? string.Empty);
+
+    /// <summary>
+    /// D-38-12: HTTP status driven by <see cref="OrchestratorResult.HasErrors"/>.
+    /// Zero-error result == Ok. Pure function; no side effects.
+    /// </summary>
+    private static CommandResult MapStatusFromResult(OrchestratorResult result, string message)
+    {
+        return new CommandResult
+        {
+            Status = result.HasErrors ? CommandResult.ResultType.Error : CommandResult.ResultType.Ok,
+            Message = message
+        };
     }
 }
