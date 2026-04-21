@@ -273,3 +273,28 @@ Plans:
 - Wave 3: 38-03 (depends_on: [02] — needs A.3 post-state for serialize verification)
 - Wave 4: 38-04 (depends_on: [03] — exercises post-deserialize CleanDB)
 - Wave 5: 38-05 (depends_on: [01, 02, 03, 04] — gating final E2E + D-38-16 config flip)
+
+### Phase 38.1: Close Phase 38 deferrals (INSERTED)
+
+**Goal:** Close the four items Phase 38 deferred so the live Swift 2.2 → CleanDB round-trip can pass under `strictMode: true` end-to-end. Phase 38's D-38-16 code change restored the strict-mode default in config, but the final E2E surfaced four source-data + sweeper-scope blockers that were explicitly held back per the gated-closed-on-38.1 disposition.
+
+**Depends on:** Phase 38 (Production-Ready Baseline Hardening)
+**Source of findings:** `.planning/phases/38-production-ready-baseline-hardening-retroactive-tests-for-37/38-05-e2e-results.md` + `38-05-SUMMARY.md` + `deferred-items.md`.
+
+**Backlog (4 items):**
+
+- `B.5.1`: Extend `BaselineLinkSweeper.SelectedValuePattern` loop (~line 167) to validate `SelectedValue` paragraph IDs against the existing `validParagraphIds` HashSet (already built by B.5 in Phase 38-02). Without this, the `ButtonEditor` JSON with `"SelectedValue": "15717"` fails strict-mode serialize even after Phase 38's B.5 page-anchor fix. Estimated ~10 LOC + 1 unit test.
+- `B.4.1`: Ship `tools/swift22-cleanup/06-delete-orphan-ecomshopgrouprelation.sql` to remove the `SHOP19` orphan row in `[EcomShopGroupRelation]` that references a non-existent shop. Closes the B.4 FK re-enable escalation identified in `38-03-b4-investigation.md`.
+- `B.3.1`: Extend B.3 scope — the final E2E surfaced 7 Area schema-drift columns, not just the 3 originally named. Either widen `knownEnvSchemaDrift` coverage or document additional columns in `env-bucket.md` per outcome-A precedent.
+- `GRID-01`: Resolve the 142 `GridRowDefinitionId` NOT NULL deserialize failures introduced by the B.1/B.2 template cleanup. Choose between a new source-cleanup script (`tools/swift22-cleanup/07-delete-stale-email-gridrows.sql`) OR a serializer-side empty-string coalesce in the GridRow write path.
+
+**Success Criteria:**
+  1. Final live Swift 2.2 → CleanDB round-trip under `strictMode: true` returns HTTP 200 on all 4 API calls (serialize deploy/seed, deserialize deploy/seed)
+  2. EcomProducts preservation still holds (source == target count)
+  3. Zero escalated warnings for the 4 deferred items (B.5.1, B.4.1, B.3.1, GRID-01)
+  4. Optional: extract shared paragraph-ID collector helper between `BaselineLinkSweeper` and `InternalLinkResolver` (carried from checker warning W6)
+
+**Plans:** 0 plans (run /gsd-plan-phase 38.1 to break down)
+
+Plans:
+- [ ] TBD

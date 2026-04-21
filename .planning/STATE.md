@@ -123,6 +123,7 @@ Progress: [██████████] 100% (v0.4.0)
 ### Roadmap Evolution
 
 - 2026-04-21: Phase 38 added — Production-Ready Baseline Hardening. User-approved full scope (groups A+B+C+D+E) after autonomous E2E round-trip on 2026-04-20 surfaced 13 distinct follow-up items that Phase 37 itself correctly did NOT attempt to fix. Findings source: `.planning/sessions/2026-04-20-e2e-baseline-roundtrip/REPORT.md`.
+- 2026-04-21: Phase 38.1 inserted after Phase 38 — Close Phase 38 deferrals (URGENT). Four carry-forwards from Phase 38's gated-closed-on-38.1 disposition: B.5.1 SelectedValue paragraph-ID sweeper extension, B.4.1 SHOP19 FK cleanup SQL, B.3.1 wider schema-drift scope (7 columns not 3), GRID-01 142 GridRowDefinitionId NOT NULL resolution. Target: live Swift 2.2 → CleanDB E2E passes under strictMode: true.
 
 ### Decisions
 
