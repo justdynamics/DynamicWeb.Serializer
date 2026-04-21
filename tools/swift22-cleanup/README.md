@@ -15,7 +15,8 @@ Re-runnable SQL scripts to clean up "obviously wrong" data in a Swift 2.2 Dynami
 | 02 | `02-delete-test-page.sql` | Hard-delete page 8451 ("New Serialized Page") + its subtree — test artifact from prior serializer development. |
 | 03 | `03-delete-orphan-areas.sql` | Delete 267 pages across 5 deleted areas (AreaIds 11, 12, 13, 25, 27) that no longer exist in the Area table. Non-renderable, invisible in admin UI. |
 | 04 | `04-delete-soft-deleted-pages.sql` | Hard-delete all pages where `PageDeleted=1` along with their paragraph/grid-row children. Usually overlaps with 03; run both to be safe. |
-| 99 | `99-verify.sql` | Row counts + re-scan for remaining orphan refs. Run after 01-04 to confirm clean state. |
+| 05 | `05-null-stale-template-refs.sql` | Nulls paragraph/item-field references to 3 orphan template names (1ColumnEmail, 2ColumnsEmail, Swift-v2_PageNoLayout.cshtml) that no longer ship with upstream Swift. Closes Phase 38 D-38-06 (B.1/B.2). |
+| 99 | `99-verify.sql` | Row counts + re-scan for remaining orphan refs. Run after 01-05 to confirm clean state. |
 
 ## Expected Swift 2.2 "before" state
 
@@ -39,6 +40,7 @@ sqlcmd -S "$SERVER" -E -d "$DB" -i tools/swift22-cleanup/01-null-orphan-page-ref
 sqlcmd -S "$SERVER" -E -d "$DB" -i tools/swift22-cleanup/02-delete-test-page.sql
 sqlcmd -S "$SERVER" -E -d "$DB" -i tools/swift22-cleanup/03-delete-orphan-areas.sql
 sqlcmd -S "$SERVER" -E -d "$DB" -i tools/swift22-cleanup/04-delete-soft-deleted-pages.sql
+sqlcmd -S "$SERVER" -E -d "$DB" -i tools/swift22-cleanup/05-null-stale-template-refs.sql
 sqlcmd -S "$SERVER" -E -d "$DB" -i tools/swift22-cleanup/99-verify.sql
 ```
 
