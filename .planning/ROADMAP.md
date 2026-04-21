@@ -294,7 +294,7 @@ Plans:
   3. Zero escalated warnings for the 4 deferred items (B.5.1, B.4.1, B.3.1, GRID-01)
   4. Optional: extract shared paragraph-ID collector helper between `BaselineLinkSweeper` and `InternalLinkResolver` (carried from checker warning W6)
 
-**Plans:** 0 plans (run /gsd-plan-phase 38.1 to break down)
+**Plans:** 1 plan
 
 Plans:
-- [ ] TBD
+- [ ] 38.1-01-PLAN.md — Single-plan 6-task sequence: B.5.1 SelectedValue sweeper → B.4.1 SHOP19 cleanup SQL → B.3.1 env-bucket.md drift columns → GRID-01 stale GridRow SQL → W6 ParagraphIdCollector extraction → NOT-SERIALIZED rename + live E2E
