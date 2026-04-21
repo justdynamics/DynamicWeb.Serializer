@@ -162,12 +162,13 @@ public class BaselineLinkSweeper
             resolved++;
         }
 
-        // SelectedValue (JSON form) handling — UNCHANGED. Per Pitfall 3, do NOT
-        // extend this pattern; ButtonEditor JSON #anchor suffixes are deferred.
+        // Phase 38.1 B.5.1 (D-38.1-02/03/04): dual-check SelectedValue against
+        // both page and paragraph source IDs. ButtonEditor JSON with
+        // LinkType=paragraph stores a paragraph ID here, not a page ID.
         foreach (Match m in SelectedValuePattern.Matches(value))
         {
             if (!int.TryParse(m.Groups[2].Value, out var id)) continue;
-            if (validIds.Contains(id)) { resolved++; continue; }
+            if (validIds.Contains(id) || validParagraphIds.Contains(id)) { resolved++; continue; }
             unresolved.Add(new UnresolvedLink(sourceIdent, fieldName, id, m.Value));
         }
 

@@ -191,6 +191,68 @@ public class BaselineLinkSweeperTests
     }
 
     [Fact]
+    public void Sweep_SelectedValueJson_ParagraphId_Resolved()
+    {
+        // Phase 38.1 B.5.1 (D-38.1-02/03/04): ButtonEditor JSON with LinkType=paragraph
+        // stores a PARAGRAPH ID in SelectedValue, not a page ID. The sweeper must
+        // accept paragraph IDs against validParagraphIds. Fixture models the exact
+        // Swift 2.2 shape (paragraph id 15717 from Home Machines SecondButton).
+        var rowWithPara15717 = new SerializedGridRow
+        {
+            Id = Guid.NewGuid(),
+            SortOrder = 1,
+            Columns = new()
+            {
+                new SerializedGridColumn
+                {
+                    Id = 1, Width = 12,
+                    Paragraphs = new()
+                    {
+                        new SerializedParagraph
+                        {
+                            ParagraphUniqueId = Guid.NewGuid(),
+                            SourceParagraphId = 15717,
+                            SortOrder = 1
+                        }
+                    }
+                }
+            }
+        };
+        var pageWithPara = MakePage(sourceId: 100, gridRows: new() { rowWithPara15717 }, menuText: "HasPara");
+        var referencingPage = MakePage(sourceId: 200, menuText: "Referrer",
+            fields: new Dictionary<string, object>
+            {
+                ["SecondButton"] = "{\"SelectedValue\":\"15717\",\"LinkType\":\"paragraph\"}"
+            });
+
+        var result = new BaselineLinkSweeper()
+            .Sweep(new List<SerializedPage> { pageWithPara, referencingPage });
+
+        Assert.Empty(result.Unresolved);
+        Assert.Equal(1, result.ResolvedCount);
+    }
+
+    [Fact]
+    public void Sweep_SelectedValueJson_UnknownId_StillReported()
+    {
+        // Phase 38.1 B.5.1 (D-38.1-02/03/04): an ID that is neither a valid page
+        // source ID nor a valid paragraph source ID must still be reported as
+        // unresolved. Guards against the dual-check degenerating into a permissive
+        // accept-anything check.
+        var page = MakePage(sourceId: 1,
+            fields: new Dictionary<string, object>
+            {
+                ["Button"] = "{\"SelectedValue\": \"99999\"}"
+            });
+        // Tree contains only SourcePageId=1 and no paragraphs with SourceParagraphId=99999,
+        // so 99999 is in NEITHER set.
+        var result = new BaselineLinkSweeper().Sweep(new List<SerializedPage> { page });
+
+        Assert.Single(result.Unresolved);
+        Assert.Equal(99999, result.Unresolved[0].UnresolvablePageId);
+    }
+
+    [Fact]
     public void Sweep_AnchorFragment_StripsFragment_AndResolvesPage()
     {
         // Phase 38 B.5 (D-38-09) update: the sweep now validates the #paragraph anchor
