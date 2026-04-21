@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using DynamicWeb.Serializer.Infrastructure;
 using DynamicWeb.Serializer.Models;
 
 namespace DynamicWeb.Serializer.Serialization;
@@ -153,38 +154,18 @@ public class InternalLinkResolver
         List<SerializedPage> pages,
         Dictionary<Guid, int> paragraphGuidCache)
     {
+        // Phase 38.1 W6 (D-38.1-14): shared ParagraphIdCollector replaces the
+        // previous private walker that duplicated BaselineLinkSweeper's shape.
         var map = new Dictionary<int, int>();
-        CollectSourceParagraphIds(pages, paragraphGuidCache, map);
-        return map;
-    }
-
-    private static void CollectSourceParagraphIds(
-        List<SerializedPage> pages,
-        Dictionary<Guid, int> paragraphGuidCache,
-        Dictionary<int, int> map)
-    {
-        foreach (var page in pages)
+        ParagraphIdCollector.Visit(pages, para =>
         {
-            foreach (var row in page.GridRows)
+            if (para.SourceParagraphId.HasValue &&
+                paragraphGuidCache.TryGetValue(para.ParagraphUniqueId, out var targetId))
             {
-                foreach (var column in row.Columns)
-                {
-                    foreach (var para in column.Paragraphs)
-                    {
-                        if (para.SourceParagraphId.HasValue &&
-                            paragraphGuidCache.TryGetValue(para.ParagraphUniqueId, out var targetId))
-                        {
-                            map[para.SourceParagraphId.Value] = targetId;
-                        }
-                    }
-                }
+                map[para.SourceParagraphId.Value] = targetId;
             }
-
-            if (page.Children.Count > 0)
-            {
-                CollectSourceParagraphIds(page.Children, paragraphGuidCache, map);
-            }
-        }
+        });
+        return map;
     }
 
     private static void CollectSourcePageIds(

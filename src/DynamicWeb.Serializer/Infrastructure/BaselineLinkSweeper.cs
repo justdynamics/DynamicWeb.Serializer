@@ -45,8 +45,13 @@ public class BaselineLinkSweeper
 
         // Phase 38 B.5 (D-38-09): also collect paragraph source IDs so the sweeper can
         // validate the #Y anchor in Default.aspx?ID=X#Y refs, not just the page X.
+        // Phase 38.1 W6 (D-38.1-14): shared ParagraphIdCollector replaces the previous
+        // private walker that duplicated InternalLinkResolver's shape.
         var validParagraphIds = new HashSet<int>();
-        CollectSourceParagraphIds(allPages, validParagraphIds);
+        ParagraphIdCollector.Visit(allPages, para =>
+        {
+            if (para.SourceParagraphId.HasValue) validParagraphIds.Add(para.SourceParagraphId.Value);
+        });
 
         var unresolved = new List<UnresolvedLink>();
         int resolved = 0;
@@ -66,23 +71,6 @@ public class BaselineLinkSweeper
         {
             if (p.SourcePageId.HasValue) acc.Add(p.SourcePageId.Value);
             CollectSourceIds(p.Children, acc);
-        }
-    }
-
-    // Phase 38 B.5 (D-38-09): collect paragraph source IDs so the sweeper can
-    // validate the #Y anchor in Default.aspx?ID=X#Y refs, not just the page X.
-    // Note: per checker warning W6, this duplicates InternalLinkResolver's walker
-    // shape. Acceptable for the surgical scope of B.5 — extracting a shared helper
-    // is deferred as an optional refactor.
-    private static void CollectSourceParagraphIds(IEnumerable<SerializedPage> pages, HashSet<int> acc)
-    {
-        foreach (var p in pages)
-        {
-            foreach (var row in p.GridRows)
-                foreach (var col in row.Columns)
-                    foreach (var para in col.Paragraphs)
-                        if (para.SourceParagraphId.HasValue) acc.Add(para.SourceParagraphId.Value);
-            CollectSourceParagraphIds(p.Children, acc);
         }
     }
 
