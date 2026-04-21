@@ -3,6 +3,7 @@ using Dynamicweb.Data;
 using DynamicWeb.Serializer.Configuration;
 using DynamicWeb.Serializer.Infrastructure;
 using DynamicWeb.Serializer.Models;
+using DynamicWeb.Serializer.Providers.SqlTable;
 
 namespace DynamicWeb.Serializer.Serialization;
 
@@ -24,6 +25,10 @@ public class ContentDeserializer
     private readonly PermissionMapper _permissionMapper;
     private readonly TemplateAssetManifest _templateManifest;
     private readonly StrictModeEscalator _templateEscalator;
+    // Phase 38 A.2 (D-38-05): test seam for Area SQL write paths so the
+    // SET IDENTITY_INSERT [Area] ON/OFF wrapping can be asserted without a live DB.
+    // Production default: DwSqlExecutor (wraps Dynamicweb.Data.Database.ExecuteNonQuery).
+    private readonly ISqlExecutor _sqlExecutor;
 
     /// <summary>
     /// When <see cref="ConflictStrategy.DestinationWins"/> (Phase 37-01 Seed mode), pages whose
@@ -36,6 +41,12 @@ public class ContentDeserializer
     /// YAML→CLR type coercion (Phase 37-02). Defaults to a new instance backed by the live
     /// INFORMATION_SCHEMA query loader.
     /// </param>
+    /// <param name="sqlExecutor">
+    /// Phase 38 A.2 (D-38-05): optional test seam for the Area write paths. Production callers
+    /// pass <c>null</c> to get a <see cref="DwSqlExecutor"/> wrapping the live Dynamicweb.Data.Database
+    /// static API. Tests inject a Moq&lt;ISqlExecutor&gt; to capture CommandBuilder text and
+    /// assert on the SET IDENTITY_INSERT [Area] ON/INSERT/OFF ordering.
+    /// </param>
     public ContentDeserializer(
         SerializerConfiguration configuration,
         IContentStore? store = null,
@@ -43,7 +54,9 @@ public class ContentDeserializer
         bool isDryRun = false,
         string? filesRoot = null,
         ConflictStrategy conflictStrategy = ConflictStrategy.SourceWins,
-        TargetSchemaCache? schemaCache = null)
+        TargetSchemaCache? schemaCache = null,
+        // Phase 38 A.2 (D-38-05): test seam for Area write paths.
+        ISqlExecutor? sqlExecutor = null)
     {
         _configuration = configuration;
         _store = store ?? new FileSystemStore();
@@ -58,6 +71,8 @@ public class ContentDeserializer
         // orchestrator's strict-mode wrapper (Phase 37-04) will intercept the WARNING
         // lines and escalate them at end-of-run when strict mode is active.
         _templateEscalator = new StrictModeEscalator(strict: false, log: _log);
+        // Phase 38 A.2 (D-38-05): default SqlExecutor wraps Dynamicweb.Data.Database.
+        _sqlExecutor = sqlExecutor ?? new DwSqlExecutor();
     }
 
     private void Log(string message) => _log?.Invoke(message);
@@ -433,7 +448,8 @@ public class ContentDeserializer
         if (first) return;
 
         cb.Add(" WHERE [AreaID] = {0}", areaId);
-        Database.ExecuteNonQuery(cb);
+        // Phase 38 A.2 (D-38-05): routed through ISqlExecutor seam for testability.
+        _sqlExecutor.ExecuteNonQuery(cb);
     }
 
     /// <summary>
@@ -470,8 +486,33 @@ public class ContentDeserializer
             cb.Add("{0}", values[i]);
         }
         cb.Add("); SET IDENTITY_INSERT [Area] OFF;");
-        Database.ExecuteNonQuery(cb);
+        // Phase 38 A.2 (D-38-05): routed through ISqlExecutor seam so the
+        // SET IDENTITY_INSERT [Area] ON/OFF wrapping can be asserted by tests.
+        _sqlExecutor.ExecuteNonQuery(cb);
     }
+
+    // -------------------------------------------------------------------------
+    // Phase 38 A.2 (D-38-05): internal test hooks for Area SQL write paths.
+    // Access is gated by the <InternalsVisibleTo Include="DynamicWeb.Serializer.Tests" />
+    // entry in DynamicWeb.Serializer.csproj. Production code never calls these.
+    // The forwarder pattern avoids making the private methods public or using
+    // reflection — reviewable and deterministic (checker warning W2 resolution).
+    // -------------------------------------------------------------------------
+
+    /// <summary>
+    /// Test-only forwarder to the private <c>CreateAreaFromProperties</c>.
+    /// Drives the Area INSERT path so the SET IDENTITY_INSERT [Area] ON/INSERT/OFF
+    /// ordering can be asserted via the injected <see cref="ISqlExecutor"/>.
+    /// </summary>
+    internal void InvokeCreateAreaFromPropertiesForTest(int areaId, SerializedArea area, IReadOnlySet<string>? excludeFields)
+        => CreateAreaFromProperties(areaId, area, excludeFields);
+
+    /// <summary>
+    /// Test-only forwarder to the private <c>WriteAreaProperties</c>. Drives the
+    /// Area UPDATE path to confirm it does NOT emit IDENTITY_INSERT wrappers.
+    /// </summary>
+    internal void InvokeUpdateAreaFromPropertiesForTest(int areaId, Dictionary<string, object> properties, IReadOnlySet<string>? excludeFields, IReadOnlySet<string>? excludeAreaColumns = null)
+        => WriteAreaProperties(areaId, properties, excludeFields, excludeAreaColumns);
 
     // -------------------------------------------------------------------------
     // Page deserialization
