@@ -49,7 +49,14 @@ public class ContentSerializer
         int totalPages = 0, totalGridRows = 0, totalParagraphs = 0;
         var allSerializedPages = new List<SerializedPage>();
 
-        foreach (var predicate in _configuration.Predicates)
+        // Phase 38 WR-01: ContentSerializer is Deploy-scoped by convention (see class XML
+        // docs and SerializePredicate line 178-180 which reads Deploy.ExcludeFieldsByItemType
+        // explicitly). Previously iterated via the legacy `_configuration.Predicates` alias
+        // which silently resolves to Deploy.Predicates only — a latent footgun if any future
+        // caller wires Seed predicates directly into SerializerConfiguration.Seed and expects
+        // them to be serialized. Read Deploy.Predicates explicitly so the single-mode intent
+        // is visible at the call site and matches the Deploy-only exclusion dict on line 182.
+        foreach (var predicate in _configuration.Deploy.Predicates)
         {
             var area = SerializePredicate(predicate);
             _referenceResolver.Clear();
