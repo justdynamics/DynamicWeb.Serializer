@@ -53,8 +53,10 @@ This document is the checklist that closes those gaps.
    Lives under `/Files/Templates/Designs/Swift/`.
 5. **Azure App Service app settings** — bind Key Vault refs at startup via
    `@Microsoft.KeyVault(...)` syntax.
+6. **DW NuGet version alignment** — source and target DBs must be migrated by
+   the same DW schema version. Drift produces legitimate strict-mode warnings.
 
-The next five sections expand each of these.
+The next six sections expand each of these.
 
 ## GlobalSettings.config
 
@@ -164,3 +166,107 @@ Recommended layout (pattern reference:
 - **Deploy pipeline** runs `dotnet publish` + deserialize in sequence: code
   first (so the serializer DLL is in place), YAML tree copy second, then
   `POST /Admin/Api/SerializerDeserialize?mode=deploy` to apply the baseline.
+
+## DW NuGet version alignment
+
+**TL;DR:** Run the same DW NuGet version on the host that exports the baseline
+and the host that imports it. Otherwise the serializer will emit legitimate
+`source column [Area].[X] not present on target schema` warnings that in strict
+mode escalate to errors — and the errors are correctly flagging the drift, not
+a bug in the serializer.
+
+### The pattern
+
+DW ships its schema as C# `UpdateProvider` classes inside the
+`Dynamicweb.*` NuGet packages. When a DW host starts, any pending update
+providers run in order and mutate the DB schema — adding columns, backfilling
+data, dropping obsolete columns, etc.
+
+Different DW NuGet versions ship different sets of update providers. A DB that
+was bootstrapped on an older DW version and never upgraded will have schema
+shape from that older version; a DB bootstrapped on a newer version will have
+the newer shape. The serializer does not reconcile schema differences beyond
+logging them — it routes the source column set through the target column set
+and logs a warning for any source column the target lacks (via
+`TargetSchemaCache.LogMissingColumnOnce`).
+
+### The specific Swift 2.2 case (Phase 38 B.3 finding, 2026-04-21)
+
+The Swift 2.2 source DB contains three legacy columns on the `Area` table that
+have been **dropped from DW core** in a schema update between the Swift 2.2
+bootstrap version and the current DW 10.24.7 release:
+
+| Column              | Data type     | Known use |
+| ------------------- | ------------- | --------- |
+| `AreaHtmlType`      | `nvarchar(10)` | Legacy DW rendering mode selector; unused in current DW. |
+| `AreaLayoutPhone`   | `nvarchar(255)` | Legacy mobile-specific template path; superseded by responsive templates. |
+| `AreaLayoutTablet`  | `nvarchar(255)` | Legacy tablet-specific template path; superseded by responsive templates. |
+
+Investigation notes:
+`.planning/phases/38-production-ready-baseline-hardening-retroactive-tests-for-37/38-03-b3-investigation.md`.
+
+Verified findings:
+
+- CleanDB (bootstrapped on a newer DW version) has **none** of the three
+  columns.
+- Swift 2.2 has all three columns but **zero non-empty values** across both
+  Area rows.
+- No current DW NuGet DLL contains these column names in any read or write
+  code path (binary grep across all 67 `Dynamicweb.*` packages).
+- Both hosts run effectively the same DW core schema version (same set of
+  `UpdateProvider` providers in `Updates` table, apart from peripheral modules
+  like Forum and GLS shipping on Swift 2.2 only).
+
+Conclusion: the columns are **legacy DW schema carried forward on Swift 2.2 as
+empty placeholders**. They are not Swift-specific extensions.
+
+### Customer action: align DW NuGet versions
+
+Because DW Suite is distributed as a NuGet package, version alignment is a
+one-line change in the host `.csproj` + a host restart (DW runs pending
+schema updates at startup). Recommended order:
+
+1. Identify the newer DW NuGet version. Usually the target is already on it,
+   because it was bootstrapped last.
+2. On the older host (usually the source/export), update the
+   `<PackageReference Include="Dynamicweb.Suite" Version="..." />` line in the
+   host csproj to match.
+3. `dotnet publish` and restart the host. DW will run any pending
+   `UpdateProvider` classes, including those that drop legacy columns like the
+   three above.
+4. Re-run the serializer export. The warnings disappear because the source
+   schema is now aligned with the target schema.
+
+### Optional: source-side cleanup without version upgrade
+
+If a DW version bump is not feasible on the source host, and the specific
+legacy columns carry no data, a customer can proactively drop them from the
+source DB:
+
+```sql
+-- ONLY IF the columns are confirmed empty via:
+--   SELECT COUNT(*) FROM [Area] WHERE AreaHtmlType IS NOT NULL AND AreaHtmlType <> '';
+-- etc.
+ALTER TABLE [Area] DROP COLUMN [AreaHtmlType];
+ALTER TABLE [Area] DROP COLUMN [AreaLayoutPhone];
+ALTER TABLE [Area] DROP COLUMN [AreaLayoutTablet];
+```
+
+This is a customer-operations concern; the serializer does not automate it.
+The recommended path is always a DW version bump because it applies every
+legacy-migration consistently instead of hand-dropping individual columns.
+
+### What the serializer does NOT do
+
+- It does **not** silently skip schema-drift columns in strict mode. The
+  `WARNING: source column [Table].[Col] not present on target schema` lines
+  are routed through `StrictModeEscalator` and in strict mode are accumulated
+  into a `CumulativeStrictModeException` at end-of-run. This is intentional:
+  schema drift is a signal that deployment hosts are mis-aligned and the
+  deploy result is non-deterministic, and strict mode surfaces that loudly.
+- It does **not** ship a `knownEnvSchemaDrift` allowlist field on predicates
+  or config (considered during Phase 38 B.3; rejected because the correct fix
+  is operational — a drift allowlist normalizes what should stay visible, and
+  would mask future real drift-as-data-loss scenarios). If a future use case
+  genuinely requires allowlisting specific drift, file a new phase that
+  weighs the correctness trade-off.
