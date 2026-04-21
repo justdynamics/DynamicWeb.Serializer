@@ -120,7 +120,11 @@ Write-Host ""
 
 # --- Hit each page and bucket ----------------------------------------------
 $buckets = @{ '2xx' = @(); '3xx' = @(); '4xx' = @(); '5xx' = @() }
-$errors = @()
+# Phase 38 WR-03: Renamed from $errors to avoid shadowing the PowerShell automatic
+# variable $Error (PSAvoidAssignmentToAutomaticVariable). $Error is the session-wide
+# accumulator of ErrorRecord objects; using our own name keeps debugging (`$Error[0]`)
+# consistent with PS conventions.
+$transportErrors = @()
 
 foreach ($r in $rows) {
     $slug = $r.PageUrlName
@@ -160,7 +164,7 @@ foreach ($r in $rows) {
             } catch { $body = "" }
             try { $headers = $_.Exception.Response.Headers } catch { $headers = $null }
         } else {
-            $errors += [PSCustomObject]@{
+            $transportErrors += [PSCustomObject]@{
                 PageId = $r.PageID
                 Url    = $url
                 Error  = $_.Exception.Message
@@ -204,7 +208,7 @@ Write-Host "2xx:              $($buckets['2xx'].Count)"
 Write-Host "3xx:              $($buckets['3xx'].Count)"
 Write-Host "4xx:              $($buckets['4xx'].Count)"
 Write-Host "5xx:              $($buckets['5xx'].Count)"
-Write-Host "Transport errors: $($errors.Count)"
+Write-Host "Transport errors: $($transportErrors.Count)"
 
 if ($buckets['5xx'].Count -gt 0) {
     Write-Host ""
@@ -216,13 +220,13 @@ if ($buckets['4xx'].Count -gt 0) {
     Write-Host "=== 4xx Details (first 500 chars) ===" -ForegroundColor Yellow
     $buckets['4xx'] | Select-Object PageId, Url, Code, BodyExcerpt | Format-Table -AutoSize
 }
-if ($errors.Count -gt 0) {
+if ($transportErrors.Count -gt 0) {
     Write-Host ""
     Write-Host "=== Transport Errors ===" -ForegroundColor Red
-    $errors | Format-Table -AutoSize
+    $transportErrors | Format-Table -AutoSize
 }
 
-if ($buckets['5xx'].Count -gt 0 -or $errors.Count -gt 0) {
+if ($buckets['5xx'].Count -gt 0 -or $transportErrors.Count -gt 0) {
     exit 1
 }
 exit 0
