@@ -18,7 +18,8 @@ Re-runnable SQL scripts to clean up "obviously wrong" data in a Swift 2.2 Dynami
 | 05 | `05-null-stale-template-refs.sql` | Nulls paragraph/item-field references to 3 orphan template names (1ColumnEmail, 2ColumnsEmail, Swift-v2_PageNoLayout.cshtml) that no longer ship with upstream Swift. Closes Phase 38 D-38-06 (B.1/B.2). |
 | 06 | `06-delete-orphan-ecomshopgrouprelation.sql` | Deletes the orphan `(ShopGroupShopId='SHOP19', ShopGroupGroupId='GROUP253')` row from `[EcomShopGroupRelation]`. SHOP19 is not a valid ShopId (only 9 shops exist: SHOP1/5/6/7/8/9/14/27/28). Transaction-wrapped; asserts `@before=1` and `@after=0`. Closes Phase 38 B.4 / Phase 38.1 B.4.1. |
 | 07 | `07-delete-stale-email-gridrows.sql` | Deletes 142 stale GridRow rows whose `GridRowDefinitionId` was nulled to empty string by script 05 (references to removed templates `1ColumnEmail` / `2ColumnsEmail`). Transaction-wrapped; asserts `@before=142` and `@after=0`. Closes Phase 38.1 GRID-01. **Must run after 05.** |
-| 99 | `99-verify.sql` | Row counts + re-scan for remaining orphan refs. Run after 01-07 to confirm clean state. |
+| 08 | `08-null-orphan-page-link-refs.sql` | Nullifies/clears the 47 link-field occurrences of 20 orphan page IDs (1, 2, 4, 16, 19, 21, 23, 33, 34, 37, 40, 41, 42, 44, 48, 60, 97, 98, 104, 113) across `ItemType_Swift-v2_*` tables. These IDs point to non-existent pages and surface as `Unresolvable page ID <N>` strict-mode escalations during Deserialize Deploy. Dynamic-SQL sweep over `INFORMATION_SCHEMA.COLUMNS` (same pattern as script 01's ID-15717 cleanup) updates string columns via digit-boundary-guarded REPLACE, clears whole-value raw-numeric string matches to `''`, and sets nullable integer columns to `NULL`. Transaction-wrapped; asserts pre-count in `[1..200]` (with zero-count no-op branch) and `@after=0`. Closes Phase 38.1 VERIFICATION gap `truth[0]` (47 unresolvable page-ID link occurrences). **Must run after the baseline is restored from bacpac (or on a Swift-2.2 DB where the orphan rows still exist). Must run after 01 (overlap-safe but 01 clears a different 5-ID set first).** Investigation: `.planning/phases/38.1-close-phase-38-deferrals/38.1-02-orphan-investigation.md`. |
+| 99 | `99-verify.sql` | Row counts + re-scan for remaining orphan refs. Run after 01-08 to confirm clean state. |
 
 ## Expected Swift 2.2 "before" state
 
@@ -30,6 +31,7 @@ Re-runnable SQL scripts to clean up "obviously wrong" data in a Swift 2.2 Dynami
 | Soft-deleted pages (PageDeleted=1) | ~238 |
 | Empty-name product translations (NOT cleaned) | 1091 — legitimate DW "not localized yet" state |
 | Stale-email GridRow rows (`GridRowDefinitionId` IN '', '1ColumnEmail', '2ColumnsEmail') | 142 (after 05 runs) |
+| Orphan page-ID link-field occurrences (20 IDs × varied rows) | ~47 occurrences across `ItemType_Swift-v2_*` (see `.planning/phases/38.1-close-phase-38-deferrals/38.1-02-orphan-investigation.md`) |
 
 ## Run order
 
@@ -46,6 +48,7 @@ sqlcmd -S "$SERVER" -E -d "$DB" -i tools/swift22-cleanup/04-delete-soft-deleted-
 sqlcmd -S "$SERVER" -E -d "$DB" -i tools/swift22-cleanup/05-null-stale-template-refs.sql
 sqlcmd -S "$SERVER" -E -d "$DB" -i tools/swift22-cleanup/06-delete-orphan-ecomshopgrouprelation.sql
 sqlcmd -S "$SERVER" -E -d "$DB" -i tools/swift22-cleanup/07-delete-stale-email-gridrows.sql
+sqlcmd -S "$SERVER" -E -d "$DB" -i tools/swift22-cleanup/08-null-orphan-page-link-refs.sql
 sqlcmd -S "$SERVER" -E -d "$DB" -i tools/swift22-cleanup/99-verify.sql
 ```
 
