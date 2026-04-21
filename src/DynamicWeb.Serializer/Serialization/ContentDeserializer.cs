@@ -477,15 +477,29 @@ public class ContentDeserializer
         // 2026-04-20: wrap in SET IDENTITY_INSERT so explicit AreaID writes succeed against
         // a fresh target where Area.AreaId is an identity column. Keeping the areaId stable
         // across env is required for predicate.areaId references to work.
+        //
+        // Phase 38 WR-02: Wrap the INSERT in TRY/CATCH so SET IDENTITY_INSERT [Area] OFF is
+        // always emitted even when the INSERT throws (FK violation, duplicate AreaUniqueId,
+        // etc.). Without the CATCH, a failed INSERT would leave the connection's session
+        // state with IDENTITY_INSERT still ON for [Area], and subsequent work on the same
+        // pooled connection could fail unexpectedly. THROW re-raises the original exception
+        // so the caller still sees the failure. The outer OFF is a belt-and-braces terminator
+        // for the success path (TRY completes without entering CATCH).
         var cb = new CommandBuilder();
         cb.Add("SET IDENTITY_INSERT [Area] ON; ");
+        cb.Add("BEGIN TRY ");
         cb.Add($"INSERT INTO [Area] ({string.Join(", ", columns)}) VALUES (");
         for (int i = 0; i < values.Count; i++)
         {
             if (i > 0) cb.Add(", ");
             cb.Add("{0}", values[i]);
         }
-        cb.Add("); SET IDENTITY_INSERT [Area] OFF;");
+        cb.Add("); ");
+        cb.Add("END TRY BEGIN CATCH ");
+        cb.Add("SET IDENTITY_INSERT [Area] OFF; ");
+        cb.Add("THROW; ");
+        cb.Add("END CATCH; ");
+        cb.Add("SET IDENTITY_INSERT [Area] OFF;");
         // Phase 38 A.2 (D-38-05): routed through ISqlExecutor seam so the
         // SET IDENTITY_INSERT [Area] ON/OFF wrapping can be asserted by tests.
         _sqlExecutor.ExecuteNonQuery(cb);
