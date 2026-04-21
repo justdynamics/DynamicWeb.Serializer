@@ -119,6 +119,10 @@ Progress: [██████████] 100% (v0.4.0)
 
 ## Accumulated Context
 
+### Roadmap Evolution
+
+- 2026-04-21: Phase 38 added — Production-Ready Baseline Hardening. User-approved full scope (groups A+B+C+D+E) after autonomous E2E round-trip on 2026-04-20 surfaced 13 distinct follow-up items that Phase 37 itself correctly did NOT attempt to fix. Findings source: `.planning/sessions/2026-04-20-e2e-baseline-roundtrip/REPORT.md`.
+
 ### Decisions
 
 Decisions are logged in PROJECT.md Key Decisions table.

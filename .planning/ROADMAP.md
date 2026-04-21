@@ -213,3 +213,50 @@ Plans:
 | 24. Area ItemType Fields | v0.4.0 | 1/1 | Complete   | 2026-04-03 |
 | 25. Ecommerce Schema Sync | v0.4.0 | 1/1 | Complete | 2026-04-03 |
 | 37. Production-Ready Baseline | v0.5.0 | 7/7 | Complete   | 2026-04-20 |
+
+### Phase 38: Production-Ready Baseline Hardening
+
+**Goal:** Close everything Phase 37's autonomous E2E round-trip surfaced but didn't fix. After Phase 38, the Swift 2.2 → CleanDB round-trip runs with `strictMode: true` (the intended production default) without warnings-turned-failures, all follow-up code changes from 37 have proper test coverage, the one known silent data-loss path (EcomProducts 2051 → 582) is either fixed or explicitly documented, and customers have a written "what's NOT in the baseline" reference for per-env config.
+
+**Depends on:** Phase 37 (Production-Ready Baseline)
+**Source of findings:** `.planning/sessions/2026-04-20-e2e-baseline-roundtrip/REPORT.md` — every item below maps to a concrete finding in the E2E session.
+
+**Requirements / grouped backlog** (user-approved scope 2026-04-21, groups A+B+C+D+E):
+
+**Group A — Lock in the 37 follow-up code changes** (shipped inline during E2E without proper test coverage)
+- `A.1`: TDD unit tests for `AcknowledgedOrphanPageIds` — malicious-ID rejection, acknowledged-ID warning path, strict-still-fatal-for-unlisted path
+- `A.2`: TDD integration test for `IDENTITY_INSERT` wrapping on Area create (real target DB with identity column)
+- `A.3`: Consolidate `AcknowledgedOrphanPageIds` to ONE source-of-truth (currently duplicated on both `ProviderPredicateDefinition` and `ModeConfig`); remove the unused one
+
+**Group B — Close the strict-mode data/template gaps** (the 7 warnings that forced `strictMode: false` for the E2E deploy)
+- `B.1`: Missing grid-row templates `1ColumnEmail`, `2ColumnsEmail` — investigate whether these ship with the Swift nupkg on CleanDB or need TEMPLATE-01 scope expansion to capture email templates
+- `B.2`: Missing page-layout template `Swift-v2_PageNoLayout.cshtml` — same investigation as B.1
+- `B.3`: 3 schema-drift Area columns (`AreaHtmlType`, `AreaLayoutPhone`, `AreaLayoutTablet`) on CleanDB — determine whether CleanDB is on an older DW version (remediable) or whether Swift 2.2 adds columns DW core doesn't ship (permanent drift, document as such)
+- `B.4`: FK re-enable warning on `EcomShopGroupRelation → EcomShops.ShopId` during deserialize — determine whether it fires in production deploys or only after an aggressive purge
+
+**Group C — Investigate real data loss** (silent, worst-case)
+- `C.1`: EcomProducts serialize emitted 582 rows, Swift 2.2 has 2051. Diagnose where 1469 products vanished — candidate theories: empty-name products filtered silently, duplicate-NameColumn collision causing file overwrites, `SkipOnUnchanged` bug in the checksums lookup
+
+**Group D — API/UX polish**
+- `D.1`: `?mode=seed` query-param binding on `SerializerSerialize`/`SerializerDeserialize` API — doc comments say it works; in practice only the JSON body `{"Mode":"seed"}` binds
+- `D.2`: HTTP status code bug — serialize returns HTTP 400 even when 0 errors because the trailing `Errors: ` string is always present in the message
+- `D.3`: New `SerializerSmoke` admin command / CLI — hit every active page post-deserialize, report 2xx/3xx/4xx/5xx bucket counts + excerpt any 5xx HTML body. Turns the E2E smoke into a first-class repeatable tool
+
+**Group E — Docs**
+- `E.1`: Update `docs/baselines/Swift2.2-baseline.md` — add "Pre-existing source-data bugs caught by Phase 37 validators" section (the 3 column-name fixes: VatName→VatGroupName, ShopAutoId on EcomPayments, ShippingParameters→ShippingServiceParameters, and the 5 orphan page IDs)
+- `E.2`: Add `docs/baselines/env-bucket.md` — per-env config reference: `/Files/GlobalSettings.config` (including Friendly URL `/en-us/` routing), Azure Key Vault secrets, AreaDomain/CDN bindings — what's NOT in the baseline and why
+
+**Success Criteria** (what must be TRUE at end of phase):
+  1. The Swift 2.2 → CleanDB round-trip runs with `strictMode: true` (config default) without a single escalated warning (B.1–B.4 closed or explicitly acknowledged via a sanctioned bypass)
+  2. `AcknowledgedOrphanPageIds` lives in exactly ONE place in the model layer, has 3+ unit tests proving the malicious/acknowledged/unlisted cases, and has one threat-model entry in PLAN.md
+  3. Area IDENTITY_INSERT has a unit test that fails if the wrapping is removed
+  4. EcomProducts round-trip preserves ALL rows from Swift 2.2 to CleanDB, OR the filtering is explicitly documented with a test proving the filter criterion
+  5. `POST /Admin/Api/SerializerSerialize?mode=seed` works identically to the JSON-body variant
+  6. HTTP 400 is never returned on a fully-successful serialize/deserialize
+  7. A new smoke tool exits 0 when the CleanDB frontend serves all expected pages as 2xx/3xx, non-zero with a report on any 5xx
+  8. Swift2.2-baseline.md has a "known pre-existing source-data bugs" section; env-bucket.md explains Friendly URL + GlobalSettings.config + secrets are per-env infra
+
+**Plans:** 0 plans (run /gsd-plan-phase 38 to break down)
+
+Plans:
+- [ ] TBD
