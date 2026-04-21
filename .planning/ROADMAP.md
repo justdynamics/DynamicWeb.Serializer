@@ -294,7 +294,26 @@ Plans:
   3. Zero escalated warnings for the 4 deferred items (B.5.1, B.4.1, B.3.1, GRID-01)
   4. Optional: extract shared paragraph-ID collector helper between `BaselineLinkSweeper` and `InternalLinkResolver` (carried from checker warning W6)
 
-**Plans:** 1 plan
+**Plans:** 5 plans (1 original + 4 gap-closure plans inserted 2026-04-21)
 
 Plans:
-- [ ] 38.1-01-PLAN.md — Single-plan 6-task sequence: B.5.1 SelectedValue sweeper → B.4.1 SHOP19 cleanup SQL → B.3.1 env-bucket.md drift columns → GRID-01 stale GridRow SQL → W6 ParagraphIdCollector extraction → NOT-SERIALIZED rename + live E2E
+- [x] 38.1-01-PLAN.md — Single-plan 6-task sequence: B.5.1 SelectedValue sweeper → B.4.1 SHOP19 cleanup SQL → B.3.1 env-bucket.md drift columns → GRID-01 stale GridRow SQL → W6 ParagraphIdCollector extraction → NOT-SERIALIZED rename + live E2E (closed 4 named deferrals; open-with-gap on wider 57-escalation surface — see 38.1-VERIFICATION.md)
+- [ ] 38.1-02-PLAN.md — Gap closure Wave 1a: investigation of 20 orphan page IDs + scripts 08 (null-orphan-page-link-refs) and 09 (fix-misconfigured-property-pages for PageID 88/103) + README rows 08 & 09
+- [ ] 38.1-03-PLAN.md — Gap closure Wave 1b (parallel with 02): cleandb-align-schema.sql (10 idempotent ALTER) + tools/e2e/full-clean-roundtrip.ps1 unattended pipeline + tools/e2e/README.md
+- [ ] 38.1-04-PLAN.md — Gap closure Wave 2: run full pipeline end-to-end + capture 38.1-02-e2e-results.md with disposition CLOSED
+- [ ] 38.1-05-PLAN.md — Gap closure Wave 3: docs/findings/swift22-cleanup-overview.md (email-able full cleanup surface inventory)
+
+**Gap-closure success criteria (appends to the above 4 when Plans 02-05 complete):**
+  1. tools/e2e/full-clean-roundtrip.ps1 runs unattended end-to-end against a freshly-restored Swift-2.2 bacpac and exits 0
+  2. HTTP 200 on all 4 API calls (serialize deploy/seed, deserialize deploy/seed) under strictMode: true
+  3. EcomProducts preservation 2051 → 2051
+  4. Zero orphan-ID escalations (20 IDs: 1, 2, 4, 16, 19, 21, 23, 33, 34, 37, 40, 41, 42, 44, 48, 60, 97, 98, 104, 113) in any API call
+  5. Zero "Could not load PropertyItem" warnings for PageID 88 + 103 (misconfigured PropertyItem refs cleared by script 09)
+  6. Smoke tool exits 0 AND exercises at least one page (non-vacuous)
+  7. Disposition CLOSED captured in 38.1-02-e2e-results.md
+  8. docs/findings/swift22-cleanup-overview.md delivered as single-document inventory of the full cleanup surface
+
+**Execution waves** (for /gsd-execute-phase --gaps-only):
+- Wave 1: 38.1-02 (investigation + scripts 08/09), 38.1-03 (cleandb-align-schema + pipeline PS) — parallel (zero file overlap)
+- Wave 2: 38.1-04 (pipeline run + e2e-results capture) — depends on 02 and 03
+- Wave 3: 38.1-05 (overview finding doc) — depends on 02 and 04
