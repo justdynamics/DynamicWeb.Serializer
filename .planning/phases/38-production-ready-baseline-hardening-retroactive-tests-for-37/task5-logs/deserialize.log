@@ -1,0 +1,4 @@
+=== Final Deserialize Deploy ===
+{"status":"error","message":"[Deploy] Deserialized: 1477 created, 0 updated, 0 skipped, 142 failed across 17 predicates Errors: ","exception":null,"model":null,"modelIdentifier":null}
+=== Final Deserialize Seed ===
+{"status":"ok","message":"[Seed] Deserialized: 3489 created, 0 updated, 0 skipped, 0 failed across 8 predicates","exception":null,"model":null,"modelIdentifier":null}

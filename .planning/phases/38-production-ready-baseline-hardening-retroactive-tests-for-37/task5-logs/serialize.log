@@ -1,0 +1,4 @@
+=== Re-serialize after host restart — Deploy ===
+{"status":"ok","message":"Serialization complete (Deploy). 1781 YAML files written to C:\\Projects\\Solutions\\swift.test.forsync\\Swift2.2\\Dynamicweb.Host.Suite\\wwwroot\\Files\\System\\Serializer\\SerializeRoot\\deploy. Serialized: 1765 rows across 17 predicates","exception":null,"model":null,"modelIdentifier":null}
+=== Re-serialize after host restart — Seed ===
+{"status":"ok","message":"Serialization complete (Seed). 3497 YAML files written to C:\\Projects\\Solutions\\swift.test.forsync\\Swift2.2\\Dynamicweb.Host.Suite\\wwwroot\\Files\\System\\Serializer\\SerializeRoot\\seed. Serialized: 3489 rows across 8 predicates","exception":null,"model":null,"modelIdentifier":null}
