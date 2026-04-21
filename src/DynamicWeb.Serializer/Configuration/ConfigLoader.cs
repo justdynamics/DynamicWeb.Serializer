@@ -323,6 +323,26 @@ public static class ConfigLoader
                 "remove the legacy 'Predicates' field (Phase 37-01 migrated the top-level list to deploy.predicates).");
         }
 
+        // Phase 38 A.3 (D-38-03): legacy mode-level AcknowledgedOrphanPageIds is no longer
+        // supported. Acknowledgment lives per-predicate on ProviderPredicateDefinition so
+        // different Content areas can have different known-broken refs. Warn + drop any
+        // legacy mode-level list. No silent merge (beta product, no back-compat per
+        // feedback_no_backcompat.md).
+        if (raw.Deploy?.AcknowledgedOrphanPageIds?.Count > 0)
+        {
+            Console.Error.WriteLine(
+                "[Serializer] WARNING: deploy.acknowledgedOrphanPageIds " +
+                "is no longer supported. Move the IDs onto the Content predicate(s) that contain the " +
+                "orphan references. The mode-level list is ignored this load. See Phase 38 D-38-03.");
+        }
+        if (raw.Seed?.AcknowledgedOrphanPageIds?.Count > 0)
+        {
+            Console.Error.WriteLine(
+                "[Serializer] WARNING: seed.acknowledgedOrphanPageIds " +
+                "is no longer supported. Move the IDs onto the Content predicate(s) that contain the " +
+                "orphan references. The mode-level list is ignored this load. See Phase 38 D-38-03.");
+        }
+
         ModeConfig deploy;
         if (hasLegacy)
         {
@@ -374,8 +394,7 @@ public static class ConfigLoader
             ConflictStrategy = ParseConflictStrategy(raw.ConflictStrategy, defaultStrategy),
             Predicates = raw.Predicates?.Select(BuildPredicate).ToList() ?? new List<ProviderPredicateDefinition>(),
             ExcludeFieldsByItemType = raw.ExcludeFieldsByItemType ?? new Dictionary<string, List<string>>(),
-            ExcludeXmlElementsByType = raw.ExcludeXmlElementsByType ?? new Dictionary<string, List<string>>(),
-            AcknowledgedOrphanPageIds = raw.AcknowledgedOrphanPageIds ?? new List<int>()
+            ExcludeXmlElementsByType = raw.ExcludeXmlElementsByType ?? new Dictionary<string, List<string>>()
         };
     }
 

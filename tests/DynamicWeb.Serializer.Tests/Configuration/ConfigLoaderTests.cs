@@ -1280,4 +1280,90 @@ public class ConfigLoaderTests : ConfigLoaderValidatorFixtureBase
             ConfigLoader._testDefaultValidatorConstructedCallback.Value = previousCallback;
         }
     }
+
+    // -------------------------------------------------------------------------
+    // Phase 38 A.3 (D-38-03) — legacy mode-level AcknowledgedOrphanPageIds
+    // logs a warning and is dropped. Moved to ProviderPredicateDefinition.
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    [Trait("Category", "Phase38")]
+    public void Load_LegacyModeLevelAckList_LogsWarningAndDrops()
+    {
+        // A legacy config with deploy.acknowledgedOrphanPageIds at the mode level
+        // must emit the D-38-03 warning and NOT propagate the IDs anywhere. Per
+        // feedback_no_backcompat.md the legacy list is silently dropped (no merge
+        // into predicates) — warn + drop, beta product, no back-compat.
+        var json = """
+            {
+              "outputDirectory": "X",
+              "deploy": {
+                "outputSubfolder": "deploy",
+                "conflictStrategy": "source-wins",
+                "acknowledgedOrphanPageIds": [ 15717, 9999 ],
+                "predicates": []
+              }
+            }
+            """;
+        var path = WriteConfigFile(json);
+
+        // Capture Console.Error output.
+        var originalErr = Console.Error;
+        var sw = new StringWriter();
+        Console.SetError(sw);
+        try
+        {
+            var config = ConfigLoader.Load(path);
+
+            var errOutput = sw.ToString();
+            Assert.Contains("deploy.acknowledgedOrphanPageIds", errOutput);
+            Assert.Contains("no longer supported", errOutput);
+            Assert.Contains("D-38-03", errOutput);
+
+            // Legacy IDs are dropped — not propagated to any predicate.
+            Assert.All(config.Deploy.Predicates, p => Assert.Empty(p.AcknowledgedOrphanPageIds));
+        }
+        finally
+        {
+            Console.SetError(originalErr);
+        }
+    }
+
+    [Fact]
+    [Trait("Category", "Phase38")]
+    public void Load_LegacySeedModeLevelAckList_LogsWarningAndDrops()
+    {
+        // Parallel test for the seed.acknowledgedOrphanPageIds path.
+        var json = """
+            {
+              "outputDirectory": "X",
+              "seed": {
+                "outputSubfolder": "seed",
+                "conflictStrategy": "destination-wins",
+                "acknowledgedOrphanPageIds": [ 42 ],
+                "predicates": []
+              }
+            }
+            """;
+        var path = WriteConfigFile(json);
+
+        var originalErr = Console.Error;
+        var sw = new StringWriter();
+        Console.SetError(sw);
+        try
+        {
+            var config = ConfigLoader.Load(path);
+
+            var errOutput = sw.ToString();
+            Assert.Contains("seed.acknowledgedOrphanPageIds", errOutput);
+            Assert.Contains("no longer supported", errOutput);
+            Assert.Contains("D-38-03", errOutput);
+
+            Assert.All(config.Seed.Predicates, p => Assert.Empty(p.AcknowledgedOrphanPageIds));
+        }
+        finally
+        {
+            Console.SetError(originalErr);
+        }
+    }
 }

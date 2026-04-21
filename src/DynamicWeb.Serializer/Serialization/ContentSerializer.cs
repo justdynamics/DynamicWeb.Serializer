@@ -86,14 +86,16 @@ public class ContentSerializer
         // still fails.
         var sweeper = new BaselineLinkSweeper();
         var sweepResult = sweeper.Sweep(allSerializedPages);
+        // Phase 38 A.3 (D-38-03): per-predicate ack list is the single source of truth.
+        // Aggregate across both modes' predicates so the sweep receives the union.
+        var deployAck = _configuration.Deploy.Predicates.SelectMany(p => p.AcknowledgedOrphanPageIds).ToList();
+        var seedAck = _configuration.Seed.Predicates.SelectMany(p => p.AcknowledgedOrphanPageIds).ToList();
         Log($"Link sweep: {sweepResult.ResolvedCount} internal link(s) verified, " +
             $"{sweepResult.Unresolved.Count} unresolvable " +
-            $"(ack deploy={_configuration.Deploy.AcknowledgedOrphanPageIds.Count}, seed={_configuration.Seed.AcknowledgedOrphanPageIds.Count})");
+            $"(ack deploy={deployAck.Count}, seed={seedAck.Count})");
         if (sweepResult.Unresolved.Count > 0)
         {
-            var acknowledged = new HashSet<int>(
-                _configuration.Deploy.AcknowledgedOrphanPageIds
-                    .Concat(_configuration.Seed.AcknowledgedOrphanPageIds));
+            var acknowledged = new HashSet<int>(deployAck.Concat(seedAck));
             var (accepted, fatal) = sweepResult.Unresolved
                 .GroupBy(u => acknowledged.Contains(u.UnresolvablePageId))
                 .Aggregate(
@@ -116,7 +118,7 @@ public class ContentSerializer
                     $"Baseline link sweep found {fatal.Count} unresolvable reference(s):\n" +
                     string.Join("\n", lines) +
                     "\nFix the source baseline: include the referenced pages in a predicate path, or remove the references. " +
-                    "Known-broken source refs may be listed under AcknowledgedOrphanPageIds in the mode config.");
+                    "Known-broken source refs may be listed under AcknowledgedOrphanPageIds on the owning Content predicate.");
             }
         }
 
