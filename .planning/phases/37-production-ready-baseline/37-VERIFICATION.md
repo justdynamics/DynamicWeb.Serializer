@@ -1,16 +1,22 @@
 ---
 phase: 37-production-ready-baseline
-verified: 2026-04-20T21:00:00Z
-status: human_needed
-score: 8/8 must-haves verified (code-level)
+verified: 2026-04-21T00:00:00Z
+status: passed
+score: 8/8 must-haves verified (code-level + live round-trip)
 overrides_applied: 0
 re_verification:
-  previous_status: gaps_found
-  previous_score: 7/8
+  previous_status: human_needed
+  previous_score: 8/8 code-level (5 items pending live verification)
   gaps_closed:
-    - "Config with SQL-injection-style identifiers rejected at config-load before any SQL runs (SC-3) — closed by plan 37-06 wiring default SqlIdentifierValidator into the 1-arg ConfigLoader.Load(path) overload"
+    - "SC-3 closed by plan 37-06 (default SqlIdentifierValidator on 1-arg ConfigLoader.Load)"
+    - "SC-1 / SC-2 / SC-6 / SC-7 / SC-8 closed by 2026-04-20 autonomous E2E round-trip (Swift 2.2 → CleanDB), see .planning/sessions/2026-04-20-e2e-baseline-roundtrip/REPORT.md. Frontend HTTP smoke confirms /en-us/home + /en-us/about + /en-us/shop + /en-us/posts + /en-us/sign-in all return 200 with real content after Deploy+Seed round-trip."
   gaps_remaining: []
   regressions: []
+  live_verification_followups_filed_to_phase_38:
+    - "Retroactive tests for the two 37-follow-up code changes (AcknowledgedOrphanPageIds on ProviderPredicateDefinition, IDENTITY_INSERT wrapping on Area create)"
+    - "Strict-mode upstream data/template gaps (3 missing templates, 3 schema-drift Area columns) — need Swift installer fix or TEMPLATE-01 scope expansion before strict can default ON for Deploy"
+    - "EcomProducts serialize drop: Swift 2.2 has 2051 products, Seed serialized 582 — investigate silent filtering"
+    - "Mode query-param binding (?mode=seed) does not populate the command property; currently requires JSON body {Mode:seed}"
 human_verification:
   - test: "Round-trip: serialize Swift 2.2 → CleanDB via the admin UI Deserialize button, verify zero 'Cache type not found (skipping)' lines in the log and that unknown cache names fail at config-load (per SC-2)."
     expected: "Admin UI shows an error message naming the unknown cache service and the supported-names list (currently TranslationLanguageService will trigger this on the bundled Swift 2.2 baseline — this is the documented CACHE-01 behavior)."
