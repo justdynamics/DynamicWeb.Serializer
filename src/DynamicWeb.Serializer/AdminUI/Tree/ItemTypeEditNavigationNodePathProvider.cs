@@ -27,7 +27,7 @@ public sealed class ItemTypeEditNavigationNodePathProvider : NavigationNodePathP
             typeof(SettingsArea).FullName,
             NavigationContext.Empty,
             typeof(SystemSection).FullName,
-            "Settings_Database",
+            SerializerSettingsNodeProvider.DeveloperRootId,
             SerializerSettingsNodeProvider.SerializeNodeId,
             terminal
         });

@@ -14,8 +14,10 @@ namespace DynamicWeb.Serializer.AdminUI.Tree;
 
 public sealed class SerializerSettingsNodeProvider : NavigationNodeProvider<SystemSection>
 {
-    // The Database root node ID under Settings > System > Database
-    private const string DatabaseRootId = "Settings_Database";
+    // Parent node ID under Settings > System > Developer. Moved from Settings > Database
+    // to Settings > Developer because Serialize is a developer/deployment tool, not a
+    // database-administration tool.
+    public const string DeveloperRootId = "Settings_Developer";
     public const string SerializeNodeId = "Serializer_Settings";
     // Phase 37-01 D-02: the flat Predicates node is split into two mode-scoped nodes.
     // The legacy PredicatesNodeId is kept as a constant for backwards compatibility of any
@@ -50,7 +52,7 @@ public sealed class SerializerSettingsNodeProvider : NavigationNodeProvider<Syst
 
     public override IEnumerable<NavigationNode> GetSubNodes(NavigationNodePath parentNodePath)
     {
-        if (parentNodePath.Last == DatabaseRootId)
+        if (parentNodePath.Last == DeveloperRootId)
         {
             yield return new NavigationNode
             {

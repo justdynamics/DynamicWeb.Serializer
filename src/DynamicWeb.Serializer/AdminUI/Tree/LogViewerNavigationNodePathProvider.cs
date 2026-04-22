@@ -16,7 +16,7 @@ public sealed class LogViewerNavigationNodePathProvider : NavigationNodePathProv
             typeof(SettingsArea).FullName,
             NavigationContext.Empty,
             typeof(SystemSection).FullName,
-            "Settings_Database",
+            SerializerSettingsNodeProvider.DeveloperRootId,
             SerializerSettingsNodeProvider.SerializeNodeId,
             SerializerSettingsNodeProvider.LogViewerNodeId
         ]);
