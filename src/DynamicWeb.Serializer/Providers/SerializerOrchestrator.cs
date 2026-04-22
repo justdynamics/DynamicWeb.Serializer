@@ -74,7 +74,9 @@ public class SerializerOrchestrator
         Action<string>? log = null,
         string? providerFilter = null,
         ManifestWriter? manifestWriter = null,
-        ManifestCleaner? manifestCleaner = null)
+        ManifestCleaner? manifestCleaner = null,
+        IReadOnlyDictionary<string, List<string>>? excludeFieldsByItemType = null,
+        IReadOnlyDictionary<string, List<string>>? excludeXmlElementsByType = null)
     {
         log?.Invoke($"=== Mode: {mode} | Strategy: {strategy} ===");
 
@@ -104,7 +106,8 @@ public class SerializerOrchestrator
                 continue;
             }
 
-            var result = provider.Serialize(predicate, outputRoot, log);
+            var result = provider.Serialize(predicate, outputRoot, log,
+                excludeFieldsByItemType, excludeXmlElementsByType);
             results.Add(result);
         }
 
@@ -138,7 +141,9 @@ public class SerializerOrchestrator
         Action<string>? log = null,
         bool isDryRun = false,
         string? providerFilter = null,
-        StrictModeEscalator? escalator = null)
+        StrictModeEscalator? escalator = null,
+        IReadOnlyDictionary<string, List<string>>? excludeFieldsByItemType = null,
+        IReadOnlyDictionary<string, List<string>>? excludeXmlElementsByType = null)
     {
         // Phase 37-04 STRICT-01: wrap the caller's log so every "WARNING:" line flows
         // through the escalator. Non-warning lines pass through untouched. Legacy
@@ -249,7 +254,8 @@ public class SerializerOrchestrator
             if (needsLinks)
                 perRunResolver = new InternalLinkResolver(aggregatedPageMap, wrappedLog);
 
-            var result = provider.Deserialize(predicate, inputRoot, wrappedLog, isDryRun, strategy, perRunResolver);
+            var result = provider.Deserialize(predicate, inputRoot, wrappedLog, isDryRun, strategy, perRunResolver,
+                excludeFieldsByItemType, excludeXmlElementsByType);
             results.Add(result);
 
             // Accumulate source→target map contributions from Content predicates so

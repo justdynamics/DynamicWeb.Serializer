@@ -134,7 +134,9 @@ public sealed class SerializerDeserializeCommand : CommandBase
                 Log,
                 config.DryRun,
                 providerFilter: null,
-                escalator: escalator);
+                escalator: escalator,
+                excludeFieldsByItemType: modeConfig.ExcludeFieldsByItemType,
+                excludeXmlElementsByType: modeConfig.ExcludeXmlElementsByType);
 
             // Build summary with advice and flush log
             var advice = AdviceGenerator.GenerateAdvice(result);

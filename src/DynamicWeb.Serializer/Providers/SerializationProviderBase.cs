@@ -25,7 +25,12 @@ public abstract class SerializationProviderBase : ISerializationProvider
     public abstract string ProviderType { get; }
     public abstract string DisplayName { get; }
 
-    public abstract SerializeResult Serialize(ProviderPredicateDefinition predicate, string outputRoot, Action<string>? log = null);
+    public abstract SerializeResult Serialize(
+        ProviderPredicateDefinition predicate,
+        string outputRoot,
+        Action<string>? log = null,
+        IReadOnlyDictionary<string, List<string>>? excludeFieldsByItemType = null,
+        IReadOnlyDictionary<string, List<string>>? excludeXmlElementsByType = null);
 
     public abstract ProviderDeserializeResult Deserialize(
         ProviderPredicateDefinition predicate,
@@ -33,7 +38,9 @@ public abstract class SerializationProviderBase : ISerializationProvider
         Action<string>? log = null,
         bool isDryRun = false,
         ConflictStrategy strategy = ConflictStrategy.SourceWins,
-        InternalLinkResolver? linkResolver = null);
+        InternalLinkResolver? linkResolver = null,
+        IReadOnlyDictionary<string, List<string>>? excludeFieldsByItemType = null,
+        IReadOnlyDictionary<string, List<string>>? excludeXmlElementsByType = null);
 
     public abstract ValidationResult ValidatePredicate(ProviderPredicateDefinition predicate);
 

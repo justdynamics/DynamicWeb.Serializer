@@ -42,8 +42,20 @@ public class SqlTableProvider : SerializationProviderBase
         _schemaCache = schemaCache ?? new TargetSchemaCache();
     }
 
-    public override SerializeResult Serialize(ProviderPredicateDefinition predicate, string outputRoot, Action<string>? log = null)
+    public override SerializeResult Serialize(
+        ProviderPredicateDefinition predicate,
+        string outputRoot,
+        Action<string>? log = null,
+        IReadOnlyDictionary<string, List<string>>? excludeFieldsByItemType = null,
+        IReadOnlyDictionary<string, List<string>>? excludeXmlElementsByType = null)
     {
+        // SqlTable doesn't use the by-type dicts today — row-level field exclusions are
+        // configured per-predicate via excludeFields / includeFields / excludeXmlElements.
+        // Accept the parameters to satisfy the base contract; a future extension could apply
+        // them against each row's XML column blobs.
+        _ = excludeFieldsByItemType;
+        _ = excludeXmlElementsByType;
+
         var validation = ValidatePredicate(predicate);
         if (!validation.IsValid)
         {
@@ -138,8 +150,13 @@ public class SqlTableProvider : SerializationProviderBase
         Action<string>? log = null,
         bool isDryRun = false,
         ConflictStrategy strategy = ConflictStrategy.SourceWins,
-        InternalLinkResolver? linkResolver = null)
+        InternalLinkResolver? linkResolver = null,
+        IReadOnlyDictionary<string, List<string>>? excludeFieldsByItemType = null,
+        IReadOnlyDictionary<string, List<string>>? excludeXmlElementsByType = null)
     {
+        _ = excludeFieldsByItemType;
+        _ = excludeXmlElementsByType;
+
         var validation = ValidatePredicate(predicate);
         if (!validation.IsValid)
         {

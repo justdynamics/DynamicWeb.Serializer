@@ -17,7 +17,27 @@ public interface ISerializationProvider
     string DisplayName { get; }
 
     /// <summary>Serialize data from the database to YAML files on disk.</summary>
-    SerializeResult Serialize(ProviderPredicateDefinition predicate, string outputRoot, Action<string>? log = null);
+    /// <param name="predicate">The predicate defining what to serialize.</param>
+    /// <param name="outputRoot">Root directory to write YAML into.</param>
+    /// <param name="log">Optional logging callback.</param>
+    /// <param name="excludeFieldsByItemType">
+    /// Parent <see cref="ModeConfig.ExcludeFieldsByItemType"/> dict. ContentProvider threads
+    /// this down to <see cref="ContentSerializer"/> so ItemType-scoped field exclusions apply
+    /// across every predicate in the mode. SqlTableProvider currently ignores this — it uses
+    /// its own per-predicate field-level mechanisms.
+    /// </param>
+    /// <param name="excludeXmlElementsByType">
+    /// Parent <see cref="ModeConfig.ExcludeXmlElementsByType"/> dict keyed by XML type name
+    /// (page.UrlDataProviderTypeName or paragraph.ModuleSystemName). ContentProvider threads
+    /// this down so XML element stripping applies by type across the mode instead of relying
+    /// solely on per-predicate flat lists.
+    /// </param>
+    SerializeResult Serialize(
+        ProviderPredicateDefinition predicate,
+        string outputRoot,
+        Action<string>? log = null,
+        IReadOnlyDictionary<string, List<string>>? excludeFieldsByItemType = null,
+        IReadOnlyDictionary<string, List<string>>? excludeXmlElementsByType = null);
 
     /// <summary>Deserialize YAML files from disk back into the database.</summary>
     /// <param name="predicate">The predicate defining what to deserialize.</param>
@@ -36,13 +56,17 @@ public interface ISerializationProvider
     /// gets its Default.aspx?ID=N references rewritten source→target. Null = no rewrite (the
     /// provider's current behaviour when no Content-provider has yet populated the map).
     /// </param>
+    /// <param name="excludeFieldsByItemType">Parent mode's ItemType field exclusion dict (see <see cref="Serialize"/>).</param>
+    /// <param name="excludeXmlElementsByType">Parent mode's XML element exclusion dict (see <see cref="Serialize"/>).</param>
     ProviderDeserializeResult Deserialize(
         ProviderPredicateDefinition predicate,
         string inputRoot,
         Action<string>? log = null,
         bool isDryRun = false,
         ConflictStrategy strategy = ConflictStrategy.SourceWins,
-        InternalLinkResolver? linkResolver = null);
+        InternalLinkResolver? linkResolver = null,
+        IReadOnlyDictionary<string, List<string>>? excludeFieldsByItemType = null,
+        IReadOnlyDictionary<string, List<string>>? excludeXmlElementsByType = null);
 
     /// <summary>Validate that a predicate is correctly configured for this provider.</summary>
     ValidationResult ValidatePredicate(ProviderPredicateDefinition predicate);

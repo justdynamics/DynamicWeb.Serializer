@@ -21,10 +21,7 @@
           "AreaRobotsTxtIncludeSitemap",
           "GoogleTagManagerID"
         ],
-        "excludeXmlElements": [
-          "EmptyCartRedirectPage",
-          "ShoppingCartLink"
-        ],
+        "excludeXmlElements": [],
         "excludeAreaColumns": [
           "AreaCdnHost",
           "AreaCookieWarningTemplate"
@@ -150,7 +147,30 @@
           "UrlPathRedirect"
         ]
       }
-    ]
+    ],
+    "excludeXmlElementsByType": {
+      "Dynamicweb.Ecommerce.Frontend.UrlHandling.ShopUrlDataProvider, Dynamicweb.Ecommerce": [],
+      "eCom_CartV2": [
+        "EmptyCartRedirectPage"
+      ],
+      "eCom_Catalog": [],
+      "eCom_ContextOrderRenderer": [],
+      "eCom_CustomerExperienceCenter": [
+        "ShoppingCartLink"
+      ],
+      "eCom_CustomerExperienceCenterFavorites": [],
+      "eCom_CustomerExperienceCenterSavedCards": [],
+      "eCom_ProductCatalog": [],
+      "QueryPublisher": [],
+      "UserAddresses": [],
+      "UserAuthentication": [],
+      "UserChangePassword": [],
+      "UserCreate": [],
+      "UserEdit": [],
+      "UserForgotPassword": [],
+      "UserGroups": [],
+      "UserView": []
+    }
   },
   "seed": {
     "outputSubfolder": "seed",

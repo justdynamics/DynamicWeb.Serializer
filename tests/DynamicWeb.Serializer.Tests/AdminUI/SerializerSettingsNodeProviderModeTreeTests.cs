@@ -79,21 +79,35 @@ public class SerializerSettingsNodeProviderModeTreeTests : IDisposable
         WriteConfig();
         var provider = new SerializerSettingsNodeProvider();
 
-        // Expand children of the Serialize node; the list must include Deploy Item Types +
-        // Deploy XML Types + Seed Item Types + Seed XML Types (Predicates stays from 37-01).
-        var children = provider
-            .GetSubNodes(PathTo("Settings_Database", SerializerSettingsNodeProvider.SerializeNodeId))
+        // Serialize node's direct children are now the Deploy / Seed group parents + Log Viewer.
+        // The six mode-specific leaves (Predicates, Item Types, Embedded XML — one each per mode)
+        // hang under the group parents.
+        var rootChildren = provider
+            .GetSubNodes(PathTo(SerializerSettingsNodeProvider.DeveloperRootId, SerializerSettingsNodeProvider.SerializeNodeId))
             .Select(n => n.Id)
             .ToList();
 
-        Assert.Contains(SerializerSettingsNodeProvider.DeployPredicatesNodeId, children);
-        Assert.Contains(SerializerSettingsNodeProvider.SeedPredicatesNodeId, children);
-        Assert.Contains(SerializerSettingsNodeProvider.DeployItemTypesNodeId, children);
-        Assert.Contains(SerializerSettingsNodeProvider.SeedItemTypesNodeId, children);
-        Assert.Contains(SerializerSettingsNodeProvider.DeployXmlTypesNodeId, children);
-        Assert.Contains(SerializerSettingsNodeProvider.SeedXmlTypesNodeId, children);
-        // Log viewer is single (not per-mode).
-        Assert.Contains(SerializerSettingsNodeProvider.LogViewerNodeId, children);
+        Assert.Contains(SerializerSettingsNodeProvider.DeployGroupNodeId, rootChildren);
+        Assert.Contains(SerializerSettingsNodeProvider.SeedGroupNodeId, rootChildren);
+        Assert.Contains(SerializerSettingsNodeProvider.LogViewerNodeId, rootChildren);
+
+        // Under Deploy group: Predicates, Item Types, Embedded XML.
+        var deployChildren = provider
+            .GetSubNodes(PathTo(SerializerSettingsNodeProvider.DeveloperRootId, SerializerSettingsNodeProvider.SerializeNodeId, SerializerSettingsNodeProvider.DeployGroupNodeId))
+            .Select(n => n.Id)
+            .ToList();
+        Assert.Contains(SerializerSettingsNodeProvider.DeployPredicatesNodeId, deployChildren);
+        Assert.Contains(SerializerSettingsNodeProvider.DeployItemTypesNodeId, deployChildren);
+        Assert.Contains(SerializerSettingsNodeProvider.DeployXmlTypesNodeId, deployChildren);
+
+        // Under Seed group: same triple, seed-scoped.
+        var seedChildren = provider
+            .GetSubNodes(PathTo(SerializerSettingsNodeProvider.DeveloperRootId, SerializerSettingsNodeProvider.SerializeNodeId, SerializerSettingsNodeProvider.SeedGroupNodeId))
+            .Select(n => n.Id)
+            .ToList();
+        Assert.Contains(SerializerSettingsNodeProvider.SeedPredicatesNodeId, seedChildren);
+        Assert.Contains(SerializerSettingsNodeProvider.SeedItemTypesNodeId, seedChildren);
+        Assert.Contains(SerializerSettingsNodeProvider.SeedXmlTypesNodeId, seedChildren);
     }
 
     [Fact]

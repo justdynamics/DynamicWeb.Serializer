@@ -36,8 +36,8 @@ public class StrictModeIntegrationTests
                 It.IsAny<Action<string>?>(),
                 It.IsAny<bool>(),
                 It.IsAny<ConflictStrategy>(),
-                It.IsAny<DynamicWeb.Serializer.Serialization.InternalLinkResolver?>()))
-            .Returns((ProviderPredicateDefinition pred, string _, Action<string>? log, bool _, ConflictStrategy _, DynamicWeb.Serializer.Serialization.InternalLinkResolver? _) =>
+                It.IsAny<DynamicWeb.Serializer.Serialization.InternalLinkResolver?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>()))
+            .Returns((ProviderPredicateDefinition pred, string _, Action<string>? log, bool _, ConflictStrategy _, DynamicWeb.Serializer.Serialization.InternalLinkResolver? _, IReadOnlyDictionary<string, List<string>>? _, IReadOnlyDictionary<string, List<string>>? _) =>
             {
                 log?.Invoke(warningLine);
                 return new ProviderDeserializeResult { Created = 1, TableName = pred.Table! };
@@ -125,8 +125,8 @@ public class StrictModeIntegrationTests
         providerB.Setup(p => p.ValidatePredicate(It.IsAny<ProviderPredicateDefinition>()))
             .Returns(ValidationResult.Success());
         providerB.Setup(p => p.Deserialize(It.IsAny<ProviderPredicateDefinition>(),
-                It.IsAny<string>(), It.IsAny<Action<string>?>(), It.IsAny<bool>(), It.IsAny<ConflictStrategy>(), It.IsAny<DynamicWeb.Serializer.Serialization.InternalLinkResolver?>()))
-            .Returns((ProviderPredicateDefinition pred, string _, Action<string>? log, bool _, ConflictStrategy _, DynamicWeb.Serializer.Serialization.InternalLinkResolver? _) =>
+                It.IsAny<string>(), It.IsAny<Action<string>?>(), It.IsAny<bool>(), It.IsAny<ConflictStrategy>(), It.IsAny<DynamicWeb.Serializer.Serialization.InternalLinkResolver?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>()))
+            .Returns((ProviderPredicateDefinition pred, string _, Action<string>? log, bool _, ConflictStrategy _, DynamicWeb.Serializer.Serialization.InternalLinkResolver? _, IReadOnlyDictionary<string, List<string>>? _, IReadOnlyDictionary<string, List<string>>? _) =>
             {
                 log?.Invoke("WARNING: B failure");
                 return new ProviderDeserializeResult { Created = 1, TableName = "Content" };

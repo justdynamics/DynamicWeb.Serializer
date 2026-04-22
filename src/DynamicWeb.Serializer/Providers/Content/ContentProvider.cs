@@ -43,7 +43,12 @@ public class ContentProvider : ISerializationProvider
         return ValidationResult.Success();
     }
 
-    public SerializeResult Serialize(ProviderPredicateDefinition predicate, string outputRoot, Action<string>? log = null)
+    public SerializeResult Serialize(
+        ProviderPredicateDefinition predicate,
+        string outputRoot,
+        Action<string>? log = null,
+        IReadOnlyDictionary<string, List<string>>? excludeFieldsByItemType = null,
+        IReadOnlyDictionary<string, List<string>>? excludeXmlElementsByType = null)
     {
         var validation = ValidatePredicate(predicate);
         if (!validation.IsValid)
@@ -60,7 +65,8 @@ public class ContentProvider : ISerializationProvider
             var contentDir = Path.Combine(outputRoot, "_content");
             Directory.CreateDirectory(contentDir);
 
-            var config = BuildSerializerConfiguration(predicate, contentDir);
+            var config = BuildSerializerConfiguration(predicate, contentDir,
+                excludeFieldsByItemType, excludeXmlElementsByType);
             var serializer = new ContentSerializer(config, log: log);
             serializer.Serialize();
 
@@ -99,7 +105,9 @@ public class ContentProvider : ISerializationProvider
         Action<string>? log = null,
         bool isDryRun = false,
         ConflictStrategy strategy = ConflictStrategy.SourceWins,
-        InternalLinkResolver? linkResolver = null)
+        InternalLinkResolver? linkResolver = null,
+        IReadOnlyDictionary<string, List<string>>? excludeFieldsByItemType = null,
+        IReadOnlyDictionary<string, List<string>>? excludeXmlElementsByType = null)
     {
         // ContentProvider ignores the injected linkResolver — its own deserialize path already
         // builds and applies an InternalLinkResolver for item-field / PropertyItem rewriting.
@@ -130,7 +138,8 @@ public class ContentProvider : ISerializationProvider
             if (!Directory.Exists(contentDir))
                 contentDir = inputRoot;
 
-            var config = BuildSerializerConfiguration(predicate, contentDir);
+            var config = BuildSerializerConfiguration(predicate, contentDir,
+                excludeFieldsByItemType, excludeXmlElementsByType);
             var deserializer = new ContentDeserializer(
                 config,
                 log: log,
@@ -217,9 +226,16 @@ public class ContentProvider : ISerializationProvider
     }
 
     /// <summary>
-    /// Builds a SerializerConfiguration with a single predicate for delegation to ContentSerializer/ContentDeserializer.
+    /// Builds a SerializerConfiguration with a single predicate for delegation to
+    /// ContentSerializer/ContentDeserializer. Threads the parent mode's ItemType + XML-type
+    /// exclusion dicts down into the inner ModeConfig — without this, the inner serializer
+    /// sees empty dicts and ignores all by-type exclusions.
     /// </summary>
-    private static SerializerConfiguration BuildSerializerConfiguration(ProviderPredicateDefinition predicate, string outputDirectory)
+    private static SerializerConfiguration BuildSerializerConfiguration(
+        ProviderPredicateDefinition predicate,
+        string outputDirectory,
+        IReadOnlyDictionary<string, List<string>>? excludeFieldsByItemType = null,
+        IReadOnlyDictionary<string, List<string>>? excludeXmlElementsByType = null)
     {
         // Phase 38 A.3 (D-38-03): AcknowledgedOrphanPageIds lives on ProviderPredicateDefinition only.
         // The inner predicate carries its own ack list; ContentSerializer aggregates across predicates.
@@ -228,7 +244,17 @@ public class ContentProvider : ISerializationProvider
             OutputDirectory = outputDirectory,
             Deploy = new ModeConfig
             {
-                Predicates = new List<ProviderPredicateDefinition> { predicate }
+                Predicates = new List<ProviderPredicateDefinition> { predicate },
+                ExcludeFieldsByItemType = excludeFieldsByItemType != null
+                    ? new Dictionary<string, List<string>>(
+                        excludeFieldsByItemType.ToDictionary(kv => kv.Key, kv => kv.Value),
+                        StringComparer.OrdinalIgnoreCase)
+                    : new Dictionary<string, List<string>>(),
+                ExcludeXmlElementsByType = excludeXmlElementsByType != null
+                    ? new Dictionary<string, List<string>>(
+                        excludeXmlElementsByType.ToDictionary(kv => kv.Key, kv => kv.Value),
+                        StringComparer.OrdinalIgnoreCase)
+                    : new Dictionary<string, List<string>>()
             }
         };
     }

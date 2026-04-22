@@ -103,7 +103,9 @@ public sealed class SerializerSerializeCommand : CommandBase
                 Log,
                 providerFilter: null,
                 manifestWriter: new ManifestWriter(),
-                manifestCleaner: new ManifestCleaner());
+                manifestCleaner: new ManifestCleaner(),
+                excludeFieldsByItemType: modeConfig.ExcludeFieldsByItemType,
+                excludeXmlElementsByType: modeConfig.ExcludeXmlElementsByType);
 
             var fileCount = Directory.Exists(modeRoot)
                 ? Directory.GetFiles(modeRoot, "*.yml", SearchOption.AllDirectories).Length
