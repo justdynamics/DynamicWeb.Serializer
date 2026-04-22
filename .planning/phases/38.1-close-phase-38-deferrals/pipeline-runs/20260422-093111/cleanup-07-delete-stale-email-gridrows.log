@@ -1,0 +1,5 @@
+--- Before ---
+Stale-email GridRow rows before: 142
+--- After ---
+Stale-email GridRow rows after: 0
+Done â?" 07-delete-stale-email-gridrows.sql

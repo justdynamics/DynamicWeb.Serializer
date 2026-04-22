@@ -1,0 +1,30 @@
+--- ID 8308 cleanup (Area 26 cross-baseline ref) ---
+Before:
+Loc       N          
+--------- -----------
+Logo.Link           4
+Loc       N          
+--------- -----------
+Text.Text           1
+ 
+--- ID 149 cleanup (non-existent page) ---
+--- ID 295 cleanup (non-existent page) ---
+--- ID 140 cleanup (non-existent page) ---
+--- ID 15717 cleanup (non-existent page; ButtonEditor JSON format) ---
+ 
+--- Verify after cleanup ---
+Loc                         N          
+--------------------------- -----------
+8308 remaining in Logo.Link           0
+8308 in Text.Text                     0
+149 in CustomerCenterApp              0
+149 in EmailButton                    0
+149 in EmailIcon_Item                 0
+149 in EmailMenu_Item                 0
+295 in CheckoutApp                    0
+295 in CustomerCenterApp              0
+140 in CheckoutApp                    0
+140 in CustomerCenterApp              0
+140 in Emails.Header                  0
+140 in Emails.Footer                  0
+Done.

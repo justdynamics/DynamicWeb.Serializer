@@ -1,0 +1,867 @@
+Starting pipeline at 2026-04-22T07:31:10Z
+
+=== Run directory: C:\VibeCode\DynamicWeb.Serializer\.planning\phases\38.1-close-phase-38-deferrals\pipeline-runs\20260422-093111 ===
+
+=== Pipeline start - 2026-04-22 09:31:11 ===
+
+=== Step 1: Stop any running DW hosts (ports 54035 + 58217) ===
+  Port 54035 not listening - nothing to stop (Swift-2.2)
+  Port 58217 not listening - nothing to stop (CleanDB)
+
+=== Step 2: Detect/install sqlpackage.exe ===
+  sqlpackage not found in standard locations - attempting dotnet tool install
+You can invoke the tool using the following command: sqlpackage
+Tool 'microsoft.sqlpackage' (version '170.3.93') was successfully installed.
+  Installed sqlpackage at: C:\Users\justi\.dotnet\tools\sqlpackage.exe
+
+=== Step 3: Restore Swift-2.2 from bacpac ===
+  Unzipping C:\VibeCode\DynamicWeb.Serializer\tools\swift2.2.0-20260129-database.zip -> C:\VibeCode\DynamicWeb.Serializer\.planning\phases\38.1-close-phase-38-deferrals\pipeline-runs\20260422-093111\bacpac
+  Bacpac file: C:\VibeCode\DynamicWeb.Serializer\.planning\phases\38.1-close-phase-38-deferrals\pipeline-runs\20260422-093111\bacpac\swift.bacpac
+  Dropping existing database [Swift-2.2] (if any)
+  sqlpackage /Action:Import -> [Swift-2.2]
+Importing to database 'Swift-2.2' on server 'localhost\SQLEXPRESS'.
+Creating deployment plan
+Initializing deployment
+Verifying deployment plan
+Analyzing deployment plan
+Importing package schema and data into database
+Updating database
+Importing data
+Processing Import.
+Disabling indexes.
+Disabling index 'DW_PK_AccessUserSecondaryRelation'.
+Disabling index 'IX_Area_AreaDeleted'.
+Disabling index 'DW_PK_AreaEncoding'.
+Disabling index 'IX_Audit_AuditTimestamp'.
+Disabling index 'IX_AuditDeletedObject_AuditDeletedObjectAuditId'.
+Disabling index 'IX_AuditDetail_AuditDetailAuditId'.
+Disabling index 'DW_PK_CampaignContext'.
+Disabling index 'DW_IX_CapabilityLimitation_UserGroupId_Key'.
+Disabling index 'DW_IX_CapabilitySetLimitation_UserGroupId_Key'.
+Disabling index 'IX_CommandLog_AccessUserId'.
+Disabling index 'DW_PK_CustomField'.
+Disabling index 'PK_EcomAssortmentGroupRelations'.
+Disabling index 'PK_EcomAssortmentItems'.
+Disabling index 'PK_EcomAssortmentPermissions'.
+Disabling index 'PK_EcomAssortmentProductRelations'.
+Disabling index 'PK_EcomAssortments'.
+Disabling index 'PK_EcomAssortmentShopRelations'.
+Disabling index 'DW_PK_EcomCalculatedProductFieldValue'.
+Disabling index 'DW_PK_EcomConsolidatedOrderPayments'.
+Disabling index 'DW_PK_EcomCountries'.
+Disabling index 'DW_PK_EcomCountryText'.
+Disabling index 'DW_PK_EcomCurrencies'.
+Disabling index 'DW_PK_EcomCustomerFavoriteProducts'.
+Disabling index 'DW_PK_EcomDetails'.
+Disabling index 'DW_PK_EcomDynamicProductRelations'.
+Disabling index 'DW_PK_EcomDynamicRelationCalculationConfigurations'.
+Disabling index 'DW_PK_EcomDynamicRelationGroupCategories'.
+Disabling index 'DW_PK_EcomDynamicRelationGroups'.
+Disabling index 'DW_PK_EcomFees'.
+Disabling index 'DW_PK_EcomFieldOption'.
+Disabling index 'DW_PK_EcomGroupProductRelation'.
+Disabling index 'DW_PK_EcomGroupRelations'.
+Disabling index 'DW_PK_EcomGroups'.
+Disabling index 'DW_PK_EcomLanguages'.
+Disabling index 'DW_PK_EcomLoyaltyRewardTranslation'.
+Disabling index 'DW_PK_EcomManufacturers'.
+Disabling index 'DW_PK_EcomMethodCountryRelation'.
+Disabling index 'DW_PK_EcomNumbers'.
+Disabling index 'DW_PK_EcomOrderContextAccessUserRelation'.
+Disabling index 'DW_PK_EcomOrderContexts'.
+Disabling index 'DW_PK_EcomOrderContextShopRelation'.
+Disabling index 'DW_PK_EcomOrderField'.
+Disabling index 'DW_PK_EcomOrderLineFieldGroupRelation'.
+Disabling index 'DW_PK_EcomOrderLineFields'.
+Disabling index 'IX_EcomOrderLines_OrderLineOrderId'.
+Disabling index 'DW_PK_EcomOrderLines'.
+Disabling index 'DW_PK_EcomOrders'.
+Disabling index 'DW_PK_EcomOrderStates'.
+Disabling index 'DW_PK_EcomOrderStateTranslations'.
+Disabling index 'DW_PK_EcomPayments'.
+Disabling index 'DW_PK_EcomPeriods'.
+Disabling index 'DW_PK_EcomPIMNotificationUserRelations'.
+Disabling index 'DW_PK_EcomPrices'.
+Disabling index 'DW_PK_EcomProductAssignmentRule'.
+Disabling index 'DW_PK_EcomProductAssignmentRuleMapping'.
+Disabling index 'DW_PK_EcomProductAssignmentRuleShop'.
+Disabling index 'DW_PK_EcomProductCategory'.
+Disabling index 'DW_PK_EcomProductCategoryField'.
+Disabling index 'DW_PK_EcomProductCategoryFieldTranslation'.
+Disabling index 'DW_PK_EcomProductCategoryFieldValue'.
+Disabling index 'DW_PK_EcomProductCategoryTranslation'.
+Disabling index 'DW_PK_EcomProductField'.
+Disabling index 'DW_PK_EcomProductGroupField'.
+Disabling index 'DW_PK_EcomProductItems'.
+Disabling index 'DW_IX_EcomProducts_Active_LanguageID_VariantID_ProductID_Name'.
+Disabling index 'DW_IX_EcomProducts_ExcludeFromIndex'.
+Disabling index 'DW_PK_EcomProducts'.
+Disabling index 'DW_PK_EcomProductsRelated'.
+Disabling index 'DW_IX_EcomProductsRelatedGroups'.
+Disabling index 'DW_PK_EcomProductUnitOfMeasure'.
+Disabling index 'DW_PK_EcomRelatedSmartSearches'.
+Disabling index 'DW_PK_EcomRmaEvents'.
+Disabling index 'DW_PK_EcomRmaEventTranslations'.
+Disabling index 'DW_PK_EcomRmas'.
+Disabling index 'DW_PK_EcomRmaStateTranslations'.
+Disabling index 'DW_PK_EcomRoundings'.
+Disabling index 'DW_PK_EcomSalesDiscount'.
+Disabling index 'DW_PK_EcomSalesDiscountCurrencies'.
+Disabling index 'DW_PK_EcomSalesDiscountLanguages'.
+Disabling index 'DW_PK_EcomShippings'.
+Disabling index 'DW_PK_EcomShopGroupRelation'.
+Disabling index 'DW_PK_EcomShops'.
+Disabling index 'DW_PK_EcomShopStockLocationRelation'.
+Disabling index 'DW_PK_EcomStockGroups'.
+Disabling index 'DW_PK_EcomStockLocationCategory'.
+Disabling index 'DW_PK_EcomStockStatusLanguageValue'.
+Disabling index 'DW_PK_EcomStockStatusLine'.
+Disabling index 'DW_PK_EcomUnits'.
+Disabling index 'DW_PK_EcomUnitTranslations'.
+Disabling index 'DW_PK_EcomUserPermission'.
+Disabling index 'DW_PK_EcomUserPermissionType'.
+Disabling index 'DW_PK_EcomValidationGroups'.
+Disabling index 'DW_PK_EcomValidationRules'.
+Disabling index 'DW_PK_EcomValidations'.
+Disabling index 'DW_PK_EcomVariantGroupProductRelation'.
+Disabling index 'DW_PK_EcomVariantGroups'.
+Disabling index 'DW_PK_EcomVariantOptionsProductRelation'.
+Disabling index 'DW_PK_EcomVariantsOptions'.
+Disabling index 'DW_PK_EcomVatCountryRelations'.
+Disabling index 'DW_PK_EcomVatGroups'.
+Disabling index 'DW_UC_EcomVoucherLists_Name'.
+Disabling index 'DW_UC_EcomVouchers_Code'.
+Disabling index 'IX_EmailRecipient_MessageId'.
+Disabling index 'DW_PK_ForumAnswerVotes'.
+Disabling index 'IX_GridRow_GridRowDeleted'.
+Disabling index 'DW_PK_ItemTypeDefinitions'.
+Disabling index 'DW_PK_ItemTypeId'.
+Disabling index 'IX_Page_PageDeleted'.
+Disabling index 'IX_Paragraph_Item'.
+Disabling index 'DW_PK_SystemField'.
+Disabling index 'DW_PK_SystemFieldValue'.
+Disabling index 'DW_IX_TrackingSession_SessionTimestamp'.
+Disabling index 'DW_IX_UnifiedPermission_Key_Name'.
+Disabling index 'DW_IX_UnifiedPermission_UserId_Key_Name_SubName'.
+Processing Table '[dbo].[_TransactionIndex_0fccfe12-93aa-4c1f-bab2-cc0d62493402]'.
+Processing Table '[dbo].[AccessElementPermission]'.
+Processing Table '[dbo].[AccessElementType]'.
+Processing Table '[dbo].[AccessUser]'.
+Processing Table '[dbo].[AccessUserAddress]'.
+Processing Table '[dbo].[AccessUserCard]'.
+Processing Table '[dbo].[AccessUserExternalLogin]'.
+Processing Table '[dbo].[AccessUserGroupRelation]'.
+Processing Table '[dbo].[AccessUserPassword]'.
+Processing Table '[dbo].[AccessUserSecondaryRelation]'.
+Processing Table '[dbo].[AccessUserToken]'.
+Processing Table '[dbo].[AccessWorkflow]'.
+Processing Table '[dbo].[AccessWorkflowUser]'.
+Processing Table '[dbo].[ActionLog]'.
+Processing Table '[dbo].[AiGeneratorConfiguration]'.
+Processing Table '[dbo].[AiPrompt]'.
+Processing Table '[dbo].[Area]'.
+Processing Table '[dbo].[AreaColorSwatch]'.
+Processing Table '[dbo].[AreaEncoding]'.
+Processing Table '[dbo].[Audit]'.
+Processing Table '[dbo].[AuditDeletedObject]'.
+Processing Table '[dbo].[AuditDetail]'.
+Processing Table '[dbo].[AuthorizedHosts]'.
+Processing Table '[dbo].[Campaign]'.
+Processing Table '[dbo].[CampaignAction]'.
+Processing Table '[dbo].[CampaignActionExecution]'.
+Processing Table '[dbo].[CampaignContext]'.
+Processing Table '[dbo].[CampaignDefinition]'.
+Processing Table '[dbo].[CampaignFolder]'.
+Processing Table '[dbo].[CapabilityLimitation]'.
+Processing Table '[dbo].[CapabilitySetLimitation]'.
+Processing Table '[dbo].[ClusteringInstance]'.
+Processing Table '[dbo].[ColumnHeadersPreset]'.
+Processing Table '[dbo].[ColumnHeadersPresetFields]'.
+Processing Table '[dbo].[CommandLog]'.
+Processing Table '[dbo].[CommandLogModelData]'.
+Processing Table '[dbo].[CommandLogModelDataChange]'.
+Processing Table '[dbo].[CommandLogModelRelation]'.
+Processing Table '[dbo].[Comment]'.
+Processing Table '[dbo].[ContentModuleConfiguration]'.
+Processing Table '[dbo].[CustomField]'.
+Processing Table '[dbo].[Dashboard]'.
+Processing Table '[dbo].[DashboardAccessUserRelation]'.
+Processing Table '[dbo].[DashboardWidget]'.
+Processing Table '[dbo].[DataProcessingActivity]'.
+Processing Table '[dbo].[DataProcessingConsent]'.
+Processing Table '[dbo].[DMConnectionSetting]'.
+Processing Table '[dbo].[DMFormField]'.
+Processing Table '[dbo].[DMFormFieldOption]'.
+Processing Table '[dbo].[DMFormSetting]'.
+Processing Table '[dbo].[DMPublishing]'.
+Processing Table '[dbo].[DMViewSetting]'.
+Processing Table '[dbo].[DynamicStructureLevels]'.
+Processing Table '[dbo].[DynamicStructures]'.
+Processing Table '[dbo].[Ecom7Tree]'.
+Processing Table '[dbo].[EcomAddressValidatorSettings]'.
+Processing Table '[dbo].[EcomAssortmentGroupRelations]'.
+Processing Table '[dbo].[EcomAssortmentItems]'.
+Processing Table '[dbo].[EcomAssortmentPermissions]'.
+Processing Table '[dbo].[EcomAssortmentProductRelations]'.
+Processing Table '[dbo].[EcomAssortments]'.
+Processing Table '[dbo].[EcomAssortmentShopRelations]'.
+Processing Table '[dbo].[EcomCalculatedField]'.
+Processing Table '[dbo].[EcomCalculatedProductFieldValue]'.
+Processing Table '[dbo].[EcomCompletionRules]'.
+Processing Table '[dbo].[EcomConsolidatedOrderPayments]'.
+Processing Table '[dbo].[EcomCountries]'.
+Processing Table '[dbo].[EcomCountryText]'.
+Processing Table '[dbo].[EcomCurrencies]'.
+Processing Table '[dbo].[EcomCustomerFavoriteLists]'.
+Processing Table '[dbo].[EcomCustomerFavoriteProducts]'.
+Processing Table '[dbo].[EcomCustomersSettings]'.
+Processing Table '[dbo].[EcomDetails]'.
+Processing Table '[dbo].[EcomDetailsGroup]'.
+Processing Table '[dbo].[EcomDetailsGroupTranslation]'.
+Processing Table '[dbo].[EcomDiscount]'.
+Processing Table '[dbo].[EcomDiscountCondition]'.
+Processing Table '[dbo].[EcomDiscountReward]'.
+Processing Table '[dbo].[EcomDiscounts]'.
+Processing Table '[dbo].[EcomDiscountTranslation]'.
+Processing Table '[dbo].[EcomDynamicProductRelations]'.
+Processing Table '[dbo].[EcomDynamicRelationCalculationConfigurations]'.
+Processing Table '[dbo].[EcomDynamicRelationGroupCategories]'.
+Processing Table '[dbo].[EcomDynamicRelationGroups]'.
+Processing Table '[dbo].[EcomFeed]'.
+Processing Table '[dbo].[EcomFees]'.
+Processing Table '[dbo].[EcomFieldDisplayGroupFields]'.
+Processing Table '[dbo].[EcomFieldDisplayGroups]'.
+Processing Table '[dbo].[EcomFieldDisplayGroupShops]'.
+Processing Table '[dbo].[EcomFieldDisplayGroupTranslation]'.
+Processing Table '[dbo].[EcomFieldOption]'.
+Processing Table '[dbo].[EcomFieldOptionTranslation]'.
+Processing Table '[dbo].[EcomFieldType]'.
+Processing Table '[dbo].[EcomFieldValueConversion]'.
+Processing Table '[dbo].[EcomFieldValueConversionGroup]'.
+Processing Table '[dbo].[EcomFieldValueConversionRule]'.
+Processing Table '[dbo].[EcomGiftCard]'.
+Processing Table '[dbo].[EcomGiftCardTransaction]'.
+Processing Table '[dbo].[EcomGlobalIso]'.
+Processing Table '[dbo].[EcomGroupFacetRelation]'.
+Processing Table '[dbo].[EcomGroupProductRelation]'.
+Processing Table '[dbo].[EcomGroupRelations]'.
+Processing Table '[dbo].[EcomGroups]'.
+Processing Table '[dbo].[EcomLanguages]'.
+Processing Table '[dbo].[EcomLedgerTypes]'.
+Processing Table '[dbo].[EcomLoyaltyReward]'.
+Processing Table '[dbo].[EcomLoyaltyRewardRule]'.
+Processing Table '[dbo].[EcomLoyaltyRewardTranslation]'.
+Processing Table '[dbo].[EcomLoyaltyUserTransaction]'.
+Processing Table '[dbo].[EcomManufacturers]'.
+Processing Table '[dbo].[EcomMethodCountryRelation]'.
+Processing Table '[dbo].[EcomNotification]'.
+Processing Table '[dbo].[EcomNumbers]'.
+Processing Table '[dbo].[EcomOrderContextAccessUserRelation]'.
+Processing Table '[dbo].[EcomOrderContexts]'.
+Processing Table '[dbo].[EcomOrderContextShopRelation]'.
+Processing Table '[dbo].[EcomOrderDebuggingInfo]'.
+Processing Table '[dbo].[EcomOrderField]'.
+Processing Table '[dbo].[EcomOrderFlow]'.
+Processing Table '[dbo].[EcomOrderLineFieldGroupRelation]'.
+Processing Table '[dbo].[EcomOrderLineFields]'.
+Processing Table '[dbo].[EcomOrderLines]'.
+Processing Table '[dbo].[EcomOrders]'.
+Processing Table '[dbo].[EcomOrderStateRules]'.
+Processing Table '[dbo].[EcomOrderStates]'.
+Processing Table '[dbo].[EcomOrderStateTranslations]'.
+Processing Table '[dbo].[EcomPayments]'.
+Processing Table '[dbo].[EcomPeriods]'.
+Processing Table '[dbo].[EcomPIMNotifications]'.
+Processing Table '[dbo].[EcomPIMNotificationUserRelations]'.
+Processing Table '[dbo].[EcomPrices]'.
+Processing Table '[dbo].[EcomProductAssignmentRule]'.
+Processing Table '[dbo].[EcomProductAssignmentRuleMapping]'.
+Processing Table '[dbo].[EcomProductAssignmentRuleShop]'.
+Processing Table '[dbo].[EcomProductCategory]'.
+Processing Table '[dbo].[EcomProductCategoryField]'.
+Processing Table '[dbo].[EcomProductCategoryFieldGroupValue]'.
+Processing Table '[dbo].[EcomProductCategoryFieldTranslation]'.
+Processing Table '[dbo].[EcomProductCategoryFieldValue]'.
+Processing Table '[dbo].[EcomProductCategoryTranslation]'.
+Processing Table '[dbo].[EcomProductDynamicStructures]'.
+Processing Table '[dbo].[EcomProductField]'.
+Processing Table '[dbo].[EcomProductFieldTranslation]'.
+Processing Table '[dbo].[EcomProductGroupField]'.
+Processing Table '[dbo].[EcomProductItems]'.
+Processing Table '[dbo].[EcomProducts]'.
+Processing Table '[dbo].[EcomProductsRelated]'.
+Processing Table '[dbo].[EcomProductsRelatedGroups]'.
+Processing Table '[dbo].[EcomProductUnitOfMeasure]'.
+Processing Table '[dbo].[EcomProductVatGroups]'.
+Processing Table '[dbo].[EcomRecurringOrder]'.
+Processing Table '[dbo].[EcomRelatedSmartSearches]'.
+Processing Table '[dbo].[EcomRmaCommentImages]'.
+Processing Table '[dbo].[EcomRmaComments]'.
+Processing Table '[dbo].[EcomRmaEmailConfigurationEventRelation]'.
+Processing Table '[dbo].[EcomRmaEmailConfigurationReplacementOrderProviderRelation]'.
+Processing Table '[dbo].[EcomRmaEmailConfigurations]'.
+Processing Table '[dbo].[EcomRmaEmailConfigurationStateRelation]'.
+Processing Table '[dbo].[EcomRmaEvents]'.
+Processing Table '[dbo].[EcomRmaEventTranslations]'.
+Processing Table '[dbo].[EcomRmaOrderLines]'.
+Processing Table '[dbo].[EcomRmas]'.
+Processing Table '[dbo].[EcomRmaStates]'.
+Processing Table '[dbo].[EcomRmaStateTranslations]'.
+Processing Table '[dbo].[EcomRoundings]'.
+Processing Table '[dbo].[EcomSalesDiscount]'.
+Processing Table '[dbo].[EcomSalesDiscountCurrencies]'.
+Processing Table '[dbo].[EcomSalesDiscountLanguages]'.
+Processing Table '[dbo].[EcomSavedForLater]'.
+Processing Table '[dbo].[EcomShippings]'.
+Processing Table '[dbo].[EcomShopGroupRelation]'.
+Processing Table '[dbo].[EcomShopLanguageRelation]'.
+Processing Table '[dbo].[EcomShops]'.
+Processing Table '[dbo].[EcomShopStockLocationRelation]'.
+Processing Table '[dbo].[EcomStockGroups]'.
+Processing Table '[dbo].[EcomStockLocation]'.
+Processing Table '[dbo].[EcomStockLocationCategory]'.
+Processing Table '[dbo].[EcomStockStatusLanguageValue]'.
+Processing Table '[dbo].[EcomStockStatusLine]'.
+Processing Table '[dbo].[EcomStockUnit]'.
+Processing Table '[dbo].[EcomStockUnitDetail]'.
+Processing Table '[dbo].[EcomTaxSettings]'.
+Processing Table '[dbo].[EcomTrackAndTrace]'.
+Processing Table '[dbo].[EcomTree]'.
+Processing Table '[dbo].[EcomUnits]'.
+Processing Table '[dbo].[EcomUnitTranslations]'.
+Processing Table '[dbo].[EcomUserPermission]'.
+Processing Table '[dbo].[EcomUserPermissionType]'.
+Processing Table '[dbo].[EcomValidationGroups]'.
+Processing Table '[dbo].[EcomValidationGroupsTranslation]'.
+Processing Table '[dbo].[EcomValidationRules]'.
+Processing Table '[dbo].[EcomValidations]'.
+Processing Table '[dbo].[EcomVariantGroupOptionPropertyValue]'.
+Processing Table '[dbo].[EcomVariantGroupProductRelation]'.
+Processing Table '[dbo].[EcomVariantGroupProperty]'.
+Processing Table '[dbo].[EcomVariantGroups]'.
+Processing Table '[dbo].[EcomVariantOptionsProductRelation]'.
+Processing Table '[dbo].[EcomVariantsOptions]'.
+Processing Table '[dbo].[EcomVatCountryRelations]'.
+Processing Table '[dbo].[EcomVatGroups]'.
+Processing Table '[dbo].[EcomVoucherLists]'.
+Processing Table '[dbo].[EcomVouchers]'.
+Processing Table '[dbo].[EditorConfiguration]'.
+Processing Table '[dbo].[EmailAction]'.
+Processing Table '[dbo].[EmailDeliveryProvider]'.
+Processing Table '[dbo].[EmailMarketingEmail]'.
+Processing Table '[dbo].[EmailMarketingEngagementIndex]'.
+Processing Table '[dbo].[EmailMarketingFlow]'.
+Processing Table '[dbo].[EmailMarketingFlowFolder]'.
+Processing Table '[dbo].[EmailMarketingFlowRecipient]'.
+Processing Table '[dbo].[EmailMarketingFlowStep]'.
+Processing Table '[dbo].[EmailMarketingFlowStepHistory]'.
+Processing Table '[dbo].[EmailMarketingFolder]'.
+Processing Table '[dbo].[EmailMarketingSplitTest]'.
+Processing Table '[dbo].[EmailMarketingTopFolder]'.
+Processing Table '[dbo].[EmailMessage]'.
+Processing Table '[dbo].[EmailMessageTag]'.
+Processing Table '[dbo].[EmailRecipient]'.
+Processing Table '[dbo].[Endpoint]'.
+Processing Table '[dbo].[EndpointAuthentication]'.
+Processing Table '[dbo].[EndpointCollection]'.
+Processing Table '[dbo].[EndpointParameter]'.
+Processing Table '[dbo].[ExportPreset]'.
+Processing Table '[dbo].[ExportPresetAccessUserRelation]'.
+Processing Table '[dbo].[ExternalLoginProvider]'.
+Processing Table '[dbo].[ExternalTranslationProvider]'.
+Processing Table '[dbo].[Form]'.
+Processing Table '[dbo].[FormField]'.
+Processing Table '[dbo].[FormFieldOption]'.
+Processing Table '[dbo].[FormFieldRule]'.
+Processing Table '[dbo].[FormOptions]'.
+Processing Table '[dbo].[FormSubmit]'.
+Processing Table '[dbo].[FormSubmitData]'.
+Processing Table '[dbo].[FormTemplate]'.
+Processing Table '[dbo].[ForumAnswerVotes]'.
+Processing Table '[dbo].[ForumCategory]'.
+Processing Table '[dbo].[ForumMessage]'.
+Processing Table '[dbo].[ForumUserRelation]'.
+Processing Table '[dbo].[GeneralLog]'.
+Processing Table '[dbo].[Generator]'.
+Processing Table '[dbo].[GridRow]'.
+Processing Table '[dbo].[IndexScheduledUpdate]'.
+Processing Table '[dbo].[ItemList]'.
+Processing Table '[dbo].[ItemListRelation]'.
+Processing Table '[dbo].[ItemNamedItemList]'.
+Processing Table '[dbo].[ItemType_Swift-v2_Accordion]'.
+Processing Table '[dbo].[ItemType_Swift-v2_Accordion_Item]'.
+Processing Table '[dbo].[ItemType_Swift-v2_App]'.
+Processing Table '[dbo].[ItemType_Swift-v2_BackInStockNotification]'.
+Processing Table '[dbo].[ItemType_Swift-v2_Blockquote]'.
+Processing Table '[dbo].[ItemType_Swift-v2_BreadcrumbNavigation]'.
+Processing Table '[dbo].[ItemType_Swift-v2_Button]'.
+Processing Table '[dbo].[ItemType_Swift-v2_Card]'.
+Processing Table '[dbo].[ItemType_Swift-v2_Cart]'.
+Processing Table '[dbo].[ItemType_Swift-v2_CartApp]'.
+Processing Table '[dbo].[ItemType_Swift-v2_CartSummary]'.
+Processing Table '[dbo].[ItemType_Swift-v2_Checkout]'.
+Processing Table '[dbo].[ItemType_Swift-v2_CheckoutApp]'.
+Processing Table '[dbo].[ItemType_Swift-v2_CookieNotice]'.
+Processing Table '[dbo].[ItemType_Swift-v2_CustomerCenter]'.
+Processing Table '[dbo].[ItemType_Swift-v2_CustomerCenterApp]'.
+Processing Table '[dbo].[ItemType_Swift-v2_DisabledDeliveryDate_Item]'.
+Processing Table '[dbo].[ItemType_Swift-v2_DownloadCartApp]'.
+Processing Table '[dbo].[ItemType_Swift-v2_Email]'.
+Processing Table '[dbo].[ItemType_Swift-v2_Email1Column]'.
+Processing Table '[dbo].[ItemType_Swift-v2_Email2Columns]'.
+Processing Table '[dbo].[ItemType_Swift-v2_Email3Columns]'.
+Processing Table '[dbo].[ItemType_Swift-v2_EmailArticle]'.
+Processing Table '[dbo].[ItemType_Swift-v2_EmailBackInStockNotificationProductCatalog]'.
+Processing Table '[dbo].[ItemType_Swift-v2_EmailButton]'.
+Processing Table '[dbo].[ItemType_Swift-v2_EmailFooter]'.
+Processing Table '[dbo].[ItemType_Swift-v2_EmailHeader]'.
+Processing Table '[dbo].[ItemType_Swift-v2_EmailHeading]'.
+Processing Table '[dbo].[ItemType_Swift-v2_EmailIcon_Item]'.
+Processing Table '[dbo].[ItemType_Swift-v2_EmailIcons]'.
+Processing Table '[dbo].[ItemType_Swift-v2_EmailImage]'.
+Processing Table '[dbo].[ItemType_Swift-v2_EmailMenu]'.
+Processing Table '[dbo].[ItemType_Swift-v2_EmailMenu_Item]'.
+Processing Table '[dbo].[ItemType_Swift-v2_EmailOrderlines]'.
+Processing Table '[dbo].[ItemType_Swift-v2_EmailProductCatalog]'.
+Processing Table '[dbo].[ItemType_Swift-v2_EmailRow]'.
+Processing Table '[dbo].[ItemType_Swift-v2_Emails]'.
+Processing Table '[dbo].[ItemType_Swift-v2_EmailsFolder]'.
+Processing Table '[dbo].[ItemType_Swift-v2_EmailSpacer]'.
+Processing Table '[dbo].[ItemType_Swift-v2_EmailText]'.
+Processing Table '[dbo].[ItemType_Swift-v2_EmailUnsubscribeLink]'.
+Processing Table '[dbo].[ItemType_Swift-v2_EmailViewInBrowser]'.
+Processing Table '[dbo].[ItemType_Swift-v2_Employee]'.
+Processing Table '[dbo].[ItemType_Swift-v2_ExpressBuy]'.
+Processing Table '[dbo].[ItemType_Swift-v2_ExpressBuyApp]'.
+Processing Table '[dbo].[ItemType_Swift-v2_Favorites]'.
+Processing Table '[dbo].[ItemType_Swift-v2_Feature]'.
+Processing Table '[dbo].[ItemType_Swift-v2_Footer]'.
+Processing Table '[dbo].[ItemType_Swift-v2_Header]'.
+Processing Table '[dbo].[ItemType_Swift-v2_HelloUser]'.
+Processing Table '[dbo].[ItemType_Swift-v2_Image]'.
+Processing Table '[dbo].[ItemType_Swift-v2_ImpersonationBar]'.
+Processing Table '[dbo].[ItemType_Swift-v2_Information_Item]'.
+Processing Table '[dbo].[ItemType_Swift-v2_LocationsMap]'.
+Processing Table '[dbo].[ItemType_Swift-v2_Logo]'.
+Processing Table '[dbo].[ItemType_Swift-v2_Master]'.
+Processing Table '[dbo].[ItemType_Swift-v2_MenuProductGroupImages]'.
+Processing Table '[dbo].[ItemType_Swift-v2_MenuRelatedContent]'.
+Processing Table '[dbo].[ItemType_Swift-v2_MiniCart]'.
+Processing Table '[dbo].[ItemType_Swift-v2_MyAccount]'.
+Processing Table '[dbo].[ItemType_Swift-v2_Navigation]'.
+Processing Table '[dbo].[ItemType_Swift-v2_OffCanvasNavigation]'.
+Processing Table '[dbo].[ItemType_Swift-v2_Page]'.
+Processing Table '[dbo].[ItemType_Swift-v2_PageProperties]'.
+Processing Table '[dbo].[ItemType_Swift-v2_Poster]'.
+Processing Table '[dbo].[ItemType_Swift-v2_PostList]'.
+Processing Table '[dbo].[ItemType_Swift-v2_Preferences]'.
+Processing Table '[dbo].[ItemType_Swift-v2_ProductAddToCart]'.
+Processing Table '[dbo].[ItemType_Swift-v2_ProductAddToDownloadCart]'.
+Processing Table '[dbo].[ItemType_Swift-v2_ProductAddToFavorites]'.
+Processing Table '[dbo].[ItemType_Swift-v2_ProductAddToQuoteCart]'.
+Processing Table '[dbo].[ItemType_Swift-v2_ProductBom]'.
+Processing Table '[dbo].[ItemType_Swift-v2_ProductComponent]'.
+Processing Table '[dbo].[ItemType_Swift-v2_ProductComponentSelector]'.
+Processing Table '[dbo].[ItemType_Swift-v2_ProductComponentSlider]'.
+Processing Table '[dbo].[ItemType_Swift-v2_ProductDefaultImage]'.
+Processing Table '[dbo].[ItemType_Swift-v2_ProductDetails]'.
+Processing Table '[dbo].[ItemType_Swift-v2_ProductDownloadData]'.
+Processing Table '[dbo].[ItemType_Swift-v2_ProductDownloadPublication]'.
+Processing Table '[dbo].[ItemType_Swift-v2_ProductFieldDisplayGroups]'.
+Processing Table '[dbo].[ItemType_Swift-v2_ProductFieldDisplayGroupsAccordion]'.
+Processing Table '[dbo].[ItemType_Swift-v2_ProductGroupGrid]'.
+Processing Table '[dbo].[ItemType_Swift-v2_ProductGroupList]'.
+Processing Table '[dbo].[ItemType_Swift-v2_ProductGroupSlider]'.
+Processing Table '[dbo].[ItemType_Swift-v2_ProductHeader]'.
+Processing Table '[dbo].[ItemType_Swift-v2_ProductList]'.
+Processing Table '[dbo].[ItemType_Swift-v2_ProductListComponent]'.
+Processing Table '[dbo].[ItemType_Swift-v2_ProductListComponentSelector]'.
+Processing Table '[dbo].[ItemType_Swift-v2_ProductListFacets]'.
+Processing Table '[dbo].[ItemType_Swift-v2_ProductListGroupImage]'.
+Processing Table '[dbo].[ItemType_Swift-v2_ProductListGroupPoster]'.
+Processing Table '[dbo].[ItemType_Swift-v2_ProductListHeader]'.
+Processing Table '[dbo].[ItemType_Swift-v2_ProductListInfo]'.
+Processing Table '[dbo].[ItemType_Swift-v2_ProductListItemRepeater]'.
+Processing Table '[dbo].[ItemType_Swift-v2_ProductListNavigation]'.
+Processing Table '[dbo].[ItemType_Swift-v2_ProductListSelectedFacets]'.
+Processing Table '[dbo].[ItemType_Swift-v2_ProductListSortBy]'.
+Processing Table '[dbo].[ItemType_Swift-v2_ProductLongDescription]'.
+Processing Table '[dbo].[ItemType_Swift-v2_ProductMedia]'.
+Processing Table '[dbo].[ItemType_Swift-v2_ProductMediaGallery]'.
+Processing Table '[dbo].[ItemType_Swift-v2_ProductMediaTable]'.
+Processing Table '[dbo].[ItemType_Swift-v2_ProductNumber]'.
+Processing Table '[dbo].[ItemType_Swift-v2_ProductPrice]'.
+Processing Table '[dbo].[ItemType_Swift-v2_ProductPriceTable]'.
+Processing Table '[dbo].[ItemType_Swift-v2_ProductQuantity]'.
+Processing Table '[dbo].[ItemType_Swift-v2_ProductShortDescription]'.
+Processing Table '[dbo].[ItemType_Swift-v2_ProductStaticVariants]'.
+Processing Table '[dbo].[ItemType_Swift-v2_ProductStock]'.
+Processing Table '[dbo].[ItemType_Swift-v2_ProductStockLocations]'.
+Processing Table '[dbo].[ItemType_Swift-v2_ProductVariantSelector]'.
+Processing Table '[dbo].[ItemType_Swift-v2_QuoteCheckoutApp]'.
+Processing Table '[dbo].[ItemType_Swift-v2_RelatedProductsList]'.
+Processing Table '[dbo].[ItemType_Swift-v2_Row]'.
+Processing Table '[dbo].[ItemType_Swift-v2_RowFlex]'.
+Processing Table '[dbo].[ItemType_Swift-v2_SearchField]'.
+Processing Table '[dbo].[ItemType_Swift-v2_SearchPage]'.
+Processing Table '[dbo].[ItemType_Swift-v2_ServicePage]'.
+Processing Table '[dbo].[ItemType_Swift-v2_ServicesFolder]'.
+Processing Table '[dbo].[ItemType_Swift-v2_Shop]'.
+Processing Table '[dbo].[ItemType_Swift-v2_SignIn]'.
+Processing Table '[dbo].[ItemType_Swift-v2_SimpleMap]'.
+Processing Table '[dbo].[ItemType_Swift-v2_Slider]'.
+Processing Table '[dbo].[ItemType_Swift-v2_Slider_Item]'.
+Processing Table '[dbo].[ItemType_Swift-v2_Text]'.
+Processing Table '[dbo].[ItemType_Swift-v2_TextAndImage]'.
+Processing Table '[dbo].[ItemType_Swift-v2_VariantGroups]'.
+Processing Table '[dbo].[ItemType_Swift-v2_VerticalNavigation]'.
+Processing Table '[dbo].[ItemType_Swift-v2_VideoPlayer]'.
+Processing Table '[dbo].[ItemType_Swift-v2_VideoPoster]'.
+Processing Table '[dbo].[ItemTypeDefinitions]'.
+Processing Table '[dbo].[ItemTypeId]'.
+Processing Table '[dbo].[Languages]'.
+Processing Table '[dbo].[ManagementTree]'.
+Processing Table '[dbo].[ManagementTreeAccessRule]'.
+Processing Table '[dbo].[ManagementTreeAccessRuleEntry]'.
+Processing Table '[dbo].[Module]'.
+Processing Table '[dbo].[MyPageLink]'.
+Processing Table '[dbo].[MyPageModule]'.
+Processing Table '[dbo].[News]'.
+Processing Table '[dbo].[NonBrowserSession]'.
+Processing Table '[dbo].[OMCContentRestriction]'.
+Processing Table '[dbo].[OMCContentRestrictionPreset]'.
+Processing Table '[dbo].[OMCContentRestrictionPresetData]'.
+Processing Table '[dbo].[OMCEmailNotification]'.
+Processing Table '[dbo].[OMCEmailNotificationRecipient]'.
+Processing Table '[dbo].[OMCEmailProfile]'.
+Processing Table '[dbo].[OMCExperiment]'.
+Processing Table '[dbo].[OMCExperimentView]'.
+Processing Table '[dbo].[OMCLeadAuthorToken]'.
+Processing Table '[dbo].[OMCLeadEmail]'.
+Processing Table '[dbo].[OMCLink]'.
+Processing Table '[dbo].[OMCLinkClick]'.
+Processing Table '[dbo].[OMCParagraphSegment]'.
+Processing Table '[dbo].[OMCParagraphSegmentSelection]'.
+Processing Table '[dbo].[OMCProfileDynamics]'.
+Processing Table '[dbo].[OMCProfileDynamicsPreset]'.
+Processing Table '[dbo].[OMCProfileDynamicsPresetData]'.
+Processing Table '[dbo].[OMCRenamedLead]'.
+Processing Table '[dbo].[OMCReturningVisitorNotification]'.
+Processing Table '[dbo].[Page]'.
+Processing Table '[dbo].[Paragraph]'.
+Processing Table '[dbo].[PersonalSettings]'.
+Processing Table '[dbo].[RateLimiterPolicies]'.
+Processing Table '[dbo].[RecommendationModel]'.
+Processing Table '[dbo].[RecycleBin]'.
+Processing Table '[dbo].[ScheduledTask]'.
+Processing Table '[dbo].[ScheduledTaskExecution]'.
+Processing Table '[dbo].[ScheduledTaskFolder]'.
+Processing Table '[dbo].[ScheduledTaskType]'.
+Processing Table '[dbo].[ScreenLayout]'.
+Processing Table '[dbo].[ScreenLayoutEditor]'.
+Processing Table '[dbo].[ScreenLayoutGroup]'.
+Processing Table '[dbo].[ScreenLayoutTab]'.
+Processing Table '[dbo].[ScreenPreset]'.
+Processing Table '[dbo].[ScreenPresetAccessUserRelation]'.
+Processing Table '[dbo].[ScreenPresetColumns]'.
+Processing Table '[dbo].[ScreenPresetDefaultScreenRelation]'.
+Processing Table '[dbo].[SeoPhrase]'.
+Processing Table '[dbo].[SettingPreset]'.
+Processing Table '[dbo].[SettingPresetAccessUserRelation]'.
+Processing Table '[dbo].[SettingPresetValues]'.
+Processing Table '[dbo].[SmsMessage]'.
+Processing Table '[dbo].[SocialChannel]'.
+Processing Table '[dbo].[SocialFolder]'.
+Processing Table '[dbo].[SocialMessage]'.
+Processing Table '[dbo].[SocialPost]'.
+Processing Table '[dbo].[SocialTask]'.
+Processing Table '[dbo].[SocialTopFolder]'.
+Processing Table '[dbo].[StatExtranet]'.
+Processing Table '[dbo].[Statv2Exclude]'.
+Processing Table '[dbo].[Statv2NotFound]'.
+Processing Table '[dbo].[Statv2Object]'.
+Processing Table '[dbo].[Statv2Page]'.
+Processing Table '[dbo].[Statv2Report]'.
+Processing Table '[dbo].[Statv2Session]'.
+Processing Table '[dbo].[Statv2SessionBot]'.
+Processing Table '[dbo].[Statv2Settings]'.
+Processing Table '[dbo].[Statv2Type]'.
+Processing Table '[dbo].[Statv2UserAgents]'.
+Processing Table '[dbo].[SystemField]'.
+Processing Table '[dbo].[SystemFieldValue]'.
+Processing Table '[dbo].[TaskManager]'.
+Processing Table '[dbo].[Template]'.
+Processing Table '[dbo].[TemplateCategory]'.
+Processing Table '[dbo].[TemplateMenu]'.
+Processing Table '[dbo].[TemplateMenuType]'.
+Processing Table '[dbo].[TrackingSession]'.
+Processing Table '[dbo].[TrackingView]'.
+Processing Table '[dbo].[TrashBin]'.
+Processing Table '[dbo].[UnifiedPermission]'.
+Processing Table '[dbo].[Updates]'.
+Processing Table '[dbo].[UrlPath]'.
+Processing Table '[dbo].[VersionData]'.
+Processing Table '[dbo].[Workflow]'.
+Processing Table '[dbo].[WorkflowGoToState]'.
+Processing Table '[dbo].[WorkflowNotification]'.
+Processing Table '[dbo].[WorkflowState]'.
+Processing Table '[dbo].[WorkflowStateNotificationRelation]'.
+Enabling indexes.
+Enabling index 'DW_PK_AccessUserSecondaryRelation'.
+Enabling index 'IX_Area_AreaDeleted'.
+Enabling index 'DW_PK_AreaEncoding'.
+Enabling index 'IX_Audit_AuditTimestamp'.
+Enabling index 'IX_AuditDeletedObject_AuditDeletedObjectAuditId'.
+Enabling index 'IX_AuditDetail_AuditDetailAuditId'.
+Enabling index 'DW_PK_CampaignContext'.
+Enabling index 'DW_IX_CapabilityLimitation_UserGroupId_Key'.
+Enabling index 'DW_IX_CapabilitySetLimitation_UserGroupId_Key'.
+Enabling index 'IX_CommandLog_AccessUserId'.
+Enabling index 'DW_PK_CustomField'.
+Enabling index 'PK_EcomAssortmentGroupRelations'.
+Enabling index 'PK_EcomAssortmentItems'.
+Enabling index 'PK_EcomAssortmentPermissions'.
+Enabling index 'PK_EcomAssortmentProductRelations'.
+Enabling index 'PK_EcomAssortments'.
+Enabling index 'PK_EcomAssortmentShopRelations'.
+Enabling index 'DW_PK_EcomCalculatedProductFieldValue'.
+Enabling index 'DW_PK_EcomConsolidatedOrderPayments'.
+Enabling index 'DW_PK_EcomCountries'.
+Enabling index 'DW_PK_EcomCountryText'.
+Enabling index 'DW_PK_EcomCurrencies'.
+Enabling index 'DW_PK_EcomCustomerFavoriteProducts'.
+Enabling index 'DW_PK_EcomDetails'.
+Enabling index 'DW_PK_EcomDynamicProductRelations'.
+Enabling index 'DW_PK_EcomDynamicRelationCalculationConfigurations'.
+Enabling index 'DW_PK_EcomDynamicRelationGroupCategories'.
+Enabling index 'DW_PK_EcomDynamicRelationGroups'.
+Enabling index 'DW_PK_EcomFees'.
+Enabling index 'DW_PK_EcomFieldOption'.
+Enabling index 'DW_PK_EcomGroupProductRelation'.
+Enabling index 'DW_PK_EcomGroupRelations'.
+Enabling index 'DW_PK_EcomGroups'.
+Enabling index 'DW_PK_EcomLanguages'.
+Enabling index 'DW_PK_EcomLoyaltyRewardTranslation'.
+Enabling index 'DW_PK_EcomManufacturers'.
+Enabling index 'DW_PK_EcomMethodCountryRelation'.
+Enabling index 'DW_PK_EcomNumbers'.
+Enabling index 'DW_PK_EcomOrderContextAccessUserRelation'.
+Enabling index 'DW_PK_EcomOrderContexts'.
+Enabling index 'DW_PK_EcomOrderContextShopRelation'.
+Enabling index 'DW_PK_EcomOrderField'.
+Enabling index 'DW_PK_EcomOrderLineFieldGroupRelation'.
+Enabling index 'DW_PK_EcomOrderLineFields'.
+Enabling index 'IX_EcomOrderLines_OrderLineOrderId'.
+Enabling index 'DW_PK_EcomOrderLines'.
+Enabling index 'DW_PK_EcomOrders'.
+Enabling index 'DW_PK_EcomOrderStates'.
+Enabling index 'DW_PK_EcomOrderStateTranslations'.
+Enabling index 'DW_PK_EcomPayments'.
+Enabling index 'DW_PK_EcomPeriods'.
+Enabling index 'DW_PK_EcomPIMNotificationUserRelations'.
+Enabling index 'DW_PK_EcomPrices'.
+Enabling index 'DW_PK_EcomProductAssignmentRule'.
+Enabling index 'DW_PK_EcomProductAssignmentRuleMapping'.
+Enabling index 'DW_PK_EcomProductAssignmentRuleShop'.
+Enabling index 'DW_PK_EcomProductCategory'.
+Enabling index 'DW_PK_EcomProductCategoryField'.
+Enabling index 'DW_PK_EcomProductCategoryFieldTranslation'.
+Enabling index 'DW_PK_EcomProductCategoryFieldValue'.
+Enabling index 'DW_PK_EcomProductCategoryTranslation'.
+Enabling index 'DW_PK_EcomProductField'.
+Enabling index 'DW_PK_EcomProductGroupField'.
+Enabling index 'DW_PK_EcomProductItems'.
+Enabling index 'DW_IX_EcomProducts_Active_LanguageID_VariantID_ProductID_Name'.
+Enabling index 'DW_IX_EcomProducts_ExcludeFromIndex'.
+Enabling index 'DW_PK_EcomProducts'.
+Enabling index 'DW_PK_EcomProductsRelated'.
+Enabling index 'DW_IX_EcomProductsRelatedGroups'.
+Enabling index 'DW_PK_EcomProductUnitOfMeasure'.
+Enabling index 'DW_PK_EcomRelatedSmartSearches'.
+Enabling index 'DW_PK_EcomRmaEvents'.
+Enabling index 'DW_PK_EcomRmaEventTranslations'.
+Enabling index 'DW_PK_EcomRmas'.
+Enabling index 'DW_PK_EcomRmaStateTranslations'.
+Enabling index 'DW_PK_EcomRoundings'.
+Enabling index 'DW_PK_EcomSalesDiscount'.
+Enabling index 'DW_PK_EcomSalesDiscountCurrencies'.
+Enabling index 'DW_PK_EcomSalesDiscountLanguages'.
+Enabling index 'DW_PK_EcomShippings'.
+Enabling index 'DW_PK_EcomShopGroupRelation'.
+Enabling index 'DW_PK_EcomShops'.
+Enabling index 'DW_PK_EcomShopStockLocationRelation'.
+Enabling index 'DW_PK_EcomStockGroups'.
+Enabling index 'DW_PK_EcomStockLocationCategory'.
+Enabling index 'DW_PK_EcomStockStatusLanguageValue'.
+Enabling index 'DW_PK_EcomStockStatusLine'.
+Enabling index 'DW_PK_EcomUnits'.
+Enabling index 'DW_PK_EcomUnitTranslations'.
+Enabling index 'DW_PK_EcomUserPermission'.
+Enabling index 'DW_PK_EcomUserPermissionType'.
+Enabling index 'DW_PK_EcomValidationGroups'.
+Enabling index 'DW_PK_EcomValidationRules'.
+Enabling index 'DW_PK_EcomValidations'.
+Enabling index 'DW_PK_EcomVariantGroupProductRelation'.
+Enabling index 'DW_PK_EcomVariantGroups'.
+Enabling index 'DW_PK_EcomVariantOptionsProductRelation'.
+Enabling index 'DW_PK_EcomVariantsOptions'.
+Enabling index 'DW_PK_EcomVatCountryRelations'.
+Enabling index 'DW_PK_EcomVatGroups'.
+Enabling index 'DW_UC_EcomVoucherLists_Name'.
+Enabling index 'DW_UC_EcomVouchers_Code'.
+Enabling index 'IX_EmailRecipient_MessageId'.
+Enabling index 'DW_PK_ForumAnswerVotes'.
+Enabling index 'IX_GridRow_GridRowDeleted'.
+Enabling index 'DW_PK_ItemTypeDefinitions'.
+Enabling index 'DW_PK_ItemTypeId'.
+Enabling index 'IX_Page_PageDeleted'.
+Enabling index 'IX_Paragraph_Item'.
+Enabling index 'DW_PK_SystemField'.
+Enabling index 'DW_PK_SystemFieldValue'.
+Enabling index 'DW_IX_TrackingSession_SessionTimestamp'.
+Enabling index 'DW_IX_UnifiedPermission_Key_Name'.
+Enabling index 'DW_IX_UnifiedPermission_UserId_Key_Name_SubName'.
+Successfully imported database.
+Time elapsed 0:00:27.60
+
+=== Step 4: Defer Administrator password check until host is up (see Step 7 readiness) ===
+
+=== Step 5: Apply cleanup scripts 01..09 against Swift-2.2 ===
+  Running 00-backup.sql
+Backing up Page -> Page_BAK_20260422
+Backing up Paragraph -> Paragraph_BAK_20260422
+Backing up GridRow -> GridRow_BAK_20260422
+Backing up ItemType_Swift-v2_Logo -> ItemType_Swift-v2_Logo_BAK_20260422
+Backing up ItemType_Swift-v2_Text -> ItemType_Swift-v2_Text_BAK_20260422
+Backing up ItemType_Swift-v2_CustomerCenterApp -> ItemType_Swift-v2_CustomerCenterApp_BAK_20260422
+Backing up ItemType_Swift-v2_EmailButton -> ItemType_Swift-v2_EmailButton_BAK_20260422
+Backing up ItemType_Swift-v2_EmailIcon_Item -> ItemType_Swift-v2_EmailIcon_Item_BAK_20260422
+Backing up ItemType_Swift-v2_EmailMenu_Item -> ItemType_Swift-v2_EmailMenu_Item_BAK_20260422
+Backing up ItemType_Swift-v2_CheckoutApp -> ItemType_Swift-v2_CheckoutApp_BAK_20260422
+Backing up ItemType_Swift-v2_Emails -> ItemType_Swift-v2_Emails_BAK_20260422
+TABLE_NAME                                                                                                                       Rows                
+-------------------------------------------------------------------------------------------------------------------------------- --------------------
+GridRow_BAK_20260422                                                                                                                             1012
+ItemType_Swift-v2_CheckoutApp_BAK_20260422                                                                                                          4
+ItemType_Swift-v2_CustomerCenterApp_BAK_20260422                                                                                                   48
+ItemType_Swift-v2_EmailButton_BAK_20260422                                                                                                         19
+ItemType_Swift-v2_EmailIcon_Item_BAK_20260422                                                                                                      58
+ItemType_Swift-v2_EmailMenu_Item_BAK_20260422                                                                                                     140
+ItemType_Swift-v2_Emails_BAK_20260422                                                                                                              32
+ItemType_Swift-v2_Logo_BAK_20260422                                                                                                                20
+ItemType_Swift-v2_Text_BAK_20260422                                                                                                               266
+Page_BAK_20260422                                                                                                                                 423
+Paragraph_BAK_20260422                                                                                                                           1210
+  Running 01-null-orphan-page-refs.sql
+--- ID 8308 cleanup (Area 26 cross-baseline ref) ---
+Before:
+Loc       N          
+--------- -----------
+Logo.Link           4
+Loc       N          
+--------- -----------
+Text.Text           1
+ 
+--- ID 149 cleanup (non-existent page) ---
+--- ID 295 cleanup (non-existent page) ---
+--- ID 140 cleanup (non-existent page) ---
+--- ID 15717 cleanup (non-existent page; ButtonEditor JSON format) ---
+ 
+--- Verify after cleanup ---
+Loc                         N          
+--------------------------- -----------
+8308 remaining in Logo.Link           0
+8308 in Text.Text                     0
+149 in CustomerCenterApp              0
+149 in EmailButton                    0
+149 in EmailIcon_Item                 0
+149 in EmailMenu_Item                 0
+295 in CheckoutApp                    0
+295 in CustomerCenterApp              0
+140 in CheckoutApp                    0
+140 in CustomerCenterApp              0
+140 in Emails.Header                  0
+140 in Emails.Footer                  0
+Done.
+  Running 02-delete-test-page.sql
+Pages to delete:
+PageId      PageParentPageId PageMenuText                                                                                                                                                                                                                                                   
+----------- ---------------- ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Paragraphs deleted: 0
+GridRows deleted: 0
+Pages deleted: 0
+Done ƒ?" /New Serialized Page subtree removed.
+  Running 03-delete-orphan-areas.sql
+Orphan AreaIds (no row in Area table):
+AreaId     
+-----------
+         11
+         12
+         13
+         25
+         27
+Pages to delete: 267
+Paragraphs deleted: 751
+GridRows deleted: 623
+Pages deleted: 267
+Done ƒ?" orphan-area pages removed.
+  Running 04-delete-soft-deleted-pages.sql
+Soft-deleted pages to hard-delete: 1
+Paragraphs deleted: 0
+GridRows deleted: 0
+Pages deleted: 1
+Done ƒ?" soft-deleted pages removed.
+  Running 05-null-stale-template-refs.sql
+=== Before cleanup ƒ?" reference counts (ItemType_Swift-v2_* columns) ===
+location                                                                      ref_count  
+----------------------------------------------------------------------------- -----------
+ 
+=== Running cleanup (null matching rows in ItemType_Swift-v2_*) ===
+ 
+=== Extended scan ƒ?" non-ItemType locations (Page.Layout, Paragraph.ItemType) ===
+ 
+=== Verify ƒ?" expected 0 rows across ItemType_Swift-v2_* for each template name ===
+location                                                                      remaining  
+----------------------------------------------------------------------------- -----------
+ 
+=== Non-ItemType verify (expected 0 each) ===
+Loc             remaining  
+--------------- -----------
+Page.PageLayout           0
+Loc                         remaining  
+--------------------------- -----------
+Paragraph.ParagraphItemType           0
+Loc                         remaining  
+--------------------------- -----------
+GridRow.GridRowDefinitionId           0
+ 
+Done ƒ?" 05-null-stale-template-refs.sql
+  Running 06-delete-orphan-ecomshopgrouprelation.sql
+--- Before ---
+SHOP19/GROUP253 rows before: 1
+--- After ---
+SHOP19/GROUP253 rows after: 0
+--- Overall orphan verification ---
+stage             n          
+----------------- -----------
+remaining-orphans           0
+Done ƒ?" 06-delete-orphan-ecomshopgrouprelation.sql
+  Running 07-delete-stale-email-gridrows.sql
+--- Before ---
+Stale-email GridRow rows before: 142
+--- After ---
+Stale-email GridRow rows after: 0
+Done ƒ?" 07-delete-stale-email-gridrows.sql
+  Running 08-null-orphan-page-link-refs.sql
+--- Before ---
+Msg 8623, Level 16, State 1, Server JUSTIN-ZENBOOK\SQLEXPRESS, Line 1
+The query processor ran out of internal resources and could not produce a query plan. This is a rare event and only expected for extremely complex queries or queries that reference a very large number of tables or partitions. Please simplify the query. If you believe you have received this message in error, contact Customer Support Services for more information.
+[31;1mException: [0mC:\VibeCode\DynamicWeb.Serializer\tools\e2e\full-clean-roundtrip.ps1:186[0m
+[31;1m[0m[36;1mLine |[0m
+[31;1m[0m[36;1m[36;1m 186 | [0m         [36;1mthrow "sqlcmd failed on '$ScriptPath' (exit $LASTEXITCODE). S[0m .[0m
+[31;1m[0m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+[31;1m[0m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1msqlcmd failed on 'C:\VibeCode\DynamicWeb.Serializer\tools\swift22-cleanup\08-null-orphan-page-link-refs.sql'[0m
+[31;1m[0m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m[31;1m[36;1m     | [31;1m(exit 1). See[0m
+[31;1m[0m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m[31;1m[36;1m[31;1m[36;1m     | [31;1mC:\VibeCode\DynamicWeb.Serializer\.planning\phases\38.1-close-phase-38-deferrals\pipeline-runs\20260422-093111\cleanup-08-null-orphan-page-link-refs.log[0m
+
+===== PIPELINE EXIT CODE: 0 at 2026-04-22T07:43:08Z =====

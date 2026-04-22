@@ -1,0 +1,9 @@
+--- Before ---
+SHOP19/GROUP253 rows before: 1
+--- After ---
+SHOP19/GROUP253 rows after: 0
+--- Overall orphan verification ---
+stage             n          
+----------------- -----------
+remaining-orphans           0
+Done â?" 06-delete-orphan-ecomshopgrouprelation.sql

@@ -1,0 +1,24 @@
+=== Before cleanup â?" reference counts (ItemType_Swift-v2_* columns) ===
+location                                                                      ref_count  
+----------------------------------------------------------------------------- -----------
+ 
+=== Running cleanup (null matching rows in ItemType_Swift-v2_*) ===
+ 
+=== Extended scan â?" non-ItemType locations (Page.Layout, Paragraph.ItemType) ===
+ 
+=== Verify â?" expected 0 rows across ItemType_Swift-v2_* for each template name ===
+location                                                                      remaining  
+----------------------------------------------------------------------------- -----------
+ 
+=== Non-ItemType verify (expected 0 each) ===
+Loc             remaining  
+--------------- -----------
+Page.PageLayout           0
+Loc                         remaining  
+--------------------------- -----------
+Paragraph.ParagraphItemType           0
+Loc                         remaining  
+--------------------------- -----------
+GridRow.GridRowDefinitionId           0
+ 
+Done â?" 05-null-stale-template-refs.sql

@@ -1,0 +1,24 @@
+Backing up Page -> Page_BAK_20260422
+Backing up Paragraph -> Paragraph_BAK_20260422
+Backing up GridRow -> GridRow_BAK_20260422
+Backing up ItemType_Swift-v2_Logo -> ItemType_Swift-v2_Logo_BAK_20260422
+Backing up ItemType_Swift-v2_Text -> ItemType_Swift-v2_Text_BAK_20260422
+Backing up ItemType_Swift-v2_CustomerCenterApp -> ItemType_Swift-v2_CustomerCenterApp_BAK_20260422
+Backing up ItemType_Swift-v2_EmailButton -> ItemType_Swift-v2_EmailButton_BAK_20260422
+Backing up ItemType_Swift-v2_EmailIcon_Item -> ItemType_Swift-v2_EmailIcon_Item_BAK_20260422
+Backing up ItemType_Swift-v2_EmailMenu_Item -> ItemType_Swift-v2_EmailMenu_Item_BAK_20260422
+Backing up ItemType_Swift-v2_CheckoutApp -> ItemType_Swift-v2_CheckoutApp_BAK_20260422
+Backing up ItemType_Swift-v2_Emails -> ItemType_Swift-v2_Emails_BAK_20260422
+TABLE_NAME                                                                                                                       Rows                
+-------------------------------------------------------------------------------------------------------------------------------- --------------------
+GridRow_BAK_20260422                                                                                                                             1012
+ItemType_Swift-v2_CheckoutApp_BAK_20260422                                                                                                          4
+ItemType_Swift-v2_CustomerCenterApp_BAK_20260422                                                                                                   48
+ItemType_Swift-v2_EmailButton_BAK_20260422                                                                                                         19
+ItemType_Swift-v2_EmailIcon_Item_BAK_20260422                                                                                                      58
+ItemType_Swift-v2_EmailMenu_Item_BAK_20260422                                                                                                     140
+ItemType_Swift-v2_Emails_BAK_20260422                                                                                                              32
+ItemType_Swift-v2_Logo_BAK_20260422                                                                                                                20
+ItemType_Swift-v2_Text_BAK_20260422                                                                                                               266
+Page_BAK_20260422                                                                                                                                 423
+Paragraph_BAK_20260422                                                                                                                           1210

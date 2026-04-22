@@ -1,0 +1,13 @@
+Orphan AreaIds (no row in Area table):
+AreaId     
+-----------
+         11
+         12
+         13
+         25
+         27
+Pages to delete: 267
+Paragraphs deleted: 751
+GridRows deleted: 623
+Pages deleted: 267
+Done â?" orphan-area pages removed.

@@ -49,3 +49,8 @@ Desktop.ini
 
 # Claude Code settings
 .claude/
+
+# Pipeline run artifacts (logs kept; large extracted bacpacs excluded)
+.planning/phases/*/pipeline-runs/*/bacpac/
+# Top-level bacpac zip (source of truth; too large for repo)
+tools/swift2.2.0-*.zip

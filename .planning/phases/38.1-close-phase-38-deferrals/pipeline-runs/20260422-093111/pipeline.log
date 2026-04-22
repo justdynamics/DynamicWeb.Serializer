@@ -1,0 +1,7 @@
+[09:31:11] Run directory: C:\VibeCode\DynamicWeb.Serializer\.planning\phases\38.1-close-phase-38-deferrals\pipeline-runs\20260422-093111
+[09:31:11] Pipeline start — 2026-04-22 09:31:11
+[09:31:11] Step 1: Stop any running DW hosts (ports 54035 + 58217)
+[09:31:14] Step 2: Detect/install sqlpackage.exe
+[09:31:22] Step 3: Restore Swift-2.2 from bacpac
+[09:31:51] Step 4: Defer Administrator password check until host is up (see Step 7 readiness)
+[09:31:51] Step 5: Apply cleanup scripts 01..09 against Swift-2.2
