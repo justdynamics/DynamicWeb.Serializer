@@ -1,0 +1,8 @@
+HTTP/1.1 200 OK
+Content-Type: application/json; charset=utf-8
+Date: Wed, 22 Apr 2026 08:33:27 GMT
+Server: Kestrel
+Set-Cookie: DW_Session_ID=723c59b0675247629fd4f350421631b820a3113252b94ce280805fb4e14d288b56d61a1d4d44460f891476284a248fff; path=/; samesite=strict; httponly
+Transfer-Encoding: chunked
+
+{"status":"ok","message":"[Seed] Deserialized: 3489 created, 0 updated, 0 skipped, 0 failed across 8 predicates","exception":null,"model":null,"modelIdentifier":null}

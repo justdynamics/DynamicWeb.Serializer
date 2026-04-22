@@ -1,0 +1,11 @@
+Skipped Area.AreaHtmlType — already exists
+Skipped Area.AreaLayoutPhone — already exists
+Skipped Area.AreaLayoutTablet — already exists
+Skipped EcomGroups.GroupPageIDRel — already exists
+Skipped EcomProducts.ProductPeriodId — already exists
+Skipped EcomProducts.ProductVariantGroupCounter — already exists
+Skipped EcomProducts.ProductPriceMatrixPeriod — already exists
+Skipped EcomProducts.ProductOptimizedFor — already exists
+Skipped EcomProducts.MyVolume — already exists
+Skipped EcomProducts.MyDouble — already exists
+Done — cleandb-align-schema.sql

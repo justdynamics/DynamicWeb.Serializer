@@ -1,0 +1,8 @@
+HTTP/1.1 200 OK
+Content-Type: application/json; charset=utf-8
+Date: Wed, 22 Apr 2026 08:30:15 GMT
+Server: Kestrel
+Set-Cookie: DW_Session_ID=fdad6cf8a34d4ceb96069d98427b886823dd1d61dd5d46aeb8e5d4332a642b33b28ce918dc914df19c90df4b0ecca11e; path=/; samesite=strict; httponly
+Transfer-Encoding: chunked
+
+{"status":"ok","message":"Serialization complete (Deploy). 1493 YAML files written to C:\\Projects\\Solutions\\swift.test.forsync\\Swift2.2\\Dynamicweb.Host.Suite\\wwwroot\\Files\\System\\Serializer\\SerializeRoot\\deploy. Serialized: 1477 rows across 17 predicates","exception":null,"model":null,"modelIdentifier":null}
