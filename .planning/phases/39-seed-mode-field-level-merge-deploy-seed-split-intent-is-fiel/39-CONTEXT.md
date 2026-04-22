@@ -28,9 +28,16 @@ intrinsically — no persisted marker required.
   recursion into gridrows/columns/paragraphs.
 - `SqlTableProvider.DeserializeCoreLogic` (lines ~313–322): replace the whole-row
   skip with per-column merge driven by a live read of target row state.
+- **XML-element merge for SQL-column-hosted XML payloads** (scope expansion
+  2026-04-22) — `PaymentGatewayParameters` on `EcomPayments`,
+  `ShippingServiceParameters` on `EcomShippings`, and any other XML columns
+  surfaced by SqlTable discovery. Merge per XML leaf element so Deploy-excluded
+  elements (e.g. `Mail1SenderEmail`, `Mail1SenderName`) fill on Seed even when
+  the hosting column is non-empty after Deploy.
 - Shared `IsUnsetForMerge` helper used by both providers.
 - Live Swift 2.2 → CleanDB E2E gate under `strictMode: true` proving
-  Deploy → tweak → Seed preservation.
+  Deploy → tweak → Seed preservation **including Mail1SenderEmail fill via
+  XML-element merge**.
 
 **Out of scope (supersedes Phase 37 D-06):** The row-level skip that Phase 37-01
 shipped. Phase 37's `37-CONTEXT.md` stays as historical; this phase's decisions
@@ -154,6 +161,55 @@ are the new source of truth for Seed semantics.
   buttons, no new tree nodes, no log-viewer overhaul. Telemetry/merge-preview
   UI ideas go to deferred.
 
+### XML-Element Merge (Scope Expansion — 2026-04-22)
+
+Added after RESEARCH.md surfaced that the acceptance scenario (fill
+`Mail1SenderEmail` on Seed) is not deliverable via column-level merge alone —
+`Mail1SenderEmail` is an XML leaf inside `PaymentGatewayParameters`
+(`EcomPayments`) and `ShippingServiceParameters` (`EcomShippings`). User
+approved expanding Phase 39 to add an XML-element merge layer so the headline
+acceptance criterion is actually met.
+
+- **D-21 (XML column inventory):** The SqlTable provider must identify which
+  columns on in-scope tables hold XML payloads eligible for element-level
+  merge. Minimum set the phase MUST cover: `EcomPayments.PaymentGatewayParameters`,
+  `EcomShippings.ShippingServiceParameters`. Planner/researcher survey other
+  SqlTable-participating tables for XML columns and include any Deploy-excludes
+  an XML leaf. Discovery mechanism is planner's discretion (schema probe,
+  per-config manifest, or declarative annotation on the config entry) —
+  whatever fits the existing SqlTable config shape.
+- **D-22 (XML-element unset rule):** An XML leaf element on target is "unset"
+  — and therefore eligible for Seed to fill — when (a) the element is absent
+  from the XML document, OR (b) the element is present with NULL / empty /
+  whitespace-only text content. This mirrors D-01 applied at the element
+  level rather than the column level. Attributes follow the same rule.
+- **D-23 (XML merge mechanism):** For each Seed row where an XML column
+  participates, parse both the YAML-sourced XML and the current target XML,
+  walk the element tree, apply D-22 per leaf to decide fills, produce a merged
+  XML document, and write it back as part of the narrowed-UPDATE column
+  subset (D-17). The merged XML becomes the new column value. No partial-XML
+  write tricks — one column-level write of the fully-merged document.
+- **D-24 (preserve target-only elements):** Any XML element present on target
+  but absent from Seed YAML stays on target untouched. Seed never strips XML
+  elements; it only fills unset ones. Deploy's XML-element excludes already
+  govern what Seed YAML contains vs. omits.
+- **D-25 (test coverage for XML merge):** Unit tests on an `XmlMergeHelper`
+  (or equivalent) covering: element-missing fills, element-present-empty
+  fills, element-present-set skips, attribute-level merge, target-only
+  preservation, nested-element merge, whitespace handling. Integration tests
+  on SqlTableProvider round-trip covering `PaymentGatewayParameters` and
+  `ShippingServiceParameters`. The D-15 E2E gate asserts `Mail1SenderEmail`
+  appears in EcomPayments after Deploy → Seed.
+- **D-26 (dry-run XML-element diff):** Extend D-19's per-field diff to XML
+  columns — instead of `target=NULL → seed='DW...'` at the column level,
+  emit per-element lines: `"  would fill [col=PaymentGatewayParameters,
+  element=Mail1SenderEmail]: target=<missing> → seed='no-reply@swift.com'"`.
+- **D-27 (shared XML-merge placement — Claude's Discretion):** Whether the
+  XML-merge helper lives alongside `IsUnsetForMerge` in the same utility
+  namespace, or in a sibling XML-specific type, is planner's call. It serves
+  only `SqlTableProvider`'s write path — `ContentDeserializer` does not need
+  it (DW content tables don't hold Deploy-relevant XML payloads).
+
 ### Claude's Discretion
 
 - Exact shape of the `IsUnsetForMerge(value, typeHint)` signature — could be
@@ -200,6 +256,14 @@ None — no pending todos matched Phase 39 scope.
 ### Config this phase unblocks
 - `src/DynamicWeb.Serializer/Configuration/swift2.2-combined.json` — the
   combined Deploy+Seed predicate baseline that Phase 39 makes correct.
+
+### XML-element merge targets (D-21 minimum set)
+- `EcomPayments.PaymentGatewayParameters` — hosts `Mail1SenderEmail`,
+  `Mail1SenderName`, and other Deploy-excluded mail-config leaves.
+- `EcomShippings.ShippingServiceParameters` — same family of excluded leaves.
+- Planner/researcher: survey the SqlTable config for any additional table+
+  column pairs where Deploy `excludeFields` references an XML leaf. Any such
+  column joins the D-21 inventory.
 
 ### Supporting infrastructure (already shipped, reused here)
 - `src/DynamicWeb.Serializer/Schema/TargetSchemaCache.cs` (Phase 37-02) —
