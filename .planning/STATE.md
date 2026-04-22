@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v0.4.0
 milestone_name: Full Page Fidelity
 status: verifying
-stopped_at: Completed 38.1-04-PLAN.md (halted) — pipeline Step 5 halt on script 08; B.4.1 + GRID-01 re-proven; open-with-gap pending Plan 02 revision or Phase 38.2
-last_updated: "2026-04-22T08:04:31.383Z"
-last_activity: 2026-04-21
+stopped_at: Completed 38.1-05-PLAN.md — cleanup overview finding shipped
+last_updated: "2026-04-22T08:45:10.123Z"
+last_activity: 2026-04-22
 progress:
   total_phases: 28
-  completed_phases: 26
+  completed_phases: 27
   total_plans: 65
-  completed_plans: 63
-  percent: 97
+  completed_plans: 64
+  percent: 98
 ---
 
 # Project State
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-04-03)
 Phase: 38.1 (close-phase-38-deferrals) — EXECUTING
 Plan: 1 of 1
 Status: Phase complete — ready for verification
-Last activity: 2026-04-21
+Last activity: 2026-04-22
 
 ## Recent Session — 2026-04-17 Autonomous Baseline Test
 
@@ -121,6 +121,7 @@ Progress: [██████████] 100% (v0.4.0)
 | Phase 38.1 P02 | 18min | 3 tasks | 4 files |
 | Phase 38.1 P03 | 6 | 2 tasks | 3 files |
 | Phase 38.1 P04 | 60 | 2 tasks | 14 files |
+| Phase 38.1 P05 | 5min | 1 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -159,6 +160,7 @@ Recent decisions affecting current work:
 - [Phase 38.1]: Plan 03: D-38.1-03-02 Administrator password reseed deferred to documented SSMS fallback rather than inlined PBKDF2 hash (version-specific/brittle); D-38.1-03-04 pipeline uses 38 throw statements with per-step evidence logs for loud-fail discipline; cleandb-align-schema.sql ships 10 idempotent ALTER statements gated by IF COL_LENGTH IS NULL
 - [Phase 38.1]: Plan 04: D-38.1-04-01 — halt per <failure_handling> step 3 on script 08 Msg 8623 + Part B/C predicate false-positive (1641 false matches vs expected 47); re-derivation requires DW ItemType metadata unavailable in SQL surface; Plan 02 artefact left intact for proper revision
 - [Phase 38.1]: Plan 04: scripts 06 + 07 re-proven on fresh bacpac — B.4.1 (SHOP19 1→0) and GRID-01 (142 stale-emails→0) remain CLOSED; scripts 01-07 chain is idempotent and safe for re-run
+- [Phase 38.1]: Plan 05: swift22-cleanup-overview.md ships as email-able single-document inventory of the Swift 2.2 cleanup surface; 8-section split (6 Class-A canonical + 2 Class-B defensive) reflects Plan 04 CLOSED reframing of scripts 08/09 as defensive tooling, not mandatory
 
 ### Pending Todos
 
@@ -171,6 +173,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-22T08:04:18.108Z
-Stopped at: Completed 38.1-04-PLAN.md (halted) — pipeline Step 5 halt on script 08; B.4.1 + GRID-01 re-proven; open-with-gap pending Plan 02 revision or Phase 38.2
+Last session: 2026-04-22T08:45:10.115Z
+Stopped at: Completed 38.1-05-PLAN.md — cleanup overview finding shipped
 Resume file: None
