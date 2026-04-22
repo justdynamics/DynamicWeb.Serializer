@@ -1,0 +1,248 @@
+# Concepts
+
+The mental model for DynamicWeb.Serializer. Read this once before configuring a
+real baseline — most "why isn't it doing X" questions resolve to one of these
+concepts.
+
+## Table of contents
+
+- [Predicates select what to sync](#predicates-select-what-to-sync)
+- [Identity is GUID-based, not numeric](#identity-is-guid-based-not-numeric)
+- [The three-bucket split: Deployment, Seed, Not-Serialized](#the-three-bucket-split-deployment-seed-not-serialized)
+- [Deploy and Seed modes](#deploy-and-seed-modes)
+- [Folder layout](#folder-layout)
+- [The serialize flow](#the-serialize-flow)
+- [The deserialize flow](#the-deserialize-flow)
+- [What lives in YAML vs what doesn't](#what-lives-in-yaml-vs-what-doesnt)
+
+## Predicates select what to sync
+
+A predicate is a config entry that names a slice of the database to include in
+the baseline. There are two built-in provider types.
+
+**Content predicates** target the DW content hierarchy (Area → Page → GridRow →
+Column → Paragraph). They take an area ID, a root path, and optional exclude
+paths and field/column exclusions:
+
+```json
+{
+  "name": "Content - Swift 2",
+  "providerType": "Content",
+  "areaId": 3,
+  "path": "/",
+  "excludes": ["/Home", "/Posts"],
+  "excludeFields": ["AreaDomain", "GoogleTagManagerID"]
+}
+```
+
+**SqlTable predicates** target arbitrary SQL tables. They take a table name and
+optional `nameColumn`, `compareColumns`, `where`, and field filters:
+
+```json
+{
+  "name": "EcomVatGroups",
+  "providerType": "SqlTable",
+  "table": "EcomVatGroups",
+  "nameColumn": "VatGroupName",
+  "serviceCaches": [
+    "Dynamicweb.Ecommerce.International.VatGroupService"
+  ]
+}
+```
+
+Predicates with OR semantics: if any predicate includes a page or a row, it is
+serialized. Exclude rules inside a predicate beat its include rule. See
+[`configuration.md`](configuration.md) for every field and
+[`sql-tables.md`](sql-tables.md) for the SqlTable-specific surface.
+
+## Identity is GUID-based, not numeric
+
+Every DW page has two keys: `PageID` (numeric, environment-specific) and
+`PageUniqueId` (GUID, stable across environments). The serializer uses GUIDs
+as the canonical identity.
+
+Serialize writes the `PageUniqueId` into every YAML file along with the numeric
+`SourcePageId` from the source environment. Deserialize reads the YAML, looks
+up the target `PageID` by GUID in `PageGuidCache`, and creates the row if the
+GUID is missing or updates it if the GUID already exists. Numeric IDs diverge
+freely; the GUID keeps the two environments aligned.
+
+The same applies to paragraphs (`ParagraphUniqueId`) and — for SqlTable
+predicates — to rows identified by `nameColumn` or by composite primary key.
+
+## The three-bucket split: Deployment, Seed, Not-Serialized
+
+Every piece of DW state belongs to one of three buckets. This is the mental
+framework the reference Swift 2.2 baseline is built on, documented in full at
+[`baselines/Swift2.2-baseline.md`](baselines/Swift2.2-baseline.md).
+
+| Bucket | Owned by | Captured in | Example contents |
+|--------|----------|-------------|------------------|
+| **DEPLOYMENT** | Developer / template | YAML, Deploy mode | Shop structure, item types, VAT rates, country list, payment method definitions |
+| **SEED** | Developer initially, end-user thereafter | YAML, Seed mode | Customer Center welcome copy, FAQ body text, newsletter templates |
+| **NOT-SERIALIZED** | Per-env operator | Filesystem config, Azure Key Vault, per-env Area fields | `GlobalSettings.config`, payment gateway credentials, `AreaDomain`, GTM IDs |
+
+Deployment data must be identical across environments. Seed data is a
+bootstrap — a fresh install gets the values, and subsequent edits by end users
+must not be overwritten on the next deploy. Not-serialized data is owned by
+the target host's operator and never lives in YAML.
+
+Getting the bucket wrong is the main source of "my deploy overwrote customer
+edits" or "my credentials leaked into git" incidents. The Swift 2.2 reference
+baseline at [`baselines/env-bucket.md`](baselines/env-bucket.md) enumerates
+exactly what belongs in each bucket for a typical Swift install.
+
+## Deploy and Seed modes
+
+The two buckets map to two modes the serializer supports natively.
+
+**Deploy mode** is source-wins. Re-running deserialize overwrites whatever the
+target has. This is correct for pure deployment data: developer-owned,
+identical-across-envs, never customer-edited.
+
+**Seed mode** is destination-wins. Rows whose natural key or `PageUniqueId` is
+already present on target are preserved, not overwritten. This is safe for
+first-run content that transitions to customer ownership after the initial
+install.
+
+Each mode has its own predicate list, its own exclusion maps, and its own
+output subfolder:
+
+```
+Files/System/Serializer/SerializeRoot/
+  deploy/              <- ModeConfig with conflictStrategy: source-wins
+  seed/                <- ModeConfig with conflictStrategy: destination-wins
+```
+
+The Management API and CLI both accept `?mode=deploy` (default) and
+`?mode=seed`. Most pipelines run them as two sequential steps: deploy first
+(structural data), seed second (first-run content).
+
+## Folder layout
+
+For a config with `outputDirectory: "Serializer"`, the full layout on the DW
+host's filesystem is:
+
+```
+Files/
+  Serializer.config.json             <- config source of truth
+
+  System/Serializer/                 <- root set by outputDirectory
+    SerializeRoot/
+      deploy/                        <- Deploy mode output
+        Content predicate files live in area-mirror form:
+        Swift 2/
+          area.yml
+          Customer Center/
+            page.yml
+            grid-row-1/
+              grid-row.yml
+              paragraph-c1-1.yml
+              paragraph-c1-2.yml
+          ...
+        SqlTable predicate files sit one-per-row:
+        EcomOrderFlow/
+          Default.yml
+          Quote.yml
+      seed/                          <- Seed mode output
+        (same shape, different predicates)
+    Upload/                          <- zip files dropped here for import
+    Download/                        <- ad-hoc zip exports
+    Log/                             <- per-run logs
+```
+
+Content predicates produce a mirror tree: the folder hierarchy under `SerializeRoot/deploy/`
+matches the content tree in DW admin. SqlTable predicates produce a flat
+directory per table, with one file per row named by `nameColumn` (or a composite
+key derived from the primary key if `nameColumn` is unset).
+
+## The serialize flow
+
+1. `SerializerSerialize` reads `Files/Serializer.config.json` and resolves the
+   requested mode (Deploy or Seed).
+2. `SerializerOrchestrator` iterates the mode's predicates in order.
+3. Content predicates: `ContentSerializer` walks the DW area → pages tree,
+   applying exclude rules and field/column filters. Writes one YAML file per
+   page, grid row, and paragraph.
+4. SqlTable predicates: `SqlTableReader` issues a `SELECT` with the optional
+   `WHERE` clause, applies `ExcludeFields`, auto-excludes runtime-only columns
+   (see [`runtime-exclusions.md`](runtime-exclusions.md)), and writes one YAML
+   file per row via `FlatFileStore`.
+5. After all predicates complete, `BaselineLinkSweeper` walks the written YAML
+   tree and validates every `Default.aspx?ID=N` and `"SelectedValue": "N"`
+   reference against the set of serialized `SourcePageId` and
+   `SourceParagraphId` values. Orphaned references cause serialize to fail
+   with a multi-line breakdown (see [`link-resolution.md`](link-resolution.md)).
+6. A template-asset manifest is written listing every template referenced in
+   serialized content, so deserialize can validate their presence upfront.
+7. Stale files (present in the manifest from a previous run but not written
+   this run) are deleted.
+
+## The deserialize flow
+
+1. `SerializerDeserialize` reads the config and resolves the mode.
+2. `StrictModeResolver` determines whether warnings escalate. Precedence:
+   request parameter > `config.strictMode` > entry-point default (API/CLI on,
+   admin UI off). See [`strict-mode.md`](strict-mode.md).
+3. `TemplateAssetManifest` validates every template named in the baseline
+   exists in `Files/Templates/`. Missing templates emit warnings (which
+   escalate under strict mode).
+4. Content predicates run first. `ContentDeserializer` reads the page tree,
+   matches each page by `PageUniqueId` against the target's
+   `PageGuidCache`, creates new pages or updates existing ones, and restores
+   permissions, item-type fields, property fields, and grid-row layout.
+   Internal `Default.aspx?ID=N` references in item-type string fields are
+   rewritten via `InternalLinkResolver`.
+5. `SerializerOrchestrator` builds the cumulative source → target page ID map
+   from the Content predicates' cache writes.
+6. SqlTable predicates run next. `SqlTableWriter` merges rows via parameterized
+   MERGE statements, applying `resolveLinksInColumns` to rewrite
+   `Default.aspx?ID=N` in opted-in columns using the map from step 5.
+7. Foreign-key constraints are re-enabled after each SqlTable predicate
+   completes. FK violations on re-enable surface as warnings (escalated in
+   strict mode).
+8. `CacheInvalidator` clears the DW service caches listed in each predicate's
+   `serviceCaches` field (`CountryService`, `VatGroupService`, etc.) so the
+   newly-written data is visible to the live host.
+9. If strict mode was on and any warning was recorded, `StrictModeEscalator`
+   throws `CumulativeStrictModeException` listing every warning verbatim.
+   The Management API returns `Error` and the pipeline fails.
+
+## What lives in YAML vs what doesn't
+
+**In YAML (captured by the serializer):**
+
+- Pages: all ~30 page-level properties (NavigationTag, ShortCut, UrlName,
+  SEO meta, SSL mode, visibility, URL inheritance), item-type field values,
+  property-field values (Icon, SubmenuType), explicit permissions.
+- Grid rows: layout settings (top/bottom spacing, container width, visual
+  properties), item-type XML content.
+- Paragraphs: content, item-type field values, column attribution, permissions.
+- Areas: area metadata, area item-type fields (header/footer/master page
+  connections).
+- SqlTable rows: every non-excluded column, with XML columns pretty-printed
+  for diff readability.
+- Page navigation settings: `UseEcomGroups`, `ProductPage`, `MaxLevels`, etc.
+- EcomProductGroupField custom column schema for `EcomGroups`.
+
+**Not in YAML (out of scope by design):**
+
+- Per-environment infrastructure: `AreaDomain`, `AreaCdnHost`, `GoogleTagManagerID`,
+  `GlobalSettings.config`, `web.config`, Azure Key Vault secrets.
+- Runtime-only columns: visit counters (`UrlPath.UrlPathVisitsCount`),
+  search-index pointers (`EcomShops.ShopIndex*`). Auto-excluded, see
+  [`runtime-exclusions.md`](runtime-exclusions.md).
+- Files and media: images, documents, video uploads. Files already live in
+  Git (or Azure Files, or a CDN) — the serializer is for DB state only.
+- Payment gateway credentials: not auto-excluded in v0.5.0; must be listed
+  manually in a predicate's `excludeFields` until the curated credential
+  registry lands in v0.6.0.
+
+## See also
+
+- [Configuration](configuration.md) — every config key and admin UI screen
+- [SQL tables](sql-tables.md) — SqlTable predicate surface in depth
+- [Link resolution](link-resolution.md) — the three passes of cross-env rewriting
+- [Permissions](permissions.md) — role and group permission handling
+- [Swift 2.2 baseline](baselines/Swift2.2-baseline.md) — the reference implementation
+  of the three-bucket split
