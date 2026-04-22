@@ -317,3 +317,33 @@ Plans:
 - Wave 1: 38.1-02 (investigation + scripts 08/09), 38.1-03 (cleandb-align-schema + pipeline PS) — parallel (zero file overlap)
 - Wave 2: 38.1-04 (pipeline run + e2e-results capture) — depends on 02 and 03
 - Wave 3: 38.1-05 (overview finding doc) — depends on 02 and 04
+
+### Phase 39: Seed mode field-level merge — Deploy/Seed split intent is field-level merge, not row-level skip. Fix ContentDeserializer (currently skips whole pages by PageUniqueId match on DestinationWins) and SqlTableProvider (currently skips rows on RowExistsInTarget match) to merge per-field: on an existing row/page, write only fields NOT already set on target (i.e. NULL / default / empty). Deploy YAML (source-wins) + Seed YAML (destination-wins, empty exclusions) must combine cleanly on both fresh and re-deploy targets: Deploy writes its field subset, Seed fills remaining fields once, customer tweaks survive re-deploys. Acceptance: on a target where Deploy has already run, running Seed populates the excluded fields (Mail1SenderEmail, error strings, branding) without overwriting any field already set. Scope: both providers, plus XML-element merge layer for SQL-column-hosted XML payloads (EcomPayments.PaymentGatewayParameters, EcomShippings.ShippingServiceParameters) since Mail1SenderEmail lives as an XML leaf inside those columns; adjust tests that assert row-level skip.
+
+**Goal:** Convert Seed mode (ConflictStrategy.DestinationWins) in ContentDeserializer and SqlTableProvider from whole-entity skip to per-field merge, including XML-element merge for SQL-hosted XML payloads, so Deploy + Seed YAML combine cleanly on both fresh and re-deploy targets. Customer tweaks between Deploy and Seed survive intrinsically (no persisted marker); Deploy-excluded fields (including XML leaves like Mail1SenderEmail) fill on Seed exactly once.
+**Requirements**: D-01..D-27 from 39-CONTEXT.md (phase has no legacy REQ-IDs; CONTEXT decisions are acceptance)
+**Supersedes**: Phase 37 §D-06 (row-level skip semantics for DestinationWins)
+**Depends on:** Phase 38
+**Success Criteria** (what must be TRUE at end of phase):
+  1. MergePredicate.IsUnsetForMerge helper exists in Infrastructure/ with full type-matrix unit coverage (D-01, D-08)
+  2. ContentDeserializer.DeserializePage Seed-skip block at lines ~684-692 is replaced with per-field merge branch; old `Seed-skip:` log line no longer emitted (D-11)
+  3. SqlTableWriter.UpdateColumnSubset exists as a virtual method with parameterized narrowed-UPDATE SQL (D-17)
+  4. SqlTableProvider.DeserializeCoreLogic Seed-skip block at lines ~313-322 is replaced with column + XML merge branch; checksum fast-path at ~304-311 still runs first (D-18)
+  5. XmlMergeHelper in Infrastructure/ merges per XML leaf — fills elements absent or empty on target, preserves target-only elements, hardened against DTD/billion-laughs (D-22..D-25, D-27)
+  6. EcomPayments.PaymentGatewayParameters and EcomShippings.ShippingServiceParameters participate in XML-element merge (D-21)
+  7. Permissions NEVER touched on Seed UPDATE path (D-06)
+  8. Sub-object DTOs (Seo, UrlSettings, Visibility, NavigationSettings) merge per-property not per-sub-object (D-04)
+  9. GridRow and Paragraph UPDATE paths inherit the merge predicate (D-07)
+  10. tools/e2e/full-clean-roundtrip.ps1 has a DeployThenTweakThenSeed mode that exits 0 against live Swift 2.2 + CleanDB with all six D-15 assertions passing (Mail1SenderEmail fills, customer tweak preserved, D-09 idempotency)
+  11. Full test suite remains green throughout — no regression on existing source-wins paths
+**Plans:** 3 plans
+
+Plans:
+- [ ] 39-01-PLAN.md — Content merge: shared MergePredicate helper + ContentDeserializer DeserializePage/GridRow/Paragraph UPDATE retrofit + MergePredicateTests + ContentDeserializerSeedMergeTests (D-01..D-11, D-13, D-14, D-16, D-19, D-20)
+- [ ] 39-02-PLAN.md — SqlTable merge (column + XML-element): SqlTableWriter.UpdateColumnSubset + SqlTableProvider merge branch with existingRowsByIdentity extension + XmlMergeHelper + 4 new test files covering unit + integration + EcomPayments/EcomShippings round-trip (D-01, D-08, D-10..D-19, D-21..D-27)
+- [ ] 39-03-PLAN.md — E2E gate: tools/e2e/full-clean-roundtrip.ps1 DeployThenTweakThenSeed mode + Invoke-Sqlcmd-StringScalar helper + README.md update; live acceptance (D-15, D-09, D-11, D-19, D-26 verified against running hosts)
+
+**Execution waves** (for /gsd-execute-phase):
+- Wave 1: 39-01 (no deps — ships MergePredicate contract consumed by 39-02)
+- Wave 2: 39-02 (depends_on: [01] — consumes MergePredicate + adds XmlMergeHelper + SqlTable branch)
+- Wave 3: 39-03 (depends_on: [01, 02] — live E2E gate; includes blocking checkpoint for operator-run pipeline verification)
