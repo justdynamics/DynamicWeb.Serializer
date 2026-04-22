@@ -3,11 +3,11 @@ gsd_state_version: 1.0
 milestone: v0.4.0
 milestone_name: Full Page Fidelity
 status: verifying
-stopped_at: Completed 38.1-05-PLAN.md — cleanup overview finding shipped
-last_updated: "2026-04-22T08:46:18.489Z"
+stopped_at: Phase 39 context gathered
+last_updated: "2026-04-22T19:58:59.645Z"
 last_activity: 2026-04-22
 progress:
-  total_phases: 28
+  total_phases: 29
   completed_phases: 27
   total_plans: 65
   completed_plans: 64
@@ -130,6 +130,7 @@ Progress: [██████████] 100% (v0.4.0)
 
 - 2026-04-21: Phase 38 added — Production-Ready Baseline Hardening. User-approved full scope (groups A+B+C+D+E) after autonomous E2E round-trip on 2026-04-20 surfaced 13 distinct follow-up items that Phase 37 itself correctly did NOT attempt to fix. Findings source: `.planning/sessions/2026-04-20-e2e-baseline-roundtrip/REPORT.md`.
 - 2026-04-21: Phase 38.1 inserted after Phase 38 — Close Phase 38 deferrals (URGENT). Four carry-forwards from Phase 38's gated-closed-on-38.1 disposition: B.5.1 SelectedValue paragraph-ID sweeper extension, B.4.1 SHOP19 FK cleanup SQL, B.3.1 wider schema-drift scope (7 columns not 3), GRID-01 142 GridRowDefinitionId NOT NULL resolution. Target: live Swift 2.2 → CleanDB E2E passes under strictMode: true.
+- 2026-04-22: Phase 39 added — Seed mode field-level merge. ContentDeserializer and SqlTableProvider currently implement DestinationWins as row-level skip; the Deploy/Seed split intent is field-level merge so Seed fills what Deploy excluded without overwriting already-set fields. Unblocks the expanded swift2.2-combined.json Seed Content predicate.
 
 ### Decisions
 
@@ -174,6 +175,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-22T08:45:10.115Z
-Stopped at: Completed 38.1-05-PLAN.md — cleanup overview finding shipped
-Resume file: None
+Last session: 2026-04-22T19:58:59.631Z
+Stopped at: Phase 39 context gathered
+Resume file: .planning/phases/39-seed-mode-field-level-merge-deploy-seed-split-intent-is-fiel/39-CONTEXT.md
