@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v0.4.0
 milestone_name: Full Page Fidelity
 status: verifying
-stopped_at: Completed 38.1-03-PLAN.md — E2E pipeline + schema-align script ready for Plan 04 execution
-last_updated: "2026-04-21T23:38:22.852Z"
+stopped_at: Completed 38.1-04-PLAN.md (halted) — pipeline Step 5 halt on script 08; B.4.1 + GRID-01 re-proven; open-with-gap pending Plan 02 revision or Phase 38.2
+last_updated: "2026-04-22T08:04:31.383Z"
 last_activity: 2026-04-21
 progress:
   total_phases: 28
   completed_phases: 26
   total_plans: 65
-  completed_plans: 62
-  percent: 95
+  completed_plans: 63
+  percent: 97
 ---
 
 # Project State
@@ -120,6 +120,7 @@ Progress: [██████████] 100% (v0.4.0)
 | Phase 38.1 P01 | 240 | 6 tasks | 11 files |
 | Phase 38.1 P02 | 18min | 3 tasks | 4 files |
 | Phase 38.1 P03 | 6 | 2 tasks | 3 files |
+| Phase 38.1 P04 | 60 | 2 tasks | 14 files |
 
 ## Accumulated Context
 
@@ -156,6 +157,8 @@ Recent decisions affecting current work:
 - [Phase 38.1]: D-38.1-16/17/18 ENVIRONMENT bucket renamed to NOT-SERIALIZED across Swift2.2-baseline.md, env-bucket.md, .planning/STATE.md; one ALLCAPS ENVIRONMENT intentionally retained in 'formerly ENVIRONMENT' rationale blockquote per acceptance regex
 - [Phase 38.1]: Plan 02: D-38.1-02-01 script 09 scope extended 2→10 pages (Rule 2); D-38.1-02-02 live SQL unavailable, investigation substituted evidence-based artifact (Rule 3); dynamic-SQL sweep pattern for script 08 (no pre-catalog needed, matches script 01 ID-15717 precedent); idempotent zero-case commits empty transaction for Plan 04 pipeline safety
 - [Phase 38.1]: Plan 03: D-38.1-03-02 Administrator password reseed deferred to documented SSMS fallback rather than inlined PBKDF2 hash (version-specific/brittle); D-38.1-03-04 pipeline uses 38 throw statements with per-step evidence logs for loud-fail discipline; cleandb-align-schema.sql ships 10 idempotent ALTER statements gated by IF COL_LENGTH IS NULL
+- [Phase 38.1]: Plan 04: D-38.1-04-01 — halt per <failure_handling> step 3 on script 08 Msg 8623 + Part B/C predicate false-positive (1641 false matches vs expected 47); re-derivation requires DW ItemType metadata unavailable in SQL surface; Plan 02 artefact left intact for proper revision
+- [Phase 38.1]: Plan 04: scripts 06 + 07 re-proven on fresh bacpac — B.4.1 (SHOP19 1→0) and GRID-01 (142 stale-emails→0) remain CLOSED; scripts 01-07 chain is idempotent and safe for re-run
 
 ### Pending Todos
 
@@ -164,9 +167,10 @@ None yet.
 ### Blockers/Concerns
 
 - Phase 38.1 open-with-gap: Deserialize Deploy HTTP 400 with 57 escalations (10 PropertyItem GUIDs + 47 orphan page-ID link occurrences across 20 distinct IDs — not one of the 4 named Phase 38 deferrals; surfaced by Phase 38-05 acknowledgedOrphanPageIds removal; follow-up B.5.2 + ITEM-01 needed)
+- Phase 38.1 Plan 04 halted: script 08 predicate misderivation + Msg 8623. Needs Plan 02 revision.
 
 ## Session Continuity
 
-Last session: 2026-04-21T23:38:22.845Z
-Stopped at: Completed 38.1-03-PLAN.md — E2E pipeline + schema-align script ready for Plan 04 execution
+Last session: 2026-04-22T08:04:18.108Z
+Stopped at: Completed 38.1-04-PLAN.md (halted) — pipeline Step 5 halt on script 08; B.4.1 + GRID-01 re-proven; open-with-gap pending Plan 02 revision or Phase 38.2
 Resume file: None
