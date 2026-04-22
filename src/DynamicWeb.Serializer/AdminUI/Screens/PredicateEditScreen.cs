@@ -1,3 +1,4 @@
+using Dynamicweb.Content.Items;
 using DynamicWeb.Serializer.AdminUI.Commands;
 using DynamicWeb.Serializer.AdminUI.Models;
 using DynamicWeb.Serializer.Providers.SqlTable;
@@ -98,11 +99,10 @@ public sealed class PredicateEditScreen : EditScreenBase<PredicateEditModel>
         nameof(PredicateEditModel.ExcludeFields) => Model?.ProviderType == "SqlTable"
             ? CreateColumnSelectMultiDual(Model?.Table, Model?.ExcludeFields,
                 "Exclude Fields", "Select columns to exclude from serialization.")
-            : new Textarea
-            {
-                Label = "Exclude Fields",
-                Explanation = "One field name per line. These fields will be omitted from serialization."
-            },
+            : CreateItemTypeFieldSelectMultiDual(Model?.ExcludeFields,
+                "Exclude Fields",
+                "Select ItemType / PropertyItem field systemNames to exclude from serialization. " +
+                "Applies to every page, paragraph, and area ItemType reached by this predicate."),
         nameof(PredicateEditModel.XmlColumns) => Model?.ProviderType == "SqlTable"
             ? CreateColumnSelectMultiDual(Model?.Table, Model?.XmlColumns,
                 "XML Columns", "Select columns containing XML to pretty-print in YAML.")
@@ -255,6 +255,73 @@ public sealed class PredicateEditScreen : EditScreenBase<PredicateEditModel>
         catch (Exception ex)
         {
             editor.Explanation = $"Could not query area columns: {ex.Message}";
+        }
+
+        return editor;
+    }
+
+    /// <summary>
+    /// Build a SelectMultiDual whose options are the distinct ItemType field systemNames
+    /// across every ItemType registered with DW's ItemManager. The union spans page, paragraph,
+    /// and area-level ItemTypes — a Content predicate can reach any of them — so a single
+    /// dropdown covers the full field surface a user may want to exclude.
+    /// </summary>
+    private SelectMultiDual CreateItemTypeFieldSelectMultiDual(string? currentValue, string label, string explanation)
+    {
+        var editor = new SelectMultiDual
+        {
+            Label = label,
+            Explanation = explanation,
+            SortOrder = OrderBy.Default
+        };
+
+        try
+        {
+            var metadata = ItemManager.Metadata.GetMetadata();
+            if (metadata?.Items == null || metadata.Items.Count == 0)
+            {
+                editor.Explanation = "No ItemTypes registered. Check that DynamicWeb is initialized.";
+                return editor;
+            }
+
+            // Union all field systemNames across every registered ItemType. GetItemFields
+            // includes inherited fields (matches ItemTypeBySystemNameQuery pattern).
+            var fieldNames = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var itemType in metadata.Items)
+            {
+                try
+                {
+                    var fields = ItemManager.Metadata.GetItemFields(itemType);
+                    foreach (var f in fields)
+                    {
+                        if (!string.IsNullOrWhiteSpace(f.SystemName))
+                            fieldNames.Add(f.SystemName);
+                    }
+                }
+                catch
+                {
+                    // One broken ItemType shouldn't hide the rest — skip and continue.
+                }
+            }
+
+            editor.Options = fieldNames
+                .Select(f => new ListOption { Value = f, Label = f })
+                .ToList();
+
+            // SelectMultiDual.Value matches ScreenPresetEditScreen / CreateColumnSelectMultiDual
+            // pattern: splits newline-separated current value into a string[] for the Value.
+            var selected = (currentValue ?? string.Empty)
+                .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(v => v.Trim())
+                .Where(v => v.Length > 0)
+                .ToArray();
+
+            if (selected.Length > 0)
+                editor.Value = selected;
+        }
+        catch (Exception ex)
+        {
+            editor.Explanation = $"Could not read ItemType metadata: {ex.Message}";
         }
 
         return editor;
