@@ -19,6 +19,11 @@ public sealed class SerializerSettingsNodeProvider : NavigationNodeProvider<Syst
     // database-administration tool.
     public const string DeveloperRootId = "Settings_Developer";
     public const string SerializeNodeId = "Serializer_Settings";
+    // Deploy/Seed group parents. Serialize -> Deploy -> {Predicates, Item Types, Embedded XML}
+    // and the mirror Seed subtree. Replaces the prior flat layout that hung six "Deploy X" /
+    // "Seed X" leaves directly under Serialize.
+    public const string DeployGroupNodeId = "Serializer_Deploy";
+    public const string SeedGroupNodeId = "Serializer_Seed";
     // Phase 37-01 D-02: the flat Predicates node is split into two mode-scoped nodes.
     // The legacy PredicatesNodeId is kept as a constant for backwards compatibility of any
     // path-provider that has not migrated, but it is no longer emitted under SerializeNodeId.
@@ -67,11 +72,13 @@ public sealed class SerializerSettingsNodeProvider : NavigationNodeProvider<Syst
         }
         else if (parentNodePath.Last == SerializeNodeId)
         {
-            // Phase 37-01 D-02: Deploy + Seed are two sibling predicate-group nodes.
+            // Deploy and Seed are grouped under intermediate parent nodes. Each group exposes
+            // Predicates, Item Types, and Embedded XML as children. Log Viewer is a peer of
+            // the two groups because it spans both modes.
             yield return new NavigationNode
             {
-                Id = DeployPredicatesNodeId,
-                Name = "Deploy Predicates",
+                Id = DeployGroupNodeId,
+                Name = "Deploy",
                 Icon = Icon.Filter,
                 Sort = 10,
                 HasSubNodes = true,
@@ -81,61 +88,13 @@ public sealed class SerializerSettingsNodeProvider : NavigationNodeProvider<Syst
 
             yield return new NavigationNode
             {
-                Id = SeedPredicatesNodeId,
-                Name = "Seed Predicates",
+                Id = SeedGroupNodeId,
+                Name = "Seed",
                 Icon = Icon.Flask, // Flask = experimental / lab-like, fits one-time seed-content role
                 Sort = 11,
                 HasSubNodes = true,
                 NodeAction = NavigateScreenAction.To<PredicateListScreen>()
                     .With(new PredicateListQuery { Mode = DeploymentMode.Seed })
-            };
-
-            // Phase 37-01.1 Task 2: Item Types and XML Types are per-mode. The old shared
-            // ItemTypesNodeId / EmbeddedXmlNodeId roots are replaced by four nodes — one Item
-            // Types and one XML Types node each for Deploy and Seed — so the two ModeConfig
-            // exclusion dictionaries are independently editable.
-            yield return new NavigationNode
-            {
-                Id = DeployItemTypesNodeId,
-                Name = "Deploy Item Types",
-                Icon = Icon.ListUl,
-                Sort = 12,
-                HasSubNodes = true,
-                NodeAction = NavigateScreenAction.To<ItemTypeListScreen>()
-                    .With(new ItemTypeListQuery { Mode = DeploymentMode.Deploy })
-            };
-
-            yield return new NavigationNode
-            {
-                Id = SeedItemTypesNodeId,
-                Name = "Seed Item Types",
-                Icon = Icon.ListUl,
-                Sort = 13,
-                HasSubNodes = true,
-                NodeAction = NavigateScreenAction.To<ItemTypeListScreen>()
-                    .With(new ItemTypeListQuery { Mode = DeploymentMode.Seed })
-            };
-
-            yield return new NavigationNode
-            {
-                Id = DeployXmlTypesNodeId,
-                Name = "Deploy Embedded XML",
-                Icon = Icon.BracketsCurly,
-                Sort = 15,
-                HasSubNodes = true,
-                NodeAction = NavigateScreenAction.To<XmlTypeListScreen>()
-                    .With(new XmlTypeListQuery { Mode = DeploymentMode.Deploy })
-            };
-
-            yield return new NavigationNode
-            {
-                Id = SeedXmlTypesNodeId,
-                Name = "Seed Embedded XML",
-                Icon = Icon.BracketsCurly,
-                Sort = 16,
-                HasSubNodes = true,
-                NodeAction = NavigateScreenAction.To<XmlTypeListScreen>()
-                    .With(new XmlTypeListQuery { Mode = DeploymentMode.Seed })
             };
 
             yield return new NavigationNode
@@ -148,6 +107,16 @@ public sealed class SerializerSettingsNodeProvider : NavigationNodeProvider<Syst
                 NodeAction = NavigateScreenAction.To<LogViewerScreen>()
                     .With(new LogViewerQuery())
             };
+        }
+        else if (parentNodePath.Last == DeployGroupNodeId)
+        {
+            foreach (var node in GetModeGroupChildren(DeploymentMode.Deploy))
+                yield return node;
+        }
+        else if (parentNodePath.Last == SeedGroupNodeId)
+        {
+            foreach (var node in GetModeGroupChildren(DeploymentMode.Seed))
+                yield return node;
         }
         else if (parentNodePath.Last == DeployPredicatesNodeId)
         {
@@ -190,6 +159,75 @@ public sealed class SerializerSettingsNodeProvider : NavigationNodeProvider<Syst
             var categoryPath = parentNodePath.Last[SeedItemTypeCatPrefix.Length..].Replace(NodeIdCategorySeparator, '/');
             foreach (var node in GetItemTypeCategoryNodes(DeploymentMode.Seed, categoryPath))
                 yield return node;
+        }
+    }
+
+    /// <summary>
+    /// Emits the three per-mode children (Predicates, Item Types, Embedded XML) that sit under
+    /// the Deploy or Seed group node. Display names drop the mode prefix because the parent
+    /// group disambiguates. <see cref="NavigationNode.HasSubNodes"/> reflects actual data — an
+    /// empty <see cref="ModeConfig.ExcludeXmlElementsByType"/> dict produces a leaf node that
+    /// opens the list screen on click, without a misleading expand arrow.
+    /// </summary>
+    private static IEnumerable<NavigationNode> GetModeGroupChildren(DeploymentMode mode)
+    {
+        var predicatesNodeId = mode == DeploymentMode.Deploy ? DeployPredicatesNodeId : SeedPredicatesNodeId;
+        var itemTypesNodeId = mode == DeploymentMode.Deploy ? DeployItemTypesNodeId : SeedItemTypesNodeId;
+        var xmlTypesNodeId = mode == DeploymentMode.Deploy ? DeployXmlTypesNodeId : SeedXmlTypesNodeId;
+
+        yield return new NavigationNode
+        {
+            Id = predicatesNodeId,
+            Name = "Predicates",
+            Icon = Icon.Filter,
+            Sort = 10,
+            HasSubNodes = true,
+            NodeAction = NavigateScreenAction.To<PredicateListScreen>()
+                .With(new PredicateListQuery { Mode = mode })
+        };
+
+        yield return new NavigationNode
+        {
+            Id = itemTypesNodeId,
+            Name = "Item Types",
+            Icon = Icon.ListUl,
+            Sort = 20,
+            HasSubNodes = true,
+            NodeAction = NavigateScreenAction.To<ItemTypeListScreen>()
+                .With(new ItemTypeListQuery { Mode = mode })
+        };
+
+        yield return new NavigationNode
+        {
+            Id = xmlTypesNodeId,
+            Name = "Embedded XML",
+            Icon = Icon.BracketsCurly,
+            Sort = 30,
+            HasSubNodes = HasXmlTypes(mode),
+            NodeAction = NavigateScreenAction.To<XmlTypeListScreen>()
+                .With(new XmlTypeListQuery { Mode = mode })
+        };
+    }
+
+    /// <summary>
+    /// Returns true only when the mode's <see cref="ModeConfig.ExcludeXmlElementsByType"/> dict
+    /// has at least one key. Used to set <see cref="NavigationNode.HasSubNodes"/> honestly —
+    /// an empty dict means the node should render as a leaf (no expand arrow), not as an empty
+    /// expandable branch.
+    /// </summary>
+    private static bool HasXmlTypes(DeploymentMode mode)
+    {
+        var configPath = ConfigPathResolver.FindConfigFile();
+        if (configPath == null) return false;
+
+        try
+        {
+            var config = ConfigLoader.Load(configPath);
+            return config.GetMode(mode).ExcludeXmlElementsByType.Count > 0;
+        }
+        catch
+        {
+            return false;
         }
     }
 

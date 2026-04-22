@@ -14,9 +14,13 @@ public sealed class PredicateNavigationNodePathProvider : NavigationNodePathProv
 
     protected override NavigationNodePath GetNavigationNodePathInternal(PredicateListModel? model)
     {
-        // Phase 37-01 D-02: terminate the path at the correct per-mode predicate-group node so
-        // the tree highlights Deploy or Seed correctly.
+        // Terminate the path at the correct per-mode predicate-group node so the tree
+        // highlights Deploy or Seed correctly. Path walks: Settings -> System -> Developer ->
+        // Serialize -> {Deploy|Seed group} -> Predicates.
         var mode = model?.Mode ?? DeploymentMode.Deploy;
+        var groupNode = mode == DeploymentMode.Deploy
+            ? SerializerSettingsNodeProvider.DeployGroupNodeId
+            : SerializerSettingsNodeProvider.SeedGroupNodeId;
         var terminalNode = mode == DeploymentMode.Deploy
             ? SerializerSettingsNodeProvider.DeployPredicatesNodeId
             : SerializerSettingsNodeProvider.SeedPredicatesNodeId;
@@ -28,6 +32,7 @@ public sealed class PredicateNavigationNodePathProvider : NavigationNodePathProv
             typeof(SystemSection).FullName,
             SerializerSettingsNodeProvider.DeveloperRootId,
             SerializerSettingsNodeProvider.SerializeNodeId,
+            groupNode,
             terminalNode
         });
     }

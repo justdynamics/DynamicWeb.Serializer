@@ -14,10 +14,13 @@ public sealed class ItemTypeEditNavigationNodePathProvider : NavigationNodePathP
 
     protected override NavigationNodePath GetNavigationNodePathInternal(ItemTypeEditModel? model)
     {
-        // Phase 37-01.1 Task 2: terminate at the per-mode Item Types node so the tree highlights
-        // the correct Deploy/Seed subtree. Null model defaults to Deploy to match the pre-split
-        // behaviour.
+        // Terminate at the per-mode Item Types node so the tree highlights the correct
+        // Deploy/Seed subtree. Path walks: Settings -> System -> Developer -> Serialize ->
+        // {Deploy|Seed group} -> Item Types. Null model defaults to Deploy.
         var mode = model?.Mode ?? DeploymentMode.Deploy;
+        var groupNode = mode == DeploymentMode.Deploy
+            ? SerializerSettingsNodeProvider.DeployGroupNodeId
+            : SerializerSettingsNodeProvider.SeedGroupNodeId;
         var terminal = mode == DeploymentMode.Deploy
             ? SerializerSettingsNodeProvider.DeployItemTypesNodeId
             : SerializerSettingsNodeProvider.SeedItemTypesNodeId;
@@ -29,6 +32,7 @@ public sealed class ItemTypeEditNavigationNodePathProvider : NavigationNodePathP
             typeof(SystemSection).FullName,
             SerializerSettingsNodeProvider.DeveloperRootId,
             SerializerSettingsNodeProvider.SerializeNodeId,
+            groupNode,
             terminal
         });
     }
