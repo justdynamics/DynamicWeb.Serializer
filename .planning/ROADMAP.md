@@ -336,11 +336,11 @@ Plans:
   9. GridRow and Paragraph UPDATE paths inherit the merge predicate (D-07)
   10. tools/e2e/full-clean-roundtrip.ps1 has a DeployThenTweakThenSeed mode that exits 0 against live Swift 2.2 + CleanDB with all six D-15 assertions passing (Mail1SenderEmail fills, customer tweak preserved, D-09 idempotency)
   11. Full test suite remains green throughout — no regression on existing source-wins paths
-**Plans:** 1/3 plans executed
+**Plans:** 2/3 plans executed
 
 Plans:
 - [x] 39-01-PLAN.md — Content merge: shared MergePredicate helper + ContentDeserializer DeserializePage/GridRow/Paragraph UPDATE retrofit + MergePredicateTests + ContentDeserializerSeedMergeTests (D-01..D-11, D-13, D-14, D-16, D-19, D-20)
-- [ ] 39-02-PLAN.md — SqlTable merge (column + XML-element): SqlTableWriter.UpdateColumnSubset + SqlTableProvider merge branch with existingRowsByIdentity extension + XmlMergeHelper + 4 new test files covering unit + integration + EcomPayments/EcomShippings round-trip (D-01, D-08, D-10..D-19, D-21..D-27)
+- [x] 39-02-PLAN.md — SqlTable merge (column + XML-element): SqlTableWriter.UpdateColumnSubset + SqlTableProvider merge branch with existingRowsByIdentity extension + XmlMergeHelper + 4 new test files covering unit + integration + EcomPayments/EcomShippings round-trip (D-01, D-08, D-10..D-19, D-21..D-27)
 - [ ] 39-03-PLAN.md — E2E gate: tools/e2e/full-clean-roundtrip.ps1 DeployThenTweakThenSeed mode + Invoke-Sqlcmd-StringScalar helper + README.md update; live acceptance (D-15, D-09, D-11, D-19, D-26 verified against running hosts)
 
 **Execution waves** (for /gsd-execute-phase):
