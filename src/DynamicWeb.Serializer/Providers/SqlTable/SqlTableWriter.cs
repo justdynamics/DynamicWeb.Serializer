@@ -164,6 +164,99 @@ public class SqlTableWriter
     }
 
     /// <summary>
+    /// Phase 39 D-17 (see <c>.planning/phases/39-seed-mode-field-level-merge-.../39-02-PLAN.md</c>):
+    /// issue a targeted UPDATE statement writing only the requested column subset,
+    /// scoped by the key-column identity predicate. Used by <see cref="SqlTableProvider"/>'s
+    /// Seed-merge branch after per-column <see cref="Infrastructure.MergePredicate"/>
+    /// planning has decided which target columns are "unset" per D-01 and therefore
+    /// eligible to fill. UPDATE path — no IDENTITY_INSERT wrapping (irrelevant for UPDATE).
+    /// </summary>
+    /// <param name="tableName">
+    /// Target table — identifier already whitelisted at config-load by Phase 37-03
+    /// <c>SqlIdentifierValidator</c>; bracketed <c>[tableName]</c> emission keeps the
+    /// same injection-safety guarantee as BuildMergeCommand (T-39-02-01 mitigated).
+    /// </param>
+    /// <param name="keyColumns">Key columns forming the WHERE identity predicate (AND-joined).</param>
+    /// <param name="fullRow">
+    /// Complete row dict — identity column values are read from here, plus every column
+    /// listed in <paramref name="columnsToUpdate"/>. Values bind via CommandBuilder <c>{0}</c>
+    /// placeholder (T-39-02-02 mitigated).
+    /// </param>
+    /// <param name="columnsToUpdate">
+    /// The subset of columns to write (pre-filtered by caller per the merge predicate).
+    /// Empty subset is a no-op and returns <see cref="WriteOutcome.Updated"/> to keep
+    /// caller counter semantics consistent.
+    /// </param>
+    /// <param name="isDryRun">
+    /// When true, logs the would-be SQL via <paramref name="log"/> and returns Updated
+    /// without executing.
+    /// </param>
+    /// <param name="log">Optional log sink for the dry-run trace line or error message.</param>
+    /// <remarks>
+    /// Dry-run logs include actual values — see 39-CONTEXT.md D-19 / threat T-39-02-06.
+    /// Not intended for log sinks shared with untrusted parties.
+    /// </remarks>
+    public virtual WriteOutcome UpdateColumnSubset(
+        string tableName,
+        IReadOnlyList<string> keyColumns,
+        Dictionary<string, object?> fullRow,
+        IEnumerable<string> columnsToUpdate,
+        bool isDryRun,
+        Action<string>? log = null)
+    {
+        var colList = columnsToUpdate.ToList();
+        if (colList.Count == 0)
+        {
+            // Caller pre-filtered to empty — no-op. Return Updated so caller's counter
+            // semantics stay consistent (merge planner already logged the "N filled" line).
+            return WriteOutcome.Updated;
+        }
+
+        try
+        {
+            var cb = new CommandBuilder();
+            cb.Add($"UPDATE [{tableName}] SET ");
+
+            for (int i = 0; i < colList.Count; i++)
+            {
+                if (i > 0) cb.Add(",");
+                var col = colList[i];
+                var val = fullRow.TryGetValue(col, out var v) ? v ?? DBNull.Value : DBNull.Value;
+                cb.Add($"[{col}]=");
+                cb.Add("{0}", val);
+            }
+
+            cb.Add(" WHERE ");
+            for (int i = 0; i < keyColumns.Count; i++)
+            {
+                if (i > 0) cb.Add(" AND ");
+                var keyCol = keyColumns[i];
+                var keyVal = fullRow.TryGetValue(keyCol, out var kv) ? kv ?? DBNull.Value : DBNull.Value;
+                cb.Add($"[{keyCol}]=");
+                cb.Add("{0}", keyVal);
+            }
+
+            if (isDryRun)
+            {
+                log?.Invoke(
+                    $"    [DRY-RUN] UPDATE [{tableName}] SET " +
+                    string.Join(",", colList.Select(c => $"[{c}]=?")) +
+                    " WHERE " +
+                    string.Join(" AND ", keyColumns.Select(k => $"[{k}]=?")));
+                return WriteOutcome.Updated;
+            }
+
+            _sqlExecutor.ExecuteNonQuery(cb);
+            return WriteOutcome.Updated;
+        }
+        catch (Exception ex)
+        {
+            log?.Invoke($"    ERROR [{tableName}].UpdateColumnSubset: {ex.Message}");
+            return WriteOutcome.Failed;
+        }
+    }
+
+    /// <summary>
     /// Phase 37-05 / LINK-02 pass 2 (D-22): rewrite <c>Default.aspx?ID=N</c> and
     /// <c>"SelectedValue": "N"</c> references inside the listed string columns using the
     /// supplied resolver. Runs BEFORE <see cref="BuildMergeCommand"/> so the rewritten

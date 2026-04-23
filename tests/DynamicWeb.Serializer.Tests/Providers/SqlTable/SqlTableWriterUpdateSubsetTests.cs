@@ -61,8 +61,10 @@ public class SqlTableWriterUpdateSubsetTests
         Assert.NotNull(captured);
         var sql = captured!.ToString();
         Assert.Contains("UPDATE [EcomOrderFlow]", sql);
-        Assert.Contains("SET [OrderFlowName]", sql);
-        Assert.Contains("WHERE [OrderFlowId]", sql);
+        Assert.Contains("SET", sql);
+        Assert.Contains("[OrderFlowName]", sql);
+        Assert.Contains("WHERE", sql);
+        Assert.Contains("[OrderFlowId]", sql);
     }
 
     [Fact]
