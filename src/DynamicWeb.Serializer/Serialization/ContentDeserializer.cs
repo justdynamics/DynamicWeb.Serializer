@@ -359,6 +359,7 @@ public class ContentDeserializer
                     Services.Items.SaveItem(item);
                     targetAreaItemId = item.Id;
                     targetArea.ItemId = targetAreaItemId;
+                    targetArea.ItemType = area.ItemType;
                     Services.Areas.SaveArea(targetArea);
                     Services.Areas.ClearCache();
                     Log($"Created area Item: type={area.ItemType}, id={targetAreaItemId}");
@@ -367,6 +368,16 @@ public class ContentDeserializer
                 {
                     Log($"WARNING: Could not create area Item: {ex.Message}");
                 }
+            }
+            else if (targetArea.ItemType != area.ItemType)
+            {
+                // Repair binding for an Area whose Item exists but whose AreaItemType column
+                // is blank or stale (e.g., written by a pre-fix deserialize). Without this
+                // assignment, the downstream ResolveLinksInArea guard skips link remapping.
+                targetArea.ItemType = area.ItemType;
+                Services.Areas.SaveArea(targetArea);
+                Services.Areas.ClearCache();
+                Log($"Repaired area binding: type={area.ItemType}, id={targetAreaItemId}");
             }
 
             if (!string.IsNullOrEmpty(targetAreaItemId))
