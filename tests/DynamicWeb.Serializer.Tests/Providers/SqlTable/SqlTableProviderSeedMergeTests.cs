@@ -95,9 +95,10 @@ public class SqlTableProviderSeedMergeTests
     [Fact]
     public void Seed_IdentityMatchAllColumnsSet_NoWrite_SkippedCounterIncremented()
     {
-        var yamlRow = Row("FLOW-1", "Checkout-Seed", "seed desc");
-        // Every column set on target — merge predicate yields zero filled columns.
-        var existingRow = Row("FLOW-1", "Checkout-Target", "customer desc");
+        // Identity (NameColumn=OrderFlowName) matches; description differs so checksums
+        // differ (merge branch engages, not the fast-path). All columns set on target -> 0 fills.
+        var yamlRow = Row("FLOW-1", "Checkout", "seed desc");
+        var existingRow = Row("FLOW-1", "Checkout", "customer desc");
 
         var (provider, _, writer, inputRoot) = CreateProviderWithFiles(
             yamlRows: new[] { yamlRow },
@@ -123,9 +124,10 @@ public class SqlTableProviderSeedMergeTests
     [Fact]
     public void Seed_IdentityMatchPartialSet_UpdateColumnSubsetFiresForUnsetSubsetOnly()
     {
-        var yamlRow = Row("FLOW-1", "SeedName", "SeedDesc");
-        // Name already set, description unset — only Description should be in the fill subset.
-        var existingRow = Row("FLOW-1", "TargetName", null);
+        // Identity (NameColumn=OrderFlowName) matches; description unset on target ->
+        // only Description should be in the fill subset.
+        var yamlRow = Row("FLOW-1", "Checkout", "SeedDesc");
+        var existingRow = Row("FLOW-1", "Checkout", null);
 
         var (provider, _, writer, inputRoot) = CreateProviderWithFiles(
             yamlRows: new[] { yamlRow },

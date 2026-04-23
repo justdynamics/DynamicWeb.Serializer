@@ -287,13 +287,19 @@ public class SqlTableProvider : SerializationProviderBase
         }
         else
         {
-            // Build checksum lookup from existing DB rows for skip-on-unchanged detection
+            // Build checksum lookup from existing DB rows for skip-on-unchanged detection.
+            // Phase 39 D-17: also capture the full row dict keyed by identity — zero extra
+            // round-trips since we're already enumerating every row here. The merge branch
+            // below needs per-column target values to drive MergePredicate + XmlMergeHelper.
             var existingChecksums = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            var existingRowsByIdentity =
+                new Dictionary<string, Dictionary<string, object?>>(StringComparer.OrdinalIgnoreCase);
             foreach (var existingRow in _tableReader.ReadAllRows(metadata.TableName))
             {
                 var identity = _tableReader.GenerateRowIdentity(existingRow, metadata);
                 var checksum = _tableReader.CalculateChecksum(existingRow, metadata);
                 existingChecksums[identity] = checksum;
+                existingRowsByIdentity[identity] = existingRow;
             }
 
             foreach (var yamlRow in yamlRows)
@@ -310,14 +316,112 @@ public class SqlTableProvider : SerializationProviderBase
                     continue;
                 }
 
-                // Seed mode (D-06, Phase 37-01): rows already present on target stay untouched.
-                // We rely on the existingChecksums lookup above — if the identity is already keyed,
-                // the target has this row, so we skip without issuing the MERGE.
+                // Seed mode (Phase 39 D-01..D-19, D-21..D-27): supersedes Phase 37-01 D-06
+                // whole-row skip with field-level merge. When identity matches an existing
+                // target row, we diff YAML values against target per-column using the
+                // MergePredicate (scalar) and XmlMergeHelper (xml data type) predicates, and
+                // only UPDATE the subset of columns where target is "unset" per D-01/D-22.
+                // Identity non-match falls through to the existing _writer.WriteRow MERGE path.
                 if (strategy == ConflictStrategy.DestinationWins
-                    && existingChecksums.ContainsKey(identity))
+                    && existingRowsByIdentity.TryGetValue(identity, out var currentRow))
                 {
-                    skipped++;
-                    Log($"  Seed-skip: [{metadata.TableName}].{identity} (already present)", log);
+                    var sqlColumnTypes = _schemaCache.GetColumnTypes(metadata.TableName);
+                    var mergedRow = new Dictionary<string, object?>(currentRow, StringComparer.OrdinalIgnoreCase);
+                    var columnsToUpdate = new List<string>();
+                    var xmlFills = new Dictionary<string, IReadOnlyList<string>>(StringComparer.OrdinalIgnoreCase);
+                    var scalarFills = new Dictionary<string, (object? target, object? seed)>(StringComparer.OrdinalIgnoreCase);
+
+                    foreach (var kvp in yamlRow)
+                    {
+                        var col = kvp.Key;
+                        var yamlValue = kvp.Value;
+
+                        // D-05: never overwrite identity/key columns.
+                        if (metadata.KeyColumns.Contains(col, StringComparer.OrdinalIgnoreCase)) continue;
+                        if (metadata.IdentityColumns.Contains(col, StringComparer.OrdinalIgnoreCase)) continue;
+
+                        // D-12: column missing from target schema -> silent drop (already logged
+                        // once during the schema-drift filter above for non-identity cols; repeat
+                        // defensively to catch YAML keys that survived the initial filter).
+                        if (!currentRow.TryGetValue(col, out var targetValue))
+                        {
+                            _schemaCache.LogMissingColumnOnce(metadata.TableName, col, log);
+                            continue;
+                        }
+
+                        var sqlType = sqlColumnTypes.TryGetValue(col, out var t) ? t : null;
+
+                        // D-21 + D-23: XML columns get element-level merge (D-22 rule), not scalar.
+                        if (IsXmlColumn(sqlType))
+                        {
+                            var targetXml = targetValue as string;
+                            var sourceXml = yamlValue as string;
+                            var (merged, fills) = XmlMergeHelper.MergeWithDiagnostics(targetXml, sourceXml);
+                            if (fills.Count > 0 && !string.Equals(merged, targetXml, StringComparison.Ordinal))
+                            {
+                                mergedRow[col] = merged;
+                                columnsToUpdate.Add(col);
+                                xmlFills[col] = fills;
+                            }
+                            continue;
+                        }
+
+                        // D-01 via IsUnsetForMergeBySqlType: scalar merge.
+                        if (MergePredicate.IsUnsetForMergeBySqlType(targetValue, sqlType))
+                        {
+                            mergedRow[col] = yamlValue;
+                            columnsToUpdate.Add(col);
+                            scalarFills[col] = (targetValue, yamlValue);
+                        }
+                    }
+
+                    if (columnsToUpdate.Count == 0)
+                    {
+                        skipped++;
+                        Log($"  Seed-merge: [{metadata.TableName}].{identity} - 0 filled, all set", log);
+                        continue;
+                    }
+
+                    if (isDryRun)
+                    {
+                        foreach (var col in columnsToUpdate)
+                        {
+                            if (xmlFills.TryGetValue(col, out var fills))
+                            {
+                                foreach (var fill in fills)
+                                    Log($"    would fill [{metadata.TableName}.{col}, {fill}]", log);
+                            }
+                            else if (scalarFills.TryGetValue(col, out var pair))
+                            {
+                                Log(
+                                    $"    would fill [{metadata.TableName}.{col}]: target=<unset> -> seed='{pair.seed}'",
+                                    log);
+                            }
+                        }
+                        updated++;
+                        Log(
+                            $"  [DRY-RUN] Seed-merge: [{metadata.TableName}].{identity} - {columnsToUpdate.Count} would-fill",
+                            log);
+                        continue;
+                    }
+
+                    var mergeOutcome = _writer.UpdateColumnSubset(
+                        metadata.TableName, metadata.KeyColumns, mergedRow,
+                        columnsToUpdate, isDryRun: false, log);
+                    switch (mergeOutcome)
+                    {
+                        case WriteOutcome.Updated:
+                            updated++;
+                            var remaining = Math.Max(0, currentRow.Count - columnsToUpdate.Count - metadata.KeyColumns.Count);
+                            Log(
+                                $"  Seed-merge: [{metadata.TableName}].{identity} - {columnsToUpdate.Count} filled, {remaining} left",
+                                log);
+                            break;
+                        case WriteOutcome.Failed:
+                            failed++;
+                            errors.Add($"Seed-merge failed: [{metadata.TableName}].{identity}");
+                            break;
+                    }
                     continue;
                 }
 
@@ -359,6 +463,15 @@ public class SqlTableProvider : SerializationProviderBase
             Errors = errors
         };
     }
+
+    /// <summary>
+    /// Phase 39 D-21: columns whose SQL DATA_TYPE is <c>xml</c> get element-level merge
+    /// via <see cref="XmlMergeHelper"/> instead of scalar <see cref="MergePredicate"/>.
+    /// INFORMATION_SCHEMA reports <c>"xml"</c> for T-SQL xml columns.
+    /// </summary>
+    private static bool IsXmlColumn(string? sqlDataType)
+        => !string.IsNullOrEmpty(sqlDataType)
+           && string.Equals(sqlDataType, "xml", StringComparison.OrdinalIgnoreCase);
 
     /// <summary>
     /// Replace null values with type-appropriate defaults for NOT NULL columns.
