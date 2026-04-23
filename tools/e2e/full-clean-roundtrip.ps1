@@ -67,14 +67,42 @@ Public URL of the CleanDB host. Default 'https://localhost:58217'.
 For debugging only. When set, skip step 3 and assume Swift-2.2 is already
 in the expected state.
 
+.PARAMETER Mode
+Pipeline mode. `Default` runs the canonical Phase 38.1 gap-closure pipeline.
+`DeployThenTweakThenSeed` (Phase 39 D-15) additionally exercises Deploy -> tweak
+-> Seed live acceptance: customer tweak preservation, Mail1SenderEmail fill via
+XML-element merge, and D-09 idempotency (second Seed pass writes zero fields).
+
+.PARAMETER TweakPageId
+(DeployThenTweakThenSeed mode) Page.ID whose column is tweaked between Deploy
+and the second Seed pass to prove destination-wins field-level merge.
+Default: 9643 (Swift 2.2 Sign-in page).
+
+.PARAMETER TweakColumnName
+(DeployThenTweakThenSeed mode) Page column to tweak. Must be a column that
+appears in the Seed YAML (else the acceptance is vacuous). Default: MenuText.
+
+.PARAMETER TweakValue
+(DeployThenTweakThenSeed mode) The sentinel string injected as the tweak.
+Default: Phase39-Tweak-Sentinel.
+
+.PARAMETER PaymentRowPaymentId
+(DeployThenTweakThenSeed mode) EcomPayments.PaymentId whose
+PaymentGatewayParameters XML is asserted to contain `Mail1SenderEmail` after
+Seed. Default: PaymentCard (Swift 2.2 canonical payment method).
+
 .EXAMPLE
 pwsh tools/e2e/full-clean-roundtrip.ps1
 
 .EXAMPLE
 pwsh tools/e2e/full-clean-roundtrip.ps1 -SqlServer '.\SQLEXPRESS'
 
+.EXAMPLE
+pwsh tools/e2e/full-clean-roundtrip.ps1 -Mode DeployThenTweakThenSeed
+
 .NOTES
 Phase 38.1 Plan 03 Task 2 (D-38.1-19 / D-38.1-20 recipe codification).
+Phase 39 Plan 03 Task 1 (D-15 live acceptance gate — DeployThenTweakThenSeed mode).
 #>
 
 [CmdletBinding()]
@@ -86,7 +114,21 @@ param(
     [string]$CleanDbHostPath = 'C:\Projects\Solutions\swift.test.forsync\Swift.CleanDB\Dynamicweb.Host.Suite',
     [string]$SwiftHostUrl    = 'https://localhost:54035',
     [string]$CleanDbHostUrl  = 'https://localhost:58217',
-    [switch]$SkipBacpacRestore
+    [switch]$SkipBacpacRestore,
+
+    # Phase 39 D-15 acceptance mode. Default preserves Phase 38.1 behaviour.
+    [ValidateSet('Default', 'DeployThenTweakThenSeed')]
+    [string]$Mode = 'Default',
+
+    # DeployThenTweakThenSeed knobs — identify the Page row + column to tweak
+    # between Deploy and Seed to prove field-level destination-wins merge.
+    [int]$TweakPageId           = 9643,
+    [string]$TweakColumnName    = 'MenuText',
+    [string]$TweakValue         = 'Phase39-Tweak-Sentinel',
+
+    # D-15 Mail1SenderEmail acceptance — the EcomPayments row whose
+    # PaymentGatewayParameters XML must contain Mail1SenderEmail post-Seed.
+    [string]$PaymentRowPaymentId = 'PaymentCard'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -202,6 +244,42 @@ function Invoke-Sqlcmd-Scalar {
         throw "sqlcmd query returned no numeric scalar. Query: $Query. Raw output: $($raw -join ' | ')"
     }
     return [int]$line.Trim()
+}
+
+function Invoke-Sqlcmd-StringScalar {
+    <#
+    .SYNOPSIS
+    Phase 39 D-15 helper — returns the first non-blank line of a sqlcmd result
+    as a string (no numeric cast). Used for XML-column reads
+    (PaymentGatewayParameters) and tweak-preservation assertions (Page.MenuText).
+
+    .DESCRIPTION
+    Mirrors Invoke-Sqlcmd-Scalar but returns text. Uses:
+      -h -1            suppress headers
+      -W               trim trailing whitespace
+      -s '|'           one column expected — bar separator is safe
+      -y 0 -Y 0        unlimited variable-width column length
+    Caller-supplied MaxCharsReturned (default 100000) guards against pathological
+    payloads bloating the pipeline log.
+    #>
+    param(
+        [Parameter(Mandatory=$true)][string]$Server,
+        [Parameter(Mandatory=$true)][string]$Database,
+        [Parameter(Mandatory=$true)][string]$Query,
+        [int]$MaxCharsReturned = 100000
+    )
+    $raw = & sqlcmd -S $Server -E -d $Database -h -1 -W -s '|' -y 0 -Y 0 -Q "SET NOCOUNT ON; $Query" 2>&1
+    if ($LASTEXITCODE -ne 0) {
+        throw "sqlcmd failed on $Database (exit $LASTEXITCODE). Query: $Query. Raw: $($raw -join ' | ')"
+    }
+    $nonBlank = $raw | Where-Object { $_ -and $_.ToString().Trim().Length -gt 0 }
+    $line = $nonBlank | Select-Object -First 1
+    if (-not $line) { return $null }
+    $s = $line.ToString().Trim()
+    if ($s.Length -gt $MaxCharsReturned) {
+        $s = $s.Substring(0, $MaxCharsReturned)
+    }
+    return $s
 }
 
 function Start-DwHost {
@@ -543,6 +621,127 @@ if (Select-String -Path (Join-Path $script:runDir 'deserialize-seed.log') -Patte
     throw "Deserialize Seed emitted strict-mode escalations. See deserialize-seed.log"
 }
 Write-Host '  Deserialize Seed HTTP 200 OK'
+
+# ----- Step 15-ext: Phase 39 D-15 DeployThenTweakThenSeed sub-pipeline -------
+# Runs only when -Mode DeployThenTweakThenSeed. Proves Deploy -> customer tweak
+# -> Seed preserves the tweak byte-for-byte (D-15 acceptance), that
+# Mail1SenderEmail is present in EcomPayments.PaymentGatewayParameters via the
+# XML-element merge layer (D-15 + D-21/D-22/D-23), and that a second Seed pass
+# writes zero fields (D-09 idempotency). No changes to Default-mode flow.
+if ($Mode -eq 'DeployThenTweakThenSeed') {
+    Write-Step 'Phase 39 D-15: Deploy -> Tweak -> Seed sub-pipeline'
+
+    # Step 15.0 — Preflight: capture baseline state for assertions
+    Write-Host '  [15.0] Preflight: capturing pre-tweak state'
+    $preTweakValue = Invoke-Sqlcmd-StringScalar `
+        -Server $SqlServer -Database $CleanDb `
+        -Query "SELECT [$TweakColumnName] FROM Page WHERE ID=$TweakPageId"
+    Write-Host "    Pre-tweak [$TweakColumnName]@Page.$TweakPageId = '$preTweakValue'"
+
+    # Step 15.1 — Inject customer tweak between Deploy and second Seed pass.
+    # Single-quote the sentinel; no user-controlled input flows into the UPDATE.
+    Write-Host '  [15.1] Injecting customer tweak'
+    $tweakSql = "SET NOCOUNT ON; UPDATE Page SET [$TweakColumnName] = N'$TweakValue' WHERE ID = $TweakPageId;"
+    & sqlcmd -S $SqlServer -E -d $CleanDb -b -Q $tweakSql 2>&1 | Out-Host
+    if ($LASTEXITCODE -ne 0) { throw "Failed to inject customer tweak (sqlcmd exit $LASTEXITCODE)" }
+
+    $postTweakValue = Invoke-Sqlcmd-StringScalar `
+        -Server $SqlServer -Database $CleanDb `
+        -Query "SELECT [$TweakColumnName] FROM Page WHERE ID=$TweakPageId"
+    if ($postTweakValue -ne $TweakValue) {
+        throw "Tweak injection failed — expected '$TweakValue', got '$postTweakValue'"
+    }
+    Write-Host "    Post-tweak [$TweakColumnName]@Page.$TweakPageId = '$postTweakValue'"
+
+    # Step 15.2 — Deserialize Seed (first pass, post-tweak).
+    Write-Host '  [15.2] Deserialize Seed (first pass, post-tweak)'
+    $seedPass1Log = Join-Path $script:runDir 'deserialize-seed-pass1.log'
+    $desSeed1 = Invoke-DwApi -HostUrl $CleanDbHostUrl `
+        -Endpoint '/Admin/Api/SerializerDeserialize?mode=seed' `
+        -LogPath $seedPass1Log
+    if ($desSeed1.Code -ne 200) {
+        throw "Deserialize Seed pass 1: expected HTTP 200, got $($desSeed1.Code). See deserialize-seed-pass1.log"
+    }
+    if (Select-String -Path $seedPass1Log -Pattern 'escalated|CumulativeStrictModeException' -Quiet) {
+        throw "Deserialize Seed pass 1 emitted strict-mode escalations. See deserialize-seed-pass1.log"
+    }
+    # D-11 log format regression guard — Seed-skip: is from the superseded
+    # Phase 37-01 row-level skip. Its reappearance means Phase 39 field-level
+    # merge did not engage.
+    if (Select-String -Path $seedPass1Log -Pattern 'Seed-skip:' -Quiet) {
+        throw "Deserialize Seed pass 1 emitted 'Seed-skip:' lines — Phase 39 D-11 regression. See deserialize-seed-pass1.log"
+    }
+    if (-not (Select-String -Path $seedPass1Log -Pattern 'Seed-merge:' -Quiet)) {
+        throw "Deserialize Seed pass 1 emitted NO 'Seed-merge:' lines — merge branch not firing. See deserialize-seed-pass1.log"
+    }
+    Write-Host '    Deserialize Seed pass 1 HTTP 200 OK (Seed-merge: present, Seed-skip: absent)'
+
+    # Step 15.3 — Assert customer tweak preserved byte-for-byte.
+    Write-Host '  [15.3] Verifying customer tweak preserved'
+    $postSeed1Tweak = Invoke-Sqlcmd-StringScalar `
+        -Server $SqlServer -Database $CleanDb `
+        -Query "SELECT [$TweakColumnName] FROM Page WHERE ID=$TweakPageId"
+    if ($postSeed1Tweak -ne $TweakValue) {
+        throw "Customer tweak NOT preserved — expected '$TweakValue', got '$postSeed1Tweak'. Seed merge branch overwrote a set field (D-15 acceptance failed)."
+    }
+    Write-Host "    [PASS] Customer tweak preserved: '$postSeed1Tweak'"
+
+    # Step 15.4 — Assert Mail1SenderEmail present in EcomPayments XML.
+    Write-Host '  [15.4] Verifying Mail1SenderEmail filled in EcomPayments XML'
+    $paymentXml = Invoke-Sqlcmd-StringScalar `
+        -Server $SqlServer -Database $CleanDb `
+        -Query "SELECT CAST(PaymentGatewayParameters AS NVARCHAR(MAX)) FROM EcomPayments WHERE PaymentID = N'$PaymentRowPaymentId'"
+    if (-not $paymentXml) {
+        throw "EcomPayments row '$PaymentRowPaymentId' not found on CleanDB (or PaymentGatewayParameters is NULL)."
+    }
+    if ($paymentXml -notmatch 'Mail1SenderEmail') {
+        throw "Mail1SenderEmail NOT present in EcomPayments.PaymentGatewayParameters after Seed (D-15 acceptance failed). XML snippet: $($paymentXml.Substring(0, [Math]::Min(400, $paymentXml.Length)))"
+    }
+    Write-Host '    [PASS] Mail1SenderEmail present in PaymentGatewayParameters'
+
+    # Step 15.5 — Second Seed pass: D-09 idempotency (every Seed-merge line
+    # should report 0 filled).
+    Write-Host '  [15.5] Deserialize Seed (second pass — idempotency check)'
+    $seedPass2Log = Join-Path $script:runDir 'deserialize-seed-pass2.log'
+    $desSeed2 = Invoke-DwApi -HostUrl $CleanDbHostUrl `
+        -Endpoint '/Admin/Api/SerializerDeserialize?mode=seed' `
+        -LogPath $seedPass2Log
+    if ($desSeed2.Code -ne 200) {
+        throw "Deserialize Seed pass 2: expected HTTP 200, got $($desSeed2.Code). See deserialize-seed-pass2.log"
+    }
+    if (Select-String -Path $seedPass2Log -Pattern 'escalated|CumulativeStrictModeException' -Quiet) {
+        throw "Deserialize Seed pass 2 emitted strict-mode escalations. See deserialize-seed-pass2.log"
+    }
+    # Every Seed-merge line in pass 2 should report 0 filled. A non-zero fill
+    # means the merge branch wrote new fields on an already-seeded target —
+    # that is a D-09 idempotency violation.
+    $pass2Lines = Get-Content $seedPass2Log
+    $nonZeroFills = $pass2Lines | Where-Object {
+        $_ -match 'Seed-merge:.*?-\s*(\d+)\s+filled' -and [int]$Matches[1] -gt 0
+    }
+    if ($nonZeroFills) {
+        Write-Host '    D-09 idempotency FAILED — pass 2 Seed-merge lines with non-zero fills:'
+        $nonZeroFills | ForEach-Object { Write-Host "      $_" }
+        throw "D-09 idempotency failed — second Seed pass wrote new fields. See deserialize-seed-pass2.log"
+    }
+    Write-Host '    [PASS] D-09 idempotency — second Seed pass wrote zero fields'
+
+    # Step 15.6 — Final tweak re-check after the idempotency pass.
+    Write-Host '  [15.6] Final tweak re-check after second Seed pass'
+    $finalTweak = Invoke-Sqlcmd-StringScalar `
+        -Server $SqlServer -Database $CleanDb `
+        -Query "SELECT [$TweakColumnName] FROM Page WHERE ID=$TweakPageId"
+    if ($finalTweak -ne $TweakValue) {
+        throw "After second Seed pass, tweak value lost — expected '$TweakValue', got '$finalTweak'"
+    }
+    Write-Host "    [PASS] Customer tweak still preserved after second Seed pass: '$finalTweak'"
+
+    Write-Host ''
+    Write-Host '  [ALL PASS] Phase 39 D-15 live acceptance gate closed.'
+    Write-Host '    - Customer tweak preserved byte-for-byte across Seed'
+    Write-Host '    - Mail1SenderEmail present in EcomPayments.PaymentGatewayParameters'
+    Write-Host '    - D-09 idempotency — second Seed pass wrote zero fields'
+}
 
 # ----- Step 16: Smoke tool ----------------------------------------------------
 Write-Step 'Step 16: Frontend smoke tool'
