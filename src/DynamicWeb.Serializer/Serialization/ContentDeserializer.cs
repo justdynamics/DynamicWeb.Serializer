@@ -31,10 +31,14 @@ public class ContentDeserializer
     private readonly ISqlExecutor _sqlExecutor;
 
     /// <summary>
-    /// When <see cref="ConflictStrategy.DestinationWins"/> (Phase 37-01 Seed mode), pages whose
-    /// <c>PageUniqueId</c> is already present on target are NOT updated — the target row is
-    /// preserved exactly as-is. INSERT paths (new pages) still run normally. Nested content
-    /// (paragraphs within an existing page) follows up in later plans.
+    /// When <see cref="ConflictStrategy.DestinationWins"/> (Phase 39 Seed mode), pages whose
+    /// <c>PageUniqueId</c> is already present on target are field-level merged with the Seed
+    /// YAML: scalars, sub-object DTO properties, ItemFields, and PropertyItem fields each
+    /// honor <see cref="MergePredicate.IsUnsetForMerge(object?, System.Type)"/>. Only fields
+    /// that are NULL or at the type default on target are filled from YAML; customer tweaks
+    /// already set on target survive intrinsically. Page permissions are never touched on the
+    /// Seed UPDATE path (D-06). Phase 39 supersedes the Phase 37-01 row-level skip that
+    /// previously short-circuited the UPDATE here.
     /// </summary>
     /// <param name="schemaCache">
     /// Shared target-schema cache used by the Area write path for schema-drift tolerance and
@@ -681,13 +685,50 @@ public class ContentDeserializer
                     $"Could not load existing page with ID {existingId} for update.");
             }
 
-            // Seed mode (D-06, Phase 37-01): page is already present on target, preserve as-is.
-            // We still return the existingId so child pages / paragraphs resolve their ParentPageId
-            // correctly during the recursive walk — skipping means "don't overwrite", not "disown".
+            // Phase 39 D-01..D-07, D-11, D-19: Seed mode — field-level merge.
+            // Supersedes the row-level skip previously enforced here (Phase 37-01 D-06).
             if (_conflictStrategy == ConflictStrategy.DestinationWins)
             {
-                Log($"Seed-skip: page {dto.PageUniqueId} (already present, ID={existingId})");
-                ctx.Skipped++;
+                var seedExclude = ctx.ExcludeFieldsByItemType != null
+                    ? ExclusionMerger.MergeFieldExclusions(
+                        ctx.ExcludeFields?.ToList() ?? new List<string>(),
+                        ctx.ExcludeFieldsByItemType,
+                        dto.ItemType)
+                    : ctx.ExcludeFields;
+
+                if (_isDryRun)
+                {
+                    LogSeedMergeDryRun(dto, existingPage, seedExclude, ctx);
+                    return existingId;
+                }
+
+                // Identity — always source-wins per D-05.
+                existingPage.UniqueId = dto.PageUniqueId;
+                existingPage.AreaId = ctx.TargetAreaId;
+                existingPage.ParentPageId = ctx.ParentPageId;
+
+                int filled = 0;
+                int left = 0;
+
+                filled += MergePageScalars(existingPage, dto, ref left);
+                filled += ApplyPagePropertiesWithMerge(existingPage, dto, ref left);
+
+                Services.Pages.SavePage(existingPage);
+
+                // D-02 / D-03: field-level merge for ItemFields + PropertyItem fields.
+                filled += MergeItemFields(existingPage.ItemType, existingPage.ItemId, dto.Fields, seedExclude, ref left);
+                filled += MergePropertyItemFields(existingPage, dto.PropertyFields, seedExclude, ref left);
+
+                // D-06: permissions NOT applied on Seed UPDATE.
+                // (Intentionally absent: no _permissionMapper.ApplyPermissions call here.)
+
+                // D-11: new log format + counter repurpose.
+                if (filled == 0) ctx.Skipped++;
+                else ctx.Updated++;
+                Log($"Seed-merge: page {dto.PageUniqueId} (ID={existingId}) - {filled} filled, {left} left");
+
+                // D-07: child recursion (gridrows -> columns -> paragraphs) continues below and
+                // inherits _conflictStrategy automatically.
                 return existingId;
             }
 
@@ -1265,6 +1306,331 @@ public class ContentDeserializer
                 dto.NavigationSettings.ParentType, true, out var pt))
                 page.NavigationSettings.ParentType = pt;
         }
+    }
+
+    // -------------------------------------------------------------------------
+    // Phase 39: Seed-mode field-level merge helpers (D-01..D-07, D-11, D-19)
+    // -------------------------------------------------------------------------
+
+    /// <summary>
+    /// D-05: applies the DTO's flat scalars (MenuText, UrlName, Active, Sort, ItemType,
+    /// LayoutTemplate, LayoutApplyToSubPages, IsFolder, TreeSection) to the existing page
+    /// only when the target value is unset per <see cref="MergePredicate"/>. Returns filled
+    /// count; increments <paramref name="left"/> for each target-set skip.
+    /// D-10 tradeoff: false/0/empty count as unset — documented in 39-CONTEXT.md.
+    /// </summary>
+    private static int MergePageScalars(Page existingPage, SerializedPage dto, ref int left)
+    {
+        int filled = 0;
+
+        if (MergePredicate.IsUnsetForMerge(existingPage.MenuText)) { existingPage.MenuText = dto.MenuText; filled++; } else left++;
+        if (MergePredicate.IsUnsetForMerge(existingPage.UrlName))  { existingPage.UrlName = dto.UrlName;  filled++; } else left++;
+        // D-10 tradeoff: false counts as unset for Active.
+        if (MergePredicate.IsUnsetForMerge(existingPage.Active))   { existingPage.Active = dto.IsActive; filled++; } else left++;
+        if (MergePredicate.IsUnsetForMerge(existingPage.Sort))     { existingPage.Sort = dto.SortOrder;  filled++; } else left++;
+        if (MergePredicate.IsUnsetForMerge(existingPage.ItemType)) { existingPage.ItemType = dto.ItemType ?? string.Empty; filled++; } else left++;
+        if (MergePredicate.IsUnsetForMerge(existingPage.LayoutTemplate)) { existingPage.LayoutTemplate = dto.Layout ?? string.Empty; filled++; } else left++;
+        if (MergePredicate.IsUnsetForMerge(existingPage.LayoutApplyToSubPages)) { existingPage.LayoutApplyToSubPages = dto.LayoutApplyToSubPages; filled++; } else left++;
+        if (MergePredicate.IsUnsetForMerge(existingPage.IsFolder)) { existingPage.IsFolder = dto.IsFolder; filled++; } else left++;
+        if (MergePredicate.IsUnsetForMerge(existingPage.TreeSection)) { existingPage.TreeSection = dto.TreeSection ?? string.Empty; filled++; } else left++;
+
+        return filled;
+    }
+
+    /// <summary>
+    /// D-04: per-property merge for Page properties and sub-object DTOs (Seo, UrlSettings,
+    /// Visibility, NavigationSettings). Mirrors the structure of <see cref="ApplyPageProperties"/>
+    /// but gates every assignment through <see cref="MergePredicate.IsUnsetForMerge(object?, System.Type)"/>.
+    /// Returns filled count; increments <paramref name="left"/> for each target-set skip.
+    /// </summary>
+    private static int ApplyPagePropertiesWithMerge(Page page, SerializedPage dto, ref int left)
+    {
+        int filled = 0;
+
+        // Flat scalars (the ~30 Phase-23 properties)
+        if (MergePredicate.IsUnsetForMerge(page.NavigationTag))  { page.NavigationTag = dto.NavigationTag; filled++; } else left++;
+        if (MergePredicate.IsUnsetForMerge(page.ShortCut))       { page.ShortCut = dto.ShortCut; filled++; } else left++;
+        if (MergePredicate.IsUnsetForMerge(page.Hidden))         { page.Hidden = dto.Hidden; filled++; } else left++;
+        if (MergePredicate.IsUnsetForMerge(page.Allowclick))     { page.Allowclick = dto.Allowclick; filled++; } else left++;
+        if (MergePredicate.IsUnsetForMerge(page.Allowsearch))    { page.Allowsearch = dto.Allowsearch; filled++; } else left++;
+        if (MergePredicate.IsUnsetForMerge(page.ShowInSitemap))  { page.ShowInSitemap = dto.ShowInSitemap; filled++; } else left++;
+        if (MergePredicate.IsUnsetForMerge(page.ShowInLegend))   { page.ShowInLegend = dto.ShowInLegend; filled++; } else left++;
+        if (MergePredicate.IsUnsetForMerge(page.SslMode))        { page.SslMode = dto.SslMode; filled++; } else left++;
+        if (MergePredicate.IsUnsetForMerge(page.ColorSchemeId))  { page.ColorSchemeId = dto.ColorSchemeId; filled++; } else left++;
+        if (MergePredicate.IsUnsetForMerge(page.ExactUrl))       { page.ExactUrl = dto.ExactUrl; filled++; } else left++;
+        if (MergePredicate.IsUnsetForMerge(page.ContentType))    { page.ContentType = dto.ContentType; filled++; } else left++;
+        if (MergePredicate.IsUnsetForMerge(page.TopImage))       { page.TopImage = dto.TopImage; filled++; } else left++;
+        if (MergePredicate.IsUnsetForMerge(page.PermissionType)) { page.PermissionType = dto.PermissionType; filled++; } else left++;
+
+        // DisplayMode -- parse from string, only fill when target DisplayMode is at enum default.
+        if (!string.IsNullOrEmpty(dto.DisplayMode) &&
+            Enum.TryParse<Dynamicweb.Content.DisplayMode>(dto.DisplayMode, true, out var dm))
+        {
+            if (MergePredicate.IsUnsetForMerge(page.DisplayMode, typeof(Dynamicweb.Content.DisplayMode))) { page.DisplayMode = dm; filled++; } else left++;
+        }
+
+        // ActiveFrom / ActiveTo: gated by MergePredicate (DateTime.MinValue = unset).
+        if (dto.ActiveFrom.HasValue)
+        {
+            if (MergePredicate.IsUnsetForMerge(page.ActiveFrom)) { page.ActiveFrom = dto.ActiveFrom.Value; filled++; } else left++;
+        }
+        if (dto.ActiveTo.HasValue)
+        {
+            if (MergePredicate.IsUnsetForMerge(page.ActiveTo)) { page.ActiveTo = dto.ActiveTo.Value; filled++; } else left++;
+        }
+
+        // SEO sub-object — D-04: per-property merge.
+        if (dto.Seo != null)
+        {
+            if (MergePredicate.IsUnsetForMerge(page.MetaTitle))     { page.MetaTitle = dto.Seo.MetaTitle; filled++; } else left++;
+            if (MergePredicate.IsUnsetForMerge(page.MetaCanonical)) { page.MetaCanonical = dto.Seo.MetaCanonical; filled++; } else left++;
+            if (MergePredicate.IsUnsetForMerge(page.Description))   { page.Description = dto.Seo.Description; filled++; } else left++;
+            if (MergePredicate.IsUnsetForMerge(page.Keywords))      { page.Keywords = dto.Seo.Keywords; filled++; } else left++;
+            if (MergePredicate.IsUnsetForMerge(page.Noindex))       { page.Noindex = dto.Seo.Noindex; filled++; } else left++;
+            if (MergePredicate.IsUnsetForMerge(page.Nofollow))      { page.Nofollow = dto.Seo.Nofollow; filled++; } else left++;
+            if (MergePredicate.IsUnsetForMerge(page.Robots404))     { page.Robots404 = dto.Seo.Robots404; filled++; } else left++;
+        }
+
+        // URL settings sub-object — D-04.
+        if (dto.UrlSettings != null)
+        {
+            if (MergePredicate.IsUnsetForMerge(page.UrlDataProviderTypeName)) { page.UrlDataProviderTypeName = dto.UrlSettings.UrlDataProviderTypeName; filled++; } else left++;
+            if (MergePredicate.IsUnsetForMerge(page.UrlDataProviderParameters))
+            {
+                page.UrlDataProviderParameters = XmlFormatter.CompactWithMerge(dto.UrlSettings.UrlDataProviderParameters, page.UrlDataProviderParameters);
+                filled++;
+            }
+            else left++;
+            if (MergePredicate.IsUnsetForMerge(page.UrlIgnoreForChildren)) { page.UrlIgnoreForChildren = dto.UrlSettings.UrlIgnoreForChildren; filled++; } else left++;
+            if (MergePredicate.IsUnsetForMerge(page.UrlUseAsWritten))      { page.UrlUseAsWritten = dto.UrlSettings.UrlUseAsWritten; filled++; } else left++;
+        }
+
+        // Visibility sub-object — D-04.
+        if (dto.Visibility != null)
+        {
+            if (MergePredicate.IsUnsetForMerge(page.HideForPhones))   { page.HideForPhones = dto.Visibility.HideForPhones; filled++; } else left++;
+            if (MergePredicate.IsUnsetForMerge(page.HideForTablets))  { page.HideForTablets = dto.Visibility.HideForTablets; filled++; } else left++;
+            if (MergePredicate.IsUnsetForMerge(page.HideForDesktops)) { page.HideForDesktops = dto.Visibility.HideForDesktops; filled++; } else left++;
+        }
+
+        // NavigationSettings — Pitfall 5: if the whole sub-object is null on target but
+        // YAML has one, construct it fresh; otherwise per-property D-04 merge.
+        if (dto.NavigationSettings != null && dto.NavigationSettings.UseEcomGroups)
+        {
+            if (page.NavigationSettings == null)
+            {
+                page.NavigationSettings = new PageNavigationSettings
+                {
+                    UseEcomGroups = true,
+                    Groups = dto.NavigationSettings.Groups,
+                    ShopID = dto.NavigationSettings.ShopID,
+                    MaxLevels = dto.NavigationSettings.MaxLevels,
+                    ProductPage = dto.NavigationSettings.ProductPage,
+                    NavigationProvider = dto.NavigationSettings.NavigationProvider,
+                    IncludeProducts = dto.NavigationSettings.IncludeProducts
+                };
+                if (Enum.TryParse<EcommerceNavigationParentType>(
+                    dto.NavigationSettings.ParentType, true, out var pt))
+                    page.NavigationSettings.ParentType = pt;
+                filled++;
+            }
+            else
+            {
+                // Per-property merge for the nested settings.
+                if (MergePredicate.IsUnsetForMerge(page.NavigationSettings.Groups))             { page.NavigationSettings.Groups = dto.NavigationSettings.Groups; filled++; } else left++;
+                if (MergePredicate.IsUnsetForMerge(page.NavigationSettings.ShopID))             { page.NavigationSettings.ShopID = dto.NavigationSettings.ShopID; filled++; } else left++;
+                if (MergePredicate.IsUnsetForMerge(page.NavigationSettings.MaxLevels))          { page.NavigationSettings.MaxLevels = dto.NavigationSettings.MaxLevels; filled++; } else left++;
+                if (MergePredicate.IsUnsetForMerge(page.NavigationSettings.ProductPage))        { page.NavigationSettings.ProductPage = dto.NavigationSettings.ProductPage; filled++; } else left++;
+                if (MergePredicate.IsUnsetForMerge(page.NavigationSettings.NavigationProvider)) { page.NavigationSettings.NavigationProvider = dto.NavigationSettings.NavigationProvider; filled++; } else left++;
+                if (MergePredicate.IsUnsetForMerge(page.NavigationSettings.IncludeProducts))    { page.NavigationSettings.IncludeProducts = dto.NavigationSettings.IncludeProducts; filled++; } else left++;
+
+                if (Enum.TryParse<EcommerceNavigationParentType>(dto.NavigationSettings.ParentType, true, out var pt2))
+                {
+                    if (MergePredicate.IsUnsetForMerge(page.NavigationSettings.ParentType, typeof(EcommerceNavigationParentType))) { page.NavigationSettings.ParentType = pt2; filled++; } else left++;
+                }
+            }
+        }
+
+        return filled;
+    }
+
+    /// <summary>
+    /// D-02: field-level merge for ItemFields. Reads current target values via
+    /// <c>ItemEntry.SerializeTo</c>, fills only entries where the target string is
+    /// NULL or empty (D-02 string rule), overlays onto the current dict to prevent
+    /// sibling clearing (Pitfall 7 defense), then <c>DeserializeFrom + Save</c>.
+    /// Returns filled count; increments <paramref name="left"/> for each skip.
+    /// </summary>
+    private int MergeItemFields(
+        string? itemType,
+        string itemId,
+        Dictionary<string, object> yamlFields,
+        IReadOnlySet<string>? excludeFields,
+        ref int left)
+    {
+        if (string.IsNullOrEmpty(itemType)) return 0;
+
+        var itemEntry = Services.Items.GetItem(itemType, itemId);
+        if (itemEntry == null)
+        {
+            Log($"WARNING: Could not load ItemEntry for type={itemType}, id={itemId}");
+            return 0;
+        }
+
+        var currentDict = new Dictionary<string, object?>();
+        itemEntry.SerializeTo(currentDict);
+
+        int filled = 0;
+        foreach (var kvp in yamlFields)
+        {
+            if (ItemSystemFields.Contains(kvp.Key)) continue;
+            if (excludeFields != null && excludeFields.Contains(kvp.Key)) continue;
+
+            currentDict.TryGetValue(kvp.Key, out var currentVal);
+            if (MergePredicate.IsUnsetForMerge(currentVal?.ToString()))
+            {
+                currentDict[kvp.Key] = kvp.Value;   // overlay filled onto current (Pitfall 7)
+                filled++;
+            }
+            else
+            {
+                left++;
+            }
+        }
+
+        if (filled == 0) return 0;
+
+        itemEntry.DeserializeFrom(currentDict);
+        itemEntry.Save();
+        return filled;
+    }
+
+    /// <summary>
+    /// D-03: field-level merge for PropertyItem fields (Icon, SubmenuType, etc.).
+    /// Same shape as <see cref="MergeItemFields"/> — live-read current target values,
+    /// overlay only unset entries, save once.
+    /// </summary>
+    private int MergePropertyItemFields(
+        Page page,
+        Dictionary<string, object> propertyFields,
+        IReadOnlySet<string>? excludeFields,
+        ref int left)
+    {
+        if (propertyFields.Count == 0) return 0;
+        if (string.IsNullOrEmpty(page.PropertyItemId))
+        {
+            Log($"  Page {page.UniqueId} has no PropertyItemId — cannot merge property fields");
+            return 0;
+        }
+
+        var propItem = page.PropertyItem;
+        if (propItem == null)
+        {
+            Log($"  WARNING: Could not load PropertyItem for page {page.UniqueId}");
+            return 0;
+        }
+
+        var currentDict = new Dictionary<string, object?>();
+        propItem.SerializeTo(currentDict);
+
+        int filled = 0;
+        foreach (var kvp in propertyFields)
+        {
+            if (ItemSystemFields.Contains(kvp.Key)) continue;
+            if (excludeFields != null && excludeFields.Contains(kvp.Key)) continue;
+
+            currentDict.TryGetValue(kvp.Key, out var currentVal);
+            if (MergePredicate.IsUnsetForMerge(currentVal?.ToString()))
+            {
+                currentDict[kvp.Key] = kvp.Value;
+                filled++;
+            }
+            else
+            {
+                left++;
+            }
+        }
+
+        if (filled == 0) return 0;
+
+        propItem.DeserializeFrom(currentDict);
+        propItem.Save();
+        return filled;
+    }
+
+    /// <summary>
+    /// D-19: per-field dry-run diff for the Seed-merge path. Emits
+    /// <c>"  would fill [col=X]: target=&lt;unset&gt; -&gt; seed='...'"</c> lines
+    /// only where the merge would actually fire on a live run. No DW-API writes.
+    /// </summary>
+    /// <remarks>
+    /// Dry-run log output includes YAML field values. Do not enable dry-run in
+    /// logs that flow to untrusted parties — Phase 39 threat model T-39-01-03.
+    /// </remarks>
+    private void LogSeedMergeDryRun(SerializedPage dto, Page existing, IReadOnlySet<string>? excludeFields, WriteContext ctx)
+    {
+        var diffs = new List<string>();
+
+        void Consider(string col, string? target, object? seedValue)
+        {
+            if (MergePredicate.IsUnsetForMerge(target))
+                diffs.Add($"  would fill [col={col}]: target=<unset> -> seed='{seedValue}'");
+        }
+
+        void ConsiderInt(string col, int target, object seedValue)
+        {
+            if (MergePredicate.IsUnsetForMerge(target))
+                diffs.Add($"  would fill [col={col}]: target=<unset> -> seed='{seedValue}'");
+        }
+
+        void ConsiderBool(string col, bool target, object seedValue)
+        {
+            if (MergePredicate.IsUnsetForMerge(target))
+                diffs.Add($"  would fill [col={col}]: target=<unset> -> seed='{seedValue}'");
+        }
+
+        // Flat scalars
+        Consider("MenuText", existing.MenuText, dto.MenuText);
+        Consider("UrlName", existing.UrlName, dto.UrlName);
+        ConsiderBool("Active", existing.Active, dto.IsActive);
+        ConsiderInt("Sort", existing.Sort, dto.SortOrder);
+        Consider("ItemType", existing.ItemType, dto.ItemType);
+        Consider("LayoutTemplate", existing.LayoutTemplate, dto.Layout);
+        Consider("TreeSection", existing.TreeSection, dto.TreeSection);
+
+        // SEO sub-object
+        if (dto.Seo != null)
+        {
+            Consider("MetaTitle", existing.MetaTitle, dto.Seo.MetaTitle);
+            Consider("MetaCanonical", existing.MetaCanonical, dto.Seo.MetaCanonical);
+            Consider("Description", existing.Description, dto.Seo.Description);
+            Consider("Keywords", existing.Keywords, dto.Seo.Keywords);
+        }
+
+        // ItemFields — live-read current target
+        if (!string.IsNullOrEmpty(existing.ItemType))
+        {
+            var itemEntry = Services.Items.GetItem(existing.ItemType, existing.ItemId);
+            if (itemEntry != null)
+            {
+                var currentDict = new Dictionary<string, object?>();
+                itemEntry.SerializeTo(currentDict);
+                foreach (var kvp in dto.Fields)
+                {
+                    if (ItemSystemFields.Contains(kvp.Key)) continue;
+                    if (excludeFields != null && excludeFields.Contains(kvp.Key)) continue;
+                    currentDict.TryGetValue(kvp.Key, out var curr);
+                    if (MergePredicate.IsUnsetForMerge(curr?.ToString()))
+                        diffs.Add($"  would fill [col={kvp.Key}]: target=<unset> -> seed='{kvp.Value}'");
+                }
+            }
+        }
+
+        Log($"[DRY-RUN] Seed-merge: page {dto.PageUniqueId} (ID={existing.ID}) - {diffs.Count} would-fills");
+        foreach (var d in diffs) Log(d);
+
+        if (diffs.Count == 0) ctx.Skipped++;
+        else ctx.Updated++;
     }
 
     // -------------------------------------------------------------------------
