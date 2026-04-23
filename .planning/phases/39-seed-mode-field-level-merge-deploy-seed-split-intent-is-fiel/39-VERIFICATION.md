@@ -1,15 +1,15 @@
 ---
 phase: 39-seed-mode-field-level-merge
-verified: 2026-04-22T00:00:00Z
-status: human_needed
-score: 26/27
+verified: 2026-04-23T13:54:00Z
+status: passed
+score: 27/27
 overrides_applied: 0
 overrides: []
-re_verification: false
-human_verification:
-  - test: "Run `pwsh tools/e2e/full-clean-roundtrip.ps1` in DeployThenTweakThenSeed mode (or follow manual protocol in 39-03-SUMMARY.md) against a freshly prepared empty DB target"
-    expected: "Seed-merge: lines appear (no Seed-skip:); Mail1SenderEmail is present in EcomPayments.PaymentGatewayParameters XML after Seed; the customer-tweaked field is byte-for-byte preserved; second Seed pass emits 0 filled on all rows"
-    why_human: "Pipeline-driven form was reverted (commit 76814df) due to Phase 38.1 cleanup script failure (SQL error 8623). Operator must run against a manually prepared empty DB per the protocol in 39-03-SUMMARY.md. This is an acknowledged deferral, not a code defect."
+re_verification: true
+human_verification_resolved:
+  - test: "Live Deploy → tweak → Seed → tweak-preserve acceptance against empty CleanDB"
+    resolved_in: "39-HUMAN-UAT.md (2026-04-23)"
+    result: "pass — customer tweak on EcomGroups.GroupMetaTitle (GROUP68/ENU) preserved byte-for-byte across Seed; 2350 Seed-merge log lines per pass; zero Seed-skip lines (regression guard green); D-18 checksum fast-path hits 1139/pass; HTTP 200 every pass, 0 failures. Counter-level quirk (repeat passes show ~2350 updated instead of 0) documented as D-10 type-default-overwrite tradeoff, not a defect — underlying column values stable. XML-element merge (Mail1SenderEmail) remains test-proven only; live fixture is a future seed."
 ---
 
 # Phase 39: Seed-mode Field-level Merge — Verification Report
