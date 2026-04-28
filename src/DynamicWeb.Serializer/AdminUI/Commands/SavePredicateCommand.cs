@@ -62,8 +62,7 @@ public sealed class SavePredicateCommand : CommandBase<PredicateEditModel>
             {
                 if (Model.AreaId <= 0)
                     return new() { Status = CommandResult.ResultType.Invalid, Message = "Area is required for Content predicates" };
-                if (Model.PageId <= 0)
-                    return new() { Status = CommandResult.ResultType.Invalid, Message = "Page is required for Content predicates" };
+                // PageId is optional: PageId<=0 means full-Area selection (path "/").
             }
             else if (providerType == "SqlTable")
             {
@@ -125,22 +124,30 @@ public sealed class SavePredicateCommand : CommandBase<PredicateEditModel>
 
             if (providerType == "Content")
             {
-                // Resolve page path from PageId via DW Services when available
+                // Resolve page path from PageId via DW Services when available.
+                // PageId<=0 → full-Area selection, path is "/".
                 string path;
-                try
+                if (Model.PageId <= 0)
                 {
-                    var page = Services.Pages?.GetPage(Model.PageId);
-                    path = page?.GetBreadcrumbPath()
-                        ?? (Model.Index >= 0 && Model.Index < predicates.Count
-                            ? predicates[Model.Index].Path
-                            : $"/page-{Model.PageId}");
+                    path = "/";
                 }
-                catch
+                else
                 {
-                    // DW runtime not available (e.g., unit tests) — use fallback path
-                    path = Model.Index >= 0 && Model.Index < predicates.Count
-                        ? predicates[Model.Index].Path
-                        : $"/page-{Model.PageId}";
+                    try
+                    {
+                        var page = Services.Pages?.GetPage(Model.PageId);
+                        path = page?.GetBreadcrumbPath()
+                            ?? (Model.Index >= 0 && Model.Index < predicates.Count
+                                ? predicates[Model.Index].Path
+                                : $"/page-{Model.PageId}");
+                    }
+                    catch
+                    {
+                        // DW runtime not available (e.g., unit tests) — use fallback path
+                        path = Model.Index >= 0 && Model.Index < predicates.Count
+                            ? predicates[Model.Index].Path
+                            : $"/page-{Model.PageId}";
+                    }
                 }
 
                 // Split excludes: handle \r\n and \n, trim, remove empties
