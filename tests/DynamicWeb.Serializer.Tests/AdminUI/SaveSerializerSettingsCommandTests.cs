@@ -37,15 +37,15 @@ public class SaveSerializerSettingsCommandTests : ConfigLoaderValidatorFixtureBa
 
     private void CreateSeedConfig()
     {
+        // Phase 40 D-01: flat predicate list with explicit per-predicate Mode.
         var config = new SerializerConfiguration
         {
             OutputDirectory = @"\System\Serializer",
             LogLevel = "info",
             DryRun = false,
-            ConflictStrategy = ConflictStrategy.SourceWins,
             Predicates = new List<ProviderPredicateDefinition>
             {
-                new() { Name = "Default", ProviderType = "Content", Path = "/", AreaId = 1 }
+                new() { Name = "Default", Mode = DeploymentMode.Deploy, ProviderType = "Content", Path = "/", AreaId = 1 }
             }
         };
         ConfigWriter.Save(config, _configPath);
@@ -103,13 +103,6 @@ public class SaveSerializerSettingsCommandTests : ConfigLoaderValidatorFixtureBa
     [Fact]
     public void Handle_NonExistentOutputDirectory_ReturnsInvalid()
     {
-        // This test exercises the path validation in Handle().
-        // Since Handle() calls ConfigPathResolver internally, and we can't easily
-        // redirect it to our temp dir, we verify the validation logic by checking
-        // that the command rejects when the resolved path does not exist.
-        // The command will try to use ConfigPathResolver.FindOrCreateConfigFile()
-        // which may create a config at a system path. If that fails, it returns Error.
-        // Either way, the non-existent output directory path would be rejected.
         var cmd = new SaveSerializerSettingsCommand
         {
             Model = new SerializerSettingsModel
@@ -123,7 +116,6 @@ public class SaveSerializerSettingsCommandTests : ConfigLoaderValidatorFixtureBa
 
         var result = cmd.Handle();
 
-        // Should be Invalid (directory doesn't exist) or Error (config path issue)
         Assert.NotEqual(CommandResult.ResultType.Ok, result.Status);
     }
 
@@ -134,10 +126,6 @@ public class SaveSerializerSettingsCommandTests : ConfigLoaderValidatorFixtureBa
         Directory.CreateDirectory(_outputDir);
         CreateSeedConfig();
 
-        // We need to test that all fields are mapped correctly.
-        // Since the command uses ConfigPathResolver internally, we verify
-        // by creating a standalone integration test that exercises the
-        // mapping logic through ConfigLoader + ConfigWriter directly.
         var model = new SerializerSettingsModel
         {
             OutputDirectory = @"\System\Serializer",
@@ -149,70 +137,49 @@ public class SaveSerializerSettingsCommandTests : ConfigLoaderValidatorFixtureBa
         // Simulate what the command does: load existing, merge model, save
         var existingConfig = ConfigLoader.Load(_configPath);
 
-        var conflictStrategy = model.ConflictStrategy switch
-        {
-            "source-wins" => ConflictStrategy.SourceWins,
-            _ => ConflictStrategy.SourceWins
-        };
-
-        var updatedConfig = new SerializerConfiguration
+        // Phase 40 D-02: ConflictStrategy is no longer a config knob — saved value is ignored.
+        var updatedConfig = existingConfig with
         {
             OutputDirectory = model.OutputDirectory,
             LogLevel = model.LogLevel,
-            DryRun = model.DryRun,
-            ConflictStrategy = conflictStrategy,
-            Predicates = existingConfig.Predicates
+            DryRun = model.DryRun
         };
 
         ConfigWriter.Save(updatedConfig, _configPath);
 
-        // Verify round-trip
         var reloaded = ConfigLoader.Load(_configPath);
         Assert.Equal(@"\System\Serializer", reloaded.OutputDirectory);
         Assert.Equal("debug", reloaded.LogLevel);
         Assert.True(reloaded.DryRun);
-        Assert.Equal(ConflictStrategy.SourceWins, reloaded.ConflictStrategy);
+        Assert.Equal(ConflictStrategy.SourceWins, reloaded.GetConflictStrategyForMode(DeploymentMode.Deploy));
         Assert.Single(reloaded.Predicates);
     }
 
     // -------------------------------------------------------------------------
-    // Phase 37-01 D-02: Deploy + Seed sections round-trip through save
+    // Phase 40 D-01: settings-save preserves the flat predicate list verbatim.
     // -------------------------------------------------------------------------
 
     [Fact]
-    public void Save_PreservesDeployAndSeedSections()
+    public void Save_PreservesAllPredicatesIncludingMixedModes()
     {
         Directory.CreateDirectory(_outputDir);
 
-        // Seed a config with both Deploy AND Seed predicates
+        // Seed a config with mixed-Mode predicates on the flat list.
         var seedConfig = new SerializerConfiguration
         {
             OutputDirectory = @"\System\Serializer",
             LogLevel = "info",
             DryRun = false,
-            Deploy = new ModeConfig
+            Predicates = new List<ProviderPredicateDefinition>
             {
-                OutputSubfolder = "deploy",
-                ConflictStrategy = ConflictStrategy.SourceWins,
-                Predicates = new List<ProviderPredicateDefinition>
-                {
-                    new() { Name = "DeployA", ProviderType = "Content", Path = "/d", AreaId = 1 }
-                }
-            },
-            Seed = new ModeConfig
-            {
-                OutputSubfolder = "seed",
-                ConflictStrategy = ConflictStrategy.DestinationWins,
-                Predicates = new List<ProviderPredicateDefinition>
-                {
-                    new() { Name = "SeedA", ProviderType = "Content", Path = "/s", AreaId = 1 },
-                    new() { Name = "SeedB", ProviderType = "SqlTable", Table = "EcomShops" }
-                }
+                new() { Name = "DeployA", Mode = DeploymentMode.Deploy, ProviderType = "Content", Path = "/d", AreaId = 1 },
+                new() { Name = "SeedA", Mode = DeploymentMode.Seed, ProviderType = "Content", Path = "/s", AreaId = 1 },
+                new() { Name = "SeedB", Mode = DeploymentMode.Seed, ProviderType = "SqlTable", Table = "EcomShops" }
             }
         };
         ConfigWriter.Save(seedConfig, _configPath);
 
-        // Settings-save should NOT clobber predicates; it only touches OutputDirectory / LogLevel / DryRun / ConflictStrategy.
+        // Settings-save should NOT clobber predicates; it only touches OutputDirectory / LogLevel / DryRun.
         var existingConfig = ConfigLoader.Load(_configPath);
         var model = new SerializerSettingsModel
         {
@@ -221,61 +188,23 @@ public class SaveSerializerSettingsCommandTests : ConfigLoaderValidatorFixtureBa
             DryRun = true,
             ConflictStrategy = "source-wins"
         };
-        var updatedDeploy = existingConfig.Deploy with { ConflictStrategy = ConflictStrategy.SourceWins };
-        var updated = new SerializerConfiguration
+        var updated = existingConfig with
         {
             OutputDirectory = model.OutputDirectory,
             LogLevel = model.LogLevel,
-            DryRun = model.DryRun,
-            Deploy = updatedDeploy,
-            Seed = existingConfig.Seed
+            DryRun = model.DryRun
         };
         ConfigWriter.Save(updated, _configPath);
 
         var reloaded = ConfigLoader.Load(_configPath);
-        Assert.Single(reloaded.Deploy.Predicates);
-        Assert.Equal("DeployA", reloaded.Deploy.Predicates[0].Name);
-        Assert.Equal(2, reloaded.Seed.Predicates.Count);
-        Assert.Equal("SeedA", reloaded.Seed.Predicates[0].Name);
-        Assert.Equal("SeedB", reloaded.Seed.Predicates[1].Name);
-        Assert.Equal(ConflictStrategy.DestinationWins, reloaded.Seed.ConflictStrategy);
+        Assert.Equal(3, reloaded.Predicates.Count);
+        Assert.Equal("DeployA", reloaded.Predicates[0].Name);
+        Assert.Equal(DeploymentMode.Deploy, reloaded.Predicates[0].Mode);
+        Assert.Equal("SeedA", reloaded.Predicates[1].Name);
+        Assert.Equal(DeploymentMode.Seed, reloaded.Predicates[1].Mode);
+        Assert.Equal("SeedB", reloaded.Predicates[2].Name);
+        Assert.Equal(DeploymentMode.Seed, reloaded.Predicates[2].Mode);
         Assert.True(reloaded.DryRun);
         Assert.Equal("debug", reloaded.LogLevel);
-    }
-
-    [Fact]
-    public void Save_LegacyConfig_MigratesToDeployOnSave()
-    {
-        Directory.CreateDirectory(_outputDir);
-
-        // Write a legacy flat-shaped config directly as JSON (simulates a pre-Phase-37 file on disk).
-        File.WriteAllText(_configPath, """
-            {
-              "outputDirectory": "\\System\\Serializer",
-              "logLevel": "info",
-              "predicates": [
-                { "name": "Legacy", "path": "/", "areaId": 1 }
-              ]
-            }
-            """);
-
-        var loaded = ConfigLoader.Load(_configPath);
-        // Loader migration: legacy flat → Deploy
-        Assert.Single(loaded.Deploy.Predicates);
-        Assert.Equal("Legacy", loaded.Deploy.Predicates[0].Name);
-        Assert.Empty(loaded.Seed.Predicates);
-
-        // Now save: ConfigWriter must emit the new Deploy/Seed shape on disk.
-        ConfigWriter.Save(loaded, _configPath);
-
-        var raw = File.ReadAllText(_configPath);
-        Assert.Contains("\"deploy\":", raw);
-        Assert.Contains("\"seed\":", raw);
-        // Re-load and confirm the migrated shape round-trips: Deploy.Predicates populated,
-        // legacy fields NOT exposed via the loader's raw migration path.
-        var reloaded = ConfigLoader.Load(_configPath);
-        Assert.Single(reloaded.Deploy.Predicates);
-        Assert.Equal("Legacy", reloaded.Deploy.Predicates[0].Name);
-        Assert.Empty(reloaded.Seed.Predicates);
     }
 }

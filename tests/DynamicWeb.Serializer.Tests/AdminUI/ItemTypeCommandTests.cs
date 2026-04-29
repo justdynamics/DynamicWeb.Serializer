@@ -27,24 +27,17 @@ public class ItemTypeCommandTests : IDisposable
 
     private void CreateSeedConfig(Dictionary<string, List<string>>? excludeFieldsByItemType = null)
     {
-        // Phase 37-01.1: legacy flat ExcludeFieldsByItemType alias removed. The exclude dict is now
-        // written directly into Deploy.ExcludeFieldsByItemType; SaveItemTypeCommand.Mode defaults to
-        // Deploy so the existing assertions read through config.Deploy.ExcludeFieldsByItemType hold.
+        // Phase 40 D-04: ExcludeFieldsByItemType is a top-level dict on SerializerConfiguration.
         var config = new SerializerConfiguration
         {
             OutputDirectory = @"\System\Serializer",
             LogLevel = "info",
             DryRun = false,
-            Deploy = new ModeConfig
+            Predicates = new List<ProviderPredicateDefinition>
             {
-                OutputSubfolder = "deploy",
-                ConflictStrategy = ConflictStrategy.SourceWins,
-                Predicates = new List<ProviderPredicateDefinition>
-                {
-                    new() { Name = "Default", ProviderType = "Content", Path = "/", AreaId = 1 }
-                },
-                ExcludeFieldsByItemType = excludeFieldsByItemType ?? new()
-            }
+                new() { Name = "Default", Mode = DeploymentMode.Deploy, ProviderType = "Content", Path = "/", AreaId = 1 }
+            },
+            ExcludeFieldsByItemType = excludeFieldsByItemType ?? new()
         };
         ConfigWriter.Save(config, _configPath);
     }
@@ -98,7 +91,7 @@ public class ItemTypeCommandTests : IDisposable
 
         Assert.Equal(CommandResult.ResultType.Ok, result.Status);
         var config = LoadConfig();
-        Assert.Equal(new List<string> { "field1", "field2" }, config.Deploy.ExcludeFieldsByItemType["TestType"]);
+        Assert.Equal(new List<string> { "field1", "field2" }, config.ExcludeFieldsByItemType["TestType"]);
     }
 
     [Fact]
@@ -123,7 +116,7 @@ public class ItemTypeCommandTests : IDisposable
 
         Assert.Equal(CommandResult.ResultType.Ok, result.Status);
         var config = LoadConfig();
-        Assert.Equal(new List<string> { "field2", "field3" }, config.Deploy.ExcludeFieldsByItemType["TestType"]);
+        Assert.Equal(new List<string> { "field2", "field3" }, config.ExcludeFieldsByItemType["TestType"]);
     }
 
     [Fact]
@@ -148,7 +141,7 @@ public class ItemTypeCommandTests : IDisposable
 
         Assert.Equal(CommandResult.ResultType.Ok, result.Status);
         var config = LoadConfig();
-        Assert.Empty(config.Deploy.ExcludeFieldsByItemType["TestType"]);
+        Assert.Empty(config.ExcludeFieldsByItemType["TestType"]);
     }
 
     [Fact]
@@ -174,7 +167,7 @@ public class ItemTypeCommandTests : IDisposable
 
         Assert.Equal(CommandResult.ResultType.Ok, result.Status);
         var config = LoadConfig();
-        Assert.Equal(new List<string> { "f3" }, config.Deploy.ExcludeFieldsByItemType["TypeA"]);
-        Assert.Equal(new List<string> { "f2" }, config.Deploy.ExcludeFieldsByItemType["TypeB"]);
+        Assert.Equal(new List<string> { "f3" }, config.ExcludeFieldsByItemType["TypeA"]);
+        Assert.Equal(new List<string> { "f2" }, config.ExcludeFieldsByItemType["TypeB"]);
     }
 }
