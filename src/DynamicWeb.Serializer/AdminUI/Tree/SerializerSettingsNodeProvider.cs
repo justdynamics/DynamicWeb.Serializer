@@ -19,32 +19,18 @@ public sealed class SerializerSettingsNodeProvider : NavigationNodeProvider<Syst
     // database-administration tool.
     public const string DeveloperRootId = "Settings_Developer";
     public const string SerializeNodeId = "Serializer_Settings";
-    // Deploy/Seed group parents. Serialize -> Deploy -> {Predicates, Item Types, Embedded XML}
-    // and the mirror Seed subtree. Replaces the prior flat layout that hung six "Deploy X" /
-    // "Seed X" leaves directly under Serialize.
-    public const string DeployGroupNodeId = "Serializer_Deploy";
-    public const string SeedGroupNodeId = "Serializer_Seed";
-    // Phase 37-01 D-02: the flat Predicates node is split into two mode-scoped nodes.
-    // The legacy PredicatesNodeId is kept as a constant for backwards compatibility of any
-    // path-provider that has not migrated, but it is no longer emitted under SerializeNodeId.
+
+    // Phase 40 D-06: single flat tree under Serialize — Predicates, Item Types, Embedded XML, Log Viewer.
+    // No Deploy/Seed group split: each predicate carries its own Mode (D-01) and exclusion dicts are
+    // top-level mode-agnostic (D-04).
     public const string PredicatesNodeId = "Serializer_Predicates";
-    public const string DeployPredicatesNodeId = "Serializer_Deploy_Predicates";
-    public const string SeedPredicatesNodeId = "Serializer_Seed_Predicates";
-    // Phase 37-01.1 Task 2: Item Types and XML Types are split per-mode so Deploy.* and Seed.*
-    // ModeConfig.ExcludeFieldsByItemType / ExcludeXmlElementsByType can be edited independently
-    // through the admin UI tree. The legacy shared ItemTypesNodeId + EmbeddedXmlNodeId constants
-    // are removed (0.x beta, no backcompat per memory/feedback_no_backcompat.md).
-    public const string DeployItemTypesNodeId = "Serializer_Deploy_ItemTypes";
-    public const string SeedItemTypesNodeId = "Serializer_Seed_ItemTypes";
-    public const string DeployXmlTypesNodeId = "Serializer_Deploy_XmlTypes";
-    public const string SeedXmlTypesNodeId = "Serializer_Seed_XmlTypes";
+    public const string ItemTypesNodeId = "Serializer_ItemTypes";
+    public const string XmlTypesNodeId = "Serializer_XmlTypes";
     public const string LogViewerNodeId = "Serializer_LogViewer";
 
-    // Per-mode prefixes ensure leaf node IDs never collide between Deploy and Seed subtrees.
-    private const string DeployItemTypeCatPrefix = "Serializer_Deploy_ItemType_Cat_";
-    private const string SeedItemTypeCatPrefix = "Serializer_Seed_ItemType_Cat_";
-    private const string DeployItemTypeLeafPrefix = "Serializer_Deploy_ItemType_";
-    private const string SeedItemTypeLeafPrefix = "Serializer_Seed_ItemType_";
+    private const string ItemTypeCatPrefix = "Serializer_ItemType_Cat_";
+    private const string ItemTypeLeafPrefix = "Serializer_ItemType_";
+
     // Node IDs cannot contain '/' — DW NavigationNodePath splits on it.
     // Use '~' as separator in node IDs and convert back to '/' for category matching.
     private const char NodeIdCategorySeparator = '~';
@@ -72,29 +58,37 @@ public sealed class SerializerSettingsNodeProvider : NavigationNodeProvider<Syst
         }
         else if (parentNodePath.Last == SerializeNodeId)
         {
-            // Deploy and Seed are grouped under intermediate parent nodes. Each group exposes
-            // Predicates, Item Types, and Embedded XML as children. Log Viewer is a peer of
-            // the two groups because it spans both modes.
             yield return new NavigationNode
             {
-                Id = DeployGroupNodeId,
-                Name = "Deploy",
+                Id = PredicatesNodeId,
+                Name = "Predicates",
                 Icon = Icon.Filter,
                 Sort = 10,
                 HasSubNodes = true,
                 NodeAction = NavigateScreenAction.To<PredicateListScreen>()
-                    .With(new PredicateListQuery { Mode = DeploymentMode.Deploy })
+                    .With(new PredicateListQuery())
             };
 
             yield return new NavigationNode
             {
-                Id = SeedGroupNodeId,
-                Name = "Seed",
-                Icon = Icon.Flask, // Flask = experimental / lab-like, fits one-time seed-content role
-                Sort = 11,
+                Id = ItemTypesNodeId,
+                Name = "Item Types",
+                Icon = Icon.ListUl,
+                Sort = 20,
                 HasSubNodes = true,
-                NodeAction = NavigateScreenAction.To<PredicateListScreen>()
-                    .With(new PredicateListQuery { Mode = DeploymentMode.Seed })
+                NodeAction = NavigateScreenAction.To<ItemTypeListScreen>()
+                    .With(new ItemTypeListQuery())
+            };
+
+            yield return new NavigationNode
+            {
+                Id = XmlTypesNodeId,
+                Name = "Embedded XML",
+                Icon = Icon.BracketsCurly,
+                Sort = 30,
+                HasSubNodes = HasXmlTypes(),
+                NodeAction = NavigateScreenAction.To<XmlTypeListScreen>()
+                    .With(new XmlTypeListQuery())
             };
 
             yield return new NavigationNode
@@ -102,120 +96,42 @@ public sealed class SerializerSettingsNodeProvider : NavigationNodeProvider<Syst
                 Id = LogViewerNodeId,
                 Name = "Log Viewer",
                 Icon = Icon.History,
-                Sort = 20,
+                Sort = 40,
                 HasSubNodes = false,
                 NodeAction = NavigateScreenAction.To<LogViewerScreen>()
                     .With(new LogViewerQuery())
             };
         }
-        else if (parentNodePath.Last == DeployGroupNodeId)
+        else if (parentNodePath.Last == PredicatesNodeId)
         {
-            foreach (var node in GetModeGroupChildren(DeploymentMode.Deploy))
+            foreach (var node in GetPredicateNodes())
                 yield return node;
         }
-        else if (parentNodePath.Last == SeedGroupNodeId)
+        else if (parentNodePath.Last == XmlTypesNodeId)
         {
-            foreach (var node in GetModeGroupChildren(DeploymentMode.Seed))
+            foreach (var node in GetXmlTypeNodes())
                 yield return node;
         }
-        else if (parentNodePath.Last == DeployPredicatesNodeId)
+        else if (parentNodePath.Last == ItemTypesNodeId)
         {
-            foreach (var node in GetModePredicateNodes(DeploymentMode.Deploy, "Deploy"))
+            foreach (var node in GetItemTypeCategoryNodes(null))
                 yield return node;
         }
-        else if (parentNodePath.Last == SeedPredicatesNodeId)
+        else if (parentNodePath.Last.StartsWith(ItemTypeCatPrefix, StringComparison.Ordinal))
         {
-            foreach (var node in GetModePredicateNodes(DeploymentMode.Seed, "Seed"))
-                yield return node;
-        }
-        else if (parentNodePath.Last == DeployXmlTypesNodeId)
-        {
-            foreach (var node in GetXmlTypeNodes(DeploymentMode.Deploy))
-                yield return node;
-        }
-        else if (parentNodePath.Last == SeedXmlTypesNodeId)
-        {
-            foreach (var node in GetXmlTypeNodes(DeploymentMode.Seed))
-                yield return node;
-        }
-        else if (parentNodePath.Last == DeployItemTypesNodeId)
-        {
-            foreach (var node in GetItemTypeCategoryNodes(DeploymentMode.Deploy, null))
-                yield return node;
-        }
-        else if (parentNodePath.Last == SeedItemTypesNodeId)
-        {
-            foreach (var node in GetItemTypeCategoryNodes(DeploymentMode.Seed, null))
-                yield return node;
-        }
-        else if (parentNodePath.Last.StartsWith(DeployItemTypeCatPrefix, StringComparison.Ordinal))
-        {
-            var categoryPath = parentNodePath.Last[DeployItemTypeCatPrefix.Length..].Replace(NodeIdCategorySeparator, '/');
-            foreach (var node in GetItemTypeCategoryNodes(DeploymentMode.Deploy, categoryPath))
-                yield return node;
-        }
-        else if (parentNodePath.Last.StartsWith(SeedItemTypeCatPrefix, StringComparison.Ordinal))
-        {
-            var categoryPath = parentNodePath.Last[SeedItemTypeCatPrefix.Length..].Replace(NodeIdCategorySeparator, '/');
-            foreach (var node in GetItemTypeCategoryNodes(DeploymentMode.Seed, categoryPath))
+            var categoryPath = parentNodePath.Last[ItemTypeCatPrefix.Length..].Replace(NodeIdCategorySeparator, '/');
+            foreach (var node in GetItemTypeCategoryNodes(categoryPath))
                 yield return node;
         }
     }
 
     /// <summary>
-    /// Emits the three per-mode children (Predicates, Item Types, Embedded XML) that sit under
-    /// the Deploy or Seed group node. Display names drop the mode prefix because the parent
-    /// group disambiguates. <see cref="NavigationNode.HasSubNodes"/> reflects actual data — an
-    /// empty <see cref="ModeConfig.ExcludeXmlElementsByType"/> dict produces a leaf node that
-    /// opens the list screen on click, without a misleading expand arrow.
-    /// </summary>
-    private static IEnumerable<NavigationNode> GetModeGroupChildren(DeploymentMode mode)
-    {
-        var predicatesNodeId = mode == DeploymentMode.Deploy ? DeployPredicatesNodeId : SeedPredicatesNodeId;
-        var itemTypesNodeId = mode == DeploymentMode.Deploy ? DeployItemTypesNodeId : SeedItemTypesNodeId;
-        var xmlTypesNodeId = mode == DeploymentMode.Deploy ? DeployXmlTypesNodeId : SeedXmlTypesNodeId;
-
-        yield return new NavigationNode
-        {
-            Id = predicatesNodeId,
-            Name = "Predicates",
-            Icon = Icon.Filter,
-            Sort = 10,
-            HasSubNodes = true,
-            NodeAction = NavigateScreenAction.To<PredicateListScreen>()
-                .With(new PredicateListQuery { Mode = mode })
-        };
-
-        yield return new NavigationNode
-        {
-            Id = itemTypesNodeId,
-            Name = "Item Types",
-            Icon = Icon.ListUl,
-            Sort = 20,
-            HasSubNodes = true,
-            NodeAction = NavigateScreenAction.To<ItemTypeListScreen>()
-                .With(new ItemTypeListQuery { Mode = mode })
-        };
-
-        yield return new NavigationNode
-        {
-            Id = xmlTypesNodeId,
-            Name = "Embedded XML",
-            Icon = Icon.BracketsCurly,
-            Sort = 30,
-            HasSubNodes = HasXmlTypes(mode),
-            NodeAction = NavigateScreenAction.To<XmlTypeListScreen>()
-                .With(new XmlTypeListQuery { Mode = mode })
-        };
-    }
-
-    /// <summary>
-    /// Returns true only when the mode's <see cref="ModeConfig.ExcludeXmlElementsByType"/> dict
-    /// has at least one key. Used to set <see cref="NavigationNode.HasSubNodes"/> honestly —
+    /// Phase 40 D-06: returns true when the top-level <see cref="SerializerConfiguration.ExcludeXmlElementsByType"/>
+    /// dict has at least one key. Used to set <see cref="NavigationNode.HasSubNodes"/> honestly —
     /// an empty dict means the node should render as a leaf (no expand arrow), not as an empty
     /// expandable branch.
     /// </summary>
-    private static bool HasXmlTypes(DeploymentMode mode)
+    private static bool HasXmlTypes()
     {
         var configPath = ConfigPathResolver.FindConfigFile();
         if (configPath == null) return false;
@@ -223,7 +139,7 @@ public sealed class SerializerSettingsNodeProvider : NavigationNodeProvider<Syst
         try
         {
             var config = ConfigLoader.Load(configPath);
-            return config.GetMode(mode).ExcludeXmlElementsByType.Count > 0;
+            return config.ExcludeXmlElementsByType.Count > 0;
         }
         catch
         {
@@ -232,10 +148,10 @@ public sealed class SerializerSettingsNodeProvider : NavigationNodeProvider<Syst
     }
 
     /// <summary>
-    /// Emits one XML-type leaf per key in the given mode's <see cref="ModeConfig.ExcludeXmlElementsByType"/>
-    /// dict. Leaf node IDs include the mode prefix so Deploy and Seed subtrees don't collide.
+    /// Phase 40 D-06: emits one XML-type leaf per key in the top-level
+    /// <see cref="SerializerConfiguration.ExcludeXmlElementsByType"/> dict.
     /// </summary>
-    private static IEnumerable<NavigationNode> GetXmlTypeNodes(DeploymentMode mode)
+    private static IEnumerable<NavigationNode> GetXmlTypeNodes()
     {
         var configPath = ConfigPathResolver.FindConfigFile();
         if (configPath == null) yield break;
@@ -244,31 +160,28 @@ public sealed class SerializerSettingsNodeProvider : NavigationNodeProvider<Syst
         try { config = ConfigLoader.Load(configPath); }
         catch { yield break; }
 
-        var modeConfig = config.GetMode(mode);
-        var modeName = mode.ToString();
         var sort = 0;
-        foreach (var typeName in modeConfig.ExcludeXmlElementsByType.Keys.OrderBy(k => k, StringComparer.OrdinalIgnoreCase))
+        foreach (var typeName in config.ExcludeXmlElementsByType.Keys.OrderBy(k => k, StringComparer.OrdinalIgnoreCase))
         {
             yield return new NavigationNode
             {
-                Id = $"Serializer_{modeName}_XmlType_{typeName}",
+                Id = $"Serializer_XmlType_{typeName}",
                 Name = typeName,
                 Icon = Icon.BracketsCurly,
                 Sort = sort++,
                 HasSubNodes = false,
                 NodeAction = NavigateScreenAction.To<XmlTypeEditScreen>()
-                    .With(new XmlTypeByNameQuery { ModelIdentifier = typeName, Mode = mode })
+                    .With(new XmlTypeByNameQuery { ModelIdentifier = typeName })
             };
         }
     }
 
     /// <summary>
-    /// Emits a child predicate node for each predicate in the given mode's ModeConfig. Node IDs
-    /// use the <c>Serializer_{ModeName}_Predicate_{index}</c> prefix so
-    /// <see cref="PredicateNavigationNodePathProvider"/> (and the query itself) can distinguish
-    /// which mode the predicate belongs to when the user drills into its edit screen.
+    /// Phase 40 D-06: emits a child predicate node for each predicate in the flat
+    /// <see cref="SerializerConfiguration.Predicates"/> list. Display name carries the mode badge
+    /// so users can see at a glance which mode each predicate runs under.
     /// </summary>
-    private static IEnumerable<NavigationNode> GetModePredicateNodes(DeploymentMode mode, string modeDisplayName)
+    private static IEnumerable<NavigationNode> GetPredicateNodes()
     {
         var configPath = ConfigPathResolver.FindConfigFile();
         if (configPath == null) yield break;
@@ -277,37 +190,28 @@ public sealed class SerializerSettingsNodeProvider : NavigationNodeProvider<Syst
         try { config = ConfigLoader.Load(configPath); }
         catch { yield break; }
 
-        var modeConfig = config.GetMode(mode);
-        for (var i = 0; i < modeConfig.Predicates.Count; i++)
+        for (var i = 0; i < config.Predicates.Count; i++)
         {
-            var pred = modeConfig.Predicates[i];
+            var pred = config.Predicates[i];
             yield return new NavigationNode
             {
-                Id = $"Serializer_{modeDisplayName}_Predicate_{i}",
-                Name = pred.Name,
+                Id = $"Serializer_Predicate_{i}",
+                Name = $"{pred.Name} ({pred.Mode})",  // mode badge in display name (D-06)
                 Icon = pred.ProviderType == "SqlTable" ? Icon.Table : Icon.FileAlt,
                 Sort = i,
                 HasSubNodes = false,
                 NodeAction = NavigateScreenAction.To<PredicateEditScreen>()
-                    .With(new PredicateByIndexQuery
-                    {
-                        ModelIdentifier = (i + 1).ToString(),
-                        Mode = mode
-                    })
+                    .With(new PredicateByIndexQuery { ModelIdentifier = (i + 1).ToString() })
             };
         }
     }
 
     /// <summary>
-    /// Emits the Item Type category tree for one <see cref="DeploymentMode"/>. Same shape as the
-    /// pre-37-01.1 shared tree — just scoped so Deploy and Seed have independent node IDs (no
-    /// collision) and leaves open an <see cref="ItemTypeBySystemNameQuery"/> pinned to the mode.
+    /// Phase 40 D-06: single Item Type category tree (no per-mode split). Same shape as the
+    /// pre-37-01.1 shared tree — leaves open <see cref="ItemTypeBySystemNameQuery"/> without a Mode.
     /// </summary>
-    private static IEnumerable<NavigationNode> GetItemTypeCategoryNodes(DeploymentMode mode, string? parentCategory)
+    private static IEnumerable<NavigationNode> GetItemTypeCategoryNodes(string? parentCategory)
     {
-        var catPrefix = mode == DeploymentMode.Deploy ? DeployItemTypeCatPrefix : SeedItemTypeCatPrefix;
-        var leafPrefix = mode == DeploymentMode.Deploy ? DeployItemTypeLeafPrefix : SeedItemTypeLeafPrefix;
-
         List<ItemType> allTypes;
         try
         {
@@ -335,13 +239,13 @@ public sealed class SerializerSettingsNodeProvider : NavigationNodeProvider<Syst
             {
                 yield return new NavigationNode
                 {
-                    Id = catPrefix + group.Key.Replace('/', NodeIdCategorySeparator),
+                    Id = ItemTypeCatPrefix + group.Key.Replace('/', NodeIdCategorySeparator),
                     Name = group.Key,
                     Icon = Icon.Folder,
                     Sort = sort++,
                     HasSubNodes = true,
                     NodeAction = NavigateScreenAction.To<ItemTypeListScreen>()
-                        .With(new ItemTypeListQuery { Mode = mode })
+                        .With(new ItemTypeListQuery())
                 };
             }
         }
@@ -371,13 +275,13 @@ public sealed class SerializerSettingsNodeProvider : NavigationNodeProvider<Syst
                 var fullPath = parentCategory + "/" + subCat;
                 yield return new NavigationNode
                 {
-                    Id = catPrefix + fullPath.Replace('/', NodeIdCategorySeparator),
+                    Id = ItemTypeCatPrefix + fullPath.Replace('/', NodeIdCategorySeparator),
                     Name = subCat!,
                     Icon = Icon.Folder,
                     Sort = sort++,
                     HasSubNodes = true,
                     NodeAction = NavigateScreenAction.To<ItemTypeListScreen>()
-                        .With(new ItemTypeListQuery { Mode = mode })
+                        .With(new ItemTypeListQuery())
                 };
             }
 
@@ -394,13 +298,13 @@ public sealed class SerializerSettingsNodeProvider : NavigationNodeProvider<Syst
 
                 yield return new NavigationNode
                 {
-                    Id = leafPrefix + itemType.SystemName,
+                    Id = ItemTypeLeafPrefix + itemType.SystemName,
                     Name = itemType.Name,
                     Icon = icon,
                     Sort = sort++,
                     HasSubNodes = false,
                     NodeAction = NavigateScreenAction.To<ItemTypeEditScreen>()
-                        .With(new ItemTypeBySystemNameQuery { ModelIdentifier = itemType.SystemName, Mode = mode })
+                        .With(new ItemTypeBySystemNameQuery { ModelIdentifier = itemType.SystemName })
                 };
             }
         }

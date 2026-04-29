@@ -7,14 +7,10 @@ using Xunit;
 namespace DynamicWeb.Serializer.Tests.AdminUI;
 
 /// <summary>
-/// Phase 37-01.1 Task 2 — SerializerSettingsNodeProvider emits per-mode Item Type + XML Type
-/// subtrees under the Deploy and Seed mode nodes, preserving the shared category-grouping
-/// tree structure. Node IDs are unique across modes so Deploy and Seed do not collide.
-///
-/// These tests exercise the provider directly — they do NOT rely on live DW ItemManager
-/// metadata. ItemType category/leaf enumeration inside the Item Types subtree depends on
-/// ItemManager and is therefore covered only by the "node shape + non-crash" assertions here;
-/// the user-visible leaf behaviour is covered end-to-end by the admin UI tree.
+/// Phase 40 D-06 — SerializerSettingsNodeProvider emits a single flat predicate subtree (no
+/// Deploy/Seed group split). Each predicate carries its own Mode (D-01) and exclusion dicts are
+/// top-level mode-agnostic (D-04). Class name preserved (rather than renamed to
+/// SerializerSettingsNodeProviderTreeTests) to keep test runner identity stable.
 /// </summary>
 public class SerializerSettingsNodeProviderModeTreeTests : IDisposable
 {
@@ -24,7 +20,7 @@ public class SerializerSettingsNodeProviderModeTreeTests : IDisposable
 
     public SerializerSettingsNodeProviderModeTreeTests()
     {
-        _tempDir = Path.Combine(Path.GetTempPath(), "SerSetNodeModeTreeTests_" + Guid.NewGuid().ToString("N")[..8]);
+        _tempDir = Path.Combine(Path.GetTempPath(), "SerSetNodeTreeTests_" + Guid.NewGuid().ToString("N")[..8]);
         Directory.CreateDirectory(_tempDir);
         _configPath = Path.Combine(_tempDir, "Serializer.config.json");
         _savedOverride = ConfigPathResolver.TestOverridePath;
@@ -39,30 +35,16 @@ public class SerializerSettingsNodeProviderModeTreeTests : IDisposable
     }
 
     private void WriteConfig(
-        Dictionary<string, List<string>>? deployFields = null,
-        Dictionary<string, List<string>>? seedFields = null,
-        Dictionary<string, List<string>>? deployXml = null,
-        Dictionary<string, List<string>>? seedXml = null)
+        List<ProviderPredicateDefinition>? predicates = null,
+        Dictionary<string, List<string>>? excludeFieldsByItemType = null,
+        Dictionary<string, List<string>>? excludeXmlElementsByType = null)
     {
         var config = new SerializerConfiguration
         {
             OutputDirectory = @"\System\Serializer",
-            Deploy = new ModeConfig
-            {
-                OutputSubfolder = "deploy",
-                ConflictStrategy = ConflictStrategy.SourceWins,
-                Predicates = new List<ProviderPredicateDefinition>(),
-                ExcludeFieldsByItemType = deployFields ?? new Dictionary<string, List<string>>(),
-                ExcludeXmlElementsByType = deployXml ?? new Dictionary<string, List<string>>()
-            },
-            Seed = new ModeConfig
-            {
-                OutputSubfolder = "seed",
-                ConflictStrategy = ConflictStrategy.DestinationWins,
-                Predicates = new List<ProviderPredicateDefinition>(),
-                ExcludeFieldsByItemType = seedFields ?? new Dictionary<string, List<string>>(),
-                ExcludeXmlElementsByType = seedXml ?? new Dictionary<string, List<string>>()
-            }
+            Predicates = predicates ?? new List<ProviderPredicateDefinition>(),
+            ExcludeFieldsByItemType = excludeFieldsByItemType ?? new Dictionary<string, List<string>>(),
+            ExcludeXmlElementsByType = excludeXmlElementsByType ?? new Dictionary<string, List<string>>()
         };
         ConfigWriter.Save(config, _configPath);
     }
@@ -70,176 +52,107 @@ public class SerializerSettingsNodeProviderModeTreeTests : IDisposable
     private static NavigationNodePath PathTo(params string[] segments) => new(segments);
 
     // -------------------------------------------------------------------------
-    // Root-level: Serialize node children include Deploy + Seed with Item Types + XML Types.
+    // Phase 40 D-06: Serialize node has 4 children — Predicates, Item Types, Embedded XML, Log Viewer.
+    // No Deploy/Seed group split.
     // -------------------------------------------------------------------------
 
     [Fact]
-    public void Root_ContainsTwoModeNodes_EachWithItemTypesAndXmlTypesChildren()
+    public void GetSubNodes_UnderSerializeNode_Returns_Predicates_ItemTypes_XmlTypes_LogViewer()
     {
         WriteConfig();
         var provider = new SerializerSettingsNodeProvider();
 
-        // Serialize node's direct children are now the Deploy / Seed group parents + Log Viewer.
-        // The six mode-specific leaves (Predicates, Item Types, Embedded XML — one each per mode)
-        // hang under the group parents.
         var rootChildren = provider
             .GetSubNodes(PathTo(SerializerSettingsNodeProvider.DeveloperRootId, SerializerSettingsNodeProvider.SerializeNodeId))
             .Select(n => n.Id)
             .ToList();
 
-        Assert.Contains(SerializerSettingsNodeProvider.DeployGroupNodeId, rootChildren);
-        Assert.Contains(SerializerSettingsNodeProvider.SeedGroupNodeId, rootChildren);
+        Assert.Equal(4, rootChildren.Count);
+        Assert.Contains(SerializerSettingsNodeProvider.PredicatesNodeId, rootChildren);
+        Assert.Contains(SerializerSettingsNodeProvider.ItemTypesNodeId, rootChildren);
+        Assert.Contains(SerializerSettingsNodeProvider.XmlTypesNodeId, rootChildren);
         Assert.Contains(SerializerSettingsNodeProvider.LogViewerNodeId, rootChildren);
-
-        // Under Deploy group: Predicates, Item Types, Embedded XML.
-        var deployChildren = provider
-            .GetSubNodes(PathTo(SerializerSettingsNodeProvider.DeveloperRootId, SerializerSettingsNodeProvider.SerializeNodeId, SerializerSettingsNodeProvider.DeployGroupNodeId))
-            .Select(n => n.Id)
-            .ToList();
-        Assert.Contains(SerializerSettingsNodeProvider.DeployPredicatesNodeId, deployChildren);
-        Assert.Contains(SerializerSettingsNodeProvider.DeployItemTypesNodeId, deployChildren);
-        Assert.Contains(SerializerSettingsNodeProvider.DeployXmlTypesNodeId, deployChildren);
-
-        // Under Seed group: same triple, seed-scoped.
-        var seedChildren = provider
-            .GetSubNodes(PathTo(SerializerSettingsNodeProvider.DeveloperRootId, SerializerSettingsNodeProvider.SerializeNodeId, SerializerSettingsNodeProvider.SeedGroupNodeId))
-            .Select(n => n.Id)
-            .ToList();
-        Assert.Contains(SerializerSettingsNodeProvider.SeedPredicatesNodeId, seedChildren);
-        Assert.Contains(SerializerSettingsNodeProvider.SeedItemTypesNodeId, seedChildren);
-        Assert.Contains(SerializerSettingsNodeProvider.SeedXmlTypesNodeId, seedChildren);
     }
 
+    // -------------------------------------------------------------------------
+    // Phase 40 D-06: Predicates subtree lists every predicate with its mode in display name.
+    // -------------------------------------------------------------------------
+
     [Fact]
-    public void NodeIds_AreUniqueAcrossModes()
+    public void GetSubNodes_UnderPredicatesNode_Lists_All_Predicates_With_Mode_In_Display_Name()
     {
-        // Guards against collision between Deploy/Seed subtree IDs (DW NavigationNodePath uses
-        // the full ID chain for highlighting; duplicate IDs would cross-hit).
-        var ids = new[]
+        WriteConfig(predicates: new List<ProviderPredicateDefinition>
         {
-            SerializerSettingsNodeProvider.DeployItemTypesNodeId,
-            SerializerSettingsNodeProvider.SeedItemTypesNodeId,
-            SerializerSettingsNodeProvider.DeployXmlTypesNodeId,
-            SerializerSettingsNodeProvider.SeedXmlTypesNodeId,
-            SerializerSettingsNodeProvider.DeployPredicatesNodeId,
-            SerializerSettingsNodeProvider.SeedPredicatesNodeId
-        };
-        Assert.Equal(ids.Length, ids.Distinct().Count());
+            new() { Name = "FirstDeploy", Mode = DeploymentMode.Deploy, ProviderType = "Content", Path = "/d", AreaId = 1, PageId = 10 },
+            new() { Name = "SecondSeed", Mode = DeploymentMode.Seed, ProviderType = "SqlTable", Table = "EcomShops" }
+        });
+        var provider = new SerializerSettingsNodeProvider();
+
+        var nodes = provider
+            .GetSubNodes(PathTo(SerializerSettingsNodeProvider.SerializeNodeId, SerializerSettingsNodeProvider.PredicatesNodeId))
+            .ToList();
+
+        Assert.Equal(2, nodes.Count);
+        Assert.Contains(nodes, n => n.Name == "FirstDeploy (Deploy)");
+        Assert.Contains(nodes, n => n.Name == "SecondSeed (Seed)");
     }
 
     // -------------------------------------------------------------------------
-    // Deploy / Seed XML Types leaves are sourced from the mode's dict only.
+    // Phase 40 D-04: Embedded XML subtree lists keys from the top-level dict.
     // -------------------------------------------------------------------------
 
     [Fact]
-    public void DeployXmlTypes_ListsOnlyDeployKeys()
+    public void GetSubNodes_UnderXmlTypesNode_Lists_All_Top_Level_Excluded_Types()
     {
-        WriteConfig(
-            deployXml: new Dictionary<string, List<string>>
-            {
-                ["DeployXmlA"] = new List<string> { "el1" },
-                ["DeployXmlB"] = new List<string>()
-            },
-            seedXml: new Dictionary<string, List<string>>
-            {
-                ["SeedXmlOnly"] = new List<string>()
-            });
+        WriteConfig(excludeXmlElementsByType: new Dictionary<string, List<string>>
+        {
+            ["TypeA"] = new List<string> { "el1" },
+            ["TypeB"] = new List<string>(),
+            ["TypeC"] = new List<string> { "x", "y" }
+        });
         var provider = new SerializerSettingsNodeProvider();
 
         var names = provider
-            .GetSubNodes(PathTo(SerializerSettingsNodeProvider.SerializeNodeId, SerializerSettingsNodeProvider.DeployXmlTypesNodeId))
+            .GetSubNodes(PathTo(SerializerSettingsNodeProvider.SerializeNodeId, SerializerSettingsNodeProvider.XmlTypesNodeId))
             .Select(n => n.Name)
             .ToList();
 
-        Assert.Contains("DeployXmlA", names);
-        Assert.Contains("DeployXmlB", names);
-        Assert.DoesNotContain("SeedXmlOnly", names);
+        Assert.Equal(3, names.Count);
+        Assert.Contains("TypeA", names);
+        Assert.Contains("TypeB", names);
+        Assert.Contains("TypeC", names);
     }
 
     [Fact]
-    public void SeedXmlTypes_ListsOnlySeedKeys()
-    {
-        WriteConfig(
-            deployXml: new Dictionary<string, List<string>>
-            {
-                ["DeployOnly"] = new List<string>()
-            },
-            seedXml: new Dictionary<string, List<string>>
-            {
-                ["SeedXmlA"] = new List<string>(),
-                ["SeedXmlB"] = new List<string>()
-            });
-        var provider = new SerializerSettingsNodeProvider();
-
-        var names = provider
-            .GetSubNodes(PathTo(SerializerSettingsNodeProvider.SerializeNodeId, SerializerSettingsNodeProvider.SeedXmlTypesNodeId))
-            .Select(n => n.Name)
-            .ToList();
-
-        Assert.Contains("SeedXmlA", names);
-        Assert.Contains("SeedXmlB", names);
-        Assert.DoesNotContain("DeployOnly", names);
-    }
-
-    // -------------------------------------------------------------------------
-    // Deploy / Seed Item Types top-level category enumeration (no DW runtime in test env,
-    // so we assert no-crash + correct node emission semantics — the category grouping uses
-    // ItemManager metadata which is unavailable offline).
-    // -------------------------------------------------------------------------
-
-    [Fact]
-    public void DeployItemTypes_UnderDeployParent_EmitsWithoutCrashing()
-    {
-        WriteConfig(
-            deployFields: new Dictionary<string, List<string>> { ["TypeA"] = new List<string> { "f" } },
-            seedFields: new Dictionary<string, List<string>> { ["TypeB"] = new List<string> { "g" } });
-        var provider = new SerializerSettingsNodeProvider();
-
-        var nodes = provider.GetSubNodes(PathTo(
-            SerializerSettingsNodeProvider.SerializeNodeId,
-            SerializerSettingsNodeProvider.DeployItemTypesNodeId)).ToList();
-
-        // No crash; depending on ItemManager availability may be empty.
-        Assert.NotNull(nodes);
-    }
-
-    [Fact]
-    public void SeedItemTypes_UnderSeedParent_EmitsWithoutCrashing()
+    public void GetSubNodes_UnderXmlTypesNode_EmptyDict_ReturnsNoNodes()
     {
         WriteConfig();
         var provider = new SerializerSettingsNodeProvider();
 
-        var nodes = provider.GetSubNodes(PathTo(
-            SerializerSettingsNodeProvider.SerializeNodeId,
-            SerializerSettingsNodeProvider.SeedItemTypesNodeId)).ToList();
+        var nodes = provider
+            .GetSubNodes(PathTo(SerializerSettingsNodeProvider.SerializeNodeId, SerializerSettingsNodeProvider.XmlTypesNodeId))
+            .ToList();
 
-        Assert.NotNull(nodes);
+        Assert.Empty(nodes);
     }
 
     // -------------------------------------------------------------------------
-    // Legacy shared ItemTypesNodeId constant must be removed (grep-equivalent guard:
-    // reflection is fragile; this test exists so a human reading the file sees the intent,
-    // but the true guard is the grep acceptance criterion).
+    // Phase 40 D-06: Item Types subtree emits without crashing when DW runtime is offline.
     // -------------------------------------------------------------------------
 
     [Fact]
-    public void LegacyItemTypesNodeId_IsNoLongerSharedRootChild()
+    public void GetSubNodes_UnderItemTypesNode_EmitsWithoutCrashing()
     {
-        // Under the new tree the old "Serializer_ItemTypes" constant is NOT expected to
-        // appear as a child of the Serialize node — it has been split into Deploy + Seed
-        // variants. This test will fail with a compile error if we leave the constant behind
-        // AND emit it at the root in RED state.
-        WriteConfig();
+        WriteConfig(excludeFieldsByItemType: new Dictionary<string, List<string>>
+        {
+            ["TypeA"] = new List<string> { "field1" }
+        });
         var provider = new SerializerSettingsNodeProvider();
 
-        var rootChildren = provider
-            .GetSubNodes(PathTo("Settings_Database", SerializerSettingsNodeProvider.SerializeNodeId))
-            .Select(n => n.Id)
+        var nodes = provider
+            .GetSubNodes(PathTo(SerializerSettingsNodeProvider.SerializeNodeId, SerializerSettingsNodeProvider.ItemTypesNodeId))
             .ToList();
 
-        Assert.DoesNotContain("Serializer_ItemTypes", rootChildren);
-        // The old "Embedded XML" shared node is also gone under the new scheme (replaced by
-        // DeployXmlTypes / SeedXmlTypes).
-        Assert.DoesNotContain("Serializer_EmbeddedXml", rootChildren);
+        Assert.NotNull(nodes);
     }
 }

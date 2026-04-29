@@ -10,26 +10,19 @@ public sealed class XmlTypeListQuery : DataQueryModelBase<DataListViewModel<XmlT
     /// <summary>Optional config path override for tests -- bypasses ConfigPathResolver.</summary>
     public string? ConfigPath { get; set; }
 
-    /// <summary>
-    /// Which <see cref="DeploymentMode"/>'s <see cref="ModeConfig.ExcludeXmlElementsByType"/> is
-    /// enumerated (Phase 37-01.1). Seed and Deploy XML-type subtrees list only their own keys.
-    /// </summary>
-    public DeploymentMode Mode { get; set; } = DeploymentMode.Deploy;
-
     public override DataListViewModel<XmlTypeListModel>? GetModel()
     {
-        var configPath = ConfigPath ?? ConfigPathResolver.FindConfigFile();
+        var configPath = ConfigPathResolver.FindConfigFile();
         if (configPath == null)
             return new DataListViewModel<XmlTypeListModel>();
 
         var config = ConfigLoader.Load(configPath);
-        var dict = config.GetMode(Mode).ExcludeXmlElementsByType;
-        var mode = Mode;
+        // Phase 40 D-04: exclusion dict is top-level, mode-agnostic.
+        var dict = config.ExcludeXmlElementsByType;
         var items = dict
             .OrderBy(kv => kv.Key, StringComparer.OrdinalIgnoreCase)
             .Select(kv => new XmlTypeListModel
             {
-                Mode = mode,
                 TypeName = kv.Key,
                 ExcludedElementCount = kv.Value.Count
             })

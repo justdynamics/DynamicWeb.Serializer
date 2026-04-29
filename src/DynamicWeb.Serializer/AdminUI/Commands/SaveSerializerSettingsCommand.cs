@@ -11,21 +11,17 @@ public sealed class SaveSerializerSettingsCommand : CommandBase<SerializerSettin
     {
         if (Model is null)
             return new() { Status = CommandResult.ResultType.Invalid, Message = "Model data must be given" };
-
         if (string.IsNullOrWhiteSpace(Model.OutputDirectory))
             return new() { Status = CommandResult.ResultType.Invalid, Message = "Output Directory is required" };
 
         try
         {
             var configPath = ConfigPathResolver.FindOrCreateConfigFile();
-
-            // Resolve OutputDirectory relative to Files/System and ensure subdirectories exist
-            var filesDir = Path.GetDirectoryName(configPath)!; // wwwroot/Files/
+            var filesDir = Path.GetDirectoryName(configPath)!;
             var systemDir = Path.Combine(filesDir, "System");
             var resolvedOutputDir = Path.GetFullPath(
                 Path.Combine(systemDir, Model.OutputDirectory.TrimStart('\\', '/')));
 
-            // Create the top-level folder and all subfolders (serializeRoot, upload, download)
             try
             {
                 var tempConfig = new SerializerConfiguration
@@ -46,26 +42,15 @@ public sealed class SaveSerializerSettingsCommand : CommandBase<SerializerSettin
 
             var existingConfig = ConfigLoader.Load(configPath);
 
-            // Phase 37-01 D-02: settings screen does not edit predicates directly — the Deploy
-            // and Seed ModeConfigs round-trip unchanged. ConflictStrategy on the top-level model
-            // maps to Deploy's strategy (legacy alias); Seed keeps its own strategy.
-            var conflictStrategy = Model.ConflictStrategy switch
-            {
-                "source-wins" => Configuration.ConflictStrategy.SourceWins,
-                "destination-wins" => Configuration.ConflictStrategy.DestinationWins,
-                _ => Configuration.ConflictStrategy.SourceWins
-            };
-
-            var updatedDeploy = existingConfig.Deploy with { ConflictStrategy = conflictStrategy };
-
-            var updatedConfig = new SerializerConfiguration
+            // Phase 40 D-02: ConflictStrategy is no longer a config knob — it's hardcoded per mode
+            // in SerializerConfiguration.GetConflictStrategyForMode. The settings model still
+            // exposes the field for UI compat but the value is dropped on save.
+            var updatedConfig = existingConfig with
             {
                 OutputDirectory = Model.OutputDirectory,
                 LogLevel = Model.LogLevel,
                 DryRun = Model.DryRun,
-                StrictMode = Model.StrictMode, // Phase 37-04 STRICT-01: null = entry-point default
-                Deploy = updatedDeploy,
-                Seed = existingConfig.Seed
+                StrictMode = Model.StrictMode
             };
 
             ConfigWriter.Save(updatedConfig, configPath);

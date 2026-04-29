@@ -53,11 +53,16 @@ public class AreaIdentityInsertTests
         });
     }
 
+    // Phase 40 D-02 / D-04: flat shape — DeployOutputSubfolder / SeedOutputSubfolder are
+    // top-level scalars; Predicates is empty for this test (it drives the area-create path
+    // through the InvokeCreateAreaFromPropertiesForTest test hook, which does not iterate
+    // predicates). Mode-defaulting is irrelevant here.
     private static SerializerConfiguration MakeMinimalConfig() => new()
     {
         OutputDirectory = "X",
-        Deploy = new ModeConfig { OutputSubfolder = "deploy" },
-        Seed = new ModeConfig { OutputSubfolder = "seed" }
+        DeployOutputSubfolder = "deploy",
+        SeedOutputSubfolder = "seed",
+        Predicates = new List<ProviderPredicateDefinition>()
     };
 
     private static SerializedArea MakeSerializedArea() => new()

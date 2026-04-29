@@ -8,12 +8,13 @@ public sealed class PredicateListModel : DataViewModelBase
     public int Index { get; set; }
 
     /// <summary>
-    /// Which ModeConfig this predicate lives under (Phase 37-01 D-02). Set by
-    /// <see cref="Queries.PredicateListQuery"/>; used by
-    /// <see cref="Tree.PredicateNavigationNodePathProvider"/> to terminate the navigation path
-    /// at the correct per-mode predicate-group node.
+    /// Phase 40 D-06: the predicate's own deployment mode. Surfaced in the list view via ModeDisplay
+    /// and used by PredicateListScreen to thread the mode into Edit/Delete actions on each row.
     /// </summary>
     public DeploymentMode Mode { get; set; } = DeploymentMode.Deploy;
+
+    [ConfigurableProperty("Mode")]
+    public string ModeDisplay => Mode == DeploymentMode.Deploy ? "Deploy" : "Seed";
 
     [ConfigurableProperty("Name")]
     public string Name { get; set; } = string.Empty;

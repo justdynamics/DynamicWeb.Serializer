@@ -9,10 +9,11 @@ public sealed class PredicateEditModel : DataViewModelBase, IIdentifiable
     public int Index { get; set; } = -1;
 
     /// <summary>
-    /// Which <see cref="DeploymentMode"/> this predicate lives under (Phase 37-01 D-02). Set by
-    /// <see cref="Queries.PredicateByIndexQuery"/>; read by
-    /// <see cref="Commands.SavePredicateCommand"/> to append / update the correct ModeConfig.
+    /// Phase 40 D-01: the predicate's own deployment mode. Persists into ProviderPredicateDefinition.Mode.
+    /// Read by SavePredicateCommand when constructing the saved predicate, and by PredicateByIndexQuery
+    /// when populating the edit screen for an existing predicate. Defaults to Deploy on the new-predicate path.
     /// </summary>
+    [ConfigurableProperty("Mode", explanation: "Deploy = source-wins (overwrite target). Seed = field-level merge (preserve customer-edited fields).")]
     public DeploymentMode Mode { get; set; } = DeploymentMode.Deploy;
 
     // DW framework treats "0" as "no identifier" — use 1-based for round-tripping

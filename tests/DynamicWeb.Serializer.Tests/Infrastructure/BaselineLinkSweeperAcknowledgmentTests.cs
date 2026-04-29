@@ -11,8 +11,9 @@ namespace DynamicWeb.Serializer.Tests.Infrastructure;
 /// under Task 1 of this plan (A.3 / D-38-03).
 ///
 /// Tests drive the <see cref="BaselineLinkSweeper"/> directly and compose with the
-/// post-A.3 filter the <see cref="ContentSerializer"/> now uses:
-///   <c>HashSet&lt;int&gt;(config.Deploy.Predicates.SelectMany(p =&gt; p.AcknowledgedOrphanPageIds))</c>.
+/// post-A.3 filter the <see cref="ContentSerializer"/> now uses (Phase 40 D-01 flat shape):
+///   <c>HashSet&lt;int&gt;(config.Predicates.Where(p =&gt; p.Mode == DeploymentMode.Deploy)
+///                              .SelectMany(p =&gt; p.AcknowledgedOrphanPageIds))</c>.
 /// This isolates the unit under test from needing a full ContentSerializer.Serialize
 /// end-to-end (which would require IContentStore fake + DW context).
 ///
@@ -41,31 +42,26 @@ public class BaselineLinkSweeperAcknowledgmentTests
         };
     }
 
+    // Phase 40 D-01 / D-02: flat shape — Predicates is a single list with explicit per-item Mode.
+    // The original fixture put a Deploy-mode Content predicate (carrying the ack list) and zero Seed
+    // predicates. The unit-under-test composition is preserved: `config.Predicates.Where(p =>
+    // p.Mode == DeploymentMode.Deploy).SelectMany(p => p.AcknowledgedOrphanPageIds)` reproduces
+    // the legacy section-level Deploy.Predicates.SelectMany(...) semantics exactly.
     private static SerializerConfiguration ConfigWithPredicateAck(List<int> ackList)
     {
         return new SerializerConfiguration
         {
             OutputDirectory = "X",
-            Deploy = new ModeConfig
+            Predicates = new List<ProviderPredicateDefinition>
             {
-                OutputSubfolder = "deploy",
-                ConflictStrategy = ConflictStrategy.SourceWins,
-                Predicates = new List<ProviderPredicateDefinition>
-                {
-                    new() {
-                        Name = "Content",
-                        ProviderType = "Content",
-                        AreaId = 1,
-                        Path = "/",
-                        AcknowledgedOrphanPageIds = ackList
-                    }
+                new() {
+                    Name = "Content",
+                    Mode = DeploymentMode.Deploy,
+                    ProviderType = "Content",
+                    AreaId = 1,
+                    Path = "/",
+                    AcknowledgedOrphanPageIds = ackList
                 }
-            },
-            Seed = new ModeConfig
-            {
-                OutputSubfolder = "seed",
-                ConflictStrategy = ConflictStrategy.SourceWins,
-                Predicates = new List<ProviderPredicateDefinition>()
             }
         };
     }
@@ -89,8 +85,10 @@ public class BaselineLinkSweeperAcknowledgmentTests
         // Compose with the ContentSerializer filter logic (post-A.3): verify
         // that an empty ack list does not filter 9999 out, so the serializer
         // would throw on this sweep result.
+        // Phase 40 D-01: flat list — filter by Mode to preserve the legacy Deploy-only composition.
         var ack = new HashSet<int>(
-            config.Deploy.Predicates.SelectMany(p => p.AcknowledgedOrphanPageIds));
+            config.Predicates.Where(p => p.Mode == DeploymentMode.Deploy)
+                             .SelectMany(p => p.AcknowledgedOrphanPageIds));
         var fatal = sweepResult.Unresolved.Where(u => !ack.Contains(u.UnresolvablePageId)).ToList();
         Assert.Single(fatal); // fails serialize
     }
@@ -108,8 +106,10 @@ public class BaselineLinkSweeperAcknowledgmentTests
         var sweepResult = new BaselineLinkSweeper().Sweep(pages);
         Assert.Single(sweepResult.Unresolved);
 
+        // Phase 40 D-01: flat list — filter by Mode to preserve the legacy Deploy-only composition.
         var ack = new HashSet<int>(
-            config.Deploy.Predicates.SelectMany(p => p.AcknowledgedOrphanPageIds));
+            config.Predicates.Where(p => p.Mode == DeploymentMode.Deploy)
+                             .SelectMany(p => p.AcknowledgedOrphanPageIds));
         var fatal = sweepResult.Unresolved.Where(u => !ack.Contains(u.UnresolvablePageId)).ToList();
         Assert.Empty(fatal); // no fatal unresolved → serialize succeeds
 
@@ -133,8 +133,10 @@ public class BaselineLinkSweeperAcknowledgmentTests
         var sweepResult = new BaselineLinkSweeper().Sweep(pages);
         Assert.Equal(2, sweepResult.Unresolved.Count);
 
+        // Phase 40 D-01: flat list — filter by Mode to preserve the legacy Deploy-only composition.
         var ack = new HashSet<int>(
-            config.Deploy.Predicates.SelectMany(p => p.AcknowledgedOrphanPageIds));
+            config.Predicates.Where(p => p.Mode == DeploymentMode.Deploy)
+                             .SelectMany(p => p.AcknowledgedOrphanPageIds));
         var fatal = sweepResult.Unresolved.Where(u => !ack.Contains(u.UnresolvablePageId)).ToList();
         Assert.Single(fatal);
         Assert.Equal(9999, fatal[0].UnresolvablePageId);

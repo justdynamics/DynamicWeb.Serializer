@@ -38,10 +38,8 @@ public sealed class SavePredicateCommand : CommandBase<PredicateEditModel>
         {
             var configPath = ConfigPath ?? ConfigPathResolver.FindOrCreateConfigFile();
             var config = ConfigLoader.Load(configPath);
-            // Phase 37-01 D-02: predicates live under the mode the edit screen was opened for.
-            var mode = Model.Mode;
-            var modeConfig = config.GetMode(mode);
-            var predicates = modeConfig.Predicates.ToList();
+            // Phase 40 D-01: predicates are a single flat list. Mode is per-predicate.
+            var predicates = config.Predicates.ToList();
 
             // D-02: ProviderType locked after creation — use existing type on update
             string providerType;
@@ -160,6 +158,7 @@ public sealed class SavePredicateCommand : CommandBase<PredicateEditModel>
                 predicate = new ProviderPredicateDefinition
                 {
                     Name = Model.Name.Trim(),
+                    Mode = Model.Mode,
                     ProviderType = "Content",
                     Path = path,
                     AreaId = Model.AreaId,
@@ -181,6 +180,7 @@ public sealed class SavePredicateCommand : CommandBase<PredicateEditModel>
                 predicate = new ProviderPredicateDefinition
                 {
                     Name = Model.Name.Trim(),
+                    Mode = Model.Mode,
                     ProviderType = "SqlTable",
                     Table = Model.Table?.Trim(),
                     NameColumn = string.IsNullOrWhiteSpace(Model.NameColumn) ? null : Model.NameColumn.Trim(),
@@ -223,12 +223,8 @@ public sealed class SavePredicateCommand : CommandBase<PredicateEditModel>
                 return new() { Status = CommandResult.ResultType.Error, Message = "Invalid predicate index" };
             }
 
-            // Phase 37-01 D-02: persist back to the ModeConfig the predicate belongs to. The other
-            // mode's config is left untouched.
-            var updatedMode = modeConfig with { Predicates = predicates };
-            var updated = mode == Configuration.DeploymentMode.Deploy
-                ? config with { Deploy = updatedMode }
-                : config with { Seed = updatedMode };
+            // Phase 40 D-01: persist back to the single flat predicate list.
+            var updated = config with { Predicates = predicates };
             ConfigWriter.Save(updated, configPath);
 
             return new() { Status = CommandResult.ResultType.Ok, Model = Model };

@@ -29,15 +29,15 @@ public class PredicateCommandTests : ConfigLoaderValidatorFixtureBase
 
     private void CreateSeedConfig(List<ProviderPredicateDefinition>? predicates = null)
     {
+        // Phase 40 D-01: flat predicate list with explicit per-predicate Mode.
         var config = new SerializerConfiguration
         {
             OutputDirectory = @"\System\Serializer",
             LogLevel = "info",
             DryRun = false,
-            ConflictStrategy = ConflictStrategy.SourceWins,
             Predicates = predicates ?? new List<ProviderPredicateDefinition>
             {
-                new() { Name = "Default", ProviderType = "Content", Path = "/", AreaId = 1, PageId = 10 }
+                new() { Name = "Default", Mode = DeploymentMode.Deploy, ProviderType = "Content", Path = "/", AreaId = 1, PageId = 10 }
             }
         };
         ConfigWriter.Save(config, _configPath);
@@ -83,7 +83,7 @@ public class PredicateCommandTests : ConfigLoaderValidatorFixtureBase
     {
         CreateSeedConfig(new List<ProviderPredicateDefinition>
         {
-            new() { Name = "Existing", ProviderType = "Content", Path = "/existing", AreaId = 1, PageId = 10 }
+            new() { Name = "Existing", Mode = DeploymentMode.Deploy, ProviderType = "Content", Path = "/existing", AreaId = 1, PageId = 10 }
         });
 
         var cmd = new SavePredicateCommand
@@ -110,7 +110,7 @@ public class PredicateCommandTests : ConfigLoaderValidatorFixtureBase
     {
         CreateSeedConfig(new List<ProviderPredicateDefinition>
         {
-            new() { Name = "Only", ProviderType = "Content", Path = "/only", AreaId = 1, PageId = 10 }
+            new() { Name = "Only", Mode = DeploymentMode.Deploy, ProviderType = "Content", Path = "/only", AreaId = 1, PageId = 10 }
         });
 
         var cmd = new SavePredicateCommand
@@ -136,7 +136,7 @@ public class PredicateCommandTests : ConfigLoaderValidatorFixtureBase
     {
         CreateSeedConfig(new List<ProviderPredicateDefinition>
         {
-            new() { Name = "Existing", ProviderType = "Content", Path = "/existing", AreaId = 1, PageId = 10 }
+            new() { Name = "Existing", Mode = DeploymentMode.Deploy, ProviderType = "Content", Path = "/existing", AreaId = 1, PageId = 10 }
         });
 
         var cmd = new SavePredicateCommand
@@ -171,8 +171,8 @@ public class PredicateCommandTests : ConfigLoaderValidatorFixtureBase
     {
         CreateSeedConfig(new List<ProviderPredicateDefinition>
         {
-            new() { Name = "First", ProviderType = "Content", Path = "/first", AreaId = 1, PageId = 10 },
-            new() { Name = "Second", ProviderType = "Content", Path = "/second", AreaId = 2, PageId = 20 }
+            new() { Name = "First", Mode = DeploymentMode.Deploy, ProviderType = "Content", Path = "/first", AreaId = 1, PageId = 10 },
+            new() { Name = "Second", Mode = DeploymentMode.Deploy, ProviderType = "Content", Path = "/second", AreaId = 2, PageId = 20 }
         });
 
         var cmd = new SavePredicateCommand
@@ -219,9 +219,6 @@ public class PredicateCommandTests : ConfigLoaderValidatorFixtureBase
                 Table = "EcomOrderFlow",
                 NameColumn = "OrderFlowName",
                 CompareColumns = "",
-                // Phase 37-04 CACHE-01: cache names must resolve against DwCacheServiceRegistry.
-                // Use two registered entries (order-flows aren't a real DW cache — picked payment/
-                // shipping to verify the round-trip without introducing a new registry entry).
                 ServiceCaches = "Dynamicweb.Ecommerce.Orders.PaymentService\nDynamicweb.Ecommerce.Orders.ShippingService"
             }
         };
@@ -370,7 +367,7 @@ public class PredicateCommandTests : ConfigLoaderValidatorFixtureBase
     {
         CreateSeedConfig(new List<ProviderPredicateDefinition>
         {
-            new() { Name = "Order Flows", ProviderType = "SqlTable", Table = "EcomOrderFlow", NameColumn = "OrderFlowName" }
+            new() { Name = "Order Flows", Mode = DeploymentMode.Deploy, ProviderType = "SqlTable", Table = "EcomOrderFlow", NameColumn = "OrderFlowName" }
         });
 
         // Attempt to tamper ProviderType on update — D-02 should preserve "SqlTable"
@@ -594,6 +591,7 @@ public class PredicateCommandTests : ConfigLoaderValidatorFixtureBase
             new()
             {
                 Name = "Updatable",
+                Mode = DeploymentMode.Deploy,
                 ProviderType = "SqlTable",
                 Table = "EcomOrderFlow",
                 ExcludeFields = new List<string> { "Col1" }
@@ -662,8 +660,8 @@ public class PredicateCommandTests : ConfigLoaderValidatorFixtureBase
     {
         CreateSeedConfig(new List<ProviderPredicateDefinition>
         {
-            new() { Name = "First", ProviderType = "Content", Path = "/first", AreaId = 1, PageId = 10 },
-            new() { Name = "Second", ProviderType = "Content", Path = "/second", AreaId = 2, PageId = 20 }
+            new() { Name = "First", Mode = DeploymentMode.Deploy, ProviderType = "Content", Path = "/first", AreaId = 1, PageId = 10 },
+            new() { Name = "Second", Mode = DeploymentMode.Deploy, ProviderType = "Content", Path = "/second", AreaId = 2, PageId = 20 }
         });
 
         var cmd = new DeletePredicateCommand
@@ -718,7 +716,7 @@ public class PredicateCommandTests : ConfigLoaderValidatorFixtureBase
     {
         CreateSeedConfig(new List<ProviderPredicateDefinition>
         {
-            new() { Name = "Only", ProviderType = "Content", Path = "/only", AreaId = 1, PageId = 10 }
+            new() { Name = "Only", Mode = DeploymentMode.Deploy, ProviderType = "Content", Path = "/only", AreaId = 1, PageId = 10 }
         });
 
         var cmd = new DeletePredicateCommand
@@ -735,11 +733,11 @@ public class PredicateCommandTests : ConfigLoaderValidatorFixtureBase
     }
 
     // -------------------------------------------------------------------------
-    // Phase 37-01 D-02: SavePredicateCommand routes to the correct ModeConfig
+    // Phase 40 D-01: SavePredicateCommand persists per-predicate Mode in flat list
     // -------------------------------------------------------------------------
 
     [Fact]
-    public void Save_PredicateInDeployMode_AppendsToDeployPredicates()
+    public void Save_PredicateInDeployMode_AppendsToFlatListWithDeployMode()
     {
         CreateSeedConfig(new List<ProviderPredicateDefinition>());
 
@@ -761,18 +759,18 @@ public class PredicateCommandTests : ConfigLoaderValidatorFixtureBase
 
         Assert.Equal(CommandResult.ResultType.Ok, result.Status);
         var config = ConfigLoader.Load(_configPath);
-        Assert.Single(config.Deploy.Predicates);
-        Assert.Equal("Deploy1", config.Deploy.Predicates[0].Name);
-        Assert.Empty(config.Seed.Predicates);
+        Assert.Single(config.Predicates);
+        Assert.Equal("Deploy1", config.Predicates[0].Name);
+        Assert.Equal(DeploymentMode.Deploy, config.Predicates[0].Mode);
     }
 
     [Fact]
-    public void Save_PredicateInSeedMode_AppendsToSeedPredicates()
+    public void Save_PredicateInSeedMode_AppendsToFlatListWithSeedMode()
     {
-        // Seed a config with one existing Deploy predicate so we can prove Seed.Save doesn't leak into Deploy.
+        // Seed a config with one existing Deploy predicate so we can prove Seed.Save doesn't overwrite Deploy.
         CreateSeedConfig(new List<ProviderPredicateDefinition>
         {
-            new() { Name = "DeployExisting", ProviderType = "Content", Path = "/d", AreaId = 1, PageId = 10 }
+            new() { Name = "DeployExisting", Mode = DeploymentMode.Deploy, ProviderType = "Content", Path = "/d", AreaId = 1, PageId = 10 }
         });
 
         var cmd = new SavePredicateCommand
@@ -793,11 +791,13 @@ public class PredicateCommandTests : ConfigLoaderValidatorFixtureBase
 
         Assert.Equal(CommandResult.ResultType.Ok, result.Status);
         var config = ConfigLoader.Load(_configPath);
-        Assert.Single(config.Seed.Predicates);
-        Assert.Equal("Seed1", config.Seed.Predicates[0].Name);
-        // Deploy side must be preserved exactly.
-        Assert.Single(config.Deploy.Predicates);
-        Assert.Equal("DeployExisting", config.Deploy.Predicates[0].Name);
+        Assert.Equal(2, config.Predicates.Count);
+        var deploy = config.Predicates.Where(p => p.Mode == DeploymentMode.Deploy).ToList();
+        var seed = config.Predicates.Where(p => p.Mode == DeploymentMode.Seed).ToList();
+        Assert.Single(deploy);
+        Assert.Equal("DeployExisting", deploy[0].Name);
+        Assert.Single(seed);
+        Assert.Equal("Seed1", seed[0].Name);
     }
 
     // -------------------------------------------------------------------------
@@ -837,7 +837,7 @@ public class PredicateCommandTests : ConfigLoaderValidatorFixtureBase
 
         Assert.Equal(CommandResult.ResultType.Ok, result.Status);
         var config = ConfigLoader.Load(_configPath);
-        var pred = config.Deploy.Predicates[0];
+        var pred = config.Predicates[0];
         Assert.Equal("AccessUserType = 2 AND AccessUserUserName IN ('Admin','Editors')", pred.Where);
         Assert.Single(pred.IncludeFields);
         Assert.Equal("AccessUserHostingName", pred.IncludeFields[0]);
@@ -927,38 +927,28 @@ public class PredicateCommandTests : ConfigLoaderValidatorFixtureBase
     }
 
     [Fact]
-    public void Delete_PredicateInSeedMode_RemovesFromSeedOnly()
+    public void Delete_PredicateInSeedMode_RemovesByIndexFromFlatList()
     {
-        // Seed a config with one existing Deploy predicate so we can prove Delete.Seed doesn't touch Deploy.
+        // Seed a config with one Deploy + one Seed predicate.
         CreateSeedConfig(new List<ProviderPredicateDefinition>
         {
-            new() { Name = "DeployExisting", ProviderType = "Content", Path = "/d", AreaId = 1, PageId = 10 }
+            new() { Name = "DeployExisting", Mode = DeploymentMode.Deploy, ProviderType = "Content", Path = "/d", AreaId = 1, PageId = 10 },
+            new() { Name = "SeedOnly", Mode = DeploymentMode.Seed, ProviderType = "Content", Path = "/d", AreaId = 1, PageId = 10 }
         });
 
-        // Add a Seed-mode predicate
-        new SavePredicateCommand
-        {
-            ConfigPath = _configPath,
-            Model = new PredicateEditModel
-            {
-                Index = -1, Mode = DeploymentMode.Seed, Name = "SeedOnly",
-                ProviderType = "Content", AreaId = 1, PageId = 10
-            }
-        }.Handle();
-
+        // Phase 40 D-01: delete is index-based on the flat list — caller passes the flat-list index.
         var del = new DeletePredicateCommand
         {
             ConfigPath = _configPath,
-            Mode = DeploymentMode.Seed,
-            Index = 0
+            Index = 1  // SeedOnly is at flat-list index 1
         };
 
         var result = del.Handle();
 
         Assert.Equal(CommandResult.ResultType.Ok, result.Status);
         var config = ConfigLoader.Load(_configPath);
-        Assert.Empty(config.Seed.Predicates);
-        Assert.Single(config.Deploy.Predicates);
-        Assert.Equal("DeployExisting", config.Deploy.Predicates[0].Name);
+        Assert.Single(config.Predicates);
+        Assert.Equal("DeployExisting", config.Predicates[0].Name);
+        Assert.Equal(DeploymentMode.Deploy, config.Predicates[0].Mode);
     }
 }

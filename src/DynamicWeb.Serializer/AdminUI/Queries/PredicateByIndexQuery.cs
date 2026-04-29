@@ -8,13 +8,6 @@ public sealed class PredicateByIndexQuery : DataQueryIdentifiableModelBase<Predi
 {
     public int Index { get; set; } = -1;
 
-    /// <summary>
-    /// Which <see cref="DeploymentMode"/> the predicate belongs to (Phase 37-01 D-02). Defaulted
-    /// to Deploy so pre-Phase-37 call sites keep working; the tree supplies it explicitly for
-    /// Seed-mode navigation.
-    /// </summary>
-    public DeploymentMode Mode { get; set; } = DeploymentMode.Deploy;
-
     protected override void SetKey(int key)
     {
         // DW framework treats "0" as "no identifier" — identifiers are 1-based, convert back to 0-based
@@ -24,20 +17,19 @@ public sealed class PredicateByIndexQuery : DataQueryIdentifiableModelBase<Predi
     public override PredicateEditModel? GetModel()
     {
         if (Index < 0)
-            return new PredicateEditModel { Mode = Mode };
+            return new PredicateEditModel(); // new-predicate flow; Mode default = Deploy
 
         var configPath = ConfigPathResolver.FindConfigFile();
         if (configPath == null) return null;
 
         var config = ConfigLoader.Load(configPath);
-        var predicates = config.GetMode(Mode).Predicates;
-        if (Index >= predicates.Count) return null;
+        if (Index >= config.Predicates.Count) return null;
 
-        var pred = predicates[Index];
+        var pred = config.Predicates[Index];
         return new PredicateEditModel
         {
             Index = Index,
-            Mode = Mode,
+            Mode = pred.Mode,  // Phase 40 D-01: predicate's own Mode
             Name = pred.Name,
             ProviderType = pred.ProviderType,
             AreaId = pred.AreaId,
@@ -51,8 +43,6 @@ public sealed class PredicateByIndexQuery : DataQueryIdentifiableModelBase<Predi
             XmlColumns = string.Join("\n", pred.XmlColumns),
             ExcludeXmlElements = string.Join("\n", pred.ExcludeXmlElements),
             ExcludeAreaColumns = string.Join("\n", pred.ExcludeAreaColumns),
-            // Phase 37-03 / 37-05: round-trip WhereClause / IncludeFields / ResolveLinksInColumns
-            // so the admin UI shows the saved values when editing an existing SqlTable predicate.
             WhereClause = pred.Where ?? string.Empty,
             IncludeFields = string.Join("\n", pred.IncludeFields),
             ResolveLinksInColumns = string.Join("\n", pred.ResolveLinksInColumns)
