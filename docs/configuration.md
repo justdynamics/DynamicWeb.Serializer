@@ -8,7 +8,7 @@ debugging a config-load failure.
 
 - [Where the config lives](#where-the-config-lives)
 - [Top-level config schema](#top-level-config-schema)
-- [Deploy and Seed mode configs](#deploy-and-seed-mode-configs)
+- [Per-predicate mode](#per-predicate-mode)
 - [Content predicate fields](#content-predicate-fields)
 - [SqlTable predicate fields](#sqltable-predicate-fields)
 - [Global exclusion maps](#global-exclusion-maps)
@@ -33,14 +33,28 @@ compatibility. New installs should use `Serializer.config.json`.
 
 ## Top-level config schema
 
+Phase 40 (2026-04-28) replaces the section-level `deploy: { ... }` / `seed: { ... }` shape
+with a single flat `predicates: [...]` list where each predicate carries its own `mode`.
+The legacy section shape is hard-rejected by ConfigLoader with a clear actionable error.
+
 ```json
 {
   "outputDirectory": "Serializer",
   "logLevel": "info",
   "dryRun": false,
   "strictMode": false,
-  "deploy": { ... },
-  "seed": { ... }
+  "deployOutputSubfolder": "deploy",
+  "seedOutputSubfolder": "seed",
+  "excludeFieldsByItemType": {
+    "Swift_Content": ["SystemName_Internal"]
+  },
+  "excludeXmlElementsByType": {
+    "ParagraphModule": ["cache"]
+  },
+  "predicates": [
+    { "name": "...", "mode": "Deploy", "providerType": "Content", "areaId": 3, "path": "/" },
+    { "name": "...", "mode": "Seed", "providerType": "SqlTable", "table": "EcomGroups" }
+  ]
 }
 ```
 
@@ -50,34 +64,44 @@ compatibility. New installs should use `Serializer.config.json`.
 | `logLevel` | `info` / `debug` / `warn` / `error` | Logging verbosity. Default: `info`. |
 | `dryRun` | boolean | When `true`, deserialize reports what would change without mutating the DB. Default: `false`. |
 | `strictMode` | boolean or null | `true` escalates recoverable warnings to `CumulativeStrictModeException`; `false` logs and continues; `null` uses the entry-point default (API/CLI: on, admin UI: off). See [`strict-mode.md`](strict-mode.md). |
-| `deploy` | ModeConfig | The Deploy mode (source-wins, default). |
-| `seed` | ModeConfig | The Seed mode (destination-wins, opt-in). |
+| `deployOutputSubfolder` | string | Subfolder under `SerializeRoot/` for Deploy-mode YAML output. Default: `deploy`. Validated against a safe-name regex to prevent path traversal. |
+| `seedOutputSubfolder` | string | Subfolder under `SerializeRoot/` for Seed-mode YAML output. Default: `seed`. Same regex check. |
+| `excludeFieldsByItemType` | map | Global per-item-type field exclusions, applied to every predicate regardless of mode. Key: item-type system name. Value: list of field names to strip. |
+| `excludeXmlElementsByType` | map | Global per-XML-type element exclusions, applied to every predicate regardless of mode. Key: XML type name. Value: list of element names to strip. |
+| `predicates` | list | The predicates serialized and deserialized. Each entry must carry its own `mode` (Deploy or Seed). The orchestrator filters on `predicate.Mode` when iterating per mode. |
 
-## Deploy and Seed mode configs
+## Per-predicate mode
 
-Each mode is a `ModeConfig` with its own predicate list and exclusion dictionaries:
+Every predicate must declare a `mode` value of `Deploy` or `Seed` (case-insensitive on disk).
+
+| Mode | Conflict strategy | When to use |
+|------|-------------------|-------------|
+| `Deploy` | source-wins (YAML overwrites target on every deploy) | Reference data and structural deployment items: countries, currencies, shop definitions, payment methods, page templates, item-type schemas. |
+| `Seed` | destination-wins via field-level merge (Phase 39) | One-time bootstrap content the customer is expected to edit: product catalog, marketing copy, FAQ body text, newsletter templates. The serializer fills fields the target has NOT set, preserving customer edits. |
+
+The conflict strategy is hardcoded per mode and is no longer a config knob. Phase 39's
+[`MergePredicate`](../src/DynamicWeb.Serializer/Serialization/MergePredicate.cs) and
+[`XmlMergeHelper`](../src/DynamicWeb.Serializer/Serialization/XmlMergeHelper.cs) implement
+the Seed-mode field-level merge.
 
 ```json
 {
-  "outputSubfolder": "deploy",
-  "conflictStrategy": "source-wins",
-  "predicates": [ ... ],
-  "excludeFieldsByItemType": {
-    "Swift_Content": ["SystemName_Internal"]
-  },
-  "excludeXmlElementsByType": {
-    "ParagraphModule": ["cache"]
-  }
+  "name": "EcomCountries",
+  "mode": "Deploy",
+  "providerType": "SqlTable",
+  "table": "EcomCountries"
 }
 ```
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `outputSubfolder` | string | Subfolder under `SerializeRoot/` where this mode writes YAML. Default: `deploy` / `seed`. Validated against a safe-name regex to prevent path traversal. |
-| `conflictStrategy` | `source-wins` / `destination-wins` | How deserialize resolves conflicts. Deploy default is `source-wins`; Seed default is `destination-wins`. |
-| `predicates` | list | The predicates serialized and deserialized when this mode runs. |
-| `excludeFieldsByItemType` | map | Global per-item-type field exclusions, scoped to this mode. Key: item-type system name. Value: list of field names to strip. |
-| `excludeXmlElementsByType` | map | Global per-XML-type element exclusions, scoped to this mode. Key: XML type name. Value: list of element names to strip. |
+```json
+{
+  "name": "EcomProducts",
+  "mode": "Seed",
+  "providerType": "SqlTable",
+  "table": "EcomProducts",
+  "nameColumn": "ProductName"
+}
+```
 
 ## Content predicate fields
 
@@ -145,10 +169,12 @@ Each mode is a `ModeConfig` with its own predicate list and exclusion dictionari
 
 ## Global exclusion maps
 
-Two dictionaries live inside each mode config and apply across every predicate in that mode:
+Two dictionaries live at the top level of the config and apply across every predicate
+regardless of mode. Phase 40 (D-04) hoisted these out of the per-mode section because
+the same exclusions almost always apply to both Deploy and Seed.
 
 ```json
-"deploy": {
+{
   "excludeFieldsByItemType": {
     "Swift_Content": ["SystemName_Internal"],
     "Swift-v2_Button": ["DebugMarker"]
@@ -156,12 +182,15 @@ Two dictionaries live inside each mode config and apply across every predicate i
   "excludeXmlElementsByType": {
     "ParagraphModule": ["cache"],
     "PageItem": ["EmptyCartRedirectPage", "ShoppingCartLink"]
-  }
+  },
+  "predicates": [
+    { "name": "...", "mode": "Deploy", "providerType": "Content", "areaId": 3, "path": "/" }
+  ]
 }
 ```
 
 Use these for cross-predicate cleanup. Per-predicate exclusions still work;
-the effective exclude set is the union of the predicate's list and the mode's
+the effective exclude set is the union of the predicate's list and the global
 dictionary entry for that item type.
 
 ## Admin UI screens
@@ -170,10 +199,10 @@ Navigation: `Settings > Database > Serialize`.
 
 | Node | Purpose |
 |------|---------|
-| **Serialize** | Top-level settings screen: output directory, log level, dry-run toggle, conflict strategy, strict-mode toggle. |
-| **Predicates** | CRUD for Content and SqlTable predicates. Each predicate has sub-nodes per mode (Deploy, Seed). Fields match the JSON schema above with dual-list pickers populated from the live DB schema. |
-| **Item Types** | Browse item types by category, edit per-type field exclusions for each mode. |
-| **Embedded XML** | Browse XML types, edit per-type element exclusions for each mode. |
+| **Serialize** | Top-level settings screen: output directory, log level, dry-run toggle, strict-mode toggle. (Phase 40: per-mode conflict strategy is hardcoded — Deploy=source-wins, Seed=destination-wins — and is no longer an admin-editable setting.) |
+| **Predicates** | CRUD for Content and SqlTable predicates. Each predicate carries its own `mode` field (Deploy or Seed) — pick the mode on the predicate edit screen. Fields match the JSON schema above with dual-list pickers populated from the live DB schema. |
+| **Item Types** | Browse item types by category, edit global per-type field exclusions (Phase 40 D-04: mode-agnostic). |
+| **Embedded XML** | Browse XML types, edit global per-type element exclusions (Phase 40 D-04: mode-agnostic). |
 | **Log Viewer** | Per-run logs with summary headers, per-predicate counts, and `AdviceGenerator` remediation hints. |
 
 The **"Serialize subtree"** action appears in the Actions menu on every page
@@ -194,66 +223,63 @@ and seventeen SqlTable predicates. Lives at
   "logLevel": "info",
   "dryRun": false,
   "strictMode": true,
-  "deploy": {
-    "outputSubfolder": "deploy",
-    "conflictStrategy": "source-wins",
-    "predicates": [
-      {
-        "name": "Content - Swift 2 (full baseline as shipped)",
-        "providerType": "Content",
-        "areaId": 3,
-        "path": "/",
-        "excludes": [],
-        "excludeFields": [
-          "AreaDomain", "AreaDomainLock", "AreaNoindex",
-          "AreaNofollow", "AreaRobotsTxt", "AreaRobotsTxtIncludeSitemap",
-          "GoogleTagManagerID"
-        ],
-        "excludeXmlElements": ["EmptyCartRedirectPage", "ShoppingCartLink"],
-        "excludeAreaColumns": ["AreaCdnHost", "AreaCookieWarningTemplate"]
-      },
-      {
-        "name": "EcomVatGroups",
-        "providerType": "SqlTable",
-        "table": "EcomVatGroups",
-        "nameColumn": "VatGroupName",
-        "serviceCaches": [
-          "Dynamicweb.Ecommerce.International.VatGroupService"
-        ]
-      },
-      {
-        "name": "EcomPayments",
-        "providerType": "SqlTable",
-        "table": "EcomPayments",
-        "nameColumn": "PaymentName",
-        "xmlColumns": [
-          "PaymentGatewayParameters",
-          "PaymentCheckoutParameters"
-        ],
-        "serviceCaches": [
-          "Dynamicweb.Ecommerce.Orders.PaymentService"
-        ]
-      },
-      {
-        "name": "UrlPath",
-        "providerType": "SqlTable",
-        "table": "UrlPath",
-        "resolveLinksInColumns": ["UrlPathRedirect"]
-      }
-    ]
-  },
-  "seed": {
-    "outputSubfolder": "seed",
-    "conflictStrategy": "destination-wins",
-    "predicates": [
-      {
-        "name": "EcomProducts",
-        "providerType": "SqlTable",
-        "table": "EcomProducts",
-        "nameColumn": "ProductName"
-      }
-    ]
-  }
+  "deployOutputSubfolder": "deploy",
+  "seedOutputSubfolder": "seed",
+  "predicates": [
+    {
+      "name": "Content - Swift 2 (full baseline as shipped)",
+      "mode": "Deploy",
+      "providerType": "Content",
+      "areaId": 3,
+      "path": "/",
+      "excludes": [],
+      "excludeFields": [
+        "AreaDomain", "AreaDomainLock", "AreaNoindex",
+        "AreaNofollow", "AreaRobotsTxt", "AreaRobotsTxtIncludeSitemap",
+        "GoogleTagManagerID"
+      ],
+      "excludeXmlElements": ["EmptyCartRedirectPage", "ShoppingCartLink"],
+      "excludeAreaColumns": ["AreaCdnHost", "AreaCookieWarningTemplate"]
+    },
+    {
+      "name": "EcomVatGroups",
+      "mode": "Deploy",
+      "providerType": "SqlTable",
+      "table": "EcomVatGroups",
+      "nameColumn": "VatGroupName",
+      "serviceCaches": [
+        "Dynamicweb.Ecommerce.International.VatGroupService"
+      ]
+    },
+    {
+      "name": "EcomPayments",
+      "mode": "Deploy",
+      "providerType": "SqlTable",
+      "table": "EcomPayments",
+      "nameColumn": "PaymentName",
+      "xmlColumns": [
+        "PaymentGatewayParameters",
+        "PaymentCheckoutParameters"
+      ],
+      "serviceCaches": [
+        "Dynamicweb.Ecommerce.Orders.PaymentService"
+      ]
+    },
+    {
+      "name": "UrlPath",
+      "mode": "Deploy",
+      "providerType": "SqlTable",
+      "table": "UrlPath",
+      "resolveLinksInColumns": ["UrlPathRedirect"]
+    },
+    {
+      "name": "EcomProducts",
+      "mode": "Seed",
+      "providerType": "SqlTable",
+      "table": "EcomProducts",
+      "nameColumn": "ProductName"
+    }
+  ]
 }
 ```
 
