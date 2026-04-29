@@ -353,14 +353,14 @@ Plans:
 **Goal:** Replace the section-level deploy.predicates / seed.predicates arrays with a single flat predicates list where each predicate carries its own mode field (Deploy or Seed). Mode-shared keys move to top-level (D-04). No backcompat — ConfigLoader rejects the legacy shape with a clear error (D-03). swift2.2-combined.json rewritten in the new shape (D-05). Admin UI tree collapses to a single Predicates subtree with a Mode badge per row (D-06). Phase 39 runtime (MergePredicate, XmlMergeHelper, ContentDeserializer/SqlTableProvider Seed-merge) is unaffected — only config schema + readers/writers + admin UI + baseline + docs.
 **Requirements**: D-01..D-08 from orchestrator brief (no legacy REQ-IDs; brief decisions are acceptance)
 **Depends on:** Phase 39
-**Plans:** 4/5 plans executed
+**Plans:** 5/5 plans complete
 
 Plans:
 - [x] 40-01-PLAN.md — Model + ConfigLoader/Writer flat shape with strict legacy rejection (D-01..D-04, D-08)
 - [x] 40-02-PLAN.md — Runtime/orchestrator/provider routing rewrite (ContentSerializer, ContentProvider, SerializeSubtreeCommand, SerializerSerializeCommand, SerializerDeserializeCommand) (D-07)
 - [x] 40-03-PLAN.md — Admin UI collapse: predicate tree + Item/XML type detach from Mode + tests (D-06, D-04)
 - [x] 40-04-PLAN.md — swift2.2-combined.json rewrite + docs/baselines/Swift2.2-baseline.md + docs/configuration.md + live-host human-verify checkpoint (D-05)
-- [ ] 40-05-PLAN.md — Solution-wide build + test + regression-grep gate; produces 40-VERIFICATION.md
+- [x] 40-05-PLAN.md — Solution-wide build + test + regression-grep gate; produces 40-VERIFICATION.md
 
 **Execution waves** (for /gsd-execute-phase):
 - Wave 1: 40-01 (model + loader + writer; downstream files compile-broken until Wave 2)
