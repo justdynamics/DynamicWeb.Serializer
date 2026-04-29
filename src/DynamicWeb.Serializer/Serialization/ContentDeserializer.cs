@@ -277,13 +277,14 @@ public class ContentDeserializer
                 Log($"Area with ID {predicate.AreaId} not found. Creating from YAML data.");
                 try
                 {
-                    // Phase 37-01.1: explicit Deploy accessor — ContentDeserializer is Deploy-scoped
-                    // today (Seed path is handled via DestinationWins skip). Follow-up plan threads
-                    // per-mode exclusions through here.
-                    var createAreaExclude = _configuration.Deploy.ExcludeFieldsByItemType.Count > 0 && !string.IsNullOrEmpty(area.ItemType)
+                    // Phase 40 D-04: exclusion dicts moved from per-ModeConfig to top-level on SerializerConfiguration.
+                    // The Deploy-side area-creation path is mode-agnostic w.r.t. the exclusion dict — Phase 39 Seed
+                    // merge does not run this code path (Seed reaches WriteSimpleScalarFieldsViaMerge / etc.) so
+                    // a top-level read is correct for both modes.
+                    var createAreaExclude = _configuration.ExcludeFieldsByItemType.Count > 0 && !string.IsNullOrEmpty(area.ItemType)
                     ? ExclusionMerger.MergeFieldExclusions(
                         excludeFieldsSet?.ToList() ?? new List<string>(),
-                        _configuration.Deploy.ExcludeFieldsByItemType,
+                        _configuration.ExcludeFieldsByItemType,
                         area.ItemType)
                     : excludeFieldsSet;
                 CreateAreaFromProperties(predicate.AreaId, area, createAreaExclude);
@@ -323,8 +324,8 @@ public class ContentDeserializer
             ParentPageId = 0,
             PageGuidCache = pageGuidCache,
             ExcludeFields = excludeFieldsSet,
-            ExcludeFieldsByItemType = _configuration.Deploy.ExcludeFieldsByItemType.Count > 0
-                ? _configuration.Deploy.ExcludeFieldsByItemType
+            ExcludeFieldsByItemType = _configuration.ExcludeFieldsByItemType.Count > 0
+                ? _configuration.ExcludeFieldsByItemType
                 : null
         };
 
