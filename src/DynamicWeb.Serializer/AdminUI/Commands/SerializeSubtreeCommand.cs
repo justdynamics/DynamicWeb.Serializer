@@ -36,29 +36,24 @@ public sealed class SerializeSubtreeCommand : CommandBase
             try
             {
                 // 3. Create temp SerializerConfiguration with single predicate targeting the page subtree (per D-05)
-                // Phase 37-01: ad-hoc subtree export is a Deploy-mode operation. It captures the
-                // current state of a targeted page subtree for a one-off share; Seed mode is not
-                // offered here because seed content is always shipped as part of a curated baseline
-                // and the destination-wins semantics don't fit a "send this page to a colleague" flow.
+                // Phase 40 D-07: ad-hoc subtree export builds a single Deploy-mode predicate. The
+                // flat config shape carries the predicate at top level; SourceWins is implicit on
+                // Deploy via SerializerConfiguration.GetConflictStrategyForMode.
                 var tempConfig = new SerializerConfiguration
                 {
                     OutputDirectory = tempDir,
                     LogLevel = "info",
                     DryRun = false,
-                    Deploy = new ModeConfig
+                    Predicates = new List<ProviderPredicateDefinition>
                     {
-                        OutputSubfolder = "deploy",
-                        ConflictStrategy = ConflictStrategy.SourceWins,
-                        Predicates = new List<ProviderPredicateDefinition>
+                        new ProviderPredicateDefinition
                         {
-                            new ProviderPredicateDefinition
-                            {
-                                Name = "ad-hoc-serialize",
-                                ProviderType = "Content",
-                                Path = contentPath,
-                                AreaId = AreaId,
-                                Excludes = new List<string>()
-                            }
+                            Name = "ad-hoc-serialize",
+                            Mode = DeploymentMode.Deploy,
+                            ProviderType = "Content",
+                            Path = contentPath,
+                            AreaId = AreaId,
+                            Excludes = new List<string>()
                         }
                     }
                 };
