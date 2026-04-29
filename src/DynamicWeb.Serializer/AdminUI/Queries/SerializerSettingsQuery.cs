@@ -14,33 +14,27 @@ public sealed class SerializerSettingsQuery : DataQueryModelBase<SerializerSetti
 
         var config = ConfigLoader.Load(configPath);
 
-        // Make config path relative to wwwroot
         var relativePath = configPath;
         var wwwrootMarker = Path.DirectorySeparatorChar + "wwwroot" + Path.DirectorySeparatorChar;
         var idx = configPath.IndexOf(wwwrootMarker, StringComparison.OrdinalIgnoreCase);
         if (idx >= 0)
             relativePath = configPath[(idx + wwwrootMarker.Length)..];
 
-        // Phase 37-01 D-02: count Deploy + Seed predicates separately for the summary.
-        var deployCount = config.Deploy.Predicates.Count;
-        var seedCount = config.Seed.Predicates.Count;
+        // Phase 40 D-01: count Deploy + Seed predicates from the flat list.
+        var deployCount = config.Predicates.Count(p => p.Mode == DeploymentMode.Deploy);
+        var seedCount = config.Predicates.Count(p => p.Mode == DeploymentMode.Seed);
 
         return new SerializerSettingsModel
         {
             OutputDirectory = config.OutputDirectory,
             LogLevel = config.LogLevel,
             DryRun = config.DryRun,
-            StrictMode = config.StrictMode, // Phase 37-04 STRICT-01
-            ConflictStrategy = config.Deploy.ConflictStrategy switch
-            {
-                Configuration.ConflictStrategy.SourceWins => "source-wins",
-                Configuration.ConflictStrategy.DestinationWins => "destination-wins",
-                _ => "source-wins"
-            },
+            StrictMode = config.StrictMode,
+            ConflictStrategy = "source-wins", // hardcoded; field is read-only in v0.5.x per D-02
             ConfigFilePath = relativePath,
             PredicatesSummary = (deployCount + seedCount) == 0
                 ? "No predicates configured. Nothing will be synced."
-                : $"{deployCount} deploy predicate(s), {seedCount} seed predicate(s) configured. Manage via the Deploy / Seed Predicates sub-nodes."
+                : $"{deployCount} deploy predicate(s), {seedCount} seed predicate(s) configured. Manage via the Predicates sub-node."
         };
     }
 }

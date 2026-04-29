@@ -1,4 +1,3 @@
-using DynamicWeb.Serializer.Configuration;
 using Dynamicweb.CoreUI.Data;
 using Dynamicweb.CoreUI.Data.Validation;
 
@@ -19,7 +18,7 @@ public sealed class SerializerSettingsModel : DataViewModelBase
     [ConfigurableProperty("Strict Mode", explanation: "When enabled, any WARNING emitted during deserialize (unresolvable link, missing template, unresolvable cache name, permission fallback, schema-drift drop, FK orphan) fails the run with a non-zero exit. Leave unset to use the entry-point default: ON for API/CLI (CI/CD target), OFF for admin UI (interactive).")]
     public bool? StrictMode { get; set; }
 
-    [ConfigurableProperty("Conflict Strategy", explanation: "How to handle conflicts when source and target differ")]
+    [ConfigurableProperty("Conflict Strategy", explanation: "Read-only — Deploy uses source-wins, Seed uses field-level merge (Phase 39). This setting is ignored on save in v0.5.x; kept for backward UI compatibility only.")]
     public string ConflictStrategy { get; set; } = "source-wins";
 
     [ConfigurableProperty("Config File", explanation: "Location of the configuration file (relative to wwwroot). Settings and predicates are stored here. You can also edit this file manually.")]
