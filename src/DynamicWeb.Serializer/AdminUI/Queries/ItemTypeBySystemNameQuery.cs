@@ -13,13 +13,6 @@ public sealed class ItemTypeBySystemNameQuery : DataQueryIdentifiableModelBase<I
     /// <summary>Optional config path override for tests -- bypasses ConfigPathResolver.</summary>
     public string? ConfigPath { get; set; }
 
-    /// <summary>
-    /// Which <see cref="DeploymentMode"/> subtree the edit screen was opened under (Phase 37-01.1).
-    /// Determines which <see cref="ModeConfig.ExcludeFieldsByItemType"/> dictionary is read to
-    /// pre-fill the ExcludedFields editor. Flows into <see cref="ItemTypeEditModel.Mode"/>.
-    /// </summary>
-    public DeploymentMode Mode { get; set; } = DeploymentMode.Deploy;
-
     protected override void SetKey(string key)
     {
         SystemName = key;
@@ -46,7 +39,7 @@ public sealed class ItemTypeBySystemNameQuery : DataQueryIdentifiableModelBase<I
             return null;
         }
 
-        // Phase 37-01.1: read exclusions from the mode's ModeConfig dictionary.
+        // Phase 40 D-04: exclusions are a top-level dictionary on SerializerConfiguration.
         var excludedFieldsList = new List<string>();
         try
         {
@@ -54,9 +47,7 @@ public sealed class ItemTypeBySystemNameQuery : DataQueryIdentifiableModelBase<I
             if (configPath != null)
             {
                 var config = ConfigLoader.Load(configPath);
-                var modeConfig = config.GetMode(Mode);
-                // Case-insensitive lookup for existing exclusions
-                var match = modeConfig.ExcludeFieldsByItemType
+                var match = config.ExcludeFieldsByItemType
                     .FirstOrDefault(kvp => string.Equals(kvp.Key, SystemName, StringComparison.OrdinalIgnoreCase));
                 if (match.Value != null)
                     excludedFieldsList = match.Value;
@@ -64,13 +55,12 @@ public sealed class ItemTypeBySystemNameQuery : DataQueryIdentifiableModelBase<I
         }
         catch
         {
-            // Config not available -- proceed with empty exclusions
+            // Config not available — proceed with empty exclusions
         }
 
         return new ItemTypeEditModel
         {
             SystemName = itemType.SystemName,
-            Mode = Mode,
             DisplayName = itemType.Name,
             Category = itemType.Category?.FullName ?? "",
             FieldCount = allFields.Count,

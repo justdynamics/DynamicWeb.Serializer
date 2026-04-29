@@ -12,12 +12,6 @@ public sealed class ItemTypeListQuery : DataQueryModelBase<DataListViewModel<Ite
     /// <summary>Optional config path override for tests -- bypasses ConfigPathResolver.</summary>
     public string? ConfigPath { get; set; }
 
-    /// <summary>
-    /// Which <see cref="DeploymentMode"/>'s excluded-field counts are shown on the list (Phase 37-01.1).
-    /// Set by the tree when the user opens "Deploy / Item Types" vs "Seed / Item Types".
-    /// </summary>
-    public DeploymentMode Mode { get; set; } = DeploymentMode.Deploy;
-
     public override DataListViewModel<ItemTypeListModel>? GetModel()
     {
         var metadata = ItemManager.Metadata.GetMetadata();
@@ -32,22 +26,20 @@ public sealed class ItemTypeListQuery : DataQueryModelBase<DataListViewModel<Ite
             try
             {
                 var config = ConfigLoader.Load(configPath);
-                // Phase 37-01.1: read from the mode-scoped ModeConfig; rebuild case-insensitive.
+                // Phase 40 D-04: top-level exclusion dict, mode-agnostic.
                 excludeMap = new Dictionary<string, List<string>>(
-                    config.GetMode(Mode).ExcludeFieldsByItemType,
+                    config.ExcludeFieldsByItemType,
                     StringComparer.OrdinalIgnoreCase);
             }
             catch
             {
-                // Corrupt config -- show list without exclusion counts
+                // Corrupt config — show list without exclusion counts
             }
         }
 
-        var mode = Mode;
         var items = metadata.Items
             .Select(t => new ItemTypeListModel
             {
-                Mode = mode,
                 SystemName = t.SystemName,
                 DisplayName = t.Name,
                 Category = t.Category?.FullName ?? "",

@@ -11,13 +11,6 @@ public sealed class ScanXmlTypesCommand : CommandBase
     public string? ConfigPath { get; set; }
     public XmlTypeDiscovery? Discovery { get; set; }
 
-    /// <summary>
-    /// Which <see cref="DeploymentMode"/>'s <see cref="ModeConfig.ExcludeXmlElementsByType"/>
-    /// dictionary to merge discovered types into (Phase 37-01.1). The tree's "Scan for XML types"
-    /// action sets this according to the mode subtree it was invoked from.
-    /// </summary>
-    public DeploymentMode Mode { get; set; } = DeploymentMode.Deploy;
-
     public override CommandResult Handle()
     {
         try
@@ -28,19 +21,18 @@ public sealed class ScanXmlTypesCommand : CommandBase
             var discovery = Discovery ?? new XmlTypeDiscovery(new DwSqlExecutor());
             var discoveredTypes = discovery.DiscoverXmlTypes();
 
-            // Phase 37-01.1: merge into the per-mode ModeConfig. Leaves the other mode untouched.
-            var modeConfig = config.GetMode(Mode);
-            var updated = new Dictionary<string, List<string>>(modeConfig.ExcludeXmlElementsByType, StringComparer.OrdinalIgnoreCase);
+            // Phase 40 D-04: discovered types merge into the top-level ExcludeXmlElementsByType dict.
+            // Mode-agnostic per D-04 — there is no separate Deploy/Seed dict anymore. The full
+            // pre-existing dict is preserved (case-insensitive contains check); only NEW types are
+            // added with empty exclusion lists for the user to fill in via the admin screen.
+            var updated = new Dictionary<string, List<string>>(config.ExcludeXmlElementsByType, StringComparer.OrdinalIgnoreCase);
             foreach (var typeName in discoveredTypes)
             {
                 if (!updated.ContainsKey(typeName))
                     updated[typeName] = new List<string>();
             }
 
-            var updatedMode = modeConfig with { ExcludeXmlElementsByType = updated };
-            var newConfig = Mode == DeploymentMode.Deploy
-                ? config with { Deploy = updatedMode }
-                : config with { Seed = updatedMode };
+            var newConfig = config with { ExcludeXmlElementsByType = updated };
             ConfigWriter.Save(newConfig, configPath);
 
             return new() { Status = CommandResult.ResultType.Ok };
