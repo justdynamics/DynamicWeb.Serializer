@@ -19,12 +19,30 @@
           "AreaNofollow",
           "AreaRobotsTxt",
           "AreaRobotsTxtIncludeSitemap",
-          "GoogleTagManagerID"
+          "GoogleTagManagerID",
+          "Favicon",
+          "AppleTouchIcon",
+          "FacebookAppId",
+          "Google_APIKey",
+          "Google_Site_Verification",
+          "P_domain_verify",
+          "TwitterSite",
+          "MetaSiteName",
+          "MetaImage",
+          "MetaImageALT"
         ],
         "excludeXmlElements": [],
         "excludeAreaColumns": [
           "AreaCdnHost",
-          "AreaCookieWarningTemplate"
+          "AreaCookieWarningTemplate",
+          "AreaFrontpage",
+          "AreaEcomShopId",
+          "AreaEcomCountryCode",
+          "AreaEcomLanguageId",
+          "AreaEcomCurrencyId",
+          "AreaStockLocationID",
+          "AreaCreatedDate",
+          "AreaUpdatedDate"
         ]
       },
       {
@@ -151,7 +169,27 @@
     "excludeXmlElementsByType": {
       "Dynamicweb.Ecommerce.Frontend.UrlHandling.ShopUrlDataProvider, Dynamicweb.Ecommerce": [],
       "eCom_CartV2": [
-        "EmptyCartRedirectPage"
+        "EmptyCartRedirectPage",
+        "CustomerAcceptedErrorMessage",
+        "StockStatusErrorMessage",
+        "ErrorEmtyUsername",
+        "ErrorUsernameTaken",
+        "ErrorEmtyPassword",
+        "ErrorPasswordsNotMatch",
+        "ErrorPasswordLength",
+        "ErrorIllegalPasswordCharacters",
+        "ErrorMessage_VALIDATION1",
+        "ErrorMessage_VALIDATION2",
+        "ErrorMessage_VALIDATION4",
+        "Mail1SenderName",
+        "Mail1SenderEmail",
+        "Mail1Subject",
+        "Mail1Recipient",
+        "CreateNewUserGroupsHidden",
+        "DefaultPaymentId",
+        "DefaultShippingId",
+        "PaymetTypes",
+        "DeliveryTypes"
       ],
       "eCom_Catalog": [],
       "eCom_ContextOrderRenderer": [],
@@ -163,19 +201,52 @@
       "eCom_ProductCatalog": [],
       "QueryPublisher": [],
       "UserAddresses": [],
-      "UserAuthentication": [],
+      "UserAuthentication": [
+        "OneTimeCodeSenderName",
+        "OneTimeCodeSenderEmail",
+        "OneTimeCodeEmailSubject",
+        "MagicLinkSenderName",
+        "MagicLinkSenderEmail",
+        "MagicLinkEmailSubject"
+      ],
       "UserChangePassword": [],
-      "UserCreate": [],
-      "UserEdit": [],
-      "UserForgotPassword": [],
+      "UserCreate": [
+        "SenderName",
+        "SenderEmail",
+        "EmailSubject"
+      ],
+      "UserEdit": [
+        "SenderName",
+        "SenderEmail",
+        "EmailSubject"
+      ],
+      "UserForgotPassword": [
+        "SenderName",
+        "SenderEmail",
+        "EmailSubject"
+      ],
       "UserGroups": [],
-      "UserView": []
+      "UserView": [
+        "SenderName",
+        "SenderEmail",
+        "EmailSubject"
+      ]
     }
   },
   "seed": {
     "outputSubfolder": "seed",
     "conflictStrategy": "destination-wins",
     "predicates": [
+      {
+        "name": "Content - Swift 2 (seed defaults for customer-tunable fields)",
+        "providerType": "Content",
+        "areaId": 3,
+        "path": "/",
+        "excludes": [],
+        "excludeFields": [],
+        "excludeXmlElements": [],
+        "excludeAreaColumns": []
+      },
       {
         "name": "EcomGroups",
         "providerType": "SqlTable",
