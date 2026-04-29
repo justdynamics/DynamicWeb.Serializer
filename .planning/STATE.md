@@ -4,8 +4,8 @@ milestone: v0.4.0
 milestone_name: Full Page Fidelity
 status: executing
 stopped_at: Phase 39 context gathered
-last_updated: "2026-04-28T21:41:45.689Z"
-last_activity: 2026-04-28 -- Phase 40 planning complete
+last_updated: "2026-04-29T10:40:05.966Z"
+last_activity: 2026-04-29 -- Phase 40 execution started
 progress:
   total_phases: 30
   completed_phases: 28
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-03)
 
 **Core value:** Developers can reliably move DynamicWeb database state between environments through source control, with serialized YAML files as the single source of truth.
-**Current focus:** Phase 39 — Seed mode field-level merge
+**Current focus:** Phase 40 — per-predicate-deploy-seed-split-replace-section-level-config
 
 ## Current Position
 
-Phase: 39
-Plan: Not started
-Status: Ready to execute
-Last activity: 2026-04-28 -- Phase 40 planning complete
+Phase: 40 (per-predicate-deploy-seed-split-replace-section-level-config) — EXECUTING
+Plan: 1 of 5
+Status: Executing Phase 40
+Last activity: 2026-04-29 -- Phase 40 execution started
 
 ## Recent Session — 2026-04-17 Autonomous Baseline Test
 
