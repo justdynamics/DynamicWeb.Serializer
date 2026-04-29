@@ -59,10 +59,9 @@ public static class ConfigPathResolver
             OutputDirectory = @"\System\Serializer",
             LogLevel = "info",
             DryRun = false,
-            ConflictStrategy = ConflictStrategy.SourceWins,
             Predicates = new List<ProviderPredicateDefinition>
             {
-                new() { Name = "Default", ProviderType = "Content", Path = "/", AreaId = 1 }
+                new() { Name = "Default", Mode = DeploymentMode.Deploy, ProviderType = "Content", Path = "/", AreaId = 1 }
             }
         };
 
