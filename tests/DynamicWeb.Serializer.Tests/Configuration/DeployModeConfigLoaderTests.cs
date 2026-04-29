@@ -6,9 +6,12 @@ using Xunit;
 namespace DynamicWeb.Serializer.Tests.Configuration;
 
 /// <summary>
-/// Tests for the Deploy/Seed config structural split (Phase 37-01).
-/// Covers D-01..D-06: top-level Deploy + Seed sections, legacy flat → Deploy migration,
-/// destination-wins default for Seed, GetMode accessor.
+/// Phase 40 (D-01..D-04) flat config-shape tests. Replaces the section-level Deploy/Seed split
+/// with a single flat predicate list where each predicate carries its own <c>mode</c>.
+/// Hard-rejects the legacy section shape (no backcompat per project policy).
+///
+/// Class name kept as <c>DeployModeConfigLoaderTests</c> to preserve the existing test-runner
+/// identity / fixture inheritance; subject under test is the flat shape, not the legacy one.
 /// </summary>
 public class DeployModeConfigLoaderTests : ConfigLoaderValidatorFixtureBase
 {
@@ -22,7 +25,7 @@ public class DeployModeConfigLoaderTests : ConfigLoaderValidatorFixtureBase
 
     public override void Dispose()
     {
-        base.Dispose();  // clear AsyncLocal first
+        base.Dispose();
         if (Directory.Exists(_tempDir))
             Directory.Delete(_tempDir, recursive: true);
     }
@@ -34,77 +37,19 @@ public class DeployModeConfigLoaderTests : ConfigLoaderValidatorFixtureBase
         return path;
     }
 
+    // -------------------------------------------------------------------------
+    // Phase 40 D-03: hard-reject the legacy section-level shape
+    // -------------------------------------------------------------------------
+
     [Fact]
-    public void Load_DeploySeedConfig_BothSectionsPopulated()
+    public void Load_LegacyDeploySection_Throws()
     {
         var json = """
             {
               "outputDirectory": "/serialization",
               "deploy": {
                 "predicates": [
-                  { "name": "Deploy1", "path": "/Shop", "areaId": 1 },
-                  { "name": "Deploy2", "providerType": "SqlTable", "table": "EcomShops" }
-                ]
-              },
-              "seed": {
-                "predicates": [
-                  { "name": "Seed1", "path": "/CustomerCenter", "areaId": 1 }
-                ]
-              }
-            }
-            """;
-        var path = WriteConfigFile(json);
-
-        var config = ConfigLoader.Load(path);
-
-        Assert.Equal(2, config.Deploy.Predicates.Count);
-        Assert.Equal("Deploy1", config.Deploy.Predicates[0].Name);
-        Assert.Equal("Deploy2", config.Deploy.Predicates[1].Name);
-        Assert.Single(config.Seed.Predicates);
-        Assert.Equal("Seed1", config.Seed.Predicates[0].Name);
-    }
-
-    [Fact]
-    public void Load_LegacyFlatConfig_MigratesToDeploy()
-    {
-        var json = """
-            {
-              "outputDirectory": "/serialization",
-              "predicates": [
-                { "name": "Legacy", "path": "/Shop", "areaId": 1 }
-              ],
-              "excludeFieldsByItemType": {
-                "Swift_PageItemType": ["NavigationTag"]
-              },
-              "excludeXmlElementsByType": {
-                "Dynamicweb.Frontend.ContentPage": ["sort"]
-              }
-            }
-            """;
-        var path = WriteConfigFile(json);
-
-        var config = ConfigLoader.Load(path);
-
-        Assert.Single(config.Deploy.Predicates);
-        Assert.Equal("Legacy", config.Deploy.Predicates[0].Name);
-        Assert.Single(config.Deploy.ExcludeFieldsByItemType);
-        Assert.Equal(new List<string> { "NavigationTag" }, config.Deploy.ExcludeFieldsByItemType["Swift_PageItemType"]);
-        Assert.Single(config.Deploy.ExcludeXmlElementsByType);
-        Assert.Empty(config.Seed.Predicates);
-    }
-
-    [Fact]
-    public void Load_LegacyAndDeployBothPresent_Throws()
-    {
-        var json = """
-            {
-              "outputDirectory": "/serialization",
-              "predicates": [
-                { "name": "Legacy", "path": "/Shop", "areaId": 1 }
-              ],
-              "deploy": {
-                "predicates": [
-                  { "name": "New", "path": "/Shop", "areaId": 1 }
+                  { "name": "X", "path": "/Shop", "areaId": 1 }
                 ]
               }
             }
@@ -113,83 +58,274 @@ public class DeployModeConfigLoaderTests : ConfigLoaderValidatorFixtureBase
 
         var ex = Assert.Throws<InvalidOperationException>(() => ConfigLoader.Load(path));
 
-        Assert.Contains("Both top-level 'Predicates' and 'Deploy.Predicates' are present", ex.Message);
-        Assert.Contains("remove the legacy 'Predicates' field", ex.Message);
+        Assert.Contains("Legacy section-level shape", ex.Message);
+        Assert.Contains("'deploy'", ex.Message);
+        Assert.Contains("Phase 40", ex.Message);
+        Assert.Contains("per-predicate mode", ex.Message);
     }
 
     [Fact]
-    public void Load_OnlyDeploy_SeedDefaultsEmpty()
+    public void Load_LegacySeedSection_Throws()
     {
         var json = """
             {
               "outputDirectory": "/serialization",
-              "deploy": {
-                "predicates": [
-                  { "name": "Only", "path": "/Shop", "areaId": 1 }
-                ]
-              }
-            }
-            """;
-        var path = WriteConfigFile(json);
-
-        var config = ConfigLoader.Load(path);
-
-        Assert.Single(config.Deploy.Predicates);
-        Assert.NotNull(config.Seed);
-        Assert.Empty(config.Seed.Predicates);
-        Assert.Equal(ConflictStrategy.DestinationWins, config.Seed.ConflictStrategy);
-        Assert.Equal("seed", config.Seed.OutputSubfolder);
-    }
-
-    [Fact]
-    public void Load_SeedDefault_ConflictStrategyIsDestinationWins()
-    {
-        var json = """
-            {
-              "outputDirectory": "/serialization",
-              "deploy": { "predicates": [] },
               "seed": {
                 "predicates": [
-                  { "name": "Seed", "path": "/CustomerCenter", "areaId": 1 }
+                  { "name": "X", "path": "/Shop", "areaId": 1 }
                 ]
               }
             }
             """;
         var path = WriteConfigFile(json);
 
-        var config = ConfigLoader.Load(path);
+        var ex = Assert.Throws<InvalidOperationException>(() => ConfigLoader.Load(path));
 
-        Assert.Equal(ConflictStrategy.DestinationWins, config.Seed.ConflictStrategy);
-        Assert.Equal(ConflictStrategy.SourceWins, config.Deploy.ConflictStrategy);
+        Assert.Contains("Legacy section-level shape", ex.Message);
+        Assert.Contains("'seed'", ex.Message);
     }
 
     [Fact]
-    public void Write_DeploySeedConfig_RoundTrips()
+    public void Load_LegacyDeployValue_AnyShape_Throws()
+    {
+        // T-40-01-01 detection trap: object? on Deploy/Seed catches any JSON shape — array, primitive, object.
+        var json = """
+            {
+              "outputDirectory": "/serialization",
+              "deploy": []
+            }
+            """;
+        var path = WriteConfigFile(json);
+
+        var ex = Assert.Throws<InvalidOperationException>(() => ConfigLoader.Load(path));
+        Assert.Contains("Legacy section-level shape", ex.Message);
+    }
+
+    // -------------------------------------------------------------------------
+    // Phase 40 D-01: per-predicate mode is required + must parse to DeploymentMode
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public void Load_PredicateMissingMode_Throws()
+    {
+        var json = """
+            {
+              "outputDirectory": "/serialization",
+              "predicates": [
+                { "name": "NoMode", "path": "/Shop", "areaId": 1 }
+              ]
+            }
+            """;
+        var path = WriteConfigFile(json);
+
+        var ex = Assert.Throws<InvalidOperationException>(() => ConfigLoader.Load(path));
+
+        Assert.Contains("missing required field 'mode'", ex.Message);
+        Assert.Contains("NoMode", ex.Message);
+        Assert.Contains("expected 'Deploy' or 'Seed'", ex.Message);
+    }
+
+    [Fact]
+    public void Load_PredicateInvalidMode_Throws()
+    {
+        var json = """
+            {
+              "outputDirectory": "/serialization",
+              "predicates": [
+                { "name": "BadMode", "mode": "Garbage", "path": "/Shop", "areaId": 1 }
+              ]
+            }
+            """;
+        var path = WriteConfigFile(json);
+
+        var ex = Assert.Throws<InvalidOperationException>(() => ConfigLoader.Load(path));
+
+        Assert.Contains("invalid mode 'Garbage'", ex.Message);
+        Assert.Contains("BadMode", ex.Message);
+        Assert.Contains("expected 'Deploy' or 'Seed'", ex.Message);
+    }
+
+    [Fact]
+    public void Load_PredicateInjectionMode_Throws()
+    {
+        // T-40-01-02: free-form mode strings cannot reach SerializerConfiguration. Closed-set parse.
+        var json = """
+            {
+              "outputDirectory": "/serialization",
+              "predicates": [
+                { "name": "Inj", "mode": "Deploy; DROP TABLE X", "path": "/Shop", "areaId": 1 }
+              ]
+            }
+            """;
+        var path = WriteConfigFile(json);
+
+        var ex = Assert.Throws<InvalidOperationException>(() => ConfigLoader.Load(path));
+        Assert.Contains("invalid mode", ex.Message);
+    }
+
+    [Fact]
+    public void Load_LowercaseDeployMode_AcceptedAsDeploy()
+    {
+        var json = """
+            {
+              "outputDirectory": "/serialization",
+              "predicates": [
+                { "name": "L", "mode": "deploy", "path": "/Shop", "areaId": 1 }
+              ]
+            }
+            """;
+        var path = WriteConfigFile(json);
+
+        var config = ConfigLoader.Load(path);
+
+        Assert.Single(config.Predicates);
+        Assert.Equal(DeploymentMode.Deploy, config.Predicates[0].Mode);
+    }
+
+    [Fact]
+    public void Load_UppercaseSeedMode_AcceptedAsSeed()
+    {
+        var json = """
+            {
+              "outputDirectory": "/serialization",
+              "predicates": [
+                { "name": "U", "mode": "SEED", "path": "/Shop", "areaId": 1 }
+              ]
+            }
+            """;
+        var path = WriteConfigFile(json);
+
+        var config = ConfigLoader.Load(path);
+
+        Assert.Single(config.Predicates);
+        Assert.Equal(DeploymentMode.Seed, config.Predicates[0].Mode);
+    }
+
+    // -------------------------------------------------------------------------
+    // Phase 40 D-02: new flat-shape success cases with mixed Deploy/Seed predicates
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public void Load_NewFlatShape_MixedPredicates_LoadsCorrectModes()
+    {
+        var json = """
+            {
+              "outputDirectory": "/serialization",
+              "predicates": [
+                { "name": "EcomShops",  "mode": "Deploy", "providerType": "SqlTable", "table": "EcomShops" },
+                { "name": "EcomOrderFlow", "mode": "Seed", "providerType": "SqlTable", "table": "EcomOrderFlow", "nameColumn": "OrderFlowName" },
+                { "name": "ContentDeploy", "mode": "Deploy", "path": "/Shop", "areaId": 1 }
+              ]
+            }
+            """;
+        var path = WriteConfigFile(json);
+
+        var config = ConfigLoader.Load(path);
+
+        Assert.Equal(3, config.Predicates.Count);
+        Assert.Equal(2, config.Predicates.Count(p => p.Mode == DeploymentMode.Deploy));
+        Assert.Equal(1, config.Predicates.Count(p => p.Mode == DeploymentMode.Seed));
+        Assert.Equal("EcomOrderFlow", config.Predicates.Single(p => p.Mode == DeploymentMode.Seed).Name);
+    }
+
+    [Fact]
+    public void Load_FlatShape_DefaultSubfolders_AreDeployAndSeed()
+    {
+        var json = """
+            {
+              "outputDirectory": "/serialization",
+              "predicates": []
+            }
+            """;
+        var path = WriteConfigFile(json);
+
+        var config = ConfigLoader.Load(path);
+
+        Assert.Equal("deploy", config.DeployOutputSubfolder);
+        Assert.Equal("seed", config.SeedOutputSubfolder);
+    }
+
+    [Fact]
+    public void Load_FlatShape_CustomSubfolders_RoundTrip()
+    {
+        var json = """
+            {
+              "outputDirectory": "/serialization",
+              "deployOutputSubfolder": "shipped",
+              "seedOutputSubfolder": "fixtures",
+              "predicates": []
+            }
+            """;
+        var path = WriteConfigFile(json);
+
+        var config = ConfigLoader.Load(path);
+
+        Assert.Equal("shipped", config.DeployOutputSubfolder);
+        Assert.Equal("fixtures", config.SeedOutputSubfolder);
+    }
+
+    [Fact]
+    public void Load_FlatShape_TopLevelExclusionDictionaries_RoundTrip()
+    {
+        var json = """
+            {
+              "outputDirectory": "/serialization",
+              "excludeFieldsByItemType": {
+                "Swift_PageItemType": ["NavigationTag", "AreaDomain"]
+              },
+              "excludeXmlElementsByType": {
+                "Dynamicweb.Frontend.ContentPage": ["sort"]
+              },
+              "predicates": []
+            }
+            """;
+        var path = WriteConfigFile(json);
+
+        var config = ConfigLoader.Load(path);
+
+        Assert.Single(config.ExcludeFieldsByItemType);
+        Assert.Equal(new List<string> { "NavigationTag", "AreaDomain" }, config.ExcludeFieldsByItemType["Swift_PageItemType"]);
+        Assert.Single(config.ExcludeXmlElementsByType);
+        Assert.Equal(new List<string> { "sort" }, config.ExcludeXmlElementsByType["Dynamicweb.Frontend.ContentPage"]);
+    }
+
+    [Fact]
+    public void Load_FlatShape_NoExclusionDicts_DefaultsEmpty()
+    {
+        var json = """
+            {
+              "outputDirectory": "/serialization",
+              "predicates": []
+            }
+            """;
+        var path = WriteConfigFile(json);
+
+        var config = ConfigLoader.Load(path);
+
+        Assert.NotNull(config.ExcludeFieldsByItemType);
+        Assert.Empty(config.ExcludeFieldsByItemType);
+        Assert.NotNull(config.ExcludeXmlElementsByType);
+        Assert.Empty(config.ExcludeXmlElementsByType);
+    }
+
+    // -------------------------------------------------------------------------
+    // Round-trip via ConfigWriter — the writer never emits the legacy shape
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public void Write_FlatShape_RoundTrips_WithMixedModes()
     {
         var config = new SerializerConfiguration
         {
             OutputDirectory = "/out",
-            Deploy = new ModeConfig
+            Predicates = new List<ProviderPredicateDefinition>
             {
-                OutputSubfolder = "deploy",
-                ConflictStrategy = ConflictStrategy.SourceWins,
-                Predicates = new List<ProviderPredicateDefinition>
-                {
-                    new() { Name = "DeployP", ProviderType = "Content", Path = "/Shop", AreaId = 1 }
-                },
-                ExcludeFieldsByItemType = new Dictionary<string, List<string>>
-                {
-                    ["Swift_PageItemType"] = new() { "NavigationTag" }
-                }
+                new() { Name = "DeployP", Mode = DeploymentMode.Deploy, ProviderType = "Content", Path = "/Shop", AreaId = 1 },
+                new() { Name = "SeedP",   Mode = DeploymentMode.Seed,   ProviderType = "Content", Path = "/Customer", AreaId = 1 }
             },
-            Seed = new ModeConfig
+            ExcludeFieldsByItemType = new Dictionary<string, List<string>>
             {
-                OutputSubfolder = "seed",
-                ConflictStrategy = ConflictStrategy.DestinationWins,
-                Predicates = new List<ProviderPredicateDefinition>
-                {
-                    new() { Name = "SeedP", ProviderType = "Content", Path = "/Customer", AreaId = 1 }
-                }
+                ["Swift_PageItemType"] = new() { "NavigationTag" }
             }
         };
         var path = Path.Combine(_tempDir, "roundtrip.json");
@@ -197,47 +333,9 @@ public class DeployModeConfigLoaderTests : ConfigLoaderValidatorFixtureBase
         ConfigWriter.Save(config, path);
         var reloaded = ConfigLoader.Load(path);
 
-        Assert.Single(reloaded.Deploy.Predicates);
-        Assert.Equal("DeployP", reloaded.Deploy.Predicates[0].Name);
-        Assert.Single(reloaded.Seed.Predicates);
-        Assert.Equal("SeedP", reloaded.Seed.Predicates[0].Name);
-        Assert.Equal(ConflictStrategy.DestinationWins, reloaded.Seed.ConflictStrategy);
-        Assert.Equal("seed", reloaded.Seed.OutputSubfolder);
-        Assert.Equal("deploy", reloaded.Deploy.OutputSubfolder);
-        Assert.Single(reloaded.Deploy.ExcludeFieldsByItemType);
-    }
-
-    [Fact]
-    public void GetMode_ReturnsMatchingModeConfig()
-    {
-        var config = new SerializerConfiguration
-        {
-            OutputDirectory = "/out",
-            Deploy = new ModeConfig
-            {
-                OutputSubfolder = "deploy",
-                Predicates = new List<ProviderPredicateDefinition>
-                {
-                    new() { Name = "D", ProviderType = "Content", Path = "/d", AreaId = 1 }
-                }
-            },
-            Seed = new ModeConfig
-            {
-                OutputSubfolder = "seed",
-                ConflictStrategy = ConflictStrategy.DestinationWins,
-                Predicates = new List<ProviderPredicateDefinition>
-                {
-                    new() { Name = "S", ProviderType = "Content", Path = "/s", AreaId = 1 }
-                }
-            }
-        };
-
-        var deploy = config.GetMode(DeploymentMode.Deploy);
-        var seed = config.GetMode(DeploymentMode.Seed);
-
-        Assert.Same(config.Deploy, deploy);
-        Assert.Same(config.Seed, seed);
-        Assert.Equal("D", deploy.Predicates[0].Name);
-        Assert.Equal("S", seed.Predicates[0].Name);
+        Assert.Equal(2, reloaded.Predicates.Count);
+        Assert.Equal(DeploymentMode.Deploy, reloaded.Predicates.Single(p => p.Name == "DeployP").Mode);
+        Assert.Equal(DeploymentMode.Seed, reloaded.Predicates.Single(p => p.Name == "SeedP").Mode);
+        Assert.Single(reloaded.ExcludeFieldsByItemType);
     }
 }

@@ -5,10 +5,15 @@ using Xunit;
 
 namespace DynamicWeb.Serializer.Tests.Configuration;
 
+/// <summary>
+/// Phase 40 (D-01..D-04) flat-shape ConfigLoader tests. Every test fixture uses the new
+/// flat shape — single top-level <c>predicates</c> array with per-entry <c>mode</c>. Tests
+/// covering the legacy section shape behaviors (Deploy/Seed sections, legacy migration,
+/// section-level rejection) live in <see cref="DeployModeConfigLoaderTests"/>.
+/// </summary>
 public class ConfigLoaderTests : ConfigLoaderValidatorFixtureBase
 {
     private readonly string _tempDir;
-    private readonly List<string> _tempFiles = new();
 
     public ConfigLoaderTests()
     {
@@ -18,7 +23,7 @@ public class ConfigLoaderTests : ConfigLoaderValidatorFixtureBase
 
     public override void Dispose()
     {
-        base.Dispose();  // clear AsyncLocal first
+        base.Dispose();
         if (Directory.Exists(_tempDir))
             Directory.Delete(_tempDir, recursive: true);
     }
@@ -44,6 +49,7 @@ public class ConfigLoaderTests : ConfigLoaderValidatorFixtureBase
               "predicates": [
                 {
                   "name": "Customer Center",
+                  "mode": "Deploy",
                   "path": "/Customer Center",
                   "areaId": 1,
                   "excludes": ["/Customer Center/Archive"]
@@ -59,6 +65,7 @@ public class ConfigLoaderTests : ConfigLoaderValidatorFixtureBase
         Assert.Equal("info", config.LogLevel);
         Assert.Single(config.Predicates);
         Assert.Equal("Customer Center", config.Predicates[0].Name);
+        Assert.Equal(DeploymentMode.Deploy, config.Predicates[0].Mode);
         Assert.Equal("/Customer Center", config.Predicates[0].Path);
         Assert.Equal(1, config.Predicates[0].AreaId);
         Assert.Single(config.Predicates[0].Excludes);
@@ -74,6 +81,7 @@ public class ConfigLoaderTests : ConfigLoaderValidatorFixtureBase
               "predicates": [
                 {
                   "name": "Customer Center",
+                  "mode": "Deploy",
                   "path": "/Customer Center",
                   "areaId": 1
                 }
@@ -97,6 +105,7 @@ public class ConfigLoaderTests : ConfigLoaderValidatorFixtureBase
               "predicates": [
                 {
                   "name": "Customer Center",
+                  "mode": "Deploy",
                   "path": "/Customer Center",
                   "areaId": 1
                 }
@@ -136,6 +145,7 @@ public class ConfigLoaderTests : ConfigLoaderValidatorFixtureBase
               "predicates": [
                 {
                   "name": "Customer Center",
+                  "mode": "Deploy",
                   "path": "/Customer Center",
                   "areaId": 1
                 }
@@ -191,6 +201,7 @@ public class ConfigLoaderTests : ConfigLoaderValidatorFixtureBase
               "predicates": [
                 {
                   "name": "Customer Center",
+                  "mode": "Deploy",
                   "areaId": 1
                 }
               ]
@@ -212,6 +223,7 @@ public class ConfigLoaderTests : ConfigLoaderValidatorFixtureBase
               "predicates": [
                 {
                   "name": "Customer Center",
+                  "mode": "Deploy",
                   "path": "/Customer Center"
                 }
               ]
@@ -232,6 +244,7 @@ public class ConfigLoaderTests : ConfigLoaderValidatorFixtureBase
               "outputDirectory": "/serialization",
               "predicates": [
                 {
+                  "mode": "Deploy",
                   "path": "/Customer Center",
                   "areaId": 1
                 }
@@ -259,6 +272,7 @@ public class ConfigLoaderTests : ConfigLoaderValidatorFixtureBase
               "predicates": [
                 {
                   "name": "Test",
+                  "mode": "Deploy",
                   "path": "/Test",
                   "areaId": 1
                 }
@@ -296,6 +310,7 @@ public class ConfigLoaderTests : ConfigLoaderValidatorFixtureBase
               "predicates": [
                 {
                   "name": "Test",
+                  "mode": "Deploy",
                   "path": "/Test",
                   "areaId": 1
                 }
@@ -322,11 +337,11 @@ public class ConfigLoaderTests : ConfigLoaderValidatorFixtureBase
     }
 
     // -------------------------------------------------------------------------
-    // DryRun and ConflictStrategy fields
+    // DryRun field
     // -------------------------------------------------------------------------
 
     [Fact]
-    public void Load_ConfigWithoutNewFields_DefaultsToDryRunFalseAndSourceWins()
+    public void Load_ConfigWithoutDryRun_DefaultsToFalse()
     {
         var json = """
             {
@@ -335,6 +350,7 @@ public class ConfigLoaderTests : ConfigLoaderValidatorFixtureBase
               "predicates": [
                 {
                   "name": "Test",
+                  "mode": "Deploy",
                   "path": "/Test",
                   "areaId": 1
                 }
@@ -346,7 +362,6 @@ public class ConfigLoaderTests : ConfigLoaderValidatorFixtureBase
         var config = ConfigLoader.Load(path);
 
         Assert.False(config.DryRun);
-        Assert.Equal(ConflictStrategy.SourceWins, config.ConflictStrategy);
     }
 
     [Fact]
@@ -359,6 +374,7 @@ public class ConfigLoaderTests : ConfigLoaderValidatorFixtureBase
               "predicates": [
                 {
                   "name": "Test",
+                  "mode": "Deploy",
                   "path": "/Test",
                   "areaId": 1
                 }
@@ -372,31 +388,8 @@ public class ConfigLoaderTests : ConfigLoaderValidatorFixtureBase
         Assert.True(config.DryRun);
     }
 
-    [Fact]
-    public void Load_ConfigWithConflictStrategy_ReturnsSourceWins()
-    {
-        var json = """
-            {
-              "outputDirectory": "/serialization",
-              "conflictStrategy": "source-wins",
-              "predicates": [
-                {
-                  "name": "Test",
-                  "path": "/Test",
-                  "areaId": 1
-                }
-              ]
-            }
-            """;
-        var path = WriteConfigFile(json);
-
-        var config = ConfigLoader.Load(path);
-
-        Assert.Equal(ConflictStrategy.SourceWins, config.ConflictStrategy);
-    }
-
     // -------------------------------------------------------------------------
-    // ProviderPredicateDefinition migration tests
+    // ProviderPredicateDefinition basics
     // -------------------------------------------------------------------------
 
     [Fact]
@@ -408,6 +401,7 @@ public class ConfigLoaderTests : ConfigLoaderValidatorFixtureBase
               "predicates": [
                 {
                   "name": "Customer Center",
+                  "mode": "Deploy",
                   "path": "/Customer Center",
                   "areaId": 1
                 }
@@ -434,6 +428,7 @@ public class ConfigLoaderTests : ConfigLoaderValidatorFixtureBase
               "predicates": [
                 {
                   "name": "Order Flows",
+                  "mode": "Deploy",
                   "providerType": "SqlTable",
                   "table": "EcomOrderFlow",
                   "nameColumn": "OrderFlowName",
@@ -462,11 +457,13 @@ public class ConfigLoaderTests : ConfigLoaderValidatorFixtureBase
               "predicates": [
                 {
                   "name": "Customer Center",
+                  "mode": "Deploy",
                   "path": "/Customer Center",
                   "areaId": 1
                 },
                 {
                   "name": "Order Flows",
+                  "mode": "Deploy",
                   "providerType": "SqlTable",
                   "table": "EcomOrderFlow",
                   "nameColumn": "OrderFlowName"
@@ -492,6 +489,7 @@ public class ConfigLoaderTests : ConfigLoaderValidatorFixtureBase
               "predicates": [
                 {
                   "name": "Order Flows",
+                  "mode": "Deploy",
                   "providerType": "SqlTable",
                   "table": "EcomOrderFlow",
                   "nameColumn": "OrderFlowName",
@@ -518,6 +516,7 @@ public class ConfigLoaderTests : ConfigLoaderValidatorFixtureBase
               "predicates": [
                 {
                   "name": "Order Flows",
+                  "mode": "Deploy",
                   "providerType": "SqlTable",
                   "table": "EcomOrderFlow",
                   "nameColumn": "OrderFlowName"
@@ -542,6 +541,7 @@ public class ConfigLoaderTests : ConfigLoaderValidatorFixtureBase
               "predicates": [
                 {
                   "name": "Order Flows",
+                  "mode": "Deploy",
                   "providerType": "SqlTable",
                   "table": "EcomOrderFlow",
                   "nameColumn": "OrderFlowName"
@@ -551,13 +551,12 @@ public class ConfigLoaderTests : ConfigLoaderValidatorFixtureBase
             """;
         var path = WriteConfigFile(json);
 
-        // Should NOT throw — SqlTable predicates don't require path/areaId
         var config = ConfigLoader.Load(path);
         Assert.Single(config.Predicates);
     }
 
     // -------------------------------------------------------------------------
-    // XmlColumns config mapping (Phase 27 — Pitfall P7 three-class mapping)
+    // XmlColumns config mapping
     // -------------------------------------------------------------------------
 
     [Fact]
@@ -569,6 +568,7 @@ public class ConfigLoaderTests : ConfigLoaderValidatorFixtureBase
               "predicates": [
                 {
                   "name": "Shipping Methods",
+                  "mode": "Deploy",
                   "providerType": "SqlTable",
                   "table": "EcomShippings",
                   "nameColumn": "ShippingName",
@@ -595,6 +595,7 @@ public class ConfigLoaderTests : ConfigLoaderValidatorFixtureBase
               "predicates": [
                 {
                   "name": "Order Flows",
+                  "mode": "Deploy",
                   "providerType": "SqlTable",
                   "table": "EcomOrderFlow",
                   "nameColumn": "OrderFlowName"
@@ -611,7 +612,7 @@ public class ConfigLoaderTests : ConfigLoaderValidatorFixtureBase
     }
 
     // -------------------------------------------------------------------------
-    // ExcludeFields / ExcludeXmlElements config mapping (Phase 28 — Pitfall P7)
+    // ExcludeFields / ExcludeXmlElements config mapping
     // -------------------------------------------------------------------------
 
     [Fact]
@@ -623,6 +624,7 @@ public class ConfigLoaderTests : ConfigLoaderValidatorFixtureBase
               "predicates": [
                 {
                   "name": "Customer Center",
+                  "mode": "Deploy",
                   "path": "/Customer Center",
                   "areaId": 1,
                   "excludeFields": ["NavigationTag", "AreaDomain"]
@@ -648,6 +650,7 @@ public class ConfigLoaderTests : ConfigLoaderValidatorFixtureBase
               "predicates": [
                 {
                   "name": "Customer Center",
+                  "mode": "Deploy",
                   "path": "/Customer Center",
                   "areaId": 1,
                   "excludeXmlElements": ["sort", "pagesize"]
@@ -673,6 +676,7 @@ public class ConfigLoaderTests : ConfigLoaderValidatorFixtureBase
               "predicates": [
                 {
                   "name": "Customer Center",
+                  "mode": "Deploy",
                   "path": "/Customer Center",
                   "areaId": 1
                 }
@@ -690,7 +694,7 @@ public class ConfigLoaderTests : ConfigLoaderValidatorFixtureBase
     }
 
     // -------------------------------------------------------------------------
-    // Typed exclusion dictionaries (Phase 32 — CFG-01, CFG-02)
+    // Top-level typed exclusion dictionaries (Phase 40 D-04 — flat at top level)
     // -------------------------------------------------------------------------
 
     [Fact]
@@ -710,11 +714,9 @@ public class ConfigLoaderTests : ConfigLoaderValidatorFixtureBase
 
         var config = ConfigLoader.Load(path);
 
-        // Phase 37-01.1: legacy flat ExcludeFieldsByItemType alias removed — ConfigLoader migrates
-        // the top-level dict into Deploy.ExcludeFieldsByItemType, so assertions read through Deploy.
-        Assert.Equal(2, config.Deploy.ExcludeFieldsByItemType.Count);
-        Assert.Equal(new List<string> { "NavigationTag", "AreaDomain" }, config.Deploy.ExcludeFieldsByItemType["Swift_PageItemType"]);
-        Assert.Equal(new List<string> { "ModuleSettings" }, config.Deploy.ExcludeFieldsByItemType["Swift_ParagraphItemType"]);
+        Assert.Equal(2, config.ExcludeFieldsByItemType.Count);
+        Assert.Equal(new List<string> { "NavigationTag", "AreaDomain" }, config.ExcludeFieldsByItemType["Swift_PageItemType"]);
+        Assert.Equal(new List<string> { "ModuleSettings" }, config.ExcludeFieldsByItemType["Swift_ParagraphItemType"]);
     }
 
     [Fact]
@@ -733,9 +735,8 @@ public class ConfigLoaderTests : ConfigLoaderValidatorFixtureBase
 
         var config = ConfigLoader.Load(path);
 
-        // Phase 37-01.1: assert via Deploy (see note above).
-        Assert.Single(config.Deploy.ExcludeXmlElementsByType);
-        Assert.Equal(new List<string> { "sort", "pagesize" }, config.Deploy.ExcludeXmlElementsByType["Dynamicweb.Frontend.ContentPage"]);
+        Assert.Single(config.ExcludeXmlElementsByType);
+        Assert.Equal(new List<string> { "sort", "pagesize" }, config.ExcludeXmlElementsByType["Dynamicweb.Frontend.ContentPage"]);
     }
 
     [Fact]
@@ -751,34 +752,25 @@ public class ConfigLoaderTests : ConfigLoaderValidatorFixtureBase
 
         var config = ConfigLoader.Load(path);
 
-        // Phase 37-01.1: assert via Deploy (see note above).
-        Assert.NotNull(config.Deploy.ExcludeFieldsByItemType);
-        Assert.Empty(config.Deploy.ExcludeFieldsByItemType);
-        Assert.NotNull(config.Deploy.ExcludeXmlElementsByType);
-        Assert.Empty(config.Deploy.ExcludeXmlElementsByType);
+        Assert.NotNull(config.ExcludeFieldsByItemType);
+        Assert.Empty(config.ExcludeFieldsByItemType);
+        Assert.NotNull(config.ExcludeXmlElementsByType);
+        Assert.Empty(config.ExcludeXmlElementsByType);
     }
 
     [Fact]
     public void Save_ThenLoad_RoundTripsTypedDictionaries()
     {
-        // Phase 37-01.1: legacy flat ExcludeFieldsByItemType / ExcludeXmlElementsByType aliases
-        // removed. Typed exclusions now live under Deploy (and optionally Seed) ModeConfigs.
         var config = new SerializerConfiguration
         {
             OutputDirectory = _tempDir,
-            Deploy = new ModeConfig
+            ExcludeFieldsByItemType = new Dictionary<string, List<string>>
             {
-                OutputSubfolder = "deploy",
-                ConflictStrategy = ConflictStrategy.SourceWins,
-                Predicates = new List<ProviderPredicateDefinition>(),
-                ExcludeFieldsByItemType = new Dictionary<string, List<string>>
-                {
-                    ["Swift_PageItemType"] = new List<string> { "NavigationTag" }
-                },
-                ExcludeXmlElementsByType = new Dictionary<string, List<string>>
-                {
-                    ["Dynamicweb.Frontend.ContentPage"] = new List<string> { "sort" }
-                }
+                ["Swift_PageItemType"] = new List<string> { "NavigationTag" }
+            },
+            ExcludeXmlElementsByType = new Dictionary<string, List<string>>
+            {
+                ["Dynamicweb.Frontend.ContentPage"] = new List<string> { "sort" }
             }
         };
         var path = Path.Combine(_tempDir, "roundtrip.json");
@@ -786,10 +778,10 @@ public class ConfigLoaderTests : ConfigLoaderValidatorFixtureBase
 
         var reloaded = ConfigLoader.Load(path);
 
-        Assert.Single(reloaded.Deploy.ExcludeFieldsByItemType);
-        Assert.Equal(new List<string> { "NavigationTag" }, reloaded.Deploy.ExcludeFieldsByItemType["Swift_PageItemType"]);
-        Assert.Single(reloaded.Deploy.ExcludeXmlElementsByType);
-        Assert.Equal(new List<string> { "sort" }, reloaded.Deploy.ExcludeXmlElementsByType["Dynamicweb.Frontend.ContentPage"]);
+        Assert.Single(reloaded.ExcludeFieldsByItemType);
+        Assert.Equal(new List<string> { "NavigationTag" }, reloaded.ExcludeFieldsByItemType["Swift_PageItemType"]);
+        Assert.Single(reloaded.ExcludeXmlElementsByType);
+        Assert.Equal(new List<string> { "sort" }, reloaded.ExcludeXmlElementsByType["Dynamicweb.Frontend.ContentPage"]);
     }
 
     // -------------------------------------------------------------------------
@@ -802,27 +794,24 @@ public class ConfigLoaderTests : ConfigLoaderValidatorFixtureBase
         var json = """
             {
               "outputDirectory": "/serialization",
-              "deploy": {
-                "outputSubfolder": "deploy",
-                "conflictStrategy": "source-wins",
-                "predicates": [
-                  {
-                    "name": "AccessUser-Roles",
-                    "providerType": "SqlTable",
-                    "table": "AccessUser",
-                    "where": "AccessUserType = 2 AND AccessUserUserName IN ('Admin','Editors')",
-                    "includeFields": ["AccessUserHostingId", "AccessUserHostingName"]
-                  }
-                ]
-              }
+              "predicates": [
+                {
+                  "name": "AccessUser-Roles",
+                  "mode": "Deploy",
+                  "providerType": "SqlTable",
+                  "table": "AccessUser",
+                  "where": "AccessUserType = 2 AND AccessUserUserName IN ('Admin','Editors')",
+                  "includeFields": ["AccessUserHostingId", "AccessUserHostingName"]
+                }
+              ]
             }
             """;
         var path = WriteConfigFile(json);
 
         var config = ConfigLoader.Load(path);
 
-        Assert.Single(config.Deploy.Predicates);
-        var pred = config.Deploy.Predicates[0];
+        Assert.Single(config.Predicates);
+        var pred = config.Predicates[0];
         Assert.Equal("AccessUser-Roles", pred.Name);
         Assert.Equal("AccessUser", pred.Table);
         Assert.Equal("AccessUserType = 2 AND AccessUserUserName IN ('Admin','Editors')", pred.Where);
@@ -837,13 +826,9 @@ public class ConfigLoaderTests : ConfigLoaderValidatorFixtureBase
         var json = """
             {
               "outputDirectory": "/serialization",
-              "deploy": {
-                "outputSubfolder": "deploy",
-                "conflictStrategy": "source-wins",
-                "predicates": [
-                  { "name": "Bad", "providerType": "SqlTable", "table": "NotARealTable" }
-                ]
-              }
+              "predicates": [
+                { "name": "Bad", "mode": "Deploy", "providerType": "SqlTable", "table": "NotARealTable" }
+              ]
             }
             """;
         var path = WriteConfigFile(json);
@@ -864,16 +849,12 @@ public class ConfigLoaderTests : ConfigLoaderValidatorFixtureBase
         var json = """
             {
               "outputDirectory": "/serialization",
-              "deploy": {
-                "outputSubfolder": "deploy",
-                "conflictStrategy": "source-wins",
-                "predicates": [
-                  {
-                    "name": "X", "providerType": "SqlTable", "table": "AccessUser",
-                    "excludeFields": ["NonExistentColumn"]
-                  }
-                ]
-              }
+              "predicates": [
+                {
+                  "name": "X", "mode": "Deploy", "providerType": "SqlTable", "table": "AccessUser",
+                  "excludeFields": ["NonExistentColumn"]
+                }
+              ]
             }
             """;
         var path = WriteConfigFile(json);
@@ -893,16 +874,12 @@ public class ConfigLoaderTests : ConfigLoaderValidatorFixtureBase
         var json = """
             {
               "outputDirectory": "/serialization",
-              "deploy": {
-                "outputSubfolder": "deploy",
-                "conflictStrategy": "source-wins",
-                "predicates": [
-                  {
-                    "name": "X", "providerType": "SqlTable", "table": "AccessUser",
-                    "where": "NonExistentColumn = 1"
-                  }
-                ]
-              }
+              "predicates": [
+                {
+                  "name": "X", "mode": "Deploy", "providerType": "SqlTable", "table": "AccessUser",
+                  "where": "NonExistentColumn = 1"
+                }
+              ]
             }
             """;
         var path = WriteConfigFile(json);
@@ -922,15 +899,11 @@ public class ConfigLoaderTests : ConfigLoaderValidatorFixtureBase
         var json = """
             {
               "outputDirectory": "/serialization",
-              "deploy": {
-                "outputSubfolder": "deploy",
-                "conflictStrategy": "source-wins",
-                "predicates": [
-                  { "name": "A", "providerType": "SqlTable", "table": "UnknownTableA" },
-                  { "name": "B", "providerType": "SqlTable", "table": "UnknownTableB" },
-                  { "name": "C", "providerType": "SqlTable", "table": "UnknownTableC" }
-                ]
-              }
+              "predicates": [
+                { "name": "A", "mode": "Deploy", "providerType": "SqlTable", "table": "UnknownTableA" },
+                { "name": "B", "mode": "Deploy", "providerType": "SqlTable", "table": "UnknownTableB" },
+                { "name": "C", "mode": "Deploy", "providerType": "SqlTable", "table": "UnknownTableC" }
+              ]
             }
             """;
         var path = WriteConfigFile(json);
@@ -952,18 +925,14 @@ public class ConfigLoaderTests : ConfigLoaderValidatorFixtureBase
         var json = """
             {
               "outputDirectory": "/serialization",
-              "deploy": {
-                "outputSubfolder": "deploy",
-                "conflictStrategy": "source-wins",
-                "predicates": [
-                  {
-                    "name": "AU", "providerType": "SqlTable", "table": "AccessUser",
-                    "where": "AccessUserType = 2 AND AccessUserUserName IN ('Admin','Editors')",
-                    "excludeFields": ["AccessUserPassword"],
-                    "includeFields": ["AccessUserHostingName"]
-                  }
-                ]
-              }
+              "predicates": [
+                {
+                  "name": "AU", "mode": "Deploy", "providerType": "SqlTable", "table": "AccessUser",
+                  "where": "AccessUserType = 2 AND AccessUserUserName IN ('Admin','Editors')",
+                  "excludeFields": ["AccessUserPassword"],
+                  "includeFields": ["AccessUserHostingName"]
+                }
+              ]
             }
             """;
         var path = WriteConfigFile(json);
@@ -977,7 +946,7 @@ public class ConfigLoaderTests : ConfigLoaderValidatorFixtureBase
 
         var config = ConfigLoader.Load(path, validator);
 
-        Assert.Single(config.Deploy.Predicates);
+        Assert.Single(config.Predicates);
     }
 
     [Fact]
@@ -986,24 +955,21 @@ public class ConfigLoaderTests : ConfigLoaderValidatorFixtureBase
         var json = """
             {
               "outputDirectory": "/serialization",
-              "deploy": {
-                "outputSubfolder": "deploy",
-                "conflictStrategy": "source-wins",
-                "predicates": [
-                  {
-                    "name": "Plain",
-                    "providerType": "SqlTable",
-                    "table": "AccessUser"
-                  }
-                ]
-              }
+              "predicates": [
+                {
+                  "name": "Plain",
+                  "mode": "Deploy",
+                  "providerType": "SqlTable",
+                  "table": "AccessUser"
+                }
+              ]
             }
             """;
         var path = WriteConfigFile(json);
 
         var config = ConfigLoader.Load(path);
 
-        var pred = config.Deploy.Predicates[0];
+        var pred = config.Predicates[0];
         Assert.Null(pred.Where);
         Assert.NotNull(pred.IncludeFields);
         Assert.Empty(pred.IncludeFields);
@@ -1020,16 +986,15 @@ public class ConfigLoaderTests : ConfigLoaderValidatorFixtureBase
         var json = """
             {
               "outputDirectory": "/serialization",
-              "deploy": {
-                "predicates": [
-                  {
-                    "name": "Payments",
-                    "providerType": "SqlTable",
-                    "table": "EcomPayments",
-                    "serviceCaches": ["Dynamicweb.Ecommerce.Orders.NotARealService"]
-                  }
-                ]
-              }
+              "predicates": [
+                {
+                  "name": "Payments",
+                  "mode": "Deploy",
+                  "providerType": "SqlTable",
+                  "table": "EcomPayments",
+                  "serviceCaches": ["Dynamicweb.Ecommerce.Orders.NotARealService"]
+                }
+              ]
             }
             """;
         var path = WriteConfigFile(json);
@@ -1048,64 +1013,61 @@ public class ConfigLoaderTests : ConfigLoaderValidatorFixtureBase
         var json = """
             {
               "outputDirectory": "/serialization",
-              "deploy": {
-                "predicates": [
-                  {
-                    "name": "Payments",
-                    "providerType": "SqlTable",
-                    "table": "EcomPayments",
-                    "serviceCaches": [
-                      "PaymentService",
-                      "Dynamicweb.Ecommerce.Orders.ShippingService"
-                    ]
-                  }
-                ]
-              }
+              "predicates": [
+                {
+                  "name": "Payments",
+                  "mode": "Deploy",
+                  "providerType": "SqlTable",
+                  "table": "EcomPayments",
+                  "serviceCaches": [
+                    "PaymentService",
+                    "Dynamicweb.Ecommerce.Orders.ShippingService"
+                  ]
+                }
+              ]
             }
             """;
         var path = WriteConfigFile(json);
 
         var config = ConfigLoader.Load(path);
 
-        Assert.Equal(2, config.Deploy.Predicates[0].ServiceCaches.Count);
+        Assert.Equal(2, config.Predicates[0].ServiceCaches.Count);
     }
 
     [Fact]
     [Trait("Category", "Phase37-04")]
-    public void Load_UnknownServiceCacheInBothDeployAndSeed_AggregatesErrors()
+    public void Load_UnknownServiceCacheInBothDeployAndSeedPredicates_AggregatesErrors()
     {
+        // Phase 40: scope is "predicates" (not "deploy.predicates" / "seed.predicates"). Each
+        // predicate's mode is irrelevant to ServiceCaches validation — a single flat loop reports
+        // both predicates with their names.
         var json = """
             {
               "outputDirectory": "/serialization",
-              "deploy": {
-                "predicates": [
-                  {
-                    "name": "BadDeploy",
-                    "providerType": "SqlTable",
-                    "table": "EcomPayments",
-                    "serviceCaches": ["Nonexistent.DeployCache"]
-                  }
-                ]
-              },
-              "seed": {
-                "predicates": [
-                  {
-                    "name": "BadSeed",
-                    "providerType": "SqlTable",
-                    "table": "EcomShippings",
-                    "serviceCaches": ["Nonexistent.SeedCache"]
-                  }
-                ]
-              }
+              "predicates": [
+                {
+                  "name": "BadDeploy",
+                  "mode": "Deploy",
+                  "providerType": "SqlTable",
+                  "table": "EcomPayments",
+                  "serviceCaches": ["Nonexistent.DeployCache"]
+                },
+                {
+                  "name": "BadSeed",
+                  "mode": "Seed",
+                  "providerType": "SqlTable",
+                  "table": "EcomShippings",
+                  "serviceCaches": ["Nonexistent.SeedCache"]
+                }
+              ]
             }
             """;
         var path = WriteConfigFile(json);
 
         var ex = Assert.Throws<InvalidOperationException>(() => ConfigLoader.Load(path));
 
-        // Both predicate scopes reported in the same exception.
-        Assert.Contains("deploy.predicates 'BadDeploy'", ex.Message);
-        Assert.Contains("seed.predicates 'BadSeed'", ex.Message);
+        Assert.Contains("predicates 'BadDeploy'", ex.Message);
+        Assert.Contains("predicates 'BadSeed'", ex.Message);
         Assert.Contains("Nonexistent.DeployCache", ex.Message);
         Assert.Contains("Nonexistent.SeedCache", ex.Message);
     }
@@ -1161,26 +1123,25 @@ public class ConfigLoaderTests : ConfigLoaderValidatorFixtureBase
         var json = """
             {
               "outputDirectory": "/serialization",
-              "deploy": {
-                "predicates": [
-                  {
-                    "name": "Plain",
-                    "providerType": "SqlTable",
-                    "table": "EcomOrderFlow",
-                    "serviceCaches": []
-                  }
-                ]
-              }
+              "predicates": [
+                {
+                  "name": "Plain",
+                  "mode": "Deploy",
+                  "providerType": "SqlTable",
+                  "table": "EcomOrderFlow",
+                  "serviceCaches": []
+                }
+              ]
             }
             """;
         var path = WriteConfigFile(json);
 
-        var config = ConfigLoader.Load(path); // no throw
-        Assert.Empty(config.Deploy.Predicates[0].ServiceCaches);
+        var config = ConfigLoader.Load(path);
+        Assert.Empty(config.Predicates[0].ServiceCaches);
     }
 
     // -------------------------------------------------------------------------
-    // Phase 37-06 (gap closure): SC-3 — default-path 1-arg Load runs identifier validation
+    // Phase 37-06: SC-3 — default-path 1-arg Load runs identifier validation
     // -------------------------------------------------------------------------
 
     [Fact]
@@ -1189,8 +1150,6 @@ public class ConfigLoaderTests : ConfigLoaderValidatorFixtureBase
         var previousOverride = ConfigLoader.TestOverrideIdentifierValidator;
         try
         {
-            // Replace the class-level permissive fixture with a narrow allowlist that
-            // specifically EXCLUDES the malicious table string.
             ConfigLoader.TestOverrideIdentifierValidator = new SqlIdentifierValidator(
                 tableLoader: () => new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "AccessUser" },
                 columnLoader: _ => new HashSet<string>(StringComparer.OrdinalIgnoreCase));
@@ -1198,27 +1157,21 @@ public class ConfigLoaderTests : ConfigLoaderValidatorFixtureBase
             var json = """
                 {
                   "outputDirectory": "/serialization",
-                  "deploy": {
-                    "outputSubfolder": "deploy",
-                    "conflictStrategy": "source-wins",
-                    "predicates": [
-                      {
-                        "name": "MaliciousSqlTable",
-                        "providerType": "SqlTable",
-                        "table": "EcomOrders] WHERE 1=1; DROP TABLE Users; --"
-                      }
-                    ]
-                  }
+                  "predicates": [
+                    {
+                      "name": "MaliciousSqlTable",
+                      "mode": "Deploy",
+                      "providerType": "SqlTable",
+                      "table": "EcomOrders] WHERE 1=1; DROP TABLE Users; --"
+                    }
+                  ]
                 }
                 """;
             var path = WriteConfigFile(json);
 
-            // The 1-arg overload is the production default path. Prior to Phase 37-06 it
-            // silently bypassed identifier validation (identifierValidator: null). After the
-            // fix it reads TestOverrideIdentifierValidator (narrow) and rejects the table.
             var ex = Assert.Throws<InvalidOperationException>(() => ConfigLoader.Load(path));
             Assert.Contains("INFORMATION_SCHEMA", ex.Message);
-            Assert.Contains("EcomOrders", ex.Message); // substring of the malicious identifier
+            Assert.Contains("EcomOrders", ex.Message);
         }
         finally
         {
@@ -1243,127 +1196,30 @@ public class ConfigLoaderTests : ConfigLoaderValidatorFixtureBase
             var json = """
                 {
                   "outputDirectory": "/serialization",
-                  "deploy": {
-                    "outputSubfolder": "deploy",
-                    "conflictStrategy": "source-wins",
-                    "predicates": [
-                      {
-                        "name": "StructuralProof",
-                        "providerType": "SqlTable",
-                        "table": "NotARealTable"
-                      }
-                    ]
-                  }
+                  "predicates": [
+                    {
+                      "name": "StructuralProof",
+                      "mode": "Deploy",
+                      "providerType": "SqlTable",
+                      "table": "NotARealTable"
+                    }
+                  ]
                 }
                 """;
             var path = WriteConfigFile(json);
 
-            // Call through; ignore exceptions — the validator construction path is what we
-            // want to prove ran. In the test harness there is no DW DB, so the real
-            // SqlIdentifierValidator will throw a DB-layer exception when it tries to query
-            // INFORMATION_SCHEMA. That exception is immaterial — the spy callback proves
-            // the default-validator construction path executed.
             try { ConfigLoader.Load(path); } catch { /* intentionally swallow */ }
 
             Assert.True(
                 defaultValidatorConstructed,
                 "Expected the 1-arg ConfigLoader.Load(path) overload to invoke " +
                 "_testDefaultValidatorConstructedCallback (proving it constructed a " +
-                "default SqlIdentifierValidator). Prior to Phase 37-06 the overload " +
-                "passed identifierValidator: null and skipped validation entirely — " +
-                "this spy would never fire. RED state proves the fix isn't wired; " +
-                "GREEN state proves it is.");
+                "default SqlIdentifierValidator).");
         }
         finally
         {
             ConfigLoader.TestOverrideIdentifierValidator = previousOverride;
             ConfigLoader._testDefaultValidatorConstructedCallback.Value = previousCallback;
-        }
-    }
-
-    // -------------------------------------------------------------------------
-    // Phase 38 A.3 (D-38-03) — legacy mode-level AcknowledgedOrphanPageIds
-    // logs a warning and is dropped. Moved to ProviderPredicateDefinition.
-    // -------------------------------------------------------------------------
-
-    [Fact]
-    [Trait("Category", "Phase38")]
-    public void Load_LegacyModeLevelAckList_LogsWarningAndDrops()
-    {
-        // A legacy config with deploy.acknowledgedOrphanPageIds at the mode level
-        // must emit the D-38-03 warning and NOT propagate the IDs anywhere. Per
-        // feedback_no_backcompat.md the legacy list is silently dropped (no merge
-        // into predicates) — warn + drop, beta product, no back-compat.
-        var json = """
-            {
-              "outputDirectory": "X",
-              "deploy": {
-                "outputSubfolder": "deploy",
-                "conflictStrategy": "source-wins",
-                "acknowledgedOrphanPageIds": [ 15717, 9999 ],
-                "predicates": []
-              }
-            }
-            """;
-        var path = WriteConfigFile(json);
-
-        // Capture Console.Error output.
-        var originalErr = Console.Error;
-        var sw = new StringWriter();
-        Console.SetError(sw);
-        try
-        {
-            var config = ConfigLoader.Load(path);
-
-            var errOutput = sw.ToString();
-            Assert.Contains("deploy.acknowledgedOrphanPageIds", errOutput);
-            Assert.Contains("no longer supported", errOutput);
-            Assert.Contains("D-38-03", errOutput);
-
-            // Legacy IDs are dropped — not propagated to any predicate.
-            Assert.All(config.Deploy.Predicates, p => Assert.Empty(p.AcknowledgedOrphanPageIds));
-        }
-        finally
-        {
-            Console.SetError(originalErr);
-        }
-    }
-
-    [Fact]
-    [Trait("Category", "Phase38")]
-    public void Load_LegacySeedModeLevelAckList_LogsWarningAndDrops()
-    {
-        // Parallel test for the seed.acknowledgedOrphanPageIds path.
-        var json = """
-            {
-              "outputDirectory": "X",
-              "seed": {
-                "outputSubfolder": "seed",
-                "conflictStrategy": "destination-wins",
-                "acknowledgedOrphanPageIds": [ 42 ],
-                "predicates": []
-              }
-            }
-            """;
-        var path = WriteConfigFile(json);
-
-        var originalErr = Console.Error;
-        var sw = new StringWriter();
-        Console.SetError(sw);
-        try
-        {
-            var config = ConfigLoader.Load(path);
-
-            var errOutput = sw.ToString();
-            Assert.Contains("seed.acknowledgedOrphanPageIds", errOutput);
-            Assert.Contains("no longer supported", errOutput);
-            Assert.Contains("D-38-03", errOutput);
-
-            Assert.All(config.Seed.Predicates, p => Assert.Empty(p.AcknowledgedOrphanPageIds));
-        }
-        finally
-        {
-            Console.SetError(originalErr);
         }
     }
 }
