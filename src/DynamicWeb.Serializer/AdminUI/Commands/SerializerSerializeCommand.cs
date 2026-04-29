@@ -75,9 +75,13 @@ public sealed class SerializerSerializeCommand : CommandBase
                 return new() { Status = CommandResult.ResultType.Error, Message = "Serializer.config.json not found (also checked ContentSync.config.json)" };
 
             var config = ConfigLoader.Load(configPath);
-            var modeConfig = config.GetMode(deploymentMode);
 
-            if (modeConfig.Predicates.Count == 0)
+            // Phase 40 D-07: mode-filter the flat predicate list. Replaces config.GetMode(deploymentMode).
+            var modePredicates = config.Predicates.Where(p => p.Mode == deploymentMode).ToList();
+            var modeSubfolder = config.GetSubfolderForMode(deploymentMode);
+            var modeStrategy = config.GetConflictStrategyForMode(deploymentMode);
+
+            if (modePredicates.Count == 0)
                 return new()
                 {
                     Status = CommandResult.ResultType.Error,
@@ -88,7 +92,7 @@ public sealed class SerializerSerializeCommand : CommandBase
             var systemDir = Path.Combine(filesRoot, "System");
             var paths = config.EnsureDirectories(systemDir);
 
-            var modeRoot = Path.Combine(paths.SerializeRoot, modeConfig.OutputSubfolder);
+            var modeRoot = Path.Combine(paths.SerializeRoot, modeSubfolder);
             Directory.CreateDirectory(modeRoot);
 
             _logFile = LogFileWriter.CreateLogFile(paths.Log, "Serialize");
@@ -96,16 +100,16 @@ public sealed class SerializerSerializeCommand : CommandBase
 
             var orchestrator = ProviderRegistry.CreateOrchestrator(filesRoot);
             var result = orchestrator.SerializeAll(
-                modeConfig.Predicates,
+                modePredicates,
                 modeRoot,
                 deploymentMode,
-                modeConfig.ConflictStrategy,
+                modeStrategy,
                 Log,
                 providerFilter: null,
                 manifestWriter: new ManifestWriter(),
                 manifestCleaner: new ManifestCleaner(),
-                excludeFieldsByItemType: modeConfig.ExcludeFieldsByItemType,
-                excludeXmlElementsByType: modeConfig.ExcludeXmlElementsByType);
+                excludeFieldsByItemType: config.ExcludeFieldsByItemType,
+                excludeXmlElementsByType: config.ExcludeXmlElementsByType);
 
             var fileCount = Directory.Exists(modeRoot)
                 ? Directory.GetFiles(modeRoot, "*.yml", SearchOption.AllDirectories).Length
