@@ -4,14 +4,14 @@ milestone: v0.4.0
 milestone_name: Full Page Fidelity
 status: executing
 stopped_at: Phase 39 context gathered
-last_updated: "2026-04-23T11:54:20.971Z"
-last_activity: 2026-04-23
+last_updated: "2026-04-28T21:41:45.689Z"
+last_activity: 2026-04-28 -- Phase 40 planning complete
 progress:
-  total_phases: 29
+  total_phases: 30
   completed_phases: 28
-  total_plans: 68
+  total_plans: 73
   completed_plans: 67
-  percent: 99
+  percent: 92
 ---
 
 # Project State
@@ -27,8 +27,8 @@ See: .planning/PROJECT.md (updated 2026-04-03)
 
 Phase: 39
 Plan: Not started
-Status: Executing Phase 39
-Last activity: 2026-04-23
+Status: Ready to execute
+Last activity: 2026-04-28 -- Phase 40 planning complete
 
 ## Recent Session — 2026-04-17 Autonomous Baseline Test
 
@@ -132,6 +132,7 @@ Progress: [██████████] 100% (v0.4.0)
 - 2026-04-21: Phase 38 added — Production-Ready Baseline Hardening. User-approved full scope (groups A+B+C+D+E) after autonomous E2E round-trip on 2026-04-20 surfaced 13 distinct follow-up items that Phase 37 itself correctly did NOT attempt to fix. Findings source: `.planning/sessions/2026-04-20-e2e-baseline-roundtrip/REPORT.md`.
 - 2026-04-21: Phase 38.1 inserted after Phase 38 — Close Phase 38 deferrals (URGENT). Four carry-forwards from Phase 38's gated-closed-on-38.1 disposition: B.5.1 SelectedValue paragraph-ID sweeper extension, B.4.1 SHOP19 FK cleanup SQL, B.3.1 wider schema-drift scope (7 columns not 3), GRID-01 142 GridRowDefinitionId NOT NULL resolution. Target: live Swift 2.2 → CleanDB E2E passes under strictMode: true.
 - 2026-04-22: Phase 39 added — Seed mode field-level merge. ContentDeserializer and SqlTableProvider currently implement DestinationWins as row-level skip; the Deploy/Seed split intent is field-level merge so Seed fills what Deploy excluded without overwriting already-set fields. Unblocks the expanded swift2.2-combined.json Seed Content predicate.
+- 2026-04-28: Phase 40 added — Per-predicate Deploy/Seed split. User pivoted from section-level (deploy.predicates / seed.predicates arrays) to a single flat predicate list with a per-item `mode` field. Significantly simpler config setup. Phase 39 runtime (MergePredicate, XmlMergeHelper, Seed-merge in ContentDeserializer + SqlTableProvider) is unaffected — only config schema + ConfigLoader/ConfigWriter readers + SavePredicateCommand routing + swift2.2-combined.json baseline change. No backcompat per project policy.
 
 ### Decisions
 

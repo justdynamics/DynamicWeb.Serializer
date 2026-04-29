@@ -347,3 +347,22 @@ Plans:
 - Wave 1: 39-01 (no deps — ships MergePredicate contract consumed by 39-02)
 - Wave 2: 39-02 (depends_on: [01] — consumes MergePredicate + adds XmlMergeHelper + SqlTable branch)
 - Wave 3: 39-03 (depends_on: [01, 02] — live E2E gate; includes blocking checkpoint for operator-run pipeline verification)
+
+### Phase 40: Per-predicate Deploy/Seed split — replace section-level config arrays with single predicate list carrying per-item Mode field
+
+**Goal:** Replace the section-level deploy.predicates / seed.predicates arrays with a single flat predicates list where each predicate carries its own mode field (Deploy or Seed). Mode-shared keys move to top-level (D-04). No backcompat — ConfigLoader rejects the legacy shape with a clear error (D-03). swift2.2-combined.json rewritten in the new shape (D-05). Admin UI tree collapses to a single Predicates subtree with a Mode badge per row (D-06). Phase 39 runtime (MergePredicate, XmlMergeHelper, ContentDeserializer/SqlTableProvider Seed-merge) is unaffected — only config schema + readers/writers + admin UI + baseline + docs.
+**Requirements**: D-01..D-08 from orchestrator brief (no legacy REQ-IDs; brief decisions are acceptance)
+**Depends on:** Phase 39
+**Plans:** 5 plans
+
+Plans:
+- [ ] 40-01-PLAN.md — Model + ConfigLoader/Writer flat shape with strict legacy rejection (D-01..D-04, D-08)
+- [ ] 40-02-PLAN.md — Runtime/orchestrator/provider routing rewrite (ContentSerializer, ContentProvider, SerializeSubtreeCommand, SerializerSerializeCommand, SerializerDeserializeCommand) (D-07)
+- [ ] 40-03-PLAN.md — Admin UI collapse: predicate tree + Item/XML type detach from Mode + tests (D-06, D-04)
+- [ ] 40-04-PLAN.md — swift2.2-combined.json rewrite + docs/baselines/Swift2.2-baseline.md + docs/configuration.md + live-host human-verify checkpoint (D-05)
+- [ ] 40-05-PLAN.md — Solution-wide build + test + regression-grep gate; produces 40-VERIFICATION.md
+
+**Execution waves** (for /gsd-execute-phase):
+- Wave 1: 40-01 (model + loader + writer; downstream files compile-broken until Wave 2)
+- Wave 2: 40-02, 40-03, 40-04 (parallel — disjoint file sets: runtime/orchestrator vs. admin UI vs. baseline+docs)
+- Wave 3: 40-05 (gate — full build + test + regression grep)
