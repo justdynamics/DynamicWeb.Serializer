@@ -5,10 +5,10 @@ using DynamicWeb.Serializer.Models;
 namespace DynamicWeb.Serializer.Configuration;
 
 /// <summary>
-/// Writes <see cref="SerializerConfiguration"/> to disk as camelCase JSON using the
-/// Phase 37-01 Deploy/Seed shape. Never emits the legacy flat 'predicates' field —
-/// ConfigLoader will migrate old files on next load, and the first subsequent save
-/// rewrites them in the new shape.
+/// Phase 40: writes <see cref="SerializerConfiguration"/> as a flat JSON document with
+/// per-predicate <c>mode</c> field. Never emits the legacy section-level
+/// <c>deploy</c> / <c>seed</c> shape. <see cref="ConfigLoader"/> hard-rejects any file
+/// containing those keys (D-03, no backcompat).
 /// </summary>
 public static class ConfigWriter
 {
@@ -24,16 +24,17 @@ public static class ConfigWriter
         var directory = Path.GetDirectoryName(filePath)!;
         Directory.CreateDirectory(directory);
 
-        // Map to a disk-shape DTO so serialization doesn't emit pass-through legacy fields
-        // and so we can control the ordering of top-level keys for human readability.
         var dto = new PersistedConfiguration
         {
             OutputDirectory = config.OutputDirectory,
             LogLevel = config.LogLevel,
             DryRun = config.DryRun,
             StrictMode = config.StrictMode,
-            Deploy = ToPersistedMode(config.Deploy),
-            Seed = ToPersistedMode(config.Seed)
+            DeployOutputSubfolder = config.DeployOutputSubfolder,
+            SeedOutputSubfolder = config.SeedOutputSubfolder,
+            ExcludeFieldsByItemType = config.ExcludeFieldsByItemType.Count > 0 ? config.ExcludeFieldsByItemType : null,
+            ExcludeXmlElementsByType = config.ExcludeXmlElementsByType.Count > 0 ? config.ExcludeXmlElementsByType : null,
+            Predicates = config.Predicates
         };
 
         var json = JsonSerializer.Serialize(dto, _jsonOptions);
@@ -43,34 +44,16 @@ public static class ConfigWriter
         File.Move(tempPath, filePath, overwrite: true);
     }
 
-    private static PersistedModeSection ToPersistedMode(ModeConfig mode) => new()
-    {
-        OutputSubfolder = mode.OutputSubfolder,
-        ConflictStrategy = mode.ConflictStrategy,
-        Predicates = mode.Predicates,
-        ExcludeFieldsByItemType = mode.ExcludeFieldsByItemType.Count > 0 ? mode.ExcludeFieldsByItemType : null,
-        ExcludeXmlElementsByType = mode.ExcludeXmlElementsByType.Count > 0 ? mode.ExcludeXmlElementsByType : null
-    };
-
     private sealed class PersistedConfiguration
     {
         public string OutputDirectory { get; init; } = "";
         public string LogLevel { get; init; } = "info";
         public bool DryRun { get; init; }
-
-        /// <summary>Phase 37-04 STRICT-01: null is omitted via WhenWritingNull, equivalent to entry-point default.</summary>
         public bool? StrictMode { get; init; }
-
-        public PersistedModeSection Deploy { get; init; } = new();
-        public PersistedModeSection Seed { get; init; } = new();
-    }
-
-    private sealed class PersistedModeSection
-    {
-        public string OutputSubfolder { get; init; } = "";
-        public ConflictStrategy ConflictStrategy { get; init; }
-        public List<ProviderPredicateDefinition> Predicates { get; init; } = new();
+        public string DeployOutputSubfolder { get; init; } = "deploy";
+        public string SeedOutputSubfolder { get; init; } = "seed";
         public Dictionary<string, List<string>>? ExcludeFieldsByItemType { get; init; }
         public Dictionary<string, List<string>>? ExcludeXmlElementsByType { get; init; }
+        public List<ProviderPredicateDefinition> Predicates { get; init; } = new();
     }
 }
