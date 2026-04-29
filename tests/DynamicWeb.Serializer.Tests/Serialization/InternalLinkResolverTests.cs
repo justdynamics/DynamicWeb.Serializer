@@ -531,4 +531,39 @@ public class InternalLinkResolverTests
         Assert.Equal(1, paraResolved);
         Assert.Equal(1, paraUnresolved);
     }
+
+    // -------------------------------------------------------------------------
+    // Test 23: ModuleSettings XML blob — rewrites Default.aspx?Id= inside element values
+    // Shape mirrors UserAuthentication's paragraph.ModuleSettings.
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public void ResolveLinks_ModuleSettingsXml_RewritesPageIdsInsideElementValues()
+    {
+        var map = new Dictionary<int, int>
+        {
+            { 8308, 108 },
+            { 8329, 129 },
+            { 8330, 130 }
+        };
+        var resolver = new InternalLinkResolver(map);
+
+        var input =
+            "<?xml version=\"1.0\" encoding=\"utf-8\"?>" +
+            "<Settings>" +
+            "<LoginTemplate>Login.cshtml</LoginTemplate>" +
+            "<RedirectToSpecificPage>Default.aspx?Id=8308</RedirectToSpecificPage>" +
+            "<CreatePasswordPageId>Default.aspx?Id=8329</CreatePasswordPageId>" +
+            "<CreateUserPageId>Default.aspx?Id=8330</CreateUserPageId>" +
+            "</Settings>";
+
+        var result = resolver.ResolveLinks(input);
+
+        Assert.Contains("Default.aspx?Id=108", result);
+        Assert.Contains("Default.aspx?Id=129", result);
+        Assert.Contains("Default.aspx?Id=130", result);
+        Assert.DoesNotContain("8308", result);
+        Assert.DoesNotContain("8329", result);
+        Assert.DoesNotContain("8330", result);
+    }
 }

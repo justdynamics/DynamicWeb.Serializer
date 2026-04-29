@@ -1698,6 +1698,18 @@ public class ContentDeserializer
             foreach (var para in paragraphs)
             {
                 ResolveLinksInItemFields(para.ItemType, para.ItemId, resolver);
+
+                // Resolve internal links embedded in ModuleSettings XML (e.g.,
+                // UserAuthentication's <RedirectToSpecificPage>Default.aspx?Id=NNN</...>).
+                if (!string.IsNullOrEmpty(para.ModuleSettings))
+                {
+                    var resolvedSettings = resolver.ResolveLinks(para.ModuleSettings);
+                    if (resolvedSettings != para.ModuleSettings)
+                    {
+                        para.ModuleSettings = resolvedSettings ?? string.Empty;
+                        Services.Paragraphs.SaveParagraph(para);
+                    }
+                }
             }
         }
     }
