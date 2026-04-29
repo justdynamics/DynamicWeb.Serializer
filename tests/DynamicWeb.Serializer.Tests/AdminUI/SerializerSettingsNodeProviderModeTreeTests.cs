@@ -1,6 +1,7 @@
 using DynamicWeb.Serializer.AdminUI.Tree;
 using DynamicWeb.Serializer.Configuration;
 using DynamicWeb.Serializer.Models;
+using DynamicWeb.Serializer.Tests.TestHelpers;
 using Dynamicweb.CoreUI.Navigation;
 using Xunit;
 
@@ -12,7 +13,7 @@ namespace DynamicWeb.Serializer.Tests.AdminUI;
 /// top-level mode-agnostic (D-04). Class name preserved (rather than renamed to
 /// SerializerSettingsNodeProviderTreeTests) to keep test runner identity stable.
 /// </summary>
-public class SerializerSettingsNodeProviderModeTreeTests : IDisposable
+public class SerializerSettingsNodeProviderModeTreeTests : ConfigLoaderValidatorFixtureBase
 {
     private readonly string _tempDir;
     private readonly string _configPath;
@@ -27,11 +28,12 @@ public class SerializerSettingsNodeProviderModeTreeTests : IDisposable
         ConfigPathResolver.TestOverridePath = _configPath;
     }
 
-    public void Dispose()
+    public override void Dispose()
     {
         ConfigPathResolver.TestOverridePath = _savedOverride;
         if (Directory.Exists(_tempDir))
             Directory.Delete(_tempDir, recursive: true);
+        base.Dispose();
     }
 
     private void WriteConfig(

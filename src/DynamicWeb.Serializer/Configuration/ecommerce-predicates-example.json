@@ -7,6 +7,9 @@
     "serviceCaches lists are sourced from DW10 DataGroup XML files (Settings_Ecommerce_*).",
     "Phase 40: each predicate must declare 'mode' (Deploy or Seed). All entries below are tagged 'Deploy' — change to 'Seed' for tables that should use field-level merge per Phase 39."
   ],
+  "outputDirectory": "Serializer",
+  "logLevel": "info",
+  "dryRun": false,
   "predicates": [
     {
       "name": "EcomFieldType",
@@ -25,9 +28,7 @@
       "nameColumn": "ProductGroupFieldSystemName",
       "compareColumns": "",
       "schemaSync": "EcomGroupFields",
-      "serviceCaches": [
-        "Dynamicweb.Ecommerce.Products.ProductGroupFieldService"
-      ]
+      "serviceCaches": []
     },
     {
       "name": "EcomOrderFlow",
@@ -64,7 +65,6 @@
       "nameColumn": "PaymentName",
       "compareColumns": "",
       "serviceCaches": [
-        "Dynamicweb.Content.Versioning.CheckOutService",
         "Dynamicweb.Ecommerce.Orders.PaymentService"
       ]
     },
@@ -125,9 +125,7 @@
       "table": "EcomOrderField",
       "nameColumn": "OrderFieldName",
       "compareColumns": "",
-      "serviceCaches": [
-        "Dynamicweb.Ecommerce.Orders.OrderService"
-      ]
+      "serviceCaches": []
     },
     {
       "name": "EcomOrderLineFields",
@@ -136,9 +134,7 @@
       "table": "EcomOrderLineFields",
       "nameColumn": "OrderLineFieldName",
       "compareColumns": "",
-      "serviceCaches": [
-        "Dynamicweb.Ecommerce.Orders.OrderService"
-      ]
+      "serviceCaches": []
     },
     {
       "name": "EcomOrderContexts",
@@ -257,8 +253,7 @@
       "nameColumn": "LanguageName",
       "compareColumns": "",
       "serviceCaches": [
-        "Dynamicweb.Ecommerce.International.LanguageService",
-        "Dynamicweb.SystemTools.TranslationLanguageService"
+        "Dynamicweb.Ecommerce.International.LanguageService"
       ]
     },
     {

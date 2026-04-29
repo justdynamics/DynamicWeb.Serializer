@@ -45,8 +45,7 @@
       "providerType": "SqlTable",
       "table": "EcomLanguages",
       "serviceCaches": [
-        "Dynamicweb.Ecommerce.International.LanguageService",
-        "Dynamicweb.SystemTools.TranslationLanguageService"
+        "Dynamicweb.Ecommerce.International.LanguageService"
       ]
     },
     {
