@@ -228,8 +228,8 @@ public class ContentProvider : ISerializationProvider
     /// <summary>
     /// Builds a SerializerConfiguration with a single predicate for delegation to
     /// ContentSerializer/ContentDeserializer. Threads the parent mode's ItemType + XML-type
-    /// exclusion dicts down into the inner ModeConfig — without this, the inner serializer
-    /// sees empty dicts and ignores all by-type exclusions.
+    /// exclusion dicts down into the inner config so the inner serializer respects all
+    /// by-type exclusions. Phase 40 D-07: flat shape — no per-mode ModeConfig wrapper.
     /// </summary>
     private static SerializerConfiguration BuildSerializerConfiguration(
         ProviderPredicateDefinition predicate,
@@ -237,25 +237,24 @@ public class ContentProvider : ISerializationProvider
         IReadOnlyDictionary<string, List<string>>? excludeFieldsByItemType = null,
         IReadOnlyDictionary<string, List<string>>? excludeXmlElementsByType = null)
     {
-        // Phase 38 A.3 (D-38-03): AcknowledgedOrphanPageIds lives on ProviderPredicateDefinition only.
-        // The inner predicate carries its own ack list; ContentSerializer aggregates across predicates.
+        // Phase 40 D-07: flat config shape. The inner predicate carries its own Mode
+        // (preserved from the caller's predicate). The aggregated exclusion dicts move
+        // to the top-level config keys (D-04). AcknowledgedOrphanPageIds remains
+        // per-predicate (Phase 38 D-38-03, unchanged).
         return new SerializerConfiguration
         {
             OutputDirectory = outputDirectory,
-            Deploy = new ModeConfig
-            {
-                Predicates = new List<ProviderPredicateDefinition> { predicate },
-                ExcludeFieldsByItemType = excludeFieldsByItemType != null
-                    ? new Dictionary<string, List<string>>(
-                        excludeFieldsByItemType.ToDictionary(kv => kv.Key, kv => kv.Value),
-                        StringComparer.OrdinalIgnoreCase)
-                    : new Dictionary<string, List<string>>(),
-                ExcludeXmlElementsByType = excludeXmlElementsByType != null
-                    ? new Dictionary<string, List<string>>(
-                        excludeXmlElementsByType.ToDictionary(kv => kv.Key, kv => kv.Value),
-                        StringComparer.OrdinalIgnoreCase)
-                    : new Dictionary<string, List<string>>()
-            }
+            Predicates = new List<ProviderPredicateDefinition> { predicate },
+            ExcludeFieldsByItemType = excludeFieldsByItemType != null
+                ? new Dictionary<string, List<string>>(
+                    excludeFieldsByItemType.ToDictionary(kv => kv.Key, kv => kv.Value),
+                    StringComparer.OrdinalIgnoreCase)
+                : new Dictionary<string, List<string>>(),
+            ExcludeXmlElementsByType = excludeXmlElementsByType != null
+                ? new Dictionary<string, List<string>>(
+                    excludeXmlElementsByType.ToDictionary(kv => kv.Key, kv => kv.Value),
+                    StringComparer.OrdinalIgnoreCase)
+                : new Dictionary<string, List<string>>()
         };
     }
 }
