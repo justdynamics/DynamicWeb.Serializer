@@ -65,11 +65,25 @@ public class FileSystemStore : IContentStore
         };
         WriteYamlFile(Path.Combine(pageDirectory, "page.yml"), pageForYaml, omitEmptyCollections: true);
 
+        // Remove stale grid-row folders from prior serialize runs before writing fresh
+        // ones. Child-page subdirectories are preserved (they contain a page.yml; grid-row
+        // subdirectories contain a grid-row.yml).
+        foreach (var existingSubdir in Directory.GetDirectories(pageDirectory))
+        {
+            if (File.Exists(Path.Combine(existingSubdir, "grid-row.yml")))
+                Directory.Delete(existingSubdir, recursive: true);
+        }
+
         // Write grid rows
+        // DW allows multiple rows on the same page to share SortOrder (default is 0;
+        // templates and manual ordering can collide). Dedupe folder names the same way
+        // as sibling page names: append a short GUID suffix on collision to avoid
+        // silently overwriting grid-row.yml across rows.
+        var usedGridRowNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var sortedGridRows = page.GridRows.OrderBy(gr => gr.SortOrder);
         foreach (var gridRow in sortedGridRows)
         {
-            var gridRowFolderName = $"grid-row-{gridRow.SortOrder}";
+            var gridRowFolderName = GetGridRowFolderName(gridRow.SortOrder, gridRow.Id, usedGridRowNames);
             var gridRowDirectory = Path.Combine(pageDirectory, gridRowFolderName);
             Directory.CreateDirectory(gridRowDirectory);
 
@@ -222,6 +236,21 @@ public class FileSystemStore : IContentStore
 
         var suffix = pageGuid.ToString("N")[..6];
         var dedupedName = $"{sanitizedName} [{suffix}]";
+        usedNames.Add(dedupedName);
+        return dedupedName;
+    }
+
+    private static string GetGridRowFolderName(int sortOrder, Guid gridRowGuid, HashSet<string> usedNames)
+    {
+        var baseName = $"grid-row-{sortOrder}";
+        if (!usedNames.Contains(baseName))
+        {
+            usedNames.Add(baseName);
+            return baseName;
+        }
+
+        var suffix = gridRowGuid.ToString("N")[..6];
+        var dedupedName = $"{baseName}-{suffix}";
         usedNames.Add(dedupedName);
         return dedupedName;
     }

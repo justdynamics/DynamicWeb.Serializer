@@ -201,9 +201,16 @@ public class ContentSerializer
         }
         Log($"  Predicate included: '{contentPath}' (page ID={page.ID})");
 
-        // Fetch grid rows and paragraphs for this page
+        // Fetch grid rows and paragraphs for this page.
+        // DW allows multiple rows on the same page to share Sort (default is 0; manual
+        // ordering can collide). When that happens, DW falls back to an implicit tiebreaker
+        // (row creation order / ID) that is not preserved across DB boundaries — deserialize
+        // creates new target rows with different IDs, so the tie resolves differently and
+        // visual order flips. Sort by (Sort, ID) to stably match source display order, then
+        // renumber SortOrder sequentially (1..N) so the YAML carries canonical order.
         var gridRows = Services.Grids.GetGridRowsByPageId(page.ID)
             .OrderBy(gr => gr.Sort)
+            .ThenBy(gr => gr.ID)
             .ToList();
 
         var allParagraphs = Services.Paragraphs.GetParagraphsByPageId(page.ID)
@@ -211,15 +218,16 @@ public class ContentSerializer
 
         // Map each grid row with its paragraphs grouped into columns
         var serializedGridRows = new List<SerializedGridRow>();
-        foreach (var gridRow in gridRows)
+        for (int i = 0; i < gridRows.Count; i++)
         {
+            var gridRow = gridRows[i];
             var rowParagraphs = allParagraphs
                 .Where(p => p.GridRowId == gridRow.ID)
                 .ToList();
 
             var columns = _mapper.BuildColumns(rowParagraphs, excludeFields, excludeXmlElements,
                 _configuration.Deploy.ExcludeFieldsByItemType, _configuration.Deploy.ExcludeXmlElementsByType);
-            var serializedGridRow = _mapper.MapGridRow(gridRow, columns);
+            var serializedGridRow = _mapper.MapGridRow(gridRow, columns) with { SortOrder = i + 1 };
             serializedGridRows.Add(serializedGridRow);
         }
 

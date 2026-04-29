@@ -171,6 +171,104 @@ public class FileSystemStoreTests : IDisposable
         Assert.Equal($"About [{expectedSuffix}]", dedupedDir);
     }
 
+    [Fact]
+    public void WriteTree_DeduplicatesGridRowFolders_WhenSortOrdersCollide()
+    {
+        // DW permits multiple GridRows on the same page to share SortOrder.
+        // Two rows with SortOrder=1 must produce two distinct folders, not one.
+        var rowGuid1 = Guid.NewGuid();
+        var rowGuid2 = Guid.NewGuid();
+        var paraGuid1 = Guid.NewGuid();
+        var paraGuid2 = Guid.NewGuid();
+
+        SerializedGridRow MakeRow(Guid rowId, Guid paraId, string header) => new()
+        {
+            Id = rowId,
+            SortOrder = 1,
+            Columns = new List<SerializedGridColumn>
+            {
+                new()
+                {
+                    Id = 1,
+                    Width = 12,
+                    Paragraphs = new List<SerializedParagraph>
+                    {
+                        new()
+                        {
+                            ParagraphUniqueId = paraId,
+                            SortOrder = 1,
+                            ItemType = "Swift-v2_Text",
+                            Header = header,
+                            Fields = new Dictionary<string, object> { ["Title"] = header }
+                        }
+                    }
+                }
+            }
+        };
+
+        var page = ContentTreeBuilder.BuildSinglePage("Sign in") with
+        {
+            SortOrder = 1,
+            IsActive = true,
+            GridRows = new List<SerializedGridRow>
+            {
+                MakeRow(rowGuid1, paraGuid1, "Sign in Text"),
+                MakeRow(rowGuid2, paraGuid2, "App")
+            }
+        };
+
+        var area = new SerializedArea
+        {
+            AreaId = Guid.NewGuid(),
+            Name = "Test Area",
+            SortOrder = 1,
+            Pages = new List<SerializedPage> { page }
+        };
+
+        _store.WriteTree(area, _tempRoot);
+
+        var pagePath = Path.Combine(_tempRoot, "Test Area", "Sign in");
+        var gridRowDirs = Directory.GetDirectories(pagePath)
+            .Select(Path.GetFileName)
+            .Where(n => n != null && n.StartsWith("grid-row"))
+            .ToList();
+
+        Assert.Equal(2, gridRowDirs.Count);
+        Assert.Contains("grid-row-1", gridRowDirs);
+
+        var expectedSuffix = rowGuid2.ToString("N")[..6];
+        Assert.Contains($"grid-row-1-{expectedSuffix}", gridRowDirs);
+
+        // Both rows' grid-row.yml survive and reference their own Id.
+        var firstYml = File.ReadAllText(Path.Combine(pagePath, "grid-row-1", "grid-row.yml"));
+        var secondYml = File.ReadAllText(Path.Combine(pagePath, $"grid-row-1-{expectedSuffix}", "grid-row.yml"));
+        Assert.Contains(rowGuid1.ToString(), firstYml);
+        Assert.Contains(rowGuid2.ToString(), secondYml);
+    }
+
+    [Fact]
+    public void WriteTree_RemovesStaleGridRowFolders_FromPriorRuns()
+    {
+        // Pre-seed the page directory with a stale grid-row folder containing a leftover
+        // paragraph file from a previous (buggy) serialize run. After WriteTree, the stale
+        // folder must be gone — otherwise deserialize would pick it up and attach the
+        // stale paragraph to the wrong row.
+        var area = ContentTreeBuilder.BuildSampleTree();
+        _store.WriteTree(area, _tempRoot);
+
+        var pagePath = Path.Combine(_tempRoot, "Main Website", "Customer Center");
+        var staleGridRowPath = Path.Combine(pagePath, "grid-row-99");
+        Directory.CreateDirectory(staleGridRowPath);
+        File.WriteAllText(Path.Combine(staleGridRowPath, "grid-row.yml"), "\"id\": 00000000-0000-0000-0000-000000000000\n");
+        File.WriteAllText(Path.Combine(staleGridRowPath, "paragraph-c1-7.yml"), "\"paragraphUniqueId\": stale\n");
+
+        // Rewrite — stale folder should be removed; real grid-row-1 still present.
+        _store.WriteTree(area, _tempRoot);
+
+        Assert.False(Directory.Exists(staleGridRowPath), "stale grid-row-99 folder should have been removed");
+        Assert.True(Directory.Exists(Path.Combine(pagePath, "grid-row-1")), "real grid-row-1 folder should still exist");
+    }
+
     // -------------------------------------------------------------------------
     // Determinism / idempotency
     // -------------------------------------------------------------------------
