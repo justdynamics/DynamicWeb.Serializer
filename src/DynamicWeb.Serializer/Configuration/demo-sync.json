@@ -2,10 +2,10 @@
   "outputDirectory": "Serializer",
   "logLevel": "info",
   "dryRun": false,
-  "conflictStrategy": "source-wins",
   "predicates": [
     {
       "name": "Content - Swift 2",
+      "mode": "Deploy",
       "providerType": "Content",
       "areaId": 3,
       "path": "/",
@@ -13,6 +13,7 @@
     },
     {
       "name": "EcomCountries",
+      "mode": "Deploy",
       "providerType": "SqlTable",
       "table": "EcomCountries",
       "serviceCaches": [
@@ -22,6 +23,7 @@
     },
     {
       "name": "EcomCountryText",
+      "mode": "Deploy",
       "providerType": "SqlTable",
       "table": "EcomCountryText",
       "serviceCaches": [
@@ -30,6 +32,7 @@
     },
     {
       "name": "EcomCurrencies",
+      "mode": "Deploy",
       "providerType": "SqlTable",
       "table": "EcomCurrencies",
       "serviceCaches": [
@@ -38,6 +41,7 @@
     },
     {
       "name": "EcomLanguages",
+      "mode": "Deploy",
       "providerType": "SqlTable",
       "table": "EcomLanguages",
       "serviceCaches": [
@@ -47,6 +51,7 @@
     },
     {
       "name": "EcomVatGroups",
+      "mode": "Deploy",
       "providerType": "SqlTable",
       "table": "EcomVatGroups",
       "serviceCaches": [
@@ -56,6 +61,7 @@
     },
     {
       "name": "EcomVatCountryRelations",
+      "mode": "Deploy",
       "providerType": "SqlTable",
       "table": "EcomVatCountryRelations",
       "serviceCaches": [
@@ -65,24 +71,28 @@
     },
     {
       "name": "EcomShops",
+      "mode": "Deploy",
       "providerType": "SqlTable",
       "table": "EcomShops",
       "serviceCaches": []
     },
     {
       "name": "EcomShopLanguageRelation",
+      "mode": "Deploy",
       "providerType": "SqlTable",
       "table": "EcomShopLanguageRelation",
       "serviceCaches": []
     },
     {
       "name": "EcomShopGroupRelation",
+      "mode": "Deploy",
       "providerType": "SqlTable",
       "table": "EcomShopGroupRelation",
       "serviceCaches": []
     },
     {
       "name": "EcomPayments",
+      "mode": "Deploy",
       "providerType": "SqlTable",
       "table": "EcomPayments",
       "serviceCaches": [
@@ -91,6 +101,7 @@
     },
     {
       "name": "EcomShippings",
+      "mode": "Deploy",
       "providerType": "SqlTable",
       "table": "EcomShippings",
       "serviceCaches": [
@@ -99,6 +110,7 @@
     },
     {
       "name": "EcomMethodCountryRelation",
+      "mode": "Deploy",
       "providerType": "SqlTable",
       "table": "EcomMethodCountryRelation",
       "serviceCaches": [
@@ -108,6 +120,7 @@
     },
     {
       "name": "EcomOrderFlow",
+      "mode": "Deploy",
       "providerType": "SqlTable",
       "table": "EcomOrderFlow",
       "nameColumn": "OrderFlowName",
@@ -115,6 +128,7 @@
     },
     {
       "name": "EcomOrderStates",
+      "mode": "Deploy",
       "providerType": "SqlTable",
       "table": "EcomOrderStates",
       "nameColumn": "OrderStateName",
@@ -122,24 +136,28 @@
     },
     {
       "name": "EcomOrderStateRules",
+      "mode": "Deploy",
       "providerType": "SqlTable",
       "table": "EcomOrderStateRules",
       "serviceCaches": []
     },
     {
       "name": "EcomDiscount",
+      "mode": "Deploy",
       "providerType": "SqlTable",
       "table": "EcomDiscount",
       "serviceCaches": []
     },
     {
       "name": "EcomDiscountTranslation",
+      "mode": "Deploy",
       "providerType": "SqlTable",
       "table": "EcomDiscountTranslation",
       "serviceCaches": []
     },
     {
       "name": "EcomFees",
+      "mode": "Deploy",
       "providerType": "SqlTable",
       "table": "EcomFees",
       "serviceCaches": []
