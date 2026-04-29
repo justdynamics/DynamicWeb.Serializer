@@ -21,16 +21,16 @@ public interface ISerializationProvider
     /// <param name="outputRoot">Root directory to write YAML into.</param>
     /// <param name="log">Optional logging callback.</param>
     /// <param name="excludeFieldsByItemType">
-    /// Parent <see cref="ModeConfig.ExcludeFieldsByItemType"/> dict. ContentProvider threads
-    /// this down to <see cref="ContentSerializer"/> so ItemType-scoped field exclusions apply
-    /// across every predicate in the mode. SqlTableProvider currently ignores this — it uses
-    /// its own per-predicate field-level mechanisms.
+    /// Top-level <see cref="SerializerConfiguration.ExcludeFieldsByItemType"/> dict (Phase 40 D-04).
+    /// ContentProvider threads this down to <see cref="ContentSerializer"/> so ItemType-scoped
+    /// field exclusions apply across every predicate. SqlTableProvider currently ignores this — it
+    /// uses its own per-predicate field-level mechanisms.
     /// </param>
     /// <param name="excludeXmlElementsByType">
-    /// Parent <see cref="ModeConfig.ExcludeXmlElementsByType"/> dict keyed by XML type name
-    /// (page.UrlDataProviderTypeName or paragraph.ModuleSystemName). ContentProvider threads
-    /// this down so XML element stripping applies by type across the mode instead of relying
-    /// solely on per-predicate flat lists.
+    /// Top-level <see cref="SerializerConfiguration.ExcludeXmlElementsByType"/> dict (Phase 40 D-04)
+    /// keyed by XML type name (page.UrlDataProviderTypeName or paragraph.ModuleSystemName).
+    /// ContentProvider threads this down so XML element stripping applies by type instead of
+    /// relying solely on per-predicate flat lists.
     /// </param>
     SerializeResult Serialize(
         ProviderPredicateDefinition predicate,
