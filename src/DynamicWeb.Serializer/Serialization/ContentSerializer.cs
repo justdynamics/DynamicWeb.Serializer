@@ -49,14 +49,12 @@ public class ContentSerializer
         int totalPages = 0, totalGridRows = 0, totalParagraphs = 0;
         var allSerializedPages = new List<SerializedPage>();
 
-        // Phase 38 WR-01: ContentSerializer is Deploy-scoped by convention (see class XML
-        // docs and SerializePredicate line 178-180 which reads Deploy.ExcludeFieldsByItemType
-        // explicitly). Previously iterated via the legacy `_configuration.Predicates` alias
-        // which silently resolves to Deploy.Predicates only — a latent footgun if any future
-        // caller wires Seed predicates directly into SerializerConfiguration.Seed and expects
-        // them to be serialized. Read Deploy.Predicates explicitly so the single-mode intent
-        // is visible at the call site and matches the Deploy-only exclusion dict on line 182.
-        foreach (var predicate in _configuration.Deploy.Predicates)
+        // Phase 40 D-07: ContentSerializer is Deploy-scoped by convention. The orchestrator routes
+        // Deploy and Seed predicates through separate calls into providers; ContentSerializer itself
+        // emits Deploy YAML only. Filter the flat predicate list down to Deploy entries explicitly
+        // so the single-mode intent is visible at the call site and matches the Deploy-only
+        // exclusion-dict reads on lines 189 / 229 / 250.
+        foreach (var predicate in _configuration.Predicates.Where(p => p.Mode == DeploymentMode.Deploy))
         {
             var area = SerializePredicate(predicate);
             _referenceResolver.Clear();
@@ -95,8 +93,15 @@ public class ContentSerializer
         var sweepResult = sweeper.Sweep(allSerializedPages);
         // Phase 38 A.3 (D-38-03): per-predicate ack list is the single source of truth.
         // Aggregate across both modes' predicates so the sweep receives the union.
-        var deployAck = _configuration.Deploy.Predicates.SelectMany(p => p.AcknowledgedOrphanPageIds).ToList();
-        var seedAck = _configuration.Seed.Predicates.SelectMany(p => p.AcknowledgedOrphanPageIds).ToList();
+        // Phase 40 D-07: read both slices off the flat predicate list filtered by Mode.
+        var deployAck = _configuration.Predicates
+            .Where(p => p.Mode == DeploymentMode.Deploy)
+            .SelectMany(p => p.AcknowledgedOrphanPageIds)
+            .ToList();
+        var seedAck = _configuration.Predicates
+            .Where(p => p.Mode == DeploymentMode.Seed)
+            .SelectMany(p => p.AcknowledgedOrphanPageIds)
+            .ToList();
         Log($"Link sweep: {sweepResult.ResolvedCount} internal link(s) verified, " +
             $"{sweepResult.Unresolved.Count} unresolvable " +
             $"(ack deploy={deployAck.Count}, seed={seedAck.Count})");
@@ -182,11 +187,11 @@ public class ContentSerializer
             : null;
 
         Log($"Serialized pages: {serializedPages.Count}");
-        // Phase 37-01.1: legacy flat alias removed; exclusion dicts are per-mode. ContentSerializer
-        // is currently Deploy-scoped (the orchestrator calls per-predicate Deploy configs). A
-        // follow-up plan will thread DeploymentMode into this class so Seed excludes are honoured.
+        // Phase 40 D-04: exclusion dicts moved from per-ModeConfig to top-level on SerializerConfiguration.
+        // ContentSerializer is Deploy-scoped, so Deploy-mode runs always read these dicts; Seed-mode
+        // runs are dispatched through the orchestrator + ContentDeserializer (Phase 39 runtime, untouched).
         var serializedArea = _mapper.MapArea(area, serializedPages, excludeFields,
-            _configuration.Deploy.ExcludeFieldsByItemType, excludeAreaColumns);
+            _configuration.ExcludeFieldsByItemType, excludeAreaColumns);
         _store.WriteTree(serializedArea, _configuration.OutputDirectory);
         return serializedArea;
     }
@@ -226,7 +231,7 @@ public class ContentSerializer
                 .ToList();
 
             var columns = _mapper.BuildColumns(rowParagraphs, excludeFields, excludeXmlElements,
-                _configuration.Deploy.ExcludeFieldsByItemType, _configuration.Deploy.ExcludeXmlElementsByType);
+                _configuration.ExcludeFieldsByItemType, _configuration.ExcludeXmlElementsByType);
             var serializedGridRow = _mapper.MapGridRow(gridRow, columns) with { SortOrder = i + 1 };
             serializedGridRows.Add(serializedGridRow);
         }
@@ -247,7 +252,7 @@ public class ContentSerializer
 
         var permissions = _permissionMapper.MapPermissions(page.ID);
         return _mapper.MapPage(page, serializedGridRows, serializedChildren, permissions, excludeFields, excludeXmlElements,
-            _configuration.Deploy.ExcludeFieldsByItemType, _configuration.Deploy.ExcludeXmlElementsByType);
+            _configuration.ExcludeFieldsByItemType, _configuration.ExcludeXmlElementsByType);
     }
 
     private static void CountItems(IEnumerable<SerializedPage> pages, ref int pageCount, ref int gridRowCount, ref int paragraphCount)
