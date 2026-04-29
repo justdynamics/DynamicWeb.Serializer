@@ -1,3 +1,6 @@
+using System.Text.Json.Serialization;
+using DynamicWeb.Serializer.Configuration;
+
 namespace DynamicWeb.Serializer.Models;
 
 /// <summary>
@@ -11,6 +14,16 @@ public record ProviderPredicateDefinition
 
     /// <summary>Provider type to route to (e.g., "Content", "SqlTable").</summary>
     public required string ProviderType { get; init; }
+
+    /// <summary>
+    /// Phase 40 D-01: which DeploymentMode this predicate runs under. Replaces the section-level
+    /// Deploy/Seed split — predicates now declare their own mode and the orchestrator filters
+    /// `config.Predicates` by `p.Mode == DeploymentMode.Deploy` (or Seed) when iterating.
+    /// JSON key is "mode" (lowercase, camelCase convention); on-disk values are "Deploy" / "Seed"
+    /// (read case-insensitively).
+    /// </summary>
+    [JsonConverter(typeof(JsonStringEnumConverter))]
+    public DeploymentMode Mode { get; init; } = DeploymentMode.Deploy;
 
     /// <summary>SQL table name for SqlTable predicates (e.g., "EcomOrderFlow").</summary>
     public string? Table { get; init; }

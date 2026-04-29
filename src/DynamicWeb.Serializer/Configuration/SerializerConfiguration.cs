@@ -1,18 +1,19 @@
-using System.Text.Json.Serialization;
 using DynamicWeb.Serializer.Models;
 
 namespace DynamicWeb.Serializer.Configuration;
 
 /// <summary>
-/// Top-level serializer configuration. Phase 37-01 (D-01..D-06) introduces the Deploy / Seed
-/// structural split: each mode has its own <see cref="ModeConfig"/> with an independent predicate
-/// list, exclusion config and conflict strategy. Deploy is the default, source-wins and ships
-/// deployment data. Seed is explicit opt-in, destination-wins and ships one-time content.
+/// Top-level serializer configuration. Phase 40 (D-01..D-04) replaces the section-level Deploy/Seed
+/// structural split with a single flat predicate list where each predicate carries its own
+/// <see cref="ProviderPredicateDefinition.Mode"/>. The two modes are still semantically distinct —
+/// Deploy is source-wins and ships deployment data, Seed is destination-wins and ships one-time
+/// content — but the configuration shape is now flat. Per-mode subfolder names live as top-level
+/// keys; ConflictStrategy is hardcoded per mode (Deploy=SourceWins, Seed=DestinationWins) and is
+/// resolved at runtime via <see cref="GetConflictStrategyForMode"/>.
 ///
-/// Legacy flat-style callers (predicate list + exclusion dictionaries at the top level) are still
-/// supported via pass-through properties that read/write the Deploy mode. This keeps the blast
-/// radius of the split small while the rest of the codebase migrates. The on-disk JSON format
-/// always uses the new Deploy/Seed shape (see <see cref="ConfigWriter"/>).
+/// The legacy section-level shape (top-level <c>deploy</c> / <c>seed</c> objects) is HARD-REJECTED
+/// by <see cref="ConfigLoader"/>; <see cref="ConfigWriter"/> never emits it. No backcompat per
+/// project policy.
 /// </summary>
 public record SerializerConfiguration
 {
@@ -34,76 +35,48 @@ public record SerializerConfiguration
     public bool? StrictMode { get; init; }
 
     // -------------------------------------------------------------------------
-    // Phase 37-01: Deploy + Seed ModeConfigs
+    // Phase 40 D-02: top-level per-mode subfolder names. ConflictStrategy is hardcoded per mode
+    // (Deploy=SourceWins, Seed=DestinationWins) and not exposed as a config knob anymore — there's
+    // no real use case for inverting it. Phase 39 runtime reads ConflictStrategy through
+    // GetConflictStrategyForMode below.
+    // -------------------------------------------------------------------------
+
+    /// <summary>Subfolder under <see cref="SerializeRoot"/> for Deploy-mode YAML output. Default "deploy".</summary>
+    public string DeployOutputSubfolder { get; init; } = "deploy";
+
+    /// <summary>Subfolder under <see cref="SerializeRoot"/> for Seed-mode YAML output. Default "seed".</summary>
+    public string SeedOutputSubfolder { get; init; } = "seed";
+
+    // -------------------------------------------------------------------------
+    // Phase 40 D-04: top-level (mode-agnostic) field/element exclusions by type.
+    // -------------------------------------------------------------------------
+
+    /// <summary>Global per-item-type field exclusions, applied to every predicate regardless of mode.</summary>
+    public Dictionary<string, List<string>> ExcludeFieldsByItemType { get; init; } = new();
+
+    /// <summary>Global per-type XML element exclusions, applied to every predicate regardless of mode.</summary>
+    public Dictionary<string, List<string>> ExcludeXmlElementsByType { get; init; } = new();
+
+    // -------------------------------------------------------------------------
+    // Phase 40 D-02: SINGLE flat predicate list. Each predicate carries its own .Mode.
     // -------------------------------------------------------------------------
 
     /// <summary>
-    /// Deploy mode config — source-wins, default serialize/deserialize path for
-    /// deployment data (shop structure, currencies, payment methods, etc.).
+    /// All predicates, deploy and seed mixed. Consumers filter by
+    /// <see cref="ProviderPredicateDefinition.Mode"/> when iterating per mode.
     /// </summary>
-    public ModeConfig Deploy { get; init; } = new()
-    {
-        OutputSubfolder = "deploy",
-        ConflictStrategy = ConflictStrategy.SourceWins
-    };
+    public List<ProviderPredicateDefinition> Predicates { get; init; } = new();
+
+    /// <summary>Resolve the per-mode subfolder string by <see cref="DeploymentMode"/>.</summary>
+    public string GetSubfolderForMode(DeploymentMode mode) =>
+        mode == DeploymentMode.Deploy ? DeployOutputSubfolder : SeedOutputSubfolder;
 
     /// <summary>
-    /// Seed mode config — destination-wins, opt-in path for seed content
-    /// (Customer Center pages, FAQ copy, etc.) that must not overwrite
-    /// customer-edited target data on re-deploy.
+    /// Resolve the conflict strategy by <see cref="DeploymentMode"/>. Hardcoded per mode:
+    /// Deploy → SourceWins (YAML overwrites target), Seed → DestinationWins (preserve customer edits).
     /// </summary>
-    public ModeConfig Seed { get; init; } = new()
-    {
-        OutputSubfolder = "seed",
-        ConflictStrategy = ConflictStrategy.DestinationWins
-    };
-
-    /// <summary>Resolve a <see cref="ModeConfig"/> by <see cref="DeploymentMode"/>.</summary>
-    public ModeConfig GetMode(DeploymentMode mode) =>
-        mode == DeploymentMode.Deploy ? Deploy : Seed;
-
-    // -------------------------------------------------------------------------
-    // Legacy flat pass-through properties (kept to minimise diff blast radius
-    // across admin UI / tests / ContentSerializer until they migrate). Setters
-    // only make sense at construction time because this is a record. They
-    // delegate to Deploy on read and are serialised via init-setters only —
-    // the on-disk JSON uses the Deploy/Seed shape (see ConfigWriter), so these
-    // shims are not emitted twice.
-    //
-    // All four legacy properties are [JsonIgnore]-d to prevent double-write;
-    // ConfigLoader handles migration of any still-legacy JSON input.
-    // -------------------------------------------------------------------------
-
-    /// <summary>
-    /// Legacy alias for <c>Deploy.Predicates</c>. Init-time setter populates Deploy.Predicates.
-    /// Marked <see cref="JsonIgnoreAttribute"/> — on-disk JSON uses Deploy/Seed structure.
-    /// </summary>
-    [JsonIgnore]
-    public List<ProviderPredicateDefinition> Predicates
-    {
-        get => Deploy.Predicates;
-        init
-        {
-            // Overlay onto the existing Deploy defaults so OutputSubfolder/ConflictStrategy stay "deploy" / SourceWins.
-            Deploy = Deploy with { Predicates = value ?? new List<ProviderPredicateDefinition>() };
-        }
-    }
-
-    // Phase 37-01.1: removed legacy aliases ExcludeFieldsByItemType and ExcludeXmlElementsByType.
-    // All admin UI / serializer call sites now read and write through config.Deploy.* or
-    // config.Seed.* explicitly so that the per-mode dictionaries can be independently edited via
-    // the admin tree. Tests and Content(De)Serializer continue to use Deploy explicitly.
-
-    /// <summary>Legacy alias for <c>Deploy.ConflictStrategy</c>.</summary>
-    [JsonIgnore]
-    public ConflictStrategy ConflictStrategy
-    {
-        get => Deploy.ConflictStrategy;
-        init
-        {
-            Deploy = Deploy with { ConflictStrategy = value };
-        }
-    }
+    public ConflictStrategy GetConflictStrategyForMode(DeploymentMode mode) =>
+        mode == DeploymentMode.Deploy ? ConflictStrategy.SourceWins : ConflictStrategy.DestinationWins;
 
     // -------------------------------------------------------------------------
     // Paths
@@ -111,10 +84,6 @@ public record SerializerConfiguration
 
     /// <summary>Parent folder for YAML serialization output. Per-mode subfolders sit beneath this.</summary>
     public string SerializeRoot => Path.Combine(OutputDirectory, "SerializeRoot");
-
-    /// <summary>Per-mode YAML serialization subfolder (e.g., SerializeRoot/deploy/).</summary>
-    public string GetModeSerializeRoot(DeploymentMode mode) =>
-        Path.Combine(SerializeRoot, GetMode(mode).OutputSubfolder);
 
     /// <summary>Subfolder for zip files uploaded for import.</summary>
     public string UploadDir => Path.Combine(OutputDirectory, "Upload");
@@ -127,7 +96,7 @@ public record SerializerConfiguration
 
     /// <summary>
     /// Resolves all subfolder paths relative to Files/System and ensures they exist on disk,
-    /// including the per-mode Deploy / Seed serialize roots.
+    /// including the per-mode Deploy / Seed serialize subfolders.
     /// </summary>
     public ResolvedPaths EnsureDirectories(string filesSystemDir)
     {
@@ -146,9 +115,9 @@ public record SerializerConfiguration
         Directory.CreateDirectory(resolved.Download);
         Directory.CreateDirectory(resolved.Log);
 
-        // Ensure per-mode subfolders exist (D-03).
-        Directory.CreateDirectory(Path.Combine(resolved.SerializeRoot, Deploy.OutputSubfolder));
-        Directory.CreateDirectory(Path.Combine(resolved.SerializeRoot, Seed.OutputSubfolder));
+        // Phase 40 D-02: per-mode subfolders sit beneath SerializeRoot.
+        Directory.CreateDirectory(Path.Combine(resolved.SerializeRoot, DeployOutputSubfolder));
+        Directory.CreateDirectory(Path.Combine(resolved.SerializeRoot, SeedOutputSubfolder));
 
         return resolved;
     }
