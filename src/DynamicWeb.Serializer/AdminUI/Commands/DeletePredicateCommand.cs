@@ -6,16 +6,6 @@ namespace DynamicWeb.Serializer.AdminUI.Commands;
 public sealed class DeletePredicateCommand : CommandBase
 {
     public int Index { get; set; }
-
-    /// <summary>
-    /// Which <see cref="DeploymentMode"/> the predicate belongs to (Phase 37-01 D-02). Defaults
-    /// to Deploy so non-tree invocations keep the legacy Deploy-only behaviour.
-    /// </summary>
-    public DeploymentMode Mode { get; set; } = DeploymentMode.Deploy;
-
-    /// <summary>
-    /// Optional override for testing — bypasses ConfigPathResolver.
-    /// </summary>
     public string? ConfigPath { get; set; }
 
     public override CommandResult Handle()
@@ -25,17 +15,14 @@ public sealed class DeletePredicateCommand : CommandBase
             return new() { Status = CommandResult.ResultType.Error, Message = "Config file not found" };
 
         var config = ConfigLoader.Load(configPath);
-        var modeConfig = config.GetMode(Mode);
-        if (Index < 0 || Index >= modeConfig.Predicates.Count)
+        if (Index < 0 || Index >= config.Predicates.Count)
             return new() { Status = CommandResult.ResultType.Error, Message = "Invalid predicate index" };
 
-        var predicates = modeConfig.Predicates.ToList();
+        // Phase 40 D-01: delete from the single flat predicate list.
+        var predicates = config.Predicates.ToList();
         predicates.RemoveAt(Index);
 
-        var updatedMode = modeConfig with { Predicates = predicates };
-        var updated = Mode == DeploymentMode.Deploy
-            ? config with { Deploy = updatedMode }
-            : config with { Seed = updatedMode };
+        var updated = config with { Predicates = predicates };
         ConfigWriter.Save(updated, configPath);
 
         return new() { Status = CommandResult.ResultType.Ok };
