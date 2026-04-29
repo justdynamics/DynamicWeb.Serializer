@@ -99,13 +99,17 @@ public sealed class SerializerDeserializeCommand : CommandBase
                 return new() { Status = CommandResult.ResultType.Error, Message = "Serializer.config.json not found (also checked ContentSync.config.json)" };
 
             var config = ConfigLoader.Load(configPath);
-            var modeConfig = config.GetMode(deploymentMode);
+
+            // Phase 40 D-07: mode-filter the flat predicate list (mirrors SerializerSerializeCommand).
+            var modePredicates = config.Predicates.Where(p => p.Mode == deploymentMode).ToList();
+            var modeSubfolder = config.GetSubfolderForMode(deploymentMode);
+            var modeStrategy = config.GetConflictStrategyForMode(deploymentMode);
 
             var filesRoot = Path.GetDirectoryName(configPath)!;
             var systemDir = Path.Combine(filesRoot, "System");
             var paths = config.EnsureDirectories(systemDir);
 
-            var modeRoot = Path.Combine(paths.SerializeRoot, modeConfig.OutputSubfolder);
+            var modeRoot = Path.Combine(paths.SerializeRoot, modeSubfolder);
 
             _logFile = LogFileWriter.CreateLogFile(paths.Log, "Deserialize");
             Log($"=== Serializer Deserialize (API) started [mode: {deploymentMode}] ===");
@@ -127,16 +131,16 @@ public sealed class SerializerDeserializeCommand : CommandBase
 
             var orchestrator = ProviderRegistry.CreateOrchestrator(filesRoot);
             var result = orchestrator.DeserializeAll(
-                modeConfig.Predicates,
+                modePredicates,
                 modeRoot,
                 deploymentMode,
-                modeConfig.ConflictStrategy,
+                modeStrategy,
                 Log,
                 config.DryRun,
                 providerFilter: null,
                 escalator: escalator,
-                excludeFieldsByItemType: modeConfig.ExcludeFieldsByItemType,
-                excludeXmlElementsByType: modeConfig.ExcludeXmlElementsByType);
+                excludeFieldsByItemType: config.ExcludeFieldsByItemType,
+                excludeXmlElementsByType: config.ExcludeXmlElementsByType);
 
             // Build summary with advice and flush log
             var advice = AdviceGenerator.GenerateAdvice(result);

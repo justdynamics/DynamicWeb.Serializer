@@ -76,7 +76,7 @@ public sealed class SerializerSerializeCommand : CommandBase
 
             var config = ConfigLoader.Load(configPath);
 
-            // Phase 40 D-07: mode-filter the flat predicate list. Replaces config.GetMode(deploymentMode).
+            // Phase 40 D-07: mode-filter the flat predicate list. Replaces the legacy per-mode accessor.
             var modePredicates = config.Predicates.Where(p => p.Mode == deploymentMode).ToList();
             var modeSubfolder = config.GetSubfolderForMode(deploymentMode);
             var modeStrategy = config.GetConflictStrategyForMode(deploymentMode);
