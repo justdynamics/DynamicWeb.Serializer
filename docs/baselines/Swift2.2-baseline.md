@@ -61,6 +61,26 @@ Azure Key Vault — never in git.
 > 38.1 (D-38.1-16) because the previous label invited confusion with generic
 > lowercase "environment" usage elsewhere in the docs.
 
+**Phase 40 update (2026-04-28):** The DEPLOYMENT and SEED buckets are now expressed via a single
+flat `predicates: [...]` list at the top of the config, where each predicate carries its own
+`"mode": "Deploy"` or `"mode": "Seed"` field. The legacy `deploy: { predicates: [...] }` /
+`seed: { predicates: [...] }` section shape is rejected by ConfigLoader with a clear error
+pointing here. NOT-SERIALIZED items remain absent from the config (out of scope by definition).
+
+## Per-predicate mode
+
+Every predicate in `swift2.2-combined.json` declares its own `mode`. Predicates with
+`"mode": "Deploy"` run during Deploy operations (source-wins; YAML overwrites target on every
+deploy). Predicates with `"mode": "Seed"` run during Seed operations (field-level merge per
+Phase 39; YAML fills only fields the target has not set, preserving customer edits across
+re-deploys).
+
+The mode is set when a predicate is created in the admin UI (Settings → System → Developer →
+Serialize → Predicates → New Predicate). The Mode field on the predicate edit screen is a
+two-option Select. Existing predicates can be re-modded by editing the predicate; there is no
+delete-and-recreate dance. The `swift2.2-combined.json` baseline ships with 17 Deploy and 9
+Seed predicates (counts may shift as the baseline evolves — check the file directly).
+
 ## The Swift 2.2 contamination problem
 
 DW ships Swift 2.2 with test/demo contamination:
