@@ -1,6 +1,7 @@
 using Dynamicweb.Content.Items;
 using DynamicWeb.Serializer.AdminUI.Commands;
 using DynamicWeb.Serializer.AdminUI.Models;
+using DynamicWeb.Serializer.Configuration;
 using DynamicWeb.Serializer.Providers.SqlTable;
 using Dynamicweb.CoreUI.Data;
 using Dynamicweb.CoreUI.Editors;
@@ -20,7 +21,8 @@ public sealed class PredicateEditScreen : EditScreenBase<PredicateEditModel>
         var sharedFields = new List<EditorBase>
         {
             EditorFor(m => m.Name),
-            EditorFor(m => m.ProviderType)
+            EditorFor(m => m.ProviderType),
+            EditorFor(m => m.Mode)  // Phase 40 D-06: per-predicate mode editor
         };
 
         var groups = new List<LayoutWrapper>
@@ -77,6 +79,16 @@ public sealed class PredicateEditScreen : EditScreenBase<PredicateEditModel>
     protected override EditorBase? GetEditor(string property) => property switch
     {
         nameof(PredicateEditModel.ProviderType) => CreateProviderTypeSelect(),
+        // Phase 40 D-06: Mode is editable on both new and existing predicates.
+        nameof(PredicateEditModel.Mode) => new Select
+        {
+            SortOrder = OrderBy.Default,
+            Options = new List<ListOption>
+            {
+                new() { Value = nameof(DeploymentMode.Deploy), Label = "Deploy (source-wins)" },
+                new() { Value = nameof(DeploymentMode.Seed), Label = "Seed (field-level merge)" }
+            }
+        },
         nameof(PredicateEditModel.AreaId) => SelectorBuilder.CreateAreaSelector(
             value: Model?.AreaId > 0 ? Model.AreaId : null,
             hideDeactivated: true
