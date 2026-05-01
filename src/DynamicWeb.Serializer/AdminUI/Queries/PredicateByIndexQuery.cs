@@ -10,7 +10,7 @@ public sealed class PredicateByIndexQuery : DataQueryIdentifiableModelBase<Predi
 
     protected override void SetKey(int key)
     {
-        // DW framework treats "0" as "no identifier" — identifiers are 1-based, convert back to 0-based
+        // DW framework treats "0" as "no identifier" -- identifiers are 1-based, convert back to 0-based
         Index = key - 1;
     }
 
@@ -29,7 +29,7 @@ public sealed class PredicateByIndexQuery : DataQueryIdentifiableModelBase<Predi
         return new PredicateEditModel
         {
             Index = Index,
-            Mode = pred.Mode,  // Phase 40 D-01: predicate's own Mode
+            Mode = pred.Mode.ToString(),  // Phase 41 D-13: string-typed for DW Select binding (was enum). DeploymentMode.ToString() returns "Deploy" / "Seed", matching the Value strings emitted by PredicateEditScreen's Mode Select.
             Name = pred.Name,
             ProviderType = pred.ProviderType,
             AreaId = pred.AreaId,

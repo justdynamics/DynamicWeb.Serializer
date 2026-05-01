@@ -752,7 +752,7 @@ public class PredicateCommandTests : ConfigLoaderValidatorFixtureBase
             Model = new PredicateEditModel
             {
                 Index = -1,
-                Mode = DeploymentMode.Deploy,
+                Mode = nameof(DeploymentMode.Deploy),  // Phase 41 D-13: string-typed model
                 Name = "Deploy1",
                 ProviderType = "Content",
                 AreaId = 1,
@@ -784,7 +784,7 @@ public class PredicateCommandTests : ConfigLoaderValidatorFixtureBase
             Model = new PredicateEditModel
             {
                 Index = -1,
-                Mode = DeploymentMode.Seed,
+                Mode = nameof(DeploymentMode.Seed),  // Phase 41 D-13: string-typed model
                 Name = "Seed1",
                 ProviderType = "Content",
                 AreaId = 1,

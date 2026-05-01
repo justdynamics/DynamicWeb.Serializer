@@ -9,7 +9,7 @@ namespace DynamicWeb.Serializer.AdminUI.Commands;
 public sealed class SavePredicateCommand : CommandBase<PredicateEditModel>
 {
     /// <summary>
-    /// Optional override for testing — bypasses ConfigPathResolver.
+    /// Optional override for testing -- bypasses ConfigPathResolver.
     /// </summary>
     public string? ConfigPath { get; set; }
 
@@ -34,6 +34,16 @@ public sealed class SavePredicateCommand : CommandBase<PredicateEditModel>
         if (string.IsNullOrWhiteSpace(Model.Name))
             return new() { Status = CommandResult.ResultType.Invalid, Message = "Name is required" };
 
+        // Phase 41 D-13 + T-41-01: validate Mode is a known DeploymentMode value. Mirrors
+        // ConfigLoader's case-insensitive Enum.TryParse gate on the JSON read path so admin-UI
+        // saves and config-file loads share identical Mode validation semantics.
+        if (!Enum.TryParse<DeploymentMode>(Model.Mode, ignoreCase: true, out _))
+            return new()
+            {
+                Status = CommandResult.ResultType.Invalid,
+                Message = $"Mode must be 'Deploy' or 'Seed' (case-insensitive); got '{Model.Mode}'."
+            };
+
         try
         {
             var configPath = ConfigPath ?? ConfigPathResolver.FindOrCreateConfigFile();
@@ -41,7 +51,7 @@ public sealed class SavePredicateCommand : CommandBase<PredicateEditModel>
             // Phase 40 D-01: predicates are a single flat list. Mode is per-predicate.
             var predicates = config.Predicates.ToList();
 
-            // D-02: ProviderType locked after creation — use existing type on update
+            // D-02: ProviderType locked after creation -- use existing type on update
             string providerType;
             if (Model.Index >= 0 && Model.Index < predicates.Count)
             {
@@ -123,7 +133,7 @@ public sealed class SavePredicateCommand : CommandBase<PredicateEditModel>
             if (providerType == "Content")
             {
                 // Resolve page path from PageId via DW Services when available.
-                // PageId<=0 → full-Area selection, path is "/".
+                // PageId<=0 -> full-Area selection, path is "/".
                 string path;
                 if (Model.PageId <= 0)
                 {
@@ -141,7 +151,7 @@ public sealed class SavePredicateCommand : CommandBase<PredicateEditModel>
                     }
                     catch
                     {
-                        // DW runtime not available (e.g., unit tests) — use fallback path
+                        // DW runtime not available (e.g., unit tests) -- use fallback path
                         path = Model.Index >= 0 && Model.Index < predicates.Count
                             ? predicates[Model.Index].Path
                             : $"/page-{Model.PageId}";
@@ -158,7 +168,7 @@ public sealed class SavePredicateCommand : CommandBase<PredicateEditModel>
                 predicate = new ProviderPredicateDefinition
                 {
                     Name = Model.Name.Trim(),
-                    Mode = Model.Mode,
+                    Mode = ParseMode(Model.Mode),
                     ProviderType = "Content",
                     Path = path,
                     AreaId = Model.AreaId,
@@ -180,7 +190,7 @@ public sealed class SavePredicateCommand : CommandBase<PredicateEditModel>
                 predicate = new ProviderPredicateDefinition
                 {
                     Name = Model.Name.Trim(),
-                    Mode = Model.Mode,
+                    Mode = ParseMode(Model.Mode),
                     ProviderType = "SqlTable",
                     Table = Model.Table?.Trim(),
                     NameColumn = string.IsNullOrWhiteSpace(Model.NameColumn) ? null : Model.NameColumn.Trim(),
@@ -197,7 +207,7 @@ public sealed class SavePredicateCommand : CommandBase<PredicateEditModel>
                 };
 
                 // Phase 37-03: validate identifiers + WHERE clause at save-time. Tests inject
-                // fixture validators; production call sites leave both null and we skip here —
+                // fixture validators; production call sites leave both null and we skip here --
                 // ConfigLoader.Load on next read will re-validate against the live schema.
                 if (IdentifierValidator != null)
                 {
@@ -233,6 +243,19 @@ public sealed class SavePredicateCommand : CommandBase<PredicateEditModel>
         {
             return new() { Status = CommandResult.ResultType.Error, Message = ex.Message };
         }
+    }
+
+    /// <summary>
+    /// Phase 41 D-13 + threat T-41-01: parse the string-typed Model.Mode into the DeploymentMode
+    /// enum stored on ProviderPredicateDefinition. Case-insensitive (matches ConfigLoader's
+    /// Enum.TryParse pathway). Throws ArgumentException for unknown values; the early-validation
+    /// gate at the top of Handle() prevents that path from being reachable in normal flow.
+    /// </summary>
+    private static DeploymentMode ParseMode(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw))
+            throw new ArgumentException("Mode must be 'Deploy' or 'Seed' (case-insensitive); got empty value.");
+        return Enum.Parse<DeploymentMode>(raw, ignoreCase: true);
     }
 
     /// <summary>
