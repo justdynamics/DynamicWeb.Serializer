@@ -12,7 +12,7 @@ namespace DynamicWeb.Serializer.AdminUI.Screens;
 
 public sealed class XmlTypeListScreen : ListScreenBase<XmlTypeListModel>
 {
-    protected override string GetScreenName() => "Embedded XML Types";
+    protected override string GetScreenName() => "Embedded XML Excludes";
 
     protected override IEnumerable<ListViewMapping> GetViewMappings() =>
     [

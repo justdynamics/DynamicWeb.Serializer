@@ -83,7 +83,7 @@ public sealed class SerializerSettingsNodeProvider : NavigationNodeProvider<Syst
             yield return new NavigationNode
             {
                 Id = XmlTypesNodeId,
-                Name = "Embedded XML",
+                Name = "Embedded XML Excludes",
                 Icon = Icon.BracketsCurly,
                 Sort = 30,
                 HasSubNodes = HasXmlTypes(),
