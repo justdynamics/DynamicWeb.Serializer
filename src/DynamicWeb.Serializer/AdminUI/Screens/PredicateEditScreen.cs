@@ -82,11 +82,14 @@ public sealed class PredicateEditScreen : EditScreenBase<PredicateEditModel>
         // Phase 40 D-06: Mode is editable on both new and existing predicates.
         nameof(PredicateEditModel.Mode) => new Select
         {
+            // Phase 41 D-11: clean labels (no parens). Explanatory copy lives on the Mode
+            // [ConfigurableProperty] hint per D-12 (Plan 41-03 lands the hint copy + string-Mode
+            // model migration).
             SortOrder = OrderBy.Default,
             Options = new List<ListOption>
             {
-                new() { Value = nameof(DeploymentMode.Deploy), Label = "Deploy (source-wins)" },
-                new() { Value = nameof(DeploymentMode.Seed), Label = "Seed (field-level merge)" }
+                new() { Value = nameof(DeploymentMode.Deploy), Label = "Deploy" },
+                new() { Value = nameof(DeploymentMode.Seed), Label = "Seed" }
             }
         },
         nameof(PredicateEditModel.AreaId) => SelectorBuilder.CreateAreaSelector(
