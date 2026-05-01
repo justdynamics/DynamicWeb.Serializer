@@ -366,3 +366,19 @@ Plans:
 - Wave 1: 40-01 (model + loader + writer; downstream files compile-broken until Wave 2)
 - Wave 2: 40-02, 40-03, 40-04 (parallel — disjoint file sets: runtime/orchestrator vs. admin UI vs. baseline+docs)
 - Wave 3: 40-05 (gate — full build + test + regression grep)
+
+### Phase 41: Admin-UI polish + cross-page consistency
+
+**Goal:** Resolve the five admin-UI issues surfaced during manual verification of Phase 40's flat-shape deploy:
+- Rename "Item Types" tree node to "Item Type Excludes" (the page manages per-ItemType field exclusions, not item types)
+- Sanity-check the empty `excludeFieldsByItemType` on the Phase 40 Swift 2.2 baseline (likely lost during the 40-04 flat-shape rewrite — restore or document)
+- Fix eCom_CartV2 list-vs-detail mismatch (list shows 21 excluded elements, detail dual-list shows 0 — likely a key/lookup mismatch in `XmlTypeByNameQuery`)
+- Enlarge the "Sample XML from database" editor on `XmlTypeEditScreen` to fill the screen by default
+- Fix the Mode dropdown error: parenthetical option labels ("Deploy (source-wins)", "Seed (field-level merge)") cause a screen error — drop the suffix; explanatory text belongs in a help tooltip
+
+**Requirements**: TBD
+**Depends on:** Phase 40
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 41 to break down)
