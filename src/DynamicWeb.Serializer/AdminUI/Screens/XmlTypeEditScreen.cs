@@ -12,6 +12,15 @@ namespace DynamicWeb.Serializer.AdminUI.Screens;
 
 public sealed class XmlTypeEditScreen : EditScreenBase<XmlTypeEditModel>
 {
+    /// <summary>
+    /// Phase 41 D-05: testability seam. Production code leaves this null and CreateElementSelector
+    /// constructs a new XmlTypeDiscovery(new DwSqlExecutor()) inline. Unit tests inject a
+    /// FakeSqlExecutor-backed XmlTypeDiscovery so CreateElementSelector can be exercised without
+    /// a live database. The default-null pattern preserves backward compatibility -- existing
+    /// admin-UI flows behave identically.
+    /// </summary>
+    public XmlTypeDiscovery? Discovery { get; set; }
+
     protected override void BuildEditScreen()
     {
         if (Model is null)
@@ -49,7 +58,7 @@ public sealed class XmlTypeEditScreen : EditScreenBase<XmlTypeEditModel>
         {
             try
             {
-                var discovery = new XmlTypeDiscovery(new DwSqlExecutor());
+                var discovery = Discovery ?? new XmlTypeDiscovery(new DwSqlExecutor());
                 var sample = discovery.GetSampleXml(Model.TypeName);
                 if (!string.IsNullOrWhiteSpace(sample))
                 {
@@ -62,7 +71,8 @@ public sealed class XmlTypeEditScreen : EditScreenBase<XmlTypeEditModel>
                                 Label = "Sample XML from database",
                                 Explanation = "This is a sample of the raw XML found in the database for this type. The element or parameter names shown in the exclusion list above correspond to the structure you see here.",
                                 Value = sample,
-                                Readonly = true
+                                Readonly = true,  // D-10
+                                Rows = 30          // D-08: fill the reference tab content area
                             }
                         })
                     });
@@ -70,7 +80,7 @@ public sealed class XmlTypeEditScreen : EditScreenBase<XmlTypeEditModel>
             }
             catch
             {
-                // Non-critical — skip sample if it fails
+                // Non-critical -- skip sample if it fails
             }
         }
     }
@@ -99,37 +109,47 @@ public sealed class XmlTypeEditScreen : EditScreenBase<XmlTypeEditModel>
         if (string.IsNullOrWhiteSpace(Model?.TypeName))
             return editor;
 
+        // Phase 41 D-05: build the option set as the UNION of (a) live-DB-discovered elements
+        // and (b) saved exclusions on Model.ExcludedElements. The previous early-return on
+        // discovery.Count == 0 dropped saved exclusions for types whose live data had rotated
+        // (e.g. eCom_CartV2 -- 21 saved, 0 live).
+        var allElements = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
         try
         {
-            // Discover all elements for this type from live DB XML (per D-07)
-            var discovery = new XmlTypeDiscovery(new DwSqlExecutor());
-            var allElements = discovery.DiscoverElementsForType(Model.TypeName);
-
-            if (allElements.Count == 0)
-            {
-                editor.Explanation = "No XML data found in database for this type. Elements will appear after data is available.";
-                return editor;
-            }
-
-            editor.Options = allElements
-                .OrderBy(e => e, StringComparer.OrdinalIgnoreCase)
-                .Select(e => new ListOption { Value = e, Label = e })
-                .ToList();
-
-            // Pre-select currently excluded elements (per ScreenPresetEditScreen.cs pattern: use .ToArray())
-            var selected = (Model.ExcludedElements ?? string.Empty)
-                .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
-                .Select(v => v.Trim())
-                .Where(v => v.Length > 0)
-                .ToArray();
-
-            if (selected.Length > 0)
-                editor.Value = selected;
+            var discovery = Discovery ?? new XmlTypeDiscovery(new DwSqlExecutor());
+            foreach (var e in discovery.DiscoverElementsForType(Model.TypeName))
+                allElements.Add(e);
         }
         catch (Exception ex)
         {
-            editor.Explanation = $"Could not discover elements: {ex.Message}";
+            editor.Explanation = $"Could not discover elements from live database: {ex.Message}";
         }
+
+        var selected = (Model.ExcludedElements ?? string.Empty)
+            .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
+            .Select(v => v.Trim())
+            .Where(v => v.Length > 0)
+            .ToArray();
+
+        // Merge saved exclusions into the option set so they always render, even when live
+        // discovery is empty. HashSet OrdinalIgnoreCase de-duplicates overlap.
+        foreach (var s in selected)
+            allElements.Add(s);
+
+        if (allElements.Count == 0)
+        {
+            editor.Explanation = "No XML data found in database for this type and no saved exclusions yet. Elements will appear after data is available.";
+            return editor;
+        }
+
+        editor.Options = allElements
+            .OrderBy(e => e, StringComparer.OrdinalIgnoreCase)
+            .Select(e => new ListOption { Value = e, Label = e })
+            .ToList();
+
+        if (selected.Length > 0)
+            editor.Value = selected;
 
         return editor;
     }
@@ -138,6 +158,6 @@ public sealed class XmlTypeEditScreen : EditScreenBase<XmlTypeEditModel>
         !string.IsNullOrWhiteSpace(Model?.TypeName) ? $"XML Type: {Model.TypeName}" : "XML Type";
 
     protected override CommandBase<XmlTypeEditModel> GetSaveCommand() =>
-        // Phase 40 D-04: top-level exclusion dict — no per-mode routing on save.
+        // Phase 40 D-04: top-level exclusion dict -- no per-mode routing on save.
         new SaveXmlTypeCommand();
 }

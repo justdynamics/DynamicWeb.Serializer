@@ -91,38 +91,63 @@ public sealed class ItemTypeEditScreen : EditScreenBase<ItemTypeEditModel>
         if (string.IsNullOrWhiteSpace(Model?.SystemName))
             return editor;
 
+        // Phase 41 D-06: union of (a) live ItemManager.Metadata fields and (b) saved exclusions.
+        // Mirrors the D-05 fix in XmlTypeEditScreen.CreateElementSelector. Previous early-return
+        // when GetItemType returned null dropped saved exclusions for types whose metadata had
+        // rotated.
+        var allFields = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        // Track per-field display labels separately so the live-discovered set keeps its
+        // "{Name} ({SystemName})" format while saved-only entries fall back to the system name.
+        var fieldLabels = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
         try
         {
             var itemType = ItemManager.Metadata.GetItemType(Model.SystemName);
-            if (itemType == null)
+            if (itemType != null)
             {
-                editor.Explanation = "Item type not found. Fields cannot be loaded.";
-                return editor;
+                var liveFields = ItemManager.Metadata.GetItemFields(itemType);
+                foreach (var f in liveFields)
+                {
+                    if (string.IsNullOrEmpty(f.SystemName))
+                        continue;
+                    allFields.Add(f.SystemName);
+                    fieldLabels[f.SystemName] = $"{f.Name} ({f.SystemName})";
+                }
             }
-
-            // Use GetItemFields to include inherited fields (not itemType.Fields directly)
-            var allFields = ItemManager.Metadata.GetItemFields(itemType);
-
-            editor.Options = allFields
-                .Where(f => !string.IsNullOrEmpty(f.SystemName))
-                .OrderBy(f => f.SystemName, StringComparer.OrdinalIgnoreCase)
-                .Select(f => new ListOption { Value = f.SystemName, Label = $"{f.Name} ({f.SystemName})" })
-                .ToList();
-
-            // Pre-select currently excluded fields
-            var selected = (Model.ExcludedFields ?? string.Empty)
-                .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
-                .Select(v => v.Trim())
-                .Where(v => v.Length > 0)
-                .ToArray();
-
-            if (selected.Length > 0)
-                editor.Value = selected;
         }
         catch (Exception ex)
         {
-            editor.Explanation = $"Could not load fields: {ex.Message}";
+            editor.Explanation = $"Could not load fields from live metadata: {ex.Message}";
         }
+
+        var selected = (Model.ExcludedFields ?? string.Empty)
+            .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
+            .Select(v => v.Trim())
+            .Where(v => v.Length > 0)
+            .ToArray();
+
+        foreach (var s in selected)
+        {
+            allFields.Add(s);
+            // Saved-only entries fall back to a plain-systemname label.
+            if (!fieldLabels.ContainsKey(s))
+                fieldLabels[s] = s;
+        }
+
+        if (allFields.Count == 0)
+        {
+            editor.Explanation = "Item type not found in metadata and no saved exclusions yet.";
+            return editor;
+        }
+
+        editor.Options = allFields
+            .OrderBy(f => f, StringComparer.OrdinalIgnoreCase)
+            .Select(f => new ListOption { Value = f, Label = fieldLabels[f] })
+            .ToList();
+
+        if (selected.Length > 0)
+            editor.Value = selected;
 
         return editor;
     }
@@ -132,6 +157,6 @@ public sealed class ItemTypeEditScreen : EditScreenBase<ItemTypeEditModel>
         !string.IsNullOrWhiteSpace(Model?.SystemName) ? $"Item Type Excludes - {Model.SystemName}" : "Item Type Excludes";
 
     protected override CommandBase<ItemTypeEditModel> GetSaveCommand() =>
-        // Phase 40 D-04: top-level exclusion dict — no per-mode routing on save.
+        // Phase 40 D-04: top-level exclusion dict -- no per-mode routing on save.
         new SaveItemTypeCommand();
 }
