@@ -378,12 +378,12 @@ Plans:
 
 **Requirements**: D-01..D-13 from 41-CONTEXT.md (goal-driven phase; CONTEXT decisions are acceptance — RESEARCH supersedes for D-05 root cause and D-13 root cause)
 **Depends on:** Phase 40
-**Plans:** 2/3 plans executed
+**Plans:** 3/3 plans complete
 
 Plans:
 - [x] 41-01-PLAN.md — Wave 0 RED tests: XmlTypeEditScreenTests + ItemTypeEditScreenTests + extend PredicateCommandTests + SerializerSettingsNodeProviderModeTreeTests (proves D-01, D-05, D-06, D-11, D-12, D-13 bug shapes before fixes)
 - [x] 41-02-PLAN.md — Renames + Mode label cleanup + baseline doc: D-01 tree+list+edit-screen rename, D-11 drop parens from option labels, D-03 document intentional empty excludeFieldsByItemType
-- [ ] 41-03-PLAN.md — Substantive fixes: D-05 dual-list merge in XmlTypeEditScreen, D-06 same-shape in ItemTypeEditScreen, D-08/D-09/D-10 Sample XML Rows=30, D-12 hint copy, D-13 string-Mode binding (model + SavePredicateCommand Enum.Parse + PredicateByIndexQuery .ToString()), XmlTypeDiscovery DI seam
+- [x] 41-03-PLAN.md — Substantive fixes: D-05 dual-list merge in XmlTypeEditScreen, D-06 same-shape in ItemTypeEditScreen, D-08/D-09/D-10 Sample XML Rows=30, D-12 hint copy, D-13 string-Mode binding (model + SavePredicateCommand Enum.Parse + PredicateByIndexQuery .ToString()), XmlTypeDiscovery DI seam
 
 **Execution waves** (for /gsd-execute-phase):
 - Wave 1: 41-01 (RED tests; test files only, no production-code overlap with later plans)
