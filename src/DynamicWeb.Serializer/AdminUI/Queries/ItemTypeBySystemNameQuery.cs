@@ -64,7 +64,7 @@ public sealed class ItemTypeBySystemNameQuery : DataQueryIdentifiableModelBase<I
             DisplayName = itemType.Name,
             Category = itemType.Category?.FullName ?? "",
             FieldCount = allFields.Count,
-            ExcludedFields = string.Join("\n", excludedFieldsList)
+            ExcludedFields = excludedFieldsList
         };
     }
 }

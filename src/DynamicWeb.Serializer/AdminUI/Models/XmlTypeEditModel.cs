@@ -9,5 +9,5 @@ public sealed class XmlTypeEditModel : DataViewModelBase, IIdentifiable
     public string GetId() => TypeName;
 
     [ConfigurableProperty("Excluded Elements", explanation: "Select XML elements to exclude from serialization for this type")]
-    public string ExcludedElements { get; set; } = string.Empty;
+    public List<string> ExcludedElements { get; set; } = new();
 }

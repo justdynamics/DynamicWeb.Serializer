@@ -22,10 +22,8 @@ public sealed class SaveItemTypeCommand : CommandBase<ItemTypeEditModel>
             var configPath = ConfigPath ?? ConfigPathResolver.FindOrCreateConfigFile();
             var config = ConfigLoader.Load(configPath);
 
-            // Parse excluded fields from newline-separated string
-            var excludedFields = (Model.ExcludedFields ?? string.Empty)
-                .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
-                .Select(e => e.Trim())
+            var excludedFields = (Model.ExcludedFields ?? new())
+                .Select(e => e?.Trim() ?? string.Empty)
                 .Where(e => e.Length > 0)
                 .ToList();
 

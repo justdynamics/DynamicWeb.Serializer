@@ -160,7 +160,7 @@ public class XmlTypeCommandTests : IDisposable
     {
         var cmd = new SaveXmlTypeCommand
         {
-            Model = new XmlTypeEditModel { TypeName = "", ExcludedElements = "el1" }
+            Model = new XmlTypeEditModel { TypeName = "", ExcludedElements = new List<string> { "el1" } }
         };
 
         var result = cmd.Handle();
@@ -183,7 +183,7 @@ public class XmlTypeCommandTests : IDisposable
             Model = new XmlTypeEditModel
             {
                 TypeName = "TypeA",
-                ExcludedElements = "el1\nel2"
+                ExcludedElements = new List<string> { "el1", "el2" }
             }
         };
 
@@ -208,7 +208,7 @@ public class XmlTypeCommandTests : IDisposable
             Model = new XmlTypeEditModel
             {
                 TypeName = "TypeA",
-                ExcludedElements = "el2\nel3"
+                ExcludedElements = new List<string> { "el2", "el3" }
             }
         };
 
@@ -233,7 +233,7 @@ public class XmlTypeCommandTests : IDisposable
             Model = new XmlTypeEditModel
             {
                 TypeName = "TypeA",
-                ExcludedElements = ""
+                ExcludedElements = new List<string>()
             }
         };
 

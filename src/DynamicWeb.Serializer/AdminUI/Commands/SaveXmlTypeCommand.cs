@@ -22,10 +22,8 @@ public sealed class SaveXmlTypeCommand : CommandBase<XmlTypeEditModel>
             var configPath = ConfigPath ?? ConfigPathResolver.FindOrCreateConfigFile();
             var config = ConfigLoader.Load(configPath);
 
-            // Parse excluded elements from newline-separated string
-            var excludedElements = (Model.ExcludedElements ?? string.Empty)
-                .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
-                .Select(e => e.Trim())
+            var excludedElements = (Model.ExcludedElements ?? new())
+                .Select(e => e?.Trim() ?? string.Empty)
                 .Where(e => e.Length > 0)
                 .ToList();
 

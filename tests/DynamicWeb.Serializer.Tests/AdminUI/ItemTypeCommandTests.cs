@@ -60,7 +60,7 @@ public class ItemTypeCommandTests : IDisposable
     {
         var cmd = new SaveItemTypeCommand
         {
-            Model = new ItemTypeEditModel { SystemName = "", ExcludedFields = "field1" }
+            Model = new ItemTypeEditModel { SystemName = "", ExcludedFields = new List<string> { "field1" } }
         };
 
         var result = cmd.Handle();
@@ -83,7 +83,7 @@ public class ItemTypeCommandTests : IDisposable
             Model = new ItemTypeEditModel
             {
                 SystemName = "TestType",
-                ExcludedFields = "field1\nfield2"
+                ExcludedFields = new List<string> { "field1", "field2" }
             }
         };
 
@@ -108,7 +108,7 @@ public class ItemTypeCommandTests : IDisposable
             Model = new ItemTypeEditModel
             {
                 SystemName = "TestType",
-                ExcludedFields = "field2\nfield3"
+                ExcludedFields = new List<string> { "field2", "field3" }
             }
         };
 
@@ -133,7 +133,7 @@ public class ItemTypeCommandTests : IDisposable
             Model = new ItemTypeEditModel
             {
                 SystemName = "TestType",
-                ExcludedFields = ""
+                ExcludedFields = new List<string>()
             }
         };
 
@@ -159,7 +159,7 @@ public class ItemTypeCommandTests : IDisposable
             Model = new ItemTypeEditModel
             {
                 SystemName = "TypeA",
-                ExcludedFields = "f3"
+                ExcludedFields = new List<string> { "f3" }
             }
         };
 

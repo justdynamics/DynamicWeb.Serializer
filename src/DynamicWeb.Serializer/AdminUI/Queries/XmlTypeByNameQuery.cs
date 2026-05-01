@@ -34,7 +34,7 @@ public sealed class XmlTypeByNameQuery : DataQueryIdentifiableModelBase<XmlTypeE
         return new XmlTypeEditModel
         {
             TypeName = TypeName,
-            ExcludedElements = string.Join("\n", excludedElements)
+            ExcludedElements = excludedElements.ToList()
         };
     }
 }

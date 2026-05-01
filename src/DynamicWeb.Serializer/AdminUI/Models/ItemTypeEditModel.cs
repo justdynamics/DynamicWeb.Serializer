@@ -15,5 +15,5 @@ public sealed class ItemTypeEditModel : DataViewModelBase, IIdentifiable
     public string GetId() => SystemName;
 
     [ConfigurableProperty("Excluded Fields", explanation: "Select fields to exclude from serialization for this item type")]
-    public string ExcludedFields { get; set; } = string.Empty;
+    public List<string> ExcludedFields { get; set; } = new();
 }

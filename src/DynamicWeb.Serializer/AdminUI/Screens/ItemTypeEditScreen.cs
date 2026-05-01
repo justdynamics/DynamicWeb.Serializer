@@ -91,10 +91,9 @@ public sealed class ItemTypeEditScreen : EditScreenBase<ItemTypeEditModel>
         if (string.IsNullOrWhiteSpace(Model?.SystemName))
             return editor;
 
-        // Phase 41 D-06: union of (a) live ItemManager.Metadata fields and (b) saved exclusions.
-        // Mirrors the D-05 fix in XmlTypeEditScreen.CreateElementSelector. Previous early-return
-        // when GetItemType returned null dropped saved exclusions for types whose metadata had
-        // rotated.
+        // Union of (a) live ItemManager.Metadata fields and (b) saved exclusions, so saved
+        // values always render even when live metadata is empty. Value is bound by
+        // EditScreenBase.BuildEditor from Model.ExcludedFields (List<string>) after this returns.
         var allFields = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         // Track per-field display labels separately so the live-discovered set keeps its
@@ -121,18 +120,14 @@ public sealed class ItemTypeEditScreen : EditScreenBase<ItemTypeEditModel>
             editor.Explanation = $"Could not load fields from live metadata: {ex.Message}";
         }
 
-        var selected = (Model.ExcludedFields ?? string.Empty)
-            .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
-            .Select(v => v.Trim())
-            .Where(v => v.Length > 0)
-            .ToArray();
-
-        foreach (var s in selected)
+        foreach (var s in Model.ExcludedFields ?? new())
         {
-            allFields.Add(s);
-            // Saved-only entries fall back to a plain-systemname label.
-            if (!fieldLabels.ContainsKey(s))
-                fieldLabels[s] = s;
+            if (string.IsNullOrWhiteSpace(s))
+                continue;
+            var trimmed = s.Trim();
+            allFields.Add(trimmed);
+            if (!fieldLabels.ContainsKey(trimmed))
+                fieldLabels[trimmed] = trimmed;
         }
 
         if (allFields.Count == 0)
@@ -145,9 +140,6 @@ public sealed class ItemTypeEditScreen : EditScreenBase<ItemTypeEditModel>
             .OrderBy(f => f, StringComparer.OrdinalIgnoreCase)
             .Select(f => new ListOption { Value = f, Label = fieldLabels[f] })
             .ToList();
-
-        if (selected.Length > 0)
-            editor.Value = selected;
 
         return editor;
     }

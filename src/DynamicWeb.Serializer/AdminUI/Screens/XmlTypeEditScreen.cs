@@ -109,10 +109,11 @@ public sealed class XmlTypeEditScreen : EditScreenBase<XmlTypeEditModel>
         if (string.IsNullOrWhiteSpace(Model?.TypeName))
             return editor;
 
-        // Phase 41 D-05: build the option set as the UNION of (a) live-DB-discovered elements
-        // and (b) saved exclusions on Model.ExcludedElements. The previous early-return on
-        // discovery.Count == 0 dropped saved exclusions for types whose live data had rotated
-        // (e.g. eCom_CartV2 -- 21 saved, 0 live).
+        // Build the option set as the UNION of (a) live-DB-discovered elements and (b) saved
+        // exclusions on Model.ExcludedElements, so saved values always render even when live
+        // discovery is empty (e.g. eCom_CartV2 -- 21 saved, 0 live). Value is bound by
+        // EditScreenBase.BuildEditor from Model.ExcludedElements (List<string>) after this
+        // returns -- assigning Value here would be overwritten.
         var allElements = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         try
@@ -126,16 +127,11 @@ public sealed class XmlTypeEditScreen : EditScreenBase<XmlTypeEditModel>
             editor.Explanation = $"Could not discover elements from live database: {ex.Message}";
         }
 
-        var selected = (Model.ExcludedElements ?? string.Empty)
-            .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
-            .Select(v => v.Trim())
-            .Where(v => v.Length > 0)
-            .ToArray();
-
-        // Merge saved exclusions into the option set so they always render, even when live
-        // discovery is empty. HashSet OrdinalIgnoreCase de-duplicates overlap.
-        foreach (var s in selected)
-            allElements.Add(s);
+        foreach (var s in Model.ExcludedElements ?? new())
+        {
+            if (!string.IsNullOrWhiteSpace(s))
+                allElements.Add(s.Trim());
+        }
 
         if (allElements.Count == 0)
         {
@@ -147,9 +143,6 @@ public sealed class XmlTypeEditScreen : EditScreenBase<XmlTypeEditModel>
             .OrderBy(e => e, StringComparer.OrdinalIgnoreCase)
             .Select(e => new ListOption { Value = e, Label = e })
             .ToList();
-
-        if (selected.Length > 0)
-            editor.Value = selected;
 
         return editor;
     }

@@ -8,11 +8,11 @@ using Xunit;
 namespace DynamicWeb.Serializer.Tests.AdminUI;
 
 /// <summary>
-/// Phase 41 D-06 RED tests + D-01 edit-screen rename reflection assertions.
-/// CreateFieldSelector tests will FAIL against the current early-return at line 99-101
-/// (when ItemManager.Metadata.GetItemType returns null, saved exclusions are dropped).
-/// GetScreenName tests will FAIL against current "Item Type:" prefix at line 130-131.
-/// Plans 41-02 (D-01) and 41-03 (D-06) make them pass.
+/// ItemTypeEditScreen tests. CreateFieldSelector now only builds Options (the union of live
+/// metadata + saved exclusions); Value is bound by EditScreenBase.BuildEditor from the
+/// List&lt;string&gt; Model.ExcludedFields after GetEditor returns. The framework-binding test
+/// simulates that pipeline so the live regression (Value being overwritten by the framework)
+/// cannot recur.
 /// </summary>
 public class ItemTypeEditScreenTests
 {
@@ -30,9 +30,18 @@ public class ItemTypeEditScreenTests
         return (string)method.Invoke(screen, null)!;
     }
 
+    private static SelectMultiDual InvokeFrameworkBindingFlow(ItemTypeEditScreen screen, ItemTypeEditModel model)
+    {
+        var getEditorMethod = typeof(ItemTypeEditScreen)
+            .GetMethod("GetEditor", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        var editor = (SelectMultiDual)getEditorMethod.Invoke(screen,
+            new object[] { nameof(ItemTypeEditModel.ExcludedFields) })!;
+        editor.Value = model.ExcludedFields;
+        return editor;
+    }
+
     private static void SetModel(ItemTypeEditScreen screen, ItemTypeEditModel? model)
     {
-        // Model lives on ScreenBase<TModel> (parent of EditScreenBase<TModel>).
         var prop = typeof(EditScreenBase<ItemTypeEditModel>)
             .GetProperty("Model", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)!;
         prop.SetValue(screen, model);
@@ -41,48 +50,39 @@ public class ItemTypeEditScreenTests
     [Fact]
     public void CreateFieldSelector_MetadataEmpty_SavedNonEmpty_ShowsSavedAsOptions()
     {
-        // Arrange: ItemManager.Metadata.GetItemType returns null for this systemName (the "metadata
-        // empty" pattern). Saved exclusions exist. Current code drops them via early-return at line 100.
         var screen = new ItemTypeEditScreen();
         SetModel(screen, new ItemTypeEditModel
         {
             SystemName = "SomeNonExistentType",
-            ExcludedFields = "f1\nf2\nf3"
+            ExcludedFields = new List<string> { "f1", "f2", "f3" }
         });
 
         var editor = InvokeCreateFieldSelector(screen);
 
-        // GREEN target: saved exclusions must surface as Options + pre-select Value.
-        // RED today: editor.Options is empty/null because the screen short-circuits.
         Assert.NotNull(editor.Options);
         Assert.Equal(3, editor.Options!.Count);
         Assert.Contains(editor.Options, o => o.Value as string == "f1");
         Assert.Contains(editor.Options, o => o.Value as string == "f2");
         Assert.Contains(editor.Options, o => o.Value as string == "f3");
-        Assert.NotNull(editor.Value);
-        Assert.Equal(3, ((string[])editor.Value!).Length);
     }
 
     [Fact]
-    public void CreateFieldSelector_NoSaved_NoSelectionPreset()
+    public void CreateFieldSelector_NoSaved_OptionsEmpty()
     {
-        // Regression baseline: empty ExcludedFields → Value should be null. Should already pass.
         var screen = new ItemTypeEditScreen();
         SetModel(screen, new ItemTypeEditModel
         {
             SystemName = "AnyType",
-            ExcludedFields = string.Empty
+            ExcludedFields = new List<string>()
         });
 
         var editor = InvokeCreateFieldSelector(screen);
-        Assert.Null(editor.Value);
+        Assert.True(editor.Options is null || editor.Options.Count == 0);
     }
 
     [Fact]
     public void GetScreenName_WithSystemName_StartsWithItemTypeExcludes()
     {
-        // D-01 RED: current returns "Item Type: {SystemName}". After Plan 41-02 it must return
-        // "Item Type Excludes - {SystemName}".
         var screen = new ItemTypeEditScreen();
         SetModel(screen, new ItemTypeEditModel { SystemName = "TestSys" });
 
@@ -101,5 +101,29 @@ public class ItemTypeEditScreenTests
         var name = InvokeGetScreenName(screen);
 
         Assert.Equal("Item Type Excludes", name);
+    }
+
+    [Fact]
+    public void FrameworkBinding_SavedExclusions_RenderAsSelected()
+    {
+        // Regression-locking: simulates EditScreenBase.BuildEditor's full flow
+        // (GetEditor + editor.SetValue(rawValue)) and asserts saved exclusions land on the
+        // Selected side as a List<string>. Mirrors the XmlTypeEditScreen test for D-06.
+        var saved = new List<string> { "f1", "f2", "f3" };
+        var model = new ItemTypeEditModel { SystemName = "SomeNonExistentType", ExcludedFields = saved };
+        var screen = new ItemTypeEditScreen();
+        SetModel(screen, model);
+
+        var editor = InvokeFrameworkBindingFlow(screen, model);
+
+        Assert.NotNull(editor.Value);
+        var bound = Assert.IsAssignableFrom<List<string>>(editor.Value);
+        Assert.Equal(saved, bound);
+
+        Assert.NotNull(editor.Options);
+        Assert.Equal(3, editor.Options!.Count);
+        Assert.Contains(editor.Options, o => o.Value as string == "f1");
+        Assert.Contains(editor.Options, o => o.Value as string == "f2");
+        Assert.Contains(editor.Options, o => o.Value as string == "f3");
     }
 }
