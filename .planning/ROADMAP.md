@@ -376,9 +376,16 @@ Plans:
 - Enlarge the "Sample XML from database" editor on `XmlTypeEditScreen` to fill the screen by default
 - Fix the Mode dropdown error: parenthetical option labels ("Deploy (source-wins)", "Seed (field-level merge)") cause a screen error — drop the suffix; explanatory text belongs in a help tooltip
 
-**Requirements**: TBD
+**Requirements**: D-01..D-13 from 41-CONTEXT.md (goal-driven phase; CONTEXT decisions are acceptance — RESEARCH supersedes for D-05 root cause and D-13 root cause)
 **Depends on:** Phase 40
-**Plans:** 0 plans
+**Plans:** 3 plans
 
 Plans:
-- [ ] TBD (run /gsd-plan-phase 41 to break down)
+- [ ] 41-01-PLAN.md — Wave 0 RED tests: XmlTypeEditScreenTests + ItemTypeEditScreenTests + extend PredicateCommandTests + SerializerSettingsNodeProviderModeTreeTests (proves D-01, D-05, D-06, D-11, D-12, D-13 bug shapes before fixes)
+- [ ] 41-02-PLAN.md — Renames + Mode label cleanup + baseline doc: D-01 tree+list+edit-screen rename, D-11 drop parens from option labels, D-03 document intentional empty excludeFieldsByItemType
+- [ ] 41-03-PLAN.md — Substantive fixes: D-05 dual-list merge in XmlTypeEditScreen, D-06 same-shape in ItemTypeEditScreen, D-08/D-09/D-10 Sample XML Rows=30, D-12 hint copy, D-13 string-Mode binding (model + SavePredicateCommand Enum.Parse + PredicateByIndexQuery .ToString()), XmlTypeDiscovery DI seam
+
+**Execution waves** (for /gsd-execute-phase):
+- Wave 1: 41-01 (RED tests; test files only, no production-code overlap with later plans)
+- Wave 2: 41-02 (renames + label cleanup + docs; touches SerializerSettingsNodeProvider, ItemTypeListScreen, ItemTypeEditScreen.GetScreenName ONLY, PredicateEditScreen labels ONLY, baseline doc)
+- Wave 3: 41-03 (substantive fixes; touches ItemTypeEditScreen.CreateFieldSelector + XmlTypeEditScreen + PredicateEditModel + SavePredicateCommand + PredicateByIndexQuery — overlap with 41-02 on ItemTypeEditScreen forces sequencing)

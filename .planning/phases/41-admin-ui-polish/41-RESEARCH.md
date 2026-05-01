@@ -586,22 +586,25 @@ If the visual treatment of `hint:` is not what the user expects (e.g., it render
 | A4 | `Textarea.Rows = 30` produces a visually-acceptable editor size on the reference tab | D-08 fix | If Rows=30 still doesn't fill the tab, increase it or use `Height` CSS value. Either is a one-line change. Low risk. |
 | A5 | The `excludeFieldsByItemType: {}` empty-dict in the pre-Phase-40 baseline carried no semantic information beyond "we have this section, populated nothing" | D-03 audit | If a downstream tool / docs reader specifically inspects whether the key is present-vs-absent, removing it is a breaking change for them. There's no such consumer in this codebase. Risk approaches zero. |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **D-12 Hint vs Explanation rendering semantics in DW 10.23.9**
    - What we know: Both `Hint` and `Explanation` setters exist on `EditorBase` derivatives; project's existing screens use `Explanation` as the long below-input copy. `Hint` has been used exactly once in the codebase (`SelectorBuilder.CreatePageSelector(... hint: ...)`).
    - What's unclear: Whether `hint` renders as a hover-only tooltip vs an always-visible inline indicator. DW public docs are sparse.
    - Recommendation: ship with `[ConfigurableProperty("Mode", hint: "...")]`; if live-host smoke shows unwanted always-visible inline copy, swap to `Hint` on the Select instance and verify there.
+   - **RESOLVED:** ship with `[ConfigurableProperty(... hint: ...)]`. Live-host smoke catches visual mismatch; one-line fallback to `Hint` on the Select instance if the visual treatment is wrong.
 
 2. **D-13 actual error message text from live host**
    - What we know: CONTEXT marks the parens hypothesis as the prevailing guess; project memory points at enum-vs-string binding.
    - What's unclear: The actual error string the user saw (would help confirm the binding-vs-parens question definitively).
    - Recommendation: include "capture screen error message + stack" as the first verification step in the D-13 plan; if the error is anything other than a value-match-on-render failure, escalate back via orchestrator return.
+   - **RESOLVED:** capture screen error during 41-03 manual smoke (verification step 5). The enum-vs-string fix lands regardless because RESEARCH evidence (string-Select binding rule + working precedents LogLevel/ConflictStrategy) is independent of the precise error message.
 
 3. **D-08 visual fit with `Rows = 30`**
    - What we know: Rows is a settable property on `Textarea`; existing screens never set it (default ~3-5 rows).
    - What's unclear: Whether the reference tab on `XmlTypeEditScreen` has a fixed-height container that ignores Rows, and whether `Height` (CSS string) would behave differently.
    - Recommendation: ship with `Rows = 30`; the live-host smoke test catches any "still tiny" outcome; one-line follow-up if needed.
+   - **RESOLVED:** ship `Rows = 30`. Live-host smoke catches "still tiny" outcome; one-line follow-up to `Height = "60vh"` (or analogous CoreUI knob) if needed.
 
 ## Environment Availability
 
