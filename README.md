@@ -153,7 +153,10 @@ secret management, pre-commit link sweeps, and the Seed-vs-Deploy split — are 
 Active development. Current milestone: **v0.4.0 Full Page Fidelity** (nearing
 completion). Phase 38.1 closed 2026-04-22 with a full Swift 2.2 → CleanDB round-trip
 passing under `strictMode: true` end-to-end via `tools/e2e/full-clean-roundtrip.ps1`.
-Test suite: 603 unit and integration tests.
+Phase 41 closed 2026-05-01 with admin-UI polish across the Predicate, Item Type
+Excludes, and Embedded XML Excludes screens (per-predicate Mode binding, dual-list
+saved-exclusion merge, screen-name and tooltip cleanup). Test suite: 821 unit and
+integration tests.
 
 The API surface (Management API commands, predicate shape, YAML format) is stable
 for the current release line. Config schema and runtime-exclusion defaults may

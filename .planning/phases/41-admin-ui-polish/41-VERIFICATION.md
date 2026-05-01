@@ -1,9 +1,20 @@
 ---
 phase: 41-admin-ui-polish
 verified: 2026-05-01T18:00:00Z
-status: human_needed
-score: 13/13
+status: passed
+score: 14/14
 overrides_applied: 0
+gap_closure:
+  - id: D-05/D-06-framework-binding
+    discovered: 2026-05-01T17:50:00Z (live-host UAT)
+    closed: 2026-05-01T20:05:00Z
+    fix_commits: [af78c2f]
+    summary: "Promoted XmlTypeEditModel.ExcludedElements and ItemTypeEditModel.ExcludedFields from string to List<string> so EditScreenBase.BuildEditor's post-GetEditor SetValue(rawValue) hands a list to SelectMultiDual.Value. Original RED tests bypassed BuildEditor via reflection and missed the framework-binding path; new FrameworkBinding_SavedExclusions_RenderAsSelected tests on both edit-screen suites simulate the GetEditor + editor.SetValue pipeline so the regression cannot recur."
+  - id: D-14-embedded-xml-rename
+    discovered: 2026-05-01T17:50:00Z (live-host UAT)
+    closed: 2026-05-01T20:05:00Z
+    fix_commits: [da55813]
+    summary: "Renamed tree node 'Embedded XML' to 'Embedded XML Excludes' (SerializerSettingsNodeProvider) and XmlTypeListScreen.GetScreenName 'Embedded XML Types' to 'Embedded XML Excludes'. Same parent rationale as D-01: page manages exclusions, not the XML types themselves."
 human_verification:
   - test: "Open https://localhost:54035/Admin/ → Settings → System → Developer → Serialize. Confirm tree node reads 'Item Type Excludes' (not 'Item Types'). Click in; confirm list screen title reads 'Item Type Excludes'. Click into any item type; confirm edit-screen title reads 'Item Type Excludes - {SystemName}'."
     expected: "All three user-visible strings display 'Item Type Excludes' in the correct positions."
