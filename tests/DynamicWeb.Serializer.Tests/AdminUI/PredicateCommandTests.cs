@@ -1,9 +1,14 @@
+using System.Reflection;
 using DynamicWeb.Serializer.AdminUI.Commands;
 using DynamicWeb.Serializer.AdminUI.Models;
+using DynamicWeb.Serializer.AdminUI.Queries;
+using DynamicWeb.Serializer.AdminUI.Screens;
 using DynamicWeb.Serializer.Configuration;
 using DynamicWeb.Serializer.Models;
 using DynamicWeb.Serializer.Tests.TestHelpers;
 using Dynamicweb.CoreUI.Data;
+using Dynamicweb.CoreUI.Editors;
+using Dynamicweb.CoreUI.Editors.Lists;
 using Xunit;
 
 namespace DynamicWeb.Serializer.Tests.AdminUI;
@@ -950,5 +955,156 @@ public class PredicateCommandTests : ConfigLoaderValidatorFixtureBase
         Assert.Single(config.Predicates);
         Assert.Equal("DeployExisting", config.Predicates[0].Name);
         Assert.Equal(DeploymentMode.Deploy, config.Predicates[0].Mode);
+    }
+
+    // -------------------------------------------------------------------------
+    // Phase 41 D-13 + D-12 + D-11 RED tests: Mode property must become string-typed,
+    // ConfigurableProperty must carry hint text, PredicateEditScreen Mode-option
+    // labels must drop the parenthetical suffixes. Tests use reflection so the file
+    // stays compilable while Mode is still enum-typed; assertions encode the GREEN
+    // target so Plan 41-03 must turn them GREEN.
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public void ModeProperty_IsString_NotEnum_PostPhase41()
+    {
+        // Phase 41 D-13: Mode must be string-typed (matches LogLevel/ConflictStrategy precedent).
+        // Will FAIL until Plan 41-03 lands.
+        var modeProp = typeof(PredicateEditModel).GetProperty("Mode");
+        Assert.NotNull(modeProp);
+        Assert.Equal(typeof(string), modeProp!.PropertyType);
+    }
+
+    [Fact]
+    public void ModeProperty_HasHint_WithExplanatoryCopy_PostPhase41()
+    {
+        // Phase 41 D-12: tooltip-style copy moves to `hint:` parameter (not `explanation:`).
+        // Assert via stable substrings — the wording is allowed minor evolution.
+        var modeProp = typeof(PredicateEditModel).GetProperty("Mode");
+        Assert.NotNull(modeProp);
+        var attr = modeProp!.GetCustomAttribute<ConfigurablePropertyAttribute>();
+        Assert.NotNull(attr);
+        var hint = attr!.Hint ?? string.Empty;
+        Assert.Contains("Deploy =", hint);
+        Assert.Contains("Seed =", hint);
+        Assert.Contains("source-wins", hint);
+        Assert.Contains("field-level merge", hint);
+    }
+
+    [Fact]
+    public void Save_ModeAsString_Deploy_RoundTripsViaQuery_PostPhase41()
+    {
+        // Phase 41 D-13: SavePredicateCommand parses string→enum on save; PredicateByIndexQuery
+        // returns string on hydrate. Round-trip must preserve "Deploy" verbatim.
+        // RED today: Mode is enum-typed so the round-trip yields DeploymentMode.Deploy, not "Deploy".
+        CreateSeedConfig(new List<ProviderPredicateDefinition>());
+
+        var savedOverride = ConfigPathResolver.TestOverridePath;
+        ConfigPathResolver.TestOverridePath = _configPath;
+        try
+        {
+            var model = new PredicateEditModel { Index = -1, Name = "Default", ProviderType = "Content", AreaId = 1, PageId = 10 };
+            // Mode set via reflection to keep this test compilable while the property is still enum-typed.
+            var modeProp = typeof(PredicateEditModel).GetProperty("Mode")!;
+            if (modeProp.PropertyType == typeof(string))
+                modeProp.SetValue(model, "Deploy");
+            else
+                modeProp.SetValue(model, Enum.Parse(typeof(DeploymentMode), "Deploy"));
+
+            var saveCmd = new SavePredicateCommand { ConfigPath = _configPath, Model = model };
+            var saveResult = saveCmd.Handle();
+            Assert.Equal(CommandResult.ResultType.Ok, saveResult.Status);
+
+            var query = new PredicateByIndexQuery();
+            typeof(PredicateByIndexQuery).GetProperty("Index")!.SetValue(query, 0);
+            var reloaded = query.GetModel();
+            Assert.NotNull(reloaded);
+
+            var reloadedMode = modeProp.GetValue(reloaded);
+            // GREEN target: reloadedMode is the string "Deploy". RED today: it's DeploymentMode.Deploy.
+            Assert.Equal("Deploy", reloadedMode);
+        }
+        finally
+        {
+            ConfigPathResolver.TestOverridePath = savedOverride;
+        }
+    }
+
+    [Fact]
+    public void Save_ModeAsString_Seed_RoundTripsViaQuery_PostPhase41()
+    {
+        CreateSeedConfig(new List<ProviderPredicateDefinition>());
+
+        var savedOverride = ConfigPathResolver.TestOverridePath;
+        ConfigPathResolver.TestOverridePath = _configPath;
+        try
+        {
+            var model = new PredicateEditModel { Index = -1, Name = "Default", ProviderType = "Content", AreaId = 1, PageId = 10 };
+            var modeProp = typeof(PredicateEditModel).GetProperty("Mode")!;
+            if (modeProp.PropertyType == typeof(string))
+                modeProp.SetValue(model, "Seed");
+            else
+                modeProp.SetValue(model, Enum.Parse(typeof(DeploymentMode), "Seed"));
+
+            var saveCmd = new SavePredicateCommand { ConfigPath = _configPath, Model = model };
+            Assert.Equal(CommandResult.ResultType.Ok, saveCmd.Handle().Status);
+
+            var query = new PredicateByIndexQuery();
+            typeof(PredicateByIndexQuery).GetProperty("Index")!.SetValue(query, 0);
+            var reloaded = query.GetModel();
+            Assert.NotNull(reloaded);
+            Assert.Equal("Seed", modeProp.GetValue(reloaded));
+        }
+        finally
+        {
+            ConfigPathResolver.TestOverridePath = savedOverride;
+        }
+    }
+
+    [Fact]
+    public void Save_ModeAsString_BogusValue_ReturnsInvalid_PostPhase41()
+    {
+        // Phase 41 D-13 + threat model T-41-01: invalid Mode strings rejected by SavePredicateCommand
+        // with CommandResult.ResultType.Invalid (mirrors ConfigLoader's case-insensitive Enum.TryParse
+        // pre-validation). RED today: when Mode is enum, you can't even ASSIGN "BogusMode" — the test
+        // proves the post-fix invariant. Skips early until model is string-typed.
+        CreateSeedConfig(new List<ProviderPredicateDefinition>());
+        var model = new PredicateEditModel { Index = -1, Name = "Default", ProviderType = "Content", AreaId = 1, PageId = 10 };
+        var modeProp = typeof(PredicateEditModel).GetProperty("Mode")!;
+        if (modeProp.PropertyType != typeof(string))
+        {
+            // RED today: this short-circuits while Mode is enum. Becomes a real RED assertion
+            // once Plan 41-03 lands the string-typed Mode and the test reaches SavePredicateCommand.
+            return;
+        }
+        modeProp.SetValue(model, "BogusMode");
+
+        var saveCmd = new SavePredicateCommand { ConfigPath = _configPath, Model = model };
+        var result = saveCmd.Handle();
+
+        Assert.Equal(CommandResult.ResultType.Invalid, result.Status);
+        Assert.Contains("Mode", result.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.True(
+            result.Message.Contains("Deploy", StringComparison.OrdinalIgnoreCase) ||
+            result.Message.Contains("Seed", StringComparison.OrdinalIgnoreCase),
+            $"Expected error message to name the valid values; got: {result.Message}");
+    }
+
+    [Fact]
+    public void PredicateEditScreen_ModeOptions_HaveCleanLabels_PostPhase41()
+    {
+        // Phase 41 D-11: option labels lose the parenthetical "(source-wins)" /
+        // "(field-level merge)" suffixes.
+        var screen = new PredicateEditScreen();
+        var getEditor = typeof(PredicateEditScreen)
+            .GetMethod("GetEditor", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        var editor = (EditorBase?)getEditor.Invoke(screen, new object[] { "Mode" });
+        Assert.NotNull(editor);
+        var select = Assert.IsType<Select>(editor);
+        Assert.NotNull(select.Options);
+        Assert.Contains(select.Options!, o => (o.Value as string) == "Deploy" && o.Label == "Deploy");
+        Assert.Contains(select.Options!, o => (o.Value as string) == "Seed" && o.Label == "Seed");
+        // Reject parens-suffix labels explicitly.
+        Assert.DoesNotContain(select.Options!, o => o.Label != null && o.Label.Contains("("));
     }
 }

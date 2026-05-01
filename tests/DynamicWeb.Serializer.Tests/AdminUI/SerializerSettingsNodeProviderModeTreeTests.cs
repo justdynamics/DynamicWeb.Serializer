@@ -76,6 +76,23 @@ public class SerializerSettingsNodeProviderModeTreeTests : ConfigLoaderValidator
         Assert.Contains(SerializerSettingsNodeProvider.LogViewerNodeId, rootChildren);
     }
 
+    [Fact]
+    public void GetSubNodes_UnderSerializeNode_ItemTypesNode_DisplayName_IsItemTypeExcludes()
+    {
+        // Phase 41 D-01: tree node display name renamed from "Item Types" to "Item Type Excludes".
+        // The internal const ItemTypesNodeId stays "Serializer_ItemTypes" per D-02. RED until Plan 41-02.
+        WriteConfig();
+        var provider = new SerializerSettingsNodeProvider();
+
+        var nodes = provider
+            .GetSubNodes(PathTo(SerializerSettingsNodeProvider.DeveloperRootId, SerializerSettingsNodeProvider.SerializeNodeId))
+            .ToList();
+
+        var itemTypesNode = nodes.FirstOrDefault(n => n.Id == SerializerSettingsNodeProvider.ItemTypesNodeId);
+        Assert.NotNull(itemTypesNode);
+        Assert.Equal("Item Type Excludes", itemTypesNode!.Name);
+    }
+
     // -------------------------------------------------------------------------
     // Phase 40 D-06: Predicates subtree lists every predicate with its mode in display name.
     // -------------------------------------------------------------------------
