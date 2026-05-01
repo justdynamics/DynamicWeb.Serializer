@@ -10,7 +10,7 @@ namespace DynamicWeb.Serializer.AdminUI.Screens;
 
 public sealed class ItemTypeListScreen : ListScreenBase<ItemTypeListModel>
 {
-    protected override string GetScreenName() => "Item Types";
+    protected override string GetScreenName() => "Item Type Excludes";  // Phase 41 D-01
 
     protected override IEnumerable<ListViewMapping> GetViewMappings() =>
     [

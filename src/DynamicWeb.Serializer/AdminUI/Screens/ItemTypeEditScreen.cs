@@ -128,7 +128,8 @@ public sealed class ItemTypeEditScreen : EditScreenBase<ItemTypeEditModel>
     }
 
     protected override string GetScreenName() =>
-        !string.IsNullOrWhiteSpace(Model?.SystemName) ? $"Item Type: {Model.SystemName}" : "Item Type";
+        // Phase 41 D-01: page manages field exclusions for the item type, not the item type itself.
+        !string.IsNullOrWhiteSpace(Model?.SystemName) ? $"Item Type Excludes - {Model.SystemName}" : "Item Type Excludes";
 
     protected override CommandBase<ItemTypeEditModel> GetSaveCommand() =>
         // Phase 40 D-04: top-level exclusion dict — no per-mode routing on save.

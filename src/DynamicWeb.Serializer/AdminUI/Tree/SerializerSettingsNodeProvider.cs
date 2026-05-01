@@ -72,7 +72,7 @@ public sealed class SerializerSettingsNodeProvider : NavigationNodeProvider<Syst
             yield return new NavigationNode
             {
                 Id = ItemTypesNodeId,
-                Name = "Item Types",
+                Name = "Item Type Excludes",  // Phase 41 D-01: page manages per-ItemType field exclusions, not item types themselves. Const ItemTypesNodeId stays "Serializer_ItemTypes" per D-02.
                 Icon = Icon.ListUl,
                 Sort = 20,
                 HasSubNodes = true,
