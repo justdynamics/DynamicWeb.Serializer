@@ -81,6 +81,43 @@ two-option Select. Existing predicates can be re-modded by editing the predicate
 delete-and-recreate dance. The `swift2.2-combined.json` baseline ships with 17 Deploy and 9
 Seed predicates (counts may shift as the baseline evolves — check the file directly).
 
+## Exclusion sections
+
+The post-Phase-40 baseline ships two top-level mode-agnostic exclusion dicts on
+`swift2.2-combined.json`: `excludeFieldsByItemType` and `excludeXmlElementsByType`.
+Their populated state is intentional and documented here so future readers do not
+mistake their shape for an oversight.
+
+### `excludeFieldsByItemType` — empty by design
+
+The post-Phase-40 baseline does NOT contain an `excludeFieldsByItemType` key. This
+is intentional, not a regression introduced during the Phase 40 flat-shape rewrite.
+
+Per-ItemType field exclusions can be added at any time via the admin UI
+(Settings → System → Developer → Serialize → Item Type Excludes → choose a type),
+but the Swift 2.2 baseline ships no such overrides. Every Swift 2.2 ItemType is
+serialized with all its fields by default.
+
+The pre-Phase-40 baseline (`swift2.2-baseline.json` at commit `c5d9a8c~`, deleted
+during Phase 40) carried an explicit empty dict `"excludeFieldsByItemType": {}`.
+The new `ConfigWriter.Save` path omits empty dicts via the `WhenWritingNull` path
+in `src/DynamicWeb.Serializer/Configuration/ConfigWriter.cs` (~lines 35-36), so the
+key disappears from the JSON file the next time the config is saved. The semantic
+behavior — no per-ItemType exclusions — is unchanged. There is nothing to restore.
+
+### `excludeXmlElementsByType` — expanded during Phase 40
+
+The post-Phase-40 baseline carries a populated `excludeXmlElementsByType` dict
+covering Phase 40's curated set of XML payload types. Notably, `eCom_CartV2`
+ships with 21 excluded element names. This dict was *expanded* during Phase 40
+(commit `d57d474`), not lost — content was added on top of the pre-Phase-40
+sparse keys, not removed.
+
+Per Phase 41 D-03: this section was added 2026-05-01 after a content audit
+against the pre-Phase-40 baseline confirmed both shapes are intentional. The
+audit lives in `.planning/phases/41-admin-ui-polish/41-RESEARCH.md` (the D-03
+finding section).
+
 ## The Swift 2.2 contamination problem
 
 DW ships Swift 2.2 with test/demo contamination:
