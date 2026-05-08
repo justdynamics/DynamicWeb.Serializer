@@ -414,7 +414,7 @@ Plans:
   4. The full existing deserialize test suite (orchestrator + provider + integration + command tests) still passes unchanged at end of phase — Phase 42 ships zero behavioral change on the deserialize side.
   5. A round-trip property test asserts every one of the eight predicate fields that affect deserialize behavior (`ServiceCaches`, `SchemaSync`, `XmlColumns`, `ExcludeFields`, `ExcludeXmlElements`, `ExcludeAreaColumns`, `ResolveLinksInColumns`, `AcknowledgedOrphanPageIds`) survives `predicate → BuildManifestEntry → JSON → ManifestEntry` with no field loss for both `ContentProvider` and `SqlTableProvider`.
   6. Inspecting either manifest with a JSON viewer shows the discriminator (`providerType`) at position 0 of every entry object; hand-reordering the discriminator below another property in a fixture and re-reading still produces a typed error rather than `NotSupportedException`.
-**Plans:** 4 plans
+**Plans:** 0/4 plans executed
 Plans:
 **Wave 1**
 - [ ] 42-01-PLAN.md - Manifest envelope + polymorphic entry hierarchy + STJ strict-mode wiring + schemaVersion-gate tests (MANIFEST-01, MANIFEST-02, MANIFEST-03, MANIFEST-05)
