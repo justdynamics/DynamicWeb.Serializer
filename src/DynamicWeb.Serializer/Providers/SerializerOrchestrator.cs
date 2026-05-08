@@ -116,7 +116,21 @@ public class SerializerOrchestrator
         {
             var modeName = mode.ToString().ToLowerInvariant();
             var allWritten = results.SelectMany(r => r.WrittenFiles).ToList();
-            manifestWriter?.Write(outputRoot, modeName, allWritten);
+
+            // Phase 42-03: collect non-null Entry instances across providers. Validation-failed
+            // results return null Entry (per SerializeResult.Entry docstring); they don't appear
+            // in the manifest, but their files (if any) still feed the cleaner.
+            var entries = results
+                .Where(r => r.Entry is not null)
+                .Select(r => r.Entry!)
+                .ToList();
+
+            // Phase 42-03 / MANIFEST-05: bake the by-ItemType exclusion maps into the envelope
+            // so the deserialize path (Phase 43) does not need ConfigLoader.Load to read them.
+            manifestWriter?.Write(outputRoot, modeName, entries,
+                excludeFieldsByItemType: excludeFieldsByItemType,
+                excludeXmlElementsByType: excludeXmlElementsByType);
+
             if (manifestCleaner != null)
                 stale = manifestCleaner.CleanStale(outputRoot, modeName, allWritten, log);
         }
