@@ -1,56 +1,116 @@
-# Requirements: v0.4.0 Full Page Fidelity
+# Requirements: v0.6.0 Manifest-Driven Deserialize
 
-**Defined:** 2026-04-03
+**Defined:** 2026-05-08
 **Core Value:** Developers can reliably move DynamicWeb database state between environments through source control, with serialized YAML files as the single source of truth.
 
-## Page Properties
+**Milestone goal:** Pivot serialize to lock all knowledge into the artifact (manifest); deserialize executes purely from the manifest, no config consultation. Per-item `Succeeded | Failed | Warned | Skipped` reporting replaces today's silent-skip-on-config-mismatch model.
 
-- [x] **PAGE-01**: All ~30 missing page properties are serialized to YAML and deserialized back (NavigationTag, ShortCut, UrlName, MetaTitle, MetaDescription, MetaCanonical, Noindex, Nofollow, Robots404, SSLMode, PermissionType, UrlIgnoreForChildren, UrlDataProvider, ExactUrl, AllowClick, ShowInSitemap, AllowSearch, ShowInLegend, HideForPhones, HideForTablets, HideForDesktops, ActiveFrom, ActiveTo, DisplayMode, MasterPageId, MasterType, ContentType, ColorSchemeId, TopImage)
-- [x] **PAGE-02**: ShortCut field values containing Default.aspx?ID=NNN are resolved via InternalLinkResolver during deserialization
+## v0.6.0 Requirements
 
-## Ecommerce Navigation
+### Manifest schema (MANIFEST)
 
-- [x] **ECOM-01**: PageNavigationSettings (UseEcomGroups, ParentType, Groups, ShopId, MaxLevels, ProductPage, IncludeProducts, NavigationProvider) are serialized and deserialized
-- [x] **ECOM-02**: ProductPage field in NavigationSettings containing Default.aspx?ID=NNN is resolved via InternalLinkResolver
+- [ ] **MANIFEST-01**: `{mode}-manifest.json` carries a versioned envelope (`schemaVersion`, `mode`, `writtenAtUtc`, `complete: true` sentinel, `entries[]`) that fail-fast errors when read by an incompatible version
+- [ ] **MANIFEST-02**: Manifest entries are polymorphic records discriminated by `providerType` (`ContentEntry`, `SqlTableEntry`); System.Text.Json `[JsonPolymorphic]` + `[JsonDerivedType]` with strict missing-discriminator failure
+- [ ] **MANIFEST-03**: Manifest read enforces strict shape — `[JsonUnmappedMemberHandling(Disallow)]` + `required` modifier — so torn or hand-edited manifests fail loudly at read time, not silently downstream
+- [ ] **MANIFEST-04**: Manifest write is atomic — temp file + `File.Move(overwrite: true)` + sentinel — so a crashed serialize never leaves a half-written manifest that the deserializer would partially trust
+- [ ] **MANIFEST-05**: Top-level `excludeFieldsByItemType` and `excludeXmlElementsByType` maps are baked into the manifest envelope at serialize time so deserialize does not need to read `Serializer.config.json`
 
-## Area Configuration
+### Provider entry build (PROVIDER)
 
-- [x] **AREA-01**: Area-level ItemType fields (header/footer/master page connections) are serialized to YAML and deserialized back
-- [x] **AREA-02**: Page ID references in Area ItemType fields are resolved via InternalLinkResolver
+- [ ] **PROVIDER-01**: `SerializationProviderBase.BuildManifestEntry(predicate, modeRoot, writtenFiles)` is the abstract contract every provider implements; runs as part of the existing `Serialize(...)` call (single pass)
+- [ ] **PROVIDER-02**: `ContentProvider.BuildManifestEntry` produces a `ContentEntry` carrying `areaId`, `path`, `pageId`, owned `files[]`, post-processing hooks, and exclusion maps
+- [ ] **PROVIDER-03**: `SqlTableProvider.BuildManifestEntry` produces a `SqlTableEntry` carrying `table`, `nameColumn`, `xmlColumns`, `where`, owned `files[]`, post-processing hooks (`serviceCaches`, `schemaSync`, `resolveLinksInColumns`), and exclusion fields (`excludeAreaColumns`, `acknowledgedOrphanPageIds`)
+- [ ] **PROVIDER-04**: `SerializeResult` exposes the produced `ManifestEntry?` alongside `WrittenFiles`; orchestrator collects entries from results and hands them to `ManifestWriter`
+- [ ] **PROVIDER-05**: A round-trip property test asserts every one of the eight predicate fields that affect deserialize behavior (`ServiceCaches`, `SchemaSync`, `XmlColumns`, `ExcludeFields`, `ExcludeXmlElements`, `ExcludeAreaColumns`, `ResolveLinksInColumns`, `AcknowledgedOrphanPageIds`) survives the predicate → entry → manifest → entry trip with no loss
 
-## Area Column Filtering
+### Deserialize pivot (DESER)
 
-- [x] **AREA-06**: Area column exclusion UI is accessible from the predicate edit screen for Content predicates with an AreaId
-- [x] **AREA-07**: Area column exclusion selector is populated from the Area table schema (INFORMATION_SCHEMA.COLUMNS) excluding DTO-captured columns
-- [x] **AREA-08**: Area column exclusions are persisted to config and applied during serialize/deserialize pipelines
+- [ ] **DESER-01**: `SerializerOrchestrator.DeserializeAll` no longer accepts a predicates parameter; signature is `DeserializeAll(modeRoot, mode, strategy, dryRun, providerFilter, escalator, ...)` — reads the manifest from `modeRoot` and dispatches each entry
+- [ ] **DESER-02**: FK ordering and Content-before-SqlTable reorder rules operate on `entries[]` (live-recomputed, not trusting manifest order); `FkDependencyResolver` is reused unchanged
+- [ ] **DESER-03**: `ISerializationProvider.Deserialize` accepts a `ManifestEntry` (not a `ProviderPredicateDefinition`); `ValidatePredicate` is removed from the provider interface
+- [ ] **DESER-04**: `SerializerDeserializeCommand`, `DeserializeFromZipCommand`, and any other deserialize entry point no longer call `ConfigLoader.Load` — config is irrelevant to the deserialize path
+- [ ] **DESER-05**: Strict-mode default is sourced from the entry-point (API/CLI=true, AdminUI=false) plus a per-call request override; `config.StrictMode` is no longer consulted on the deserialize path. A one-time WARNING surfaces if `config.StrictMode` is set but no longer effective
 
-## Schema Sync
+### Per-entry outcome reporting (REPORT)
 
-- [x] **SCHEMA-01**: EcomProductGroupField custom columns are created on EcomGroups table during deserialization before product group data is imported
+- [ ] **REPORT-01**: An `EntryStatus` enum exists with four values: `Succeeded`, `Failed`, `Warned`, `Skipped`. `Skipped` is distinct from `Succeeded` so today's silent-skip class becomes observable
+- [ ] **REPORT-02**: Each manifest entry produces an `EntryOutcome` record carrying `EntryId`, `ProviderType`, `Status`, `Message`, `Errors[]`, `Warnings[]`, `Counts` (created/updated/skipped/failed), and `Duration`
+- [ ] **REPORT-03**: `OrchestratorResult.EntryOutcomes` replaces `OrchestratorResult.DeserializeResults`. `ProviderDeserializeResult` survives as a per-table DTO that feeds `EntryOutcome.From(...)`
+- [ ] **REPORT-04**: `OrchestratorResult.HasErrors` aggregates from outcomes (`entries.Any(e => e.Status is Failed)`) and is the single source of truth for the HTTP-status invariant; the D-38-12 zero-error == HTTP 200 guard test is extended to cover entry-level failure shapes
+- [ ] **REPORT-05**: Per-entry log lines surface in the admin-UI log viewer (`Files/System/Serializer/Log/`) so operators can read per-entry outcomes without re-running
 
-## Future Requirements (deferred)
+### Convergence + cleanup (CONVERGE)
 
-- Timestamp preservation (CreatedDate/UpdatedDate) — requires direct SQL, lower priority
-- NavigationSettings.Groups ecommerce group ID portability — depends on ecommerce data also being serialized
-- User ID portability for CreatedBy/UpdatedBy — environment-specific, document as limitation
+- [ ] **CONVERGE-01**: A shared `BuildContentEntryForArea` helper exists; both the full deserialize path and `DeserializeFromZipCommand` route through it so zip-import and full-import cannot diverge in entry shape
+- [ ] **CONVERGE-02**: `DeserializeFromZipCommand` builds an in-memory `Manifest` containing one synthesised `ContentEntry` and runs through the same orchestrator pipeline as the full deserialize (no separate code path)
+- [ ] **CONVERGE-03**: All predicate-fixture test files migrate to entry fixtures via a ratchet (Layer A: orchestrator unit tests in the pivot phase; Layer B: provider integration + command + strict-mode integration tests in the cleanup phase). A transitional `ToPredicate(Entry)` test-helper shim is permitted during Phase 2 and removed in Phase 3
+- [ ] **CONVERGE-04**: The two `[Obsolete]` `SerializeAll`/`DeserializeAll` overloads on `SerializerOrchestrator` are removed
+- [ ] **CONVERGE-05**: Remaining schedule-task code paths (already in PROJECT.md Active list) are removed as part of the cleanup phase
+- [ ] **CONVERGE-06**: Live E2E re-validation passes against Swift 2.2 → CleanDB and against the DAP/pim.carriageservices deploy under `strictMode: true`
+
+## Future Requirements (deferred — tracked, not in v0.6.0 roadmap)
+
+Per FEATURES.md Tier B and PITFALLS §3, these are explicitly tracked but out of v0.6.0 scope:
+
+- **DRIFT-01**: Per-entry `Sha256` checksum + pre-flight scan that detects manifest/disk drift (files-without-entries, entries-without-files, content-edited-without-manifest-update). Liquibase precedent.
+- **OVERRIDE-01**: Per-entry `conflictStrategy` override allowing a specific entry to ignore the run-wide setting (rare use case; track as future)
+- **DEPENDS-01**: Per-entry `dependsOn[]` field with topological sort at apply time, replacing the two hardcoded reorder passes (FK ordering, Content-before-SqlTable)
+- **TIEBREAK-01**: Per-file provider-type tiebreaker (the file's own header proves what it is — defends against moved/renamed files where the manifest is wrong)
+- **PROVENANCE-01**: Provenance/checksum sidecar headers on individual files for signed-artifact workflows
+- **HAND-EDIT-01**: Hand-edited file fallback so a YAML can be deserialized standalone without a manifest entry
+- **MIGRATE-01**: Schema migration infrastructure for future `schemaVersion` bumps (today's policy is hard-cut, no backcompat — re-serialize). Becomes relevant once the user base requires forward-compat.
+- **CARVE-EMBEDDED-XML**: Carve out `EmbeddedXmlProvider` from `SqlTableProvider` so embedded XML is a first-class entry type rather than a `SqlTableEntry` field. Defer until a third provider lands; v0.7.0 candidate.
 
 ## Out of Scope
 
-- Backward compatibility with pre-v0.4.0 YAML format — beta, no external consumers
-- Page workflow/approval fields — empty in Swift 2.2, add when needed
-- Page versioning fields — empty in Swift 2.2, add when needed
+| Item | Reason |
+|------|--------|
+| Backwards compatibility with v0.5.x manifest shape | No backcompat policy (per `feedback_no_backcompat.md`) — failed reads emit a clear "re-run serialize against this build" error |
+| `dryRun`, `strictMode`, `providerFilter`, `conflictStrategy` in the manifest | Caller-supplied at deserialize time; same artifact must apply lenient to dev / strict to prod (universal pattern across Terraform, Liquibase, Pulumi) |
+| JSON Schema validation library (NJsonSchema, JsonSchema.Net) | Native System.Text.Json `Disallow` + `required` cover the producer-controlled use case (per STACK.md) |
+| `IManifestStore` / `IEntryDispatcher` abstractions | Two providers do not earn an interface; concrete `ManifestWriter` is sufficient (per ARCHITECTURE.md) |
+| Visitor pattern over entries | Same — `switch (entry)` over the polymorphic record hierarchy is enough |
+| Bidirectional manifest evolution (round-trip across schema versions) | Hard-cut, fail-fast on version mismatch — no migration story |
+| Hand-edit-friendly manifest format | Producer-controlled; manifest is a build artifact, not a config |
 
 ## Traceability
 
-| REQ-ID | Phase | Plan | Status |
-|--------|-------|------|--------|
-| PAGE-01 | Phase 23 | — | Pending |
-| PAGE-02 | Phase 23 | — | Pending |
-| ECOM-01 | Phase 23 | — | Pending |
-| ECOM-02 | Phase 23 | — | Pending |
-| AREA-01 | Phase 24 | — | Pending |
-| AREA-02 | Phase 24 | — | Pending |
-| AREA-06 | Phase 36 | 36-01 | Complete |
-| AREA-07 | Phase 36 | 36-01 | Complete |
-| AREA-08 | Phase 36 | 36-02 | Complete |
-| SCHEMA-01 | Phase 25 | 25-01 | Complete |
+Empty until roadmap creation. Each requirement maps to exactly one phase.
+
+| REQ-ID | Phase | Status |
+|--------|-------|--------|
+| MANIFEST-01 | TBD | Pending |
+| MANIFEST-02 | TBD | Pending |
+| MANIFEST-03 | TBD | Pending |
+| MANIFEST-04 | TBD | Pending |
+| MANIFEST-05 | TBD | Pending |
+| PROVIDER-01 | TBD | Pending |
+| PROVIDER-02 | TBD | Pending |
+| PROVIDER-03 | TBD | Pending |
+| PROVIDER-04 | TBD | Pending |
+| PROVIDER-05 | TBD | Pending |
+| DESER-01 | TBD | Pending |
+| DESER-02 | TBD | Pending |
+| DESER-03 | TBD | Pending |
+| DESER-04 | TBD | Pending |
+| DESER-05 | TBD | Pending |
+| REPORT-01 | TBD | Pending |
+| REPORT-02 | TBD | Pending |
+| REPORT-03 | TBD | Pending |
+| REPORT-04 | TBD | Pending |
+| REPORT-05 | TBD | Pending |
+| CONVERGE-01 | TBD | Pending |
+| CONVERGE-02 | TBD | Pending |
+| CONVERGE-03 | TBD | Pending |
+| CONVERGE-04 | TBD | Pending |
+| CONVERGE-05 | TBD | Pending |
+| CONVERGE-06 | TBD | Pending |
+
+**Coverage:**
+- v0.6.0 requirements: 26 total
+- Mapped to phases: 0 (until roadmap)
+- Unmapped: 26 ⚠️ (expected pre-roadmap)
+
+---
+*Requirements defined: 2026-05-08*
+*Source research: `.planning/research/SUMMARY.md`*
