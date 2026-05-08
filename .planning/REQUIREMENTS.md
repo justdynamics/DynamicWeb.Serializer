@@ -79,37 +79,37 @@ Empty until roadmap creation. Each requirement maps to exactly one phase.
 
 | REQ-ID | Phase | Status |
 |--------|-------|--------|
-| MANIFEST-01 | TBD | Pending |
-| MANIFEST-02 | TBD | Pending |
-| MANIFEST-03 | TBD | Pending |
-| MANIFEST-04 | TBD | Pending |
-| MANIFEST-05 | TBD | Pending |
-| PROVIDER-01 | TBD | Pending |
-| PROVIDER-02 | TBD | Pending |
-| PROVIDER-03 | TBD | Pending |
-| PROVIDER-04 | TBD | Pending |
-| PROVIDER-05 | TBD | Pending |
-| DESER-01 | TBD | Pending |
-| DESER-02 | TBD | Pending |
-| DESER-03 | TBD | Pending |
-| DESER-04 | TBD | Pending |
-| DESER-05 | TBD | Pending |
-| REPORT-01 | TBD | Pending |
-| REPORT-02 | TBD | Pending |
-| REPORT-03 | TBD | Pending |
-| REPORT-04 | TBD | Pending |
-| REPORT-05 | TBD | Pending |
-| CONVERGE-01 | TBD | Pending |
-| CONVERGE-02 | TBD | Pending |
-| CONVERGE-03 | TBD | Pending |
-| CONVERGE-04 | TBD | Pending |
-| CONVERGE-05 | TBD | Pending |
-| CONVERGE-06 | TBD | Pending |
+| MANIFEST-01 | Phase 42 | Pending |
+| MANIFEST-02 | Phase 42 | Pending |
+| MANIFEST-03 | Phase 42 | Pending |
+| MANIFEST-04 | Phase 42 | Pending |
+| MANIFEST-05 | Phase 42 | Pending |
+| PROVIDER-01 | Phase 42 | Pending |
+| PROVIDER-02 | Phase 42 | Pending |
+| PROVIDER-03 | Phase 42 | Pending |
+| PROVIDER-04 | Phase 42 | Pending |
+| PROVIDER-05 | Phase 42 | Pending |
+| DESER-01 | Phase 43 | Pending |
+| DESER-02 | Phase 43 | Pending |
+| DESER-03 | Phase 43 | Pending |
+| DESER-04 | Phase 43 | Pending |
+| DESER-05 | Phase 43 | Pending |
+| REPORT-01 | Phase 43 | Pending |
+| REPORT-02 | Phase 43 | Pending |
+| REPORT-03 | Phase 43 | Pending |
+| REPORT-04 | Phase 43 | Pending |
+| REPORT-05 | Phase 43 | Pending |
+| CONVERGE-01 | Phase 44 | Pending |
+| CONVERGE-02 | Phase 44 | Pending |
+| CONVERGE-03 | Phase 44 | Pending |
+| CONVERGE-04 | Phase 44 | Pending |
+| CONVERGE-05 | Phase 44 | Pending |
+| CONVERGE-06 | Phase 44 | Pending |
 
 **Coverage:**
 - v0.6.0 requirements: 26 total
-- Mapped to phases: 0 (until roadmap)
-- Unmapped: 26 ⚠️ (expected pre-roadmap)
+- Mapped to phases: 26 (Phase 42: 10, Phase 43: 10, Phase 44: 6)
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-05-08*

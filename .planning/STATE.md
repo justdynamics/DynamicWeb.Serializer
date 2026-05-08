@@ -25,10 +25,10 @@ See: .planning/PROJECT.md (updated 2026-04-03)
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: Phase 42 (planning)
 Plan: —
-Status: Defining requirements
-Last activity: 2026-05-08 — Milestone v0.6.0 started
+Status: Roadmap created — v0.6.0 has 3 phases (42, 43, 44) with 26 requirements mapped (Phase 42: 10, Phase 43: 10, Phase 44: 6); awaiting plan decomposition for Phase 42
+Last activity: 2026-05-08 — v0.6.0 roadmap drafted, requirements traceability filled
 
 ## Recent Session — 2026-04-17 Autonomous Baseline Test
 

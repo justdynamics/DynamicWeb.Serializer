@@ -9,6 +9,7 @@
 - [x] **v2.0 DynamicWeb.Serializer** - Phases 13-18 (shipped 2026-03-24)
 - [x] **v0.3.1 Internal Link Resolution** - Phases 19-22 (shipped 2026-04-03)
 - [ ] **v0.4.0 Full Page Fidelity** - Phases 23-25 (in progress)
+- [ ] **v0.6.0 Manifest-Driven Deserialize** - Phases 42-44 (planning)
 
 ## Phases
 
@@ -389,3 +390,62 @@ Plans:
 - Wave 1: 41-01 (RED tests; test files only, no production-code overlap with later plans)
 - Wave 2: 41-02 (renames + label cleanup + docs; touches SerializerSettingsNodeProvider, ItemTypeListScreen, ItemTypeEditScreen.GetScreenName ONLY, PredicateEditScreen labels ONLY, baseline doc)
 - Wave 3: 41-03 (substantive fixes; touches ItemTypeEditScreen.CreateFieldSelector + XmlTypeEditScreen + PredicateEditModel + SavePredicateCommand + PredicateByIndexQuery — overlap with 41-02 on ItemTypeEditScreen forces sequencing)
+
+### v0.6.0 Manifest-Driven Deserialize (Planning)
+
+**Milestone Goal:** Pivot serialize to lock all knowledge into the artifact (the `{mode}-manifest.json`); make deserialize execute purely from that data, with no `Serializer.config.json` consultation. Per-entry `Succeeded | Failed | Warned | Skipped` reporting replaces today's silent-skip-on-config-mismatch model.
+
+**Source research:** `.planning/research/SUMMARY.md` (HIGH confidence; STACK / FEATURES / ARCHITECTURE / PITFALLS reconciled to 3-phase decomposition). Settled constraints carried forward — entry hierarchy is 2 types (`ContentEntry`, `SqlTableEntry`) not 3 (per ARCHITECTURE option α); `excludeFieldsByItemType` and `excludeXmlElementsByType` baked into the `Manifest` envelope at serialize time (per SUMMARY settled question 1); strict-mode default sourced from entry-point + per-call request override (per PITFALLS §10 / SUMMARY settled question 2).
+
+**Phase summary:**
+
+- [ ] **Phase 42: Manifest schema + entry hierarchy + serialize-side build** — Purely additive on the serialize side; existing deserialize tests pass unchanged.
+- [ ] **Phase 43: Manifest-driven deserialize + per-entry reporting + command surface** — The pivot. Reads what Phase 42 wrote; drops `ConfigLoader.Load` and predicates parameter from the deserialize path; per-entry `EntryOutcome` replaces aggregate `DeserializeResults`.
+- [ ] **Phase 44: Zip-import convergence + test cleanup + schedule-task removal + live E2E** — Cleanup behind Phase 43. Zip-import routes through shared `BuildContentEntryForArea`; Layer B test port; `[Obsolete]` overload removal; schedule-task removal; live E2E re-validation against Swift 2.2 → CleanDB and DAP/pim.carriageservices under `strictMode: true`.
+
+### Phase 42: Manifest schema + entry hierarchy + serialize-side build
+**Goal**: Serialize emits a versioned, polymorphic `entries[]` manifest carrying everything the deserialize path will need (no deserialize-side change yet).
+**Depends on**: Phase 41 (Admin-UI polish complete; v0.5.0 baseline shipped)
+**Requirements**: MANIFEST-01, MANIFEST-02, MANIFEST-03, MANIFEST-04, MANIFEST-05, PROVIDER-01, PROVIDER-02, PROVIDER-03, PROVIDER-04, PROVIDER-05
+**Success Criteria** (what must be TRUE):
+  1. Running `serialize` against the Swift 2.2 baseline writes `{deploy,seed}-manifest.json` files containing a top-level `schemaVersion`, `mode`, `writtenAtUtc`, `complete: true` sentinel, top-level `excludeFieldsByItemType` + `excludeXmlElementsByType` maps, and a polymorphic `entries[]` array discriminated by `providerType` (`Content` / `SqlTable`).
+  2. A killed-mid-write serialize (process killed between temp-write and rename) leaves the prior `{mode}-manifest.json` intact and readable; the half-written `*.tmp` is the only byproduct on disk.
+  3. Reading a manifest with an unknown property, missing `required` field, missing discriminator, or torn (no `complete: true`) shape fails at read time with a typed `JsonException` (or wrapping `InvalidOperationException`) naming the offending property — not a silent fall-through to defaults.
+  4. The full existing deserialize test suite (orchestrator + provider + integration + command tests) still passes unchanged at end of phase — Phase 42 ships zero behavioral change on the deserialize side.
+  5. A round-trip property test asserts every one of the eight predicate fields that affect deserialize behavior (`ServiceCaches`, `SchemaSync`, `XmlColumns`, `ExcludeFields`, `ExcludeXmlElements`, `ExcludeAreaColumns`, `ResolveLinksInColumns`, `AcknowledgedOrphanPageIds`) survives `predicate → BuildManifestEntry → JSON → ManifestEntry` with no field loss for both `ContentProvider` and `SqlTableProvider`.
+  6. Inspecting either manifest with a JSON viewer shows the discriminator (`providerType`) at position 0 of every entry object; hand-reordering the discriminator below another property in a fixture and re-reading still produces a typed error rather than `NotSupportedException`.
+**Plans:** TBD
+
+### Phase 43: Manifest-driven deserialize + per-entry reporting + command surface
+**Goal**: Deserialize executes purely from the manifest with caller-supplied runtime params; per-entry `EntryOutcome` replaces aggregate `DeserializeResults`; `ConfigLoader.Load` no longer appears anywhere on the deserialize path.
+**Depends on**: Phase 42 (Phase 43 reads what Phase 42 writes)
+**Requirements**: DESER-01, DESER-02, DESER-03, DESER-04, DESER-05, REPORT-01, REPORT-02, REPORT-03, REPORT-04, REPORT-05
+**Success Criteria** (what must be TRUE):
+  1. `SerializerOrchestrator.DeserializeAll(modeRoot, mode, strategy, dryRun, providerFilter, escalator, ...)` accepts no `predicates` parameter; given a Phase-42-written manifest plus caller-supplied runtime args, it dispatches each entry to its provider and returns an `OrchestratorResult` whose `EntryOutcomes` list has one entry per dispatched manifest entry.
+  2. Every `EntryOutcome` carries one of `EntryStatus.Succeeded | Failed | Warned | Skipped` (Skipped distinct from Succeeded), a human `Message`, per-entry `Errors[]`, `Warnings[]`, `Counts` (created/updated/skipped/failed), and `Duration`; an entry filtered out by `providerFilter` reports `Skipped` (not silently dropped).
+  3. `OrchestratorResult.HasErrors` returns `true` iff at least one `EntryOutcome.Status == Failed`, and the D-38-12 HTTP-status guard test (extended to cover entry-level failure shapes) confirms the API returns HTTP 200 only when zero entries failed and HTTP 4xx on any entry-level Failed — even when no run-level error was thrown.
+  4. `SerializerDeserializeCommand`, `DeserializeFromZipCommand`, and every other deserialize entry point compile and pass tests with zero references to `ConfigLoader.Load` (verified by repository-wide grep at end of phase); strict-mode default is sourced from `StrictModeResolver.Resolve(entryPoint, configValue: null, requestValue)` and a one-time WARNING fires when `config.StrictMode` is set but no longer consulted.
+  5. The admin-UI log viewer (`Files/System/Serializer/Log/`) shows one log line per entry tagged with the `EntryId` (e.g. `[content/area-1/customer-center] Succeeded`, `[sql/EcomOrderFlow] Failed: 3 of 47 rows failed FK validation`) for every deserialize run, observable without re-running.
+  6. FK ordering and Content-before-SqlTable reorder rules operate on the live `entries[]` list (not trusting manifest order); shuffling the manifest entry array in a test fixture produces the same dispatch order as the unshuffled fixture (`FkDependencyResolver` reused unchanged).
+**Plans:** TBD
+
+### Phase 44: Zip-import convergence + test cleanup + schedule-task removal + live E2E
+**Goal**: All deserialize entry points (full deserialize, zip-import) converge on shared entry-builder helpers; predicate-fixture test debt cleared; `[Obsolete]` overloads + schedule-task code paths removed; live E2E re-validation under `strictMode: true`.
+**Depends on**: Phase 43 (zip-import convergence depends on the stable `DeserializeAll(manifest,...)` surface)
+**Requirements**: CONVERGE-01, CONVERGE-02, CONVERGE-03, CONVERGE-04, CONVERGE-05, CONVERGE-06
+**Success Criteria** (what must be TRUE):
+  1. `DeserializeFromZipCommand` builds an in-memory `Manifest` via shared `BuildContentEntryForArea` and runs through `SerializerOrchestrator.DeserializeAll` (no separate `ContentDeserializer` direct-call code path); a zip-import test under `strictMode: true` honors strict mode (today's bypass closed).
+  2. Repository grep at end of phase finds zero references to predicate-fixture types in `ContentProviderTests`, `SqlTableProviderDeserializeTests`, `SqlTableProviderSeedMergeTests`, `SqlTableLinkResolutionIntegrationTests`, `SerializerDeserializeCommandTests`, `SerializerSerializeCommandTests`, and `StrictModeIntegrationTests`; the transitional `ToPredicate(Entry)` test-helper shim is removed.
+  3. The two `[Obsolete]` `SerializeAll` / `DeserializeAll` overloads on `SerializerOrchestrator` are deleted; remaining schedule-task code paths (already in PROJECT.md Active list) are removed; `git grep` confirms.
+  4. A live Swift 2.2 → CleanDB round-trip via `tools/e2e/full-clean-roundtrip.ps1` under `strictMode: true` returns HTTP 200 on all four API calls (serialize deploy/seed, deserialize deploy/seed) and `EcomProducts` source-vs-target row count matches (2051 → 2051).
+  5. A live deploy of the DAP / `pim.carriageservices` baseline under `strictMode: true` returns HTTP 200 on serialize + deserialize and produces a per-entry log report with zero `Failed` outcomes.
+  6. Full solution build + test run is green; no regressions surface in the existing Phase 41 admin-UI suite or the Phase 39 seed-merge suite.
+**Plans:** TBD
+
+**Execution waves** (for /gsd-execute-phase):
+- Wave 1: Phase 42 (foundation — purely additive on serialize side; no Phase 43/44 work can begin until v2 manifest shape stabilizes on disk)
+- Wave 2: Phase 43 (depends_on: [42] — reads what Phase 42 writes; pivot lands together with public-API reshape, command-surface change, strict-mode location decision)
+- Wave 3: Phase 44 (depends_on: [42, 43] — zip-import convergence + Layer B test port + obsolete-overload removal + schedule-task removal + live E2E gate)
+
+Phases v0.6.0 are **strictly sequential** per research SUMMARY.md ("Phase 2 reads what Phase 1 wrote — atomic-write + schema-version + entry shape on disk before reader is testable... Test-coverage ratchet: round-trip property test (Phase 1) → orchestrator unit tests on entry fixtures (Phase 2) → bulk integration test port (Phase 3). No big-bang.") — do NOT parallelize.
+
