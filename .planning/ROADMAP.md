@@ -414,7 +414,19 @@ Plans:
   4. The full existing deserialize test suite (orchestrator + provider + integration + command tests) still passes unchanged at end of phase — Phase 42 ships zero behavioral change on the deserialize side.
   5. A round-trip property test asserts every one of the eight predicate fields that affect deserialize behavior (`ServiceCaches`, `SchemaSync`, `XmlColumns`, `ExcludeFields`, `ExcludeXmlElements`, `ExcludeAreaColumns`, `ResolveLinksInColumns`, `AcknowledgedOrphanPageIds`) survives `predicate → BuildManifestEntry → JSON → ManifestEntry` with no field loss for both `ContentProvider` and `SqlTableProvider`.
   6. Inspecting either manifest with a JSON viewer shows the discriminator (`providerType`) at position 0 of every entry object; hand-reordering the discriminator below another property in a fixture and re-reading still produces a typed error rather than `NotSupportedException`.
-**Plans:** TBD
+**Plans:** 4 plans
+Plans:
+**Wave 1**
+- [ ] 42-01-PLAN.md - Manifest envelope + polymorphic entry hierarchy + STJ strict-mode wiring + schemaVersion-gate tests (MANIFEST-01, MANIFEST-02, MANIFEST-03, MANIFEST-05)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+- [ ] 42-02-PLAN.md - Atomic temp+rename ManifestWriter rewrite + complete-sentinel + ManifestCleaner .tmp preservation + tests rewrite (MANIFEST-01, MANIFEST-04)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+- [ ] 42-03-PLAN.md - BuildManifestEntry per provider + SerializeResult.Entry + envelope-level by-ItemType exclusion baking + orchestrator wiring + [Obsolete] shim removal (PROVIDER-01, PROVIDER-02, PROVIDER-03, PROVIDER-04, MANIFEST-05)
+
+**Wave 4** *(blocked on Wave 3 completion)*
+- [ ] 42-04-PLAN.md - 8-field x 2-provider round-trip property test + SC-6 discriminator-reorder defense + full-suite green gate (PROVIDER-05)
 
 ### Phase 43: Manifest-driven deserialize + per-entry reporting + command surface
 **Goal**: Deserialize executes purely from the manifest with caller-supplied runtime params; per-entry `EntryOutcome` replaces aggregate `DeserializeResults`; `ConfigLoader.Load` no longer appears anywhere on the deserialize path.
