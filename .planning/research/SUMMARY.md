@@ -1,89 +1,133 @@
-# Research Summary: Full Page Fidelity (v0.4.0)
+# Project Research Summary — v0.6.0 Manifest-Driven Deserialize
 
-**Domain:** DynamicWeb 10 page-level content serialization completeness
-**Researched:** 2026-04-02 (updated with DLL decompilation verification)
-**Overall confidence:** HIGH
+**Project:** DynamicWeb.Serializer
+**Domain:** Self-describing apply-pipeline artifact (Liquibase / Terraform-plan family) over a pluggable provider architecture
+**Researched:** 2026-05-08
+**Confidence:** HIGH
 
 ## Executive Summary
 
-Decompilation of the DW 10.23.9 DLL confirms that all ~30 missing page properties have public getters and setters on the `Page` class, and `SavePage` persists every one of them through inline SQL INSERT/UPDATE statements. No special API calls are needed for any of the missing properties -- they all flow through the same `SavePage` codepath.
+v0.6.0 pivots `SerializerOrchestrator.DeserializeAll` from a config-driven dispatcher to a manifest-driven one. The four researchers converge on a single shape: the `{mode}-manifest.json` becomes a versioned, polymorphic `entries[]` artifact where each entry carries everything the deserialize path needs (`providerType`, target identifiers, post-processing hints, owned files), the deserialize path stops calling `ConfigLoader.Load`, and per-entry `Succeeded | Failed | Warned | Skipped` outcomes replace today's silent-skip-on-config-mismatch model. Closest reference shapes are Terraform's plan file and Liquibase's changelog; Sitecore Unicorn — our cultural reference — is explicitly NOT manifest-driven on apply, and we are pivoting away from that model.
 
-The most important finding is the **timestamp mechanism**: `Page` inherits from `Entity<int>` which has an `Audit` property of type `AuditedEntity`. The `Page()` public constructor always sets `Audit = new AuditedEntity(DateTime.Now, userId)`, meaning new pages get current timestamps. The `internal` constructor accepts a custom `AuditedEntity` but is not accessible. The only way to preserve original timestamps on INSERT is a post-save direct SQL UPDATE using `Dynamicweb.Data.Database.ExecuteNonQuery()`, a pattern already established in our `SqlTableProvider`.
+The recommended stack is **zero new NuGet dependencies**: `[JsonPolymorphic]` + `[JsonDerivedType]` for the entry hierarchy, `[JsonUnmappedMemberHandling(Disallow)]` plus the C# `required` keyword for strict reads, and a 10-line `JsonDocument` precheck for the `schemaVersion` gate. NJsonSchema and JsonSchema.Net both rejected — the manifest is producer-controlled and native STJ already throws targeted errors on unknown property / missing required / unknown discriminator. See STACK.md.
 
-`PageNavigationSettings` is confirmed as **inline columns on the Page table**, not a separate entity. `PageRepository.UpdatePage()` calls `AddNavigationSettingsUpdateStatement()` which writes 8 `PageNavigation*` columns in the same UPDATE statement. On read, `PageRowExtractor.ExtractPage()` only creates the `NavigationSettings` object when `PageNavigation_UseEcomGroups` is true.
-
-Area ItemType fields use the standard `Item.SerializeTo()`/`Item.DeserializeFrom()` pattern, same as page items. The `Area` class exposes `ItemType`, `ItemId`, and `Item` as public properties.
-
-The DTO should use **sub-objects for logical groupings** (SEO, URL settings, visibility, navigation settings, audit) to keep YAML clean, while keeping simple standalone properties flat on SerializedPage.
+The dominant risk class is **silent-skip via lost metadata in `BuildManifestEntry`**: the predicate today exposes eight fields the orchestrator consults at deserialize (`ServiceCaches`, `SchemaSync`, `XmlColumns`, `ExcludeFields`, `ExcludeXmlElements`, `ExcludeAreaColumns`, `ResolveLinksInColumns`, `AcknowledgedOrphanPageIds`). If any are forgotten in the entry-builder, the deserializer loses post-processing without warning — the same shape as the v0.4.x cache-invalidator bug. Mandatory defense: per-field round-trip property test landing **in the same phase that introduces the contract**.
 
 ## Key Findings
 
-**Stack:** No new dependencies. All APIs exist in `Dynamicweb 10.23.9` NuGet. Direct SQL via `Dynamicweb.Data.Database` for timestamp preservation.
-**Architecture:** Extend existing ContentMapper/ContentDeserializer. Sub-object DTOs for grouping. Post-save SQL for timestamps. Extend SerializedArea for item fields.
-**Critical pitfall:** `new Page()` always sets timestamps to DateTime.Now; must use direct SQL post-save to restore originals. Boolean defaults (Allowclick=true, etc.) must be set as init defaults on DTO to avoid breaking old YAML files.
+### Recommended Stack
+No new dependencies. Reuse `ManifestWriter.ManifestJsonOptions` as the canonical options bag — extend with `UnmappedMemberHandling.Disallow`, no parallel options bag.
+
+- `System.Text.Json` 8.x — manifest read/write
+- `[JsonPolymorphic]` + `[JsonDerivedType]` — entry hierarchy dispatch with `IgnoreUnrecognizedTypeDiscriminators=false`
+- `[JsonUnmappedMemberHandling(Disallow)]` + C# `required` — strict-reads
+- Hand-rolled `JsonDocument` precheck for `schemaVersion` — fail-fast version gate
+
+**Rejected:** NJsonSchema, JsonSchema.Net, Newtonsoft `TypeNameHandling`, FluentMigrator-style migration framework, `IManifestStore`/`IEntryDispatcher` abstractions.
+
+### Expected Features
+**Must have:** `providerType` discriminator, stable `entryId`, typed target sub-record (Content `areaId`+`pageId`; SqlTable `table`+`nameColumn`), POSIX-relative `files[]`, `mode`+`writtenAtUtc`+`schemaVersion` envelope, per-entry `postProcessing` (`ServiceCaches`/`SchemaSync`/`ResolveLinksInColumns` — parity, not differentiator), 4-valued `EntryStatus { Succeeded | Failed | Warned | Skipped }`.
+
+**Defer past v0.6.0:** per-entry checksum, per-entry conflict-strategy override, hand-edit fallback marker, manifest-level `dependencies[]`, per-entry `dependsOn[]` topo sort (P1 if budget allows, otherwise P2).
+
+**Anti-features (caller-supplied, NOT in manifest):** `dryRun`, `strictMode`, `providerFilter`, run-wide `conflictStrategy`. Same artifact applied lenient to dev / strict to prod.
+
+### Architecture Approach
+**Reality check:** `EmbeddedXmlProvider` does NOT exist in code (verified by Glob/Grep). Embedded XML is a per-column branch inside `SqlTableProvider` (`XmlColumns` + `XmlMergeHelper`). **Recommendation: option (α) — entry hierarchy is `ContentEntry` + `SqlTableEntry` only.** Embedded XML stays a field on `SqlTableEntry`. Carving out a third provider is v0.7.0 scope.
+
+**Major components:**
+1. `Manifest` envelope record (`schemaVersion=2`, hard-cut, no migration story per `feedback_no_backcompat.md`)
+2. `ManifestEntry` polymorphic hierarchy — abstract record + sealed `ContentEntry`/`SqlTableEntry`
+3. `SerializeResult.Entry` (additive nullable) populated via new `protected abstract BuildManifestEntry(predicate, modeRoot, writtenFiles)` on `SerializationProviderBase`
+4. `SerializerOrchestrator.DeserializeAll(modeRoot, mode, strategy, dryRun, providerFilter, escalator, ...)` — predicates parameter goes away; reads manifest first; existing FK + LINK-02 reorder applied to entries
+5. `EntryOutcome` + `OrchestratorResult.EntryOutcomes` — replaces `DeserializeResults`. `ProviderDeserializeResult` survives as the per-provider DTO feeding `EntryOutcome.From(...)`. `HasErrors` aggregates from outcomes (single source of truth for HTTP-status invariant)
+
+**Anti-patterns refused:** `IManifestStore` interface, `IEntryDispatcher` extraction, visitor pattern, bidirectional manifest evolution.
+
+### Critical Pitfalls
+1. **Lost post-processing metadata** (PITFALLS §2) — 8-vector silent-skip class. Defense: per-field round-trip property test in the SAME phase that ships `BuildManifestEntry`.
+2. **Torn manifest from crashed serialize** (§1) — `File.WriteAllText` is not atomic on Windows. Defense: temp-file + `File.Move(overwrite: true)` + `"complete": true` sentinel.
+3. **STJ polymorphism discriminator-property fragility** (§4) — discriminator must be position-0, case-sensitive, can't be `[Required]`. Defense: pin via `Utf8JsonWriter` ordering + round-trip test with hand-edited reorder.
+4. **Per-entry reporting aggregates wrong** (§9) — naive reshape returns HTTP 200 on entry-level failure. Defense: `HasErrors = entries.Any(e => e.Outcome is Failed)`, extend D-38-12 guard test.
+5. **DeserializeFromZipCommand drift** (§7) — must converge on shared `BuildContentEntryForArea` builder.
+6. **Test churn hides regressions** (§8) — defense: ratchet-style port (Layer A in pivot phase, Layer B in cleanup phase) with transitional `Predicate ToPredicate(Entry)` test-helper shim.
 
 ## Implications for Roadmap
 
-Based on research, suggested phase structure:
+### Phase Decomposition: 3 Phases (reconciliation)
 
-1. **DTO + Mapper Extension** - Create sub-record types, extend SerializedPage with ~30 properties, extend ContentMapper
-   - Addresses: All missing page properties (SEO, visibility, URL, navigation tag, etc.)
-   - Avoids: Pitfall 10 (boolean defaults) by setting correct init defaults
+Architecture researcher recommended **2 phases**; pitfalls researcher recommended **5–6 phases**. **Recommendation: 3.** Reconciliation: pitfalls' 5–6 includes deferred features (drift detection / migration upgrader) that are explicitly track-but-defer per FEATURES Tier B and PITFALLS §3 — they belong in v0.6.x or v0.7.0. That collapses to 3. Architecture's 2-phase undercounts zip-import + full test cleanup, which carry meaningful surface area.
 
-2. **Deserializer Extension** - Extend ContentDeserializer INSERT and UPDATE paths to write all new properties
-   - Addresses: Full round-trip for all page properties
-   - Avoids: Pitfall 9 (null vs empty) with consistent normalization
+#### Phase 1 — Manifest Schema + Entry Hierarchy + Serialize-Side Build
+**Rationale:** Purely additive on the serialize side; end-of-phase test is "serialize emits new manifest, all existing deserialize tests pass unchanged."
+**Delivers:** `Manifest` envelope (schemaVersion=2, complete sentinel, atomic write), polymorphic `ManifestEntry`/`ContentEntry`/`SqlTableEntry`, `[JsonUnmappedMemberHandling(Disallow)]`+`required` everywhere, `SerializeResult.Entry`, `BuildManifestEntry` per provider, `ManifestWriter`/`ManifestCleaner` rewrite, `ExcludeFieldsByItemType`/`ExcludeXmlElementsByType` baked into envelope at serialize time, **mandatory 8-field round-trip property test**, `ManifestWriterTests`/`ManifestCleanerTests`.
+**Avoids:** Pitfalls 1, 2, 3, 4.
 
-3. **NavigationSettings + ShortCut** - Serialize PageNavigationSettings object, extend link resolution for ShortCut and ProductPage
-   - Addresses: Ecommerce navigation config, page redirects
-   - Avoids: Pitfall 2, 3 (internal links in ShortCut and ProductPage)
+#### Phase 2 — Manifest-Driven Deserialize + Per-Entry Reporting + Command Surface
+**Rationale:** Reads what Phase 1 wrote. Pivot, public-API reshape, command-surface change, strict-mode location decision all land together — splitting creates re-touch churn on every API/CLI/AdminUI test.
+**Delivers:** New `DeserializeAll` signature (no predicates parameter), `ISerializationProvider.Deserialize(ManifestEntry, ...)`, `ValidatePredicate` removed, `EntryOutcome`+`EntryStatus`+`ProviderCounts`, `OrchestratorResult.EntryOutcomes`, strict-mode escalator captures per-entry warnings, `SerializerDeserializeCommand` drops `ConfigLoader.Load`, Layer A test port (~30 orchestrator unit tests), strict-mode resolver wired entry-point-default + per-call request override + one-time WARNING when `config.StrictMode` set, HTTP status invariant guard test extension.
+**Avoids:** Pitfalls 6, 9, 10.
 
-4. **Timestamp Preservation** - Direct SQL for CreatedDate/UpdatedDate/CreatedBy/UpdatedBy after SavePage
-   - Addresses: Audit trail, content age tracking
-   - Avoids: Pitfall 1 (Page constructor overwriting timestamps)
+#### Phase 3 — Zip-Import Convergence + Test Cleanup + Schedule-Task Removal
+**Rationale:** Zip-import convergence must come *after* Phase 2 stabilizes the orchestrator surface. Layer B test cleanup ratchets behind proven-correct Phase 2 layer-A coverage.
+**Delivers:** Shared `BuildContentEntryForArea` builder, `DeserializeFromZipCommand` rewritten via in-memory `Manifest`, Layer B test port (`SqlTableProviderDeserializeTests`, `SqlTableProviderSeedMergeTests`, `SqlTableLinkResolutionIntegrationTests`, `ContentProviderTests`, `SerializerDeserializeCommandTests`, `SerializerSerializeCommandTests`, `StrictModeIntegrationTests`), shim removal, `[Obsolete]` overload removal, schedule-task removal (already in PROJECT.md Active list), Swift 2.2 baseline E2E re-validation + DAP/pim.carriageservices live deploy.
+**Avoids:** Pitfalls 7, 8.
 
-5. **Area ItemType Fields** - Extend SerializedArea with ItemType + ItemFields, include in link resolution
-   - Addresses: Header/footer/master page connections
-   - Avoids: Pitfall 4, 8 (page ID refs, null item)
+### Phase Ordering Rationale
+- Phase 2 reads what Phase 1 writes — atomic-write + schema-version + entry shape on disk before reader is testable.
+- Test-coverage ratchet: round-trip property test (Phase 1) → orchestrator unit tests on entry fixtures (Phase 2) → bulk integration test port (Phase 3). No big-bang.
+- Zip-import last because it benefits from stable `BuildContentEntryForArea` (Phase 1) + stable `DeserializeAll(manifest,...)` (Phase 2).
 
-6. **EcomProductGroupField Schema** - Ensure UpdateTable is called during field deserialization
-   - Addresses: Custom column existence before data import
-   - Avoids: Pitfall 5 (column not found errors)
+### Research Flags
+**Needs research (`/gsd-research-phase`):**
+- **Phase 2** — STJ polymorphism quirks at discriminator-property level (dotnet/runtime #78338, #110248, #118786). 30-min spike to confirm writer pins position-0 deterministically and reader handles non-zero position with typed error not `NotSupportedException`.
+- **Phase 3** — zip-import path with strict-mode escalator. Today zip bypasses strict-mode entirely; verify in-memory-`Manifest` route makes strict mode work transparently.
 
-**Phase ordering rationale:**
-- Phases 1-2 are the core work (DTO + mapper + deserializer) with no external dependencies
-- Phase 3 depends on InternalLinkResolver (already exists) and benefits from phase 2 being done
-- Phase 4 is independent but logically follows after the save pipeline is complete
-- Phase 5 extends SerializedArea (different part of pipeline, can be done in parallel with 3-4)
-- Phase 6 is SqlTableProvider concern, orthogonal to content pipeline
-
-**Research flags for phases:**
-- Phases 1-2: Standard pattern, well-understood -- no research needed
-- Phase 3: RESOLVED -- NavigationSettings saves inline via SavePage (verified by decompilation)
-- Phase 4: RESOLVED -- `Dynamicweb.Data.Database.ExecuteNonQuery(CommandBuilder)` confirmed available (used by SqlTableProvider already)
-- Phase 5: RESOLVED -- Area.Item uses same SerializeTo/DeserializeFrom pattern as page items
-- Phase 6: Still needs verification of `ProductGroupFieldRepository.UpdateTable` behavior
+**Standard patterns (skip research):**
+- **Phase 1** — schema definition, atomic-write/temp-file/rename, polymorphic record hierarchy. All well-trodden, MS Learn-documented.
 
 ## Confidence Assessment
 
 | Area | Confidence | Notes |
 |------|------------|-------|
-| Page properties | HIGH | Verified all properties via DLL decompilation of Page class |
-| NavigationSettings | HIGH | Verified inline SQL, PageRowExtractor, AddNavigationSettingsUpdateStatement |
-| Area ItemType | HIGH | Verified Area.ItemType/ItemId/Item properties via decompilation |
-| Timestamps | HIGH | Verified AuditedEntity, Page constructors, PageRepository.InsertPage/UpdatePage |
-| Save order | HIGH | Verified PageRepository.Save, SavePage, and audit writing |
-| EcomProductGroupField | MEDIUM | API exists per XML docs but UpdateTable behavior not decompiled |
+| Stack | HIGH | MS Learn docs verified 2025-12-04 / 2025-01-15; existing reuse points verified by file read |
+| Features | MEDIUM-HIGH | Liquibase/Terraform/Pulumi/Helm/DbUp/FluentMigrator current docs verified; Octopus weighted lower |
+| Architecture | HIGH | Grounded in current code; `EmbeddedXmlProvider` non-existence verified by Glob+Grep |
+| Pitfalls | HIGH | Internal incident history (Phase 37 cache-invalidator, FINDINGS F-04/F-10); STJ quirks from open dotnet/runtime issues |
 
-## Gaps Resolved (from prior research)
+**Overall confidence:** HIGH
 
-- **ShortCutRedirect:** The `PageShortCutRedirect` DB column is always written as `true` in `PageRepository.UpdatePage()`. It is NOT exposed as a Page property. DW hardcodes it to `true`. No action needed.
-- **NavigationSettings save behavior:** Confirmed working -- `SavePage` writes NavigationSettings inline when not null.
-- **Dynamicweb.Data.Database API:** Confirmed via existing `DwSqlExecutor` in SqlTableProvider.
-- **ItemService for Area items:** Uses same `Item.SerializeTo()`/`Item.DeserializeFrom()` + `Item.Save()` pattern.
+### Settled Open Questions (from milestone brief — recommendations, not just listed)
 
-## Remaining Gaps
+1. **`ExcludeFieldsByItemType` / `ExcludeXmlElementsByType` location?** **Bake into `Manifest` envelope at serialize time** (top-level, not per-entry). They affect on-disk artifact shape, so they're properly part of the artifact. This is what cleanly removes `ConfigLoader.Load` from `SerializerDeserializeCommand`. Per ARCHITECTURE §5.
+2. **Strict mode default location?** **Option (a): entry-point default + per-call request override; drop config consultation entirely.** Per PITFALLS §10. `StrictModeResolver.Resolve(entryPoint, configValue: null, requestValue)` already supports this. Cost: surface a one-time WARNING when `config.StrictMode` is set but no longer consulted on deserialize.
+3. **Phase decomposition (architecture said 2, pitfalls said 5–6)?** **3 phases**, per reconciliation above.
 
-- **NavigationSettings.Groups cross-env:** Group IDs in NavigationSettings may differ between environments. Out of scope for v0.4.0. Document as known limitation.
-- **Audit.CreatedBy/LastModifiedBy cross-env:** User IDs are environment-specific. Serialize as-is, accept this limitation.
-- **DisplayMode enum:** Should serialize as string name for readability. Minor enhancement.
+### Open Questions Remaining for Roadmapper / Discuss-Phase
+
+- **`EntryStatus.Skipped` exact semantics:** providerFilter excluded? `dependsOn` upstream failed? dry-run? Decide before Phase 2 to keep `EntryOutcome.From(...)` consistent across providers.
+- **`complete: true` sentinel position vs discriminator position-0:** envelope-level vs entry-level so they don't conflict, but writer order needs explicit confirmation in Phase 1.
+- **`EntryId` derivation rule** (`"content/area-{p.AreaId}{p.Path}"` / `"sql/{p.Table}"`): verify uniqueness across the full Swift 2.2 baseline (~30 predicates) before locking — whole-area predicates may collide on path-based ids.
+- **Embedded XML follow-up timing:** option (β) carving out `EmbeddedXmlProvider` is deferred. Roadmapper decides if v0.7.0 picks it up immediately or it stays open until a third provider lands.
+
+## Sources
+
+### Primary (HIGH)
+- [STJ polymorphism — MS Learn](https://learn.microsoft.com/en-us/dotnet/standard/serialization/system-text-json/polymorphism)
+- [Handle unmapped members — MS Learn](https://learn.microsoft.com/en-us/dotnet/standard/serialization/system-text-json/missing-members)
+- Local files: `Infrastructure/ManifestWriter.cs`, `ManifestCleaner.cs`, `Providers/SerializerOrchestrator.cs`, `Providers/SerializationProviderBase.cs`, `ISerializationProvider.cs`, `SerializeResult.cs`, `Providers/Content/ContentProvider.cs`, `Providers/SqlTable/SqlTableProvider.cs`, `FkDependencyResolver.cs`, `Models/ProviderPredicateDefinition.cs`, `Configuration/ConfigLoader.cs`, `Infrastructure/StrictModeEscalator.cs`, `AdminUI/Commands/SerializerDeserializeCommand.cs`, `DeserializeFromZipCommand.cs`
+- Internal incident history: Phase 37 cache-invalidator silent-skip, baseline FINDINGS F-04/F-10
+- [Liquibase docs](https://docs.liquibase.com/) — apply-pipeline reference shape
+- [Terraform JSON output format](https://developer.hashicorp.com/terraform/internals/json-format) — self-describing artifact
+
+### Secondary (MEDIUM)
+- [dotnet/runtime#78338](https://github.com/dotnet/runtime/issues/78338), [#110248](https://github.com/dotnet/runtime/issues/110248), [#118786](https://github.com/dotnet/runtime/issues/118786)
+- [Pulumi state](https://www.pulumi.com/docs/iac/concepts/resources/names/), [Helm Charts](https://helm.sh/docs/topics/charts/)
+- [Sitecore Unicorn](https://github.com/SitecoreUnicorn/Unicorn) (cultural reference, NOT manifest-driven on apply)
+- [Atomic File Writes on Windows](https://antonymale.co.uk/windows-atomic-file-writes.html)
+
+### Detailed research files
+- `.planning/research/STACK.md`
+- `.planning/research/FEATURES.md`
+- `.planning/research/ARCHITECTURE.md`
+- `.planning/research/PITFALLS.md`
