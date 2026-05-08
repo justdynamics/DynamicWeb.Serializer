@@ -140,7 +140,37 @@ public class SqlTableProvider : SerializationProviderBase
         {
             RowsSerialized = rows.Count,
             TableName = metadata.TableName,
-            WrittenFiles = writtenFiles
+            WrittenFiles = writtenFiles,
+            Entry = BuildManifestEntry(predicate, outputRoot, writtenFiles)
+        };
+    }
+
+    /// <summary>
+    /// Phase 42-03 / PROVIDER-03: build a <see cref="SqlTableEntry"/> from the predicate that
+    /// drove the run. EntryId pattern: <c>"sql/{Table}"</c>. Carries every deserialize-affecting
+    /// SqlTable post-processing field (ServiceCaches, SchemaSync, ResolveLinksInColumns, XmlColumns)
+    /// — defends pitfall #2 silent-skip class. The 8-field round-trip property test in Plan 04
+    /// asserts no field is forgotten.
+    /// </summary>
+    public override ManifestEntry BuildManifestEntry(
+        ProviderPredicateDefinition predicate,
+        string modeRoot,
+        IReadOnlyList<string> writtenFiles)
+    {
+        return new SqlTableEntry
+        {
+            EntryId = $"sql/{predicate.Table}",
+            Files = writtenFiles
+                .Select(f => Path.GetRelativePath(modeRoot, f).Replace('\\', '/'))
+                .OrderBy(f => f, StringComparer.OrdinalIgnoreCase)
+                .ToList(),
+            Table = predicate.Table!,
+            NameColumn = predicate.NameColumn,
+            CompareColumns = predicate.CompareColumns,
+            XmlColumns = predicate.XmlColumns.ToList(),
+            ResolveLinksInColumns = predicate.ResolveLinksInColumns.ToList(),
+            ServiceCaches = predicate.ServiceCaches.ToList(),
+            SchemaSync = predicate.SchemaSync
         };
     }
 

@@ -85,7 +85,8 @@ public class ContentProvider : ISerializationProvider
             {
                 RowsSerialized = writtenFiles.Count,
                 TableName = "Content",
-                WrittenFiles = writtenFiles
+                WrittenFiles = writtenFiles,
+                Entry = BuildManifestEntry(predicate, outputRoot, writtenFiles)
             };
         }
         catch (Exception ex)
@@ -96,6 +97,53 @@ public class ContentProvider : ISerializationProvider
                 TableName = "Content",
                 Errors = new[] { ex.Message }
             };
+        }
+    }
+
+    /// <summary>
+    /// Phase 42-03 / PROVIDER-02: build a <see cref="ContentEntry"/> from the predicate that
+    /// drove the run + the absolute paths of every file the run emitted. The Files list is
+    /// POSIX-relativized under <paramref name="modeRoot"/> + sorted alphabetically for
+    /// determinism. EntryId pattern: <c>"content/area-{AreaId}{Path}"</c> with Path elided
+    /// when "/" — a whole-area predicate becomes <c>"content/area-1"</c>, a subtree predicate
+    /// at <c>/customer-center</c> becomes <c>"content/area-1/customer-center"</c>.
+    /// </summary>
+    public ManifestEntry BuildManifestEntry(
+        ProviderPredicateDefinition predicate,
+        string modeRoot,
+        IReadOnlyList<string> writtenFiles)
+    {
+        var entryPath = string.IsNullOrEmpty(predicate.Path) || predicate.Path == "/"
+            ? string.Empty
+            : (predicate.Path.StartsWith('/') ? predicate.Path : "/" + predicate.Path);
+
+        return new ContentEntry
+        {
+            EntryId = $"content/area-{predicate.AreaId}{entryPath}",
+            Files = writtenFiles
+                .Select(f => Path.GetRelativePath(modeRoot, f).Replace('\\', '/'))
+                .OrderBy(f => f, StringComparer.OrdinalIgnoreCase)
+                .ToList(),
+            AreaId = predicate.AreaId,
+            AreaName = ResolveAreaName(predicate.AreaId),
+            Path = string.IsNullOrEmpty(predicate.Path) ? "/" : predicate.Path,
+            PageId = predicate.PageId,
+            AcknowledgedOrphanPageIds = predicate.AcknowledgedOrphanPageIds.ToList(),
+            ExcludeAreaColumns = predicate.ExcludeAreaColumns.ToList()
+        };
+    }
+
+    /// <summary>Resolves DW Area name; falls back to "Area {id}" if DW infra is unavailable (test contexts).</summary>
+    private static string ResolveAreaName(int areaId)
+    {
+        try
+        {
+            var area = Services.Areas.GetArea(areaId);
+            return area?.Name ?? $"Area {areaId}";
+        }
+        catch
+        {
+            return $"Area {areaId}";
         }
     }
 
