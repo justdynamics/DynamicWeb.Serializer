@@ -18,8 +18,8 @@
 ### Provider entry build (PROVIDER)
 
 - [x] **PROVIDER-01**: `SerializationProviderBase.BuildManifestEntry(predicate, modeRoot, writtenFiles)` is the abstract contract every provider implements; runs as part of the existing `Serialize(...)` call (single pass)
-- [x] **PROVIDER-02**: `ContentProvider.BuildManifestEntry` produces a `ContentEntry` carrying `areaId`, `path`, `pageId`, owned `files[]`, post-processing hooks, and exclusion maps
-- [x] **PROVIDER-03**: `SqlTableProvider.BuildManifestEntry` produces a `SqlTableEntry` carrying `table`, `nameColumn`, `xmlColumns`, `where`, owned `files[]`, post-processing hooks (`serviceCaches`, `schemaSync`, `resolveLinksInColumns`), and exclusion fields (`excludeAreaColumns`, `acknowledgedOrphanPageIds`)
+- [x] **PROVIDER-02**: `ContentProvider.BuildManifestEntry` produces a `ContentEntry` carrying `areaId`, `areaName`, `path`, `pageId`, owned `files[]`, and the Content-only exclusion fields (`excludeAreaColumns`, `acknowledgedOrphanPageIds`). The two by-ItemType exclusion maps (`excludeFieldsByItemType`, `excludeXmlElementsByType`) are envelope-level, not entry-level
+- [x] **PROVIDER-03**: `SqlTableProvider.BuildManifestEntry` produces a `SqlTableEntry` carrying `table`, `nameColumn`, `compareColumns`, `xmlColumns`, owned `files[]`, and the SqlTable post-processing hooks (`serviceCaches`, `schemaSync`, `resolveLinksInColumns`)
 - [x] **PROVIDER-04**: `SerializeResult` exposes the produced `ManifestEntry?` alongside `WrittenFiles`; orchestrator collects entries from results and hands them to `ManifestWriter`
 - [x] **PROVIDER-05**: A round-trip property test asserts every one of the eight predicate fields that affect deserialize behavior (`ServiceCaches`, `SchemaSync`, `XmlColumns`, `ExcludeFields`, `ExcludeXmlElements`, `ExcludeAreaColumns`, `ResolveLinksInColumns`, `AcknowledgedOrphanPageIds`) survives the predicate → entry → manifest → entry trip with no loss
 
