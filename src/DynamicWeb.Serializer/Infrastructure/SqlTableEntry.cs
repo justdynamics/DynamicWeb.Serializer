@@ -13,6 +13,10 @@ namespace DynamicWeb.Serializer.Infrastructure;
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record SqlTableEntry : ManifestEntry
 {
+    /// <inheritdoc />
+    [JsonIgnore]
+    public override string ProviderType => "SqlTable";
+
     /// <summary>SQL table name (e.g. "EcomOrderFlow"). MUST be a valid identifier — Phase 37-03 SqlIdentifierValidator gate runs at config-load before the predicate becomes an entry.</summary>
     public required string Table { get; init; }
 

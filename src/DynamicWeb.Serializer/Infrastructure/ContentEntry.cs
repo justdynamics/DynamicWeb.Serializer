@@ -10,6 +10,10 @@ namespace DynamicWeb.Serializer.Infrastructure;
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record ContentEntry : ManifestEntry
 {
+    /// <inheritdoc />
+    [JsonIgnore]
+    public override string ProviderType => "Content";
+
     /// <summary>DW Area id this entry serializes.</summary>
     public required int AreaId { get; init; }
 
