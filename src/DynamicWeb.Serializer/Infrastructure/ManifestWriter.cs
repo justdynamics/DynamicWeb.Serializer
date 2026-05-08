@@ -99,22 +99,4 @@ public class ManifestWriter
 
         return manifest;
     }
-
-    /// <summary>
-    /// [Obsolete] Wave-2 compile bridge. The legacy flat-files Write signature kept temporarily
-    /// so <c>SerializerOrchestrator.SerializeAll</c> and <c>SerializerSerializeCommand</c> keep
-    /// compiling during Wave 2 of Phase 42. Plan 03 removes this overload and switches the
-    /// orchestrator to the entries-aware Write above. Behavior under the shim: writes a complete
-    /// manifest with zero entries and empty exclusion dicts — the orchestrator-side test suite
-    /// is not expected to consume manifest contents during Wave 2; Plan 03 lights up real entries.
-    /// </summary>
-    [Obsolete("Wave-2 compile shim — use Write(modeRoot, mode, IEnumerable<ManifestEntry>, ...) instead. Removed in Plan 42-03 Task 1.")]
-    public void Write(string modeRoot, string mode, IEnumerable<string> writtenFiles)
-    {
-        // Flat-files arg is ignored — Plan 03 will replace the call site with the entries-aware overload.
-        _ = writtenFiles;
-        Write(modeRoot, mode, Array.Empty<ManifestEntry>(),
-            excludeFieldsByItemType: null,
-            excludeXmlElementsByType: null);
-    }
 }
