@@ -399,7 +399,7 @@ Plans:
 
 **Phase summary:**
 
-- [ ] **Phase 42: Manifest schema + entry hierarchy + serialize-side build** — Purely additive on the serialize side; existing deserialize tests pass unchanged.
+- [x] **Phase 42: Manifest schema + entry hierarchy + serialize-side build** — Purely additive on the serialize side; existing deserialize tests pass unchanged. (completed 2026-05-08)
 - [ ] **Phase 43: Manifest-driven deserialize + per-entry reporting + command surface** — The pivot. Reads what Phase 42 wrote; drops `ConfigLoader.Load` and predicates parameter from the deserialize path; per-entry `EntryOutcome` replaces aggregate `DeserializeResults`.
 - [ ] **Phase 44: Zip-import convergence + test cleanup + schedule-task removal + live E2E** — Cleanup behind Phase 43. Zip-import routes through shared `BuildContentEntryForArea`; Layer B test port; `[Obsolete]` overload removal; schedule-task removal; live E2E re-validation against Swift 2.2 → CleanDB and DAP/pim.carriageservices under `strictMode: true`.
 
@@ -414,7 +414,7 @@ Plans:
   4. The full existing deserialize test suite (orchestrator + provider + integration + command tests) still passes unchanged at end of phase — Phase 42 ships zero behavioral change on the deserialize side.
   5. A round-trip property test asserts every one of the eight predicate fields that affect deserialize behavior (`ServiceCaches`, `SchemaSync`, `XmlColumns`, `ExcludeFields`, `ExcludeXmlElements`, `ExcludeAreaColumns`, `ResolveLinksInColumns`, `AcknowledgedOrphanPageIds`) survives `predicate → BuildManifestEntry → JSON → ManifestEntry` with no field loss for both `ContentProvider` and `SqlTableProvider`.
   6. Inspecting either manifest with a JSON viewer shows the discriminator (`providerType`) at position 0 of every entry object; hand-reordering the discriminator below another property in a fixture and re-reading still produces a typed error rather than `NotSupportedException`.
-**Plans:** 3/4 plans executed
+**Plans:** 4/4 plans complete
 Plans:
 **Wave 1**
 - [x] 42-01-PLAN.md - Manifest envelope + polymorphic entry hierarchy + STJ strict-mode wiring + schemaVersion-gate tests (MANIFEST-01, MANIFEST-02, MANIFEST-03, MANIFEST-05)
@@ -426,7 +426,7 @@ Plans:
 - [x] 42-03-PLAN.md - BuildManifestEntry per provider + SerializeResult.Entry + envelope-level by-ItemType exclusion baking + orchestrator wiring + [Obsolete] shim removal (PROVIDER-01, PROVIDER-02, PROVIDER-03, PROVIDER-04, MANIFEST-05)
 
 **Wave 4** *(blocked on Wave 3 completion)*
-- [ ] 42-04-PLAN.md - 8-field x 2-provider round-trip property test + SC-6 discriminator-reorder defense + full-suite green gate (PROVIDER-05)
+- [x] 42-04-PLAN.md - 8-field x 2-provider round-trip property test + SC-6 discriminator-reorder defense + full-suite green gate (PROVIDER-05)
 
 ### Phase 43: Manifest-driven deserialize + per-entry reporting + command surface
 **Goal**: Deserialize executes purely from the manifest with caller-supplied runtime params; per-entry `EntryOutcome` replaces aggregate `DeserializeResults`; `ConfigLoader.Load` no longer appears anywhere on the deserialize path.
