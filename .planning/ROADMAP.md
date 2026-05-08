@@ -400,7 +400,7 @@ Plans:
 **Phase summary:**
 
 - [x] **Phase 42: Manifest schema + entry hierarchy + serialize-side build** — Purely additive on the serialize side; existing deserialize tests pass unchanged. (completed 2026-05-08)
-- [ ] **Phase 43: Manifest-driven deserialize + per-entry reporting + command surface** — The pivot. Reads what Phase 42 wrote; drops `ConfigLoader.Load` and predicates parameter from the deserialize path; per-entry `EntryOutcome` replaces aggregate `DeserializeResults`.
+- [x] **Phase 43: Manifest-driven deserialize + per-entry reporting + command surface** — The pivot. Reads what Phase 42 wrote; drops `ConfigLoader.Load` and predicates parameter from the deserialize path; per-entry `EntryOutcome` replaces aggregate `DeserializeResults`. (completed 2026-05-08)
 - [ ] **Phase 44: Zip-import convergence + test cleanup + schedule-task removal + live E2E** — Cleanup behind Phase 43. Zip-import routes through shared `BuildContentEntryForArea`; Layer B test port; `[Obsolete]` overload removal; schedule-task removal; live E2E re-validation against Swift 2.2 → CleanDB and DAP/pim.carriageservices under `strictMode: true`.
 
 ### Phase 42: Manifest schema + entry hierarchy + serialize-side build

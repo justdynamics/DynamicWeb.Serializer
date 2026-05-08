@@ -9,19 +9,19 @@
 
 ### Manifest schema (MANIFEST)
 
-- [ ] **MANIFEST-01**: `{mode}-manifest.json` carries a versioned envelope (`schemaVersion`, `mode`, `writtenAtUtc`, `complete: true` sentinel, `entries[]`) that fail-fast errors when read by an incompatible version
-- [ ] **MANIFEST-02**: Manifest entries are polymorphic records discriminated by `providerType` (`ContentEntry`, `SqlTableEntry`); System.Text.Json `[JsonPolymorphic]` + `[JsonDerivedType]` with strict missing-discriminator failure
-- [ ] **MANIFEST-03**: Manifest read enforces strict shape — `[JsonUnmappedMemberHandling(Disallow)]` + `required` modifier — so torn or hand-edited manifests fail loudly at read time, not silently downstream
-- [ ] **MANIFEST-04**: Manifest write is atomic — temp file + `File.Move(overwrite: true)` + sentinel — so a crashed serialize never leaves a half-written manifest that the deserializer would partially trust
-- [ ] **MANIFEST-05**: Top-level `excludeFieldsByItemType` and `excludeXmlElementsByType` maps are baked into the manifest envelope at serialize time so deserialize does not need to read `Serializer.config.json`
+- [x] **MANIFEST-01**: `{mode}-manifest.json` carries a versioned envelope (`schemaVersion`, `mode`, `writtenAtUtc`, `complete: true` sentinel, `entries[]`) that fail-fast errors when read by an incompatible version
+- [x] **MANIFEST-02**: Manifest entries are polymorphic records discriminated by `providerType` (`ContentEntry`, `SqlTableEntry`); System.Text.Json `[JsonPolymorphic]` + `[JsonDerivedType]` with strict missing-discriminator failure
+- [x] **MANIFEST-03**: Manifest read enforces strict shape — `[JsonUnmappedMemberHandling(Disallow)]` + `required` modifier — so torn or hand-edited manifests fail loudly at read time, not silently downstream
+- [x] **MANIFEST-04**: Manifest write is atomic — temp file + `File.Move(overwrite: true)` + sentinel — so a crashed serialize never leaves a half-written manifest that the deserializer would partially trust
+- [x] **MANIFEST-05**: Top-level `excludeFieldsByItemType` and `excludeXmlElementsByType` maps are baked into the manifest envelope at serialize time so deserialize does not need to read `Serializer.config.json`
 
 ### Provider entry build (PROVIDER)
 
-- [ ] **PROVIDER-01**: `SerializationProviderBase.BuildManifestEntry(predicate, modeRoot, writtenFiles)` is the abstract contract every provider implements; runs as part of the existing `Serialize(...)` call (single pass)
-- [ ] **PROVIDER-02**: `ContentProvider.BuildManifestEntry` produces a `ContentEntry` carrying `areaId`, `path`, `pageId`, owned `files[]`, post-processing hooks, and exclusion maps
-- [ ] **PROVIDER-03**: `SqlTableProvider.BuildManifestEntry` produces a `SqlTableEntry` carrying `table`, `nameColumn`, `xmlColumns`, `where`, owned `files[]`, post-processing hooks (`serviceCaches`, `schemaSync`, `resolveLinksInColumns`), and exclusion fields (`excludeAreaColumns`, `acknowledgedOrphanPageIds`)
-- [ ] **PROVIDER-04**: `SerializeResult` exposes the produced `ManifestEntry?` alongside `WrittenFiles`; orchestrator collects entries from results and hands them to `ManifestWriter`
-- [ ] **PROVIDER-05**: A round-trip property test asserts every one of the eight predicate fields that affect deserialize behavior (`ServiceCaches`, `SchemaSync`, `XmlColumns`, `ExcludeFields`, `ExcludeXmlElements`, `ExcludeAreaColumns`, `ResolveLinksInColumns`, `AcknowledgedOrphanPageIds`) survives the predicate → entry → manifest → entry trip with no loss
+- [x] **PROVIDER-01**: `SerializationProviderBase.BuildManifestEntry(predicate, modeRoot, writtenFiles)` is the abstract contract every provider implements; runs as part of the existing `Serialize(...)` call (single pass)
+- [x] **PROVIDER-02**: `ContentProvider.BuildManifestEntry` produces a `ContentEntry` carrying `areaId`, `path`, `pageId`, owned `files[]`, post-processing hooks, and exclusion maps
+- [x] **PROVIDER-03**: `SqlTableProvider.BuildManifestEntry` produces a `SqlTableEntry` carrying `table`, `nameColumn`, `xmlColumns`, `where`, owned `files[]`, post-processing hooks (`serviceCaches`, `schemaSync`, `resolveLinksInColumns`), and exclusion fields (`excludeAreaColumns`, `acknowledgedOrphanPageIds`)
+- [x] **PROVIDER-04**: `SerializeResult` exposes the produced `ManifestEntry?` alongside `WrittenFiles`; orchestrator collects entries from results and hands them to `ManifestWriter`
+- [x] **PROVIDER-05**: A round-trip property test asserts every one of the eight predicate fields that affect deserialize behavior (`ServiceCaches`, `SchemaSync`, `XmlColumns`, `ExcludeFields`, `ExcludeXmlElements`, `ExcludeAreaColumns`, `ResolveLinksInColumns`, `AcknowledgedOrphanPageIds`) survives the predicate → entry → manifest → entry trip with no loss
 
 ### Deserialize pivot (DESER)
 
@@ -79,16 +79,16 @@ Empty until roadmap creation. Each requirement maps to exactly one phase.
 
 | REQ-ID | Phase | Status |
 |--------|-------|--------|
-| MANIFEST-01 | Phase 42 | Pending |
-| MANIFEST-02 | Phase 42 | Pending |
-| MANIFEST-03 | Phase 42 | Pending |
-| MANIFEST-04 | Phase 42 | Pending |
-| MANIFEST-05 | Phase 42 | Pending |
-| PROVIDER-01 | Phase 42 | Pending |
-| PROVIDER-02 | Phase 42 | Pending |
-| PROVIDER-03 | Phase 42 | Pending |
-| PROVIDER-04 | Phase 42 | Pending |
-| PROVIDER-05 | Phase 42 | Pending |
+| MANIFEST-01 | Phase 42 | Complete |
+| MANIFEST-02 | Phase 42 | Complete |
+| MANIFEST-03 | Phase 42 | Complete |
+| MANIFEST-04 | Phase 42 | Complete |
+| MANIFEST-05 | Phase 42 | Complete |
+| PROVIDER-01 | Phase 42 | Complete |
+| PROVIDER-02 | Phase 42 | Complete |
+| PROVIDER-03 | Phase 42 | Complete |
+| PROVIDER-04 | Phase 42 | Complete |
+| PROVIDER-05 | Phase 42 | Complete |
 | DESER-01 | Phase 43 | Pending |
 | DESER-02 | Phase 43 | Pending |
 | DESER-03 | Phase 43 | Pending |
