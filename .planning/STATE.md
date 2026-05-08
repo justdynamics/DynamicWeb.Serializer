@@ -1,17 +1,17 @@
 ---
 gsd_state_version: 1.0
-milestone: v0.4.0
-milestone_name: Full Page Fidelity
-status: executing
-stopped_at: Phase 41 context gathered
-last_updated: "2026-05-01T18:13:39.136Z"
-last_activity: 2026-05-01
+milestone: v0.6.0
+milestone_name: Manifest-Driven Deserialize
+status: planning
+stopped_at: ""
+last_updated: "2026-05-08T00:00:00.000Z"
+last_activity: 2026-05-08
 progress:
-  total_phases: 31
-  completed_phases: 30
-  total_plans: 76
-  completed_plans: 75
-  percent: 99
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-03)
 
 **Core value:** Developers can reliably move DynamicWeb database state between environments through source control, with serialized YAML files as the single source of truth.
-**Current focus:** Phase 41 — admin-ui-polish
+**Current focus:** v0.6.0 — defining requirements
 
 ## Current Position
 
-Phase: 41
-Plan: Not started
-Status: Executing Phase 41
-Last activity: 2026-05-01
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-05-08 — Milestone v0.6.0 started
 
 ## Recent Session — 2026-04-17 Autonomous Baseline Test
 

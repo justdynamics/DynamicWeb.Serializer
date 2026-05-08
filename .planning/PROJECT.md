@@ -8,16 +8,17 @@ A DynamicWeb AppStore app that serializes and deserializes database content to/f
 
 Developers can reliably move DynamicWeb database state between environments through source control, with serialized YAML files as the single source of truth.
 
-## Current Milestone: v0.4.0 Full Page Fidelity
+## Current Milestone: v0.6.0 Manifest-Driven Deserialize
 
-**Goal:** Serialize and deserialize ALL page-level settings, area ItemType connections, and ecommerce navigation configuration so that deserialized pages are functionally identical to the source.
+**Goal:** Pivot serialize to lock all knowledge into the artifacts on disk; make deserialize execute purely from that data (the manifest), with no config consultation. Per-item succeeded/failed/warned reporting replaces the current silent-skip-on-config-mismatch model.
 
 **Target features:**
-- Expand SerializedPage DTO with all ~30 missing page properties (NavigationTag, ShortCut, UrlName, UrlDataProvider, SEO meta, SSL, permissions, visibility, URL inheritance, etc.)
-- Serialize and deserialize PageNavigationSettings (ecommerce navigation config)
-- Serialize and deserialize Area-level ItemType fields (header/footer/master connections)
-- Handle EcomProductGroupField custom column schema sync
-- Preserve original page timestamps during deserialization
+- Upgrade `{mode}-manifest.json` from a flat file list to an entry-per-unit-of-work record (providerType + target identifiers + post-processing hooks)
+- Each provider builds its own manifest entry at serialize time (`BuildManifestEntry`)
+- `SerializerOrchestrator.DeserializeAll` reads the manifest, drops the predicates parameter, dispatches per-entry, and reports per-entry outcomes
+- Drop `config.Predicates` lookup, `provider.ValidatePredicate` calls, and `ConfigLoader.Load` from the deserialize path
+- Caller-supplied at deserialize time: mode (folder-implicit), conflictStrategy, strictMode, dryRun, providerFilter
+- Track-but-defer per-file override candidates: provider-type tiebreaker, per-entry conflict-strategy override, provenance/checksum, hand-edit fallback
 
 ## Requirements
 
@@ -67,11 +68,22 @@ Developers can reliably move DynamicWeb database state between environments thro
 - [x] Resolve internal page ID references (`Default.aspx?ID=NNN`) in ItemType fields during deserialization — v0.3.1
 - [x] Re-tag Git from v1.0/v2.0 to 0.x pre-release versioning — v0.3.1
 
-- [ ] Serialize all ~30 missing page properties (NavigationTag, ShortCut, UrlName, SEO, SSL, etc.) — v0.4.0
-- [ ] Serialize PageNavigationSettings (ecommerce navigation config per page) — v0.4.0
-- [ ] Serialize Area-level ItemType fields (header/footer/master connections) — v0.4.0
-- [ ] Handle EcomProductGroupField custom column schema sync — v0.4.0
-- [ ] Preserve original page timestamps during deserialization — v0.4.0
+- [x] Serialize all ~30 missing page properties (NavigationTag, ShortCut, UrlName, SEO, SSL, etc.) — v0.4.0 Phase 23
+- [x] Serialize PageNavigationSettings (ecommerce navigation config per page) — v0.4.0 Phase 23
+- [x] Serialize Area-level ItemType fields (header/footer/master connections) — v0.4.0 Phase 24
+- [x] Handle EcomProductGroupField custom column schema sync — v0.4.0 Phase 25
+- [ ] Preserve original page timestamps during deserialization — deferred (requires direct SQL post-save)
+
+- [x] Production-ready baseline (Deploy/Seed config split, schema tolerance, SQL identifier whitelist, strict mode, template manifest, cross-env link resolution) — v0.5.0 Phase 37
+- [x] Production-ready baseline hardening (E2E gaps, smoke tool, paragraph-anchor sweep) — v0.5.0 Phase 38 + 38.1
+- [x] Seed mode field-level merge (per-field merge for Content + SqlTable + XML payloads) — v0.5.0 Phase 39
+- [x] Per-predicate Deploy/Seed split (flat predicate list with `mode` field) — v0.5.0 Phase 40
+- [x] Admin-UI polish + cross-page consistency — v0.5.0 Phase 41
+
+- [ ] Manifest schema upgrade — entry-per-unit-of-work, provider builds Entry — v0.6.0
+- [ ] Deserialize reads manifest only — drop predicates parameter, drop config consultation on deserialize path — v0.6.0
+- [ ] Per-entry succeeded/failed/warned reporting in `OrchestratorResult` — v0.6.0
+- [ ] Caller-supplied runtime params (mode, conflictStrategy, strictMode, dryRun, providerFilter) — v0.6.0
 
 ### Out of Scope
 
@@ -174,6 +186,10 @@ This document evolves at phase transitions and milestone boundaries.
 - **v1.1 Robustness** — Multi-column paragraphs, dry-run, validation (2026-03-20)
 - **v1.2 Admin UI** — Settings screen, predicate management, serialize action, API commands (2026-03-22)
 - **v1.3 Permissions** — Permission serialization/deserialization with safety fallback (2026-03-23)
+- **v2.0 DynamicWeb.Serializer** — Pluggable provider architecture, SqlTableProvider, ecommerce tables (2026-03-24)
+- **v0.3.1 Internal Link Resolution** — Cross-environment page ID rewriting (2026-04-03)
+- **v0.4.0 Full Page Fidelity** — Phases 23-25: full page properties, area item types, ecom schema sync (2026-04-03)
+- **v0.5.0 Production-Ready Baseline** — Phases 37-41: Deploy/Seed split, strict mode, manifest cleanup, field-level merge, per-predicate mode, admin-UI polish (2026-05-01)
 
 ---
-*Last updated: 2026-05-01 — Phase 41 Admin-UI polish complete (D-01..D-13 plus inline gap closures D-14 "Embedded XML Excludes" rename and D-05/D-06 framework-binding fix promoting Excluded* model properties to List<string>). 821/821 unit tests passing.*
+*Last updated: 2026-05-08 — Milestone v0.6.0 Manifest-Driven Deserialize started. Pivot deserialize from config-driven to manifest-driven; serialize locks all knowledge into artifacts.*
