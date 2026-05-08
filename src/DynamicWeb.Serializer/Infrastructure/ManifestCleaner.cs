@@ -44,6 +44,12 @@ public class ManifestCleaner
             if (string.Equals(Path.GetFileName(file), manifestFileName, StringComparison.OrdinalIgnoreCase))
                 continue;
 
+            // Phase 42-02: also skip the atomic-write .tmp file. A leftover .tmp is the diagnostic
+            // signal of a torn prior run — DO NOT delete it during the cleaner sweep; the operator
+            // needs to see it. The next successful Write overwrites it via File.Move.
+            if (string.Equals(Path.GetFileName(file), manifestFileName + ".tmp", StringComparison.OrdinalIgnoreCase))
+                continue;
+
             var fullFile = Path.GetFullPath(file);
 
             // T-37-01-01: confine deletion to the resolved modeRoot subtree.

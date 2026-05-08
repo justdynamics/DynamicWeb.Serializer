@@ -112,6 +112,25 @@ public class ManifestCleanerTests : IDisposable
     }
 
     [Fact]
+    public void CleanStale_PreservesAtomicWriteTmpFile()
+    {
+        // Phase 42-02: a leftover {mode}-manifest.json.tmp is the diagnostic signal of a torn prior
+        // run. The cleaner MUST skip it during the sweep; the operator needs to see it.
+        var stale = CreateFile("stale.yml");
+        var manifestPath = Path.Combine(_tempDir, "deploy-manifest.json");
+        var tmpPath = manifestPath + ".tmp";
+        File.WriteAllText(manifestPath, "{\"mode\":\"deploy\"}");
+        File.WriteAllText(tmpPath, "{ TRUNCATED-PARTIAL-JSON-FROM-PRIOR-CRASH");
+
+        var deleted = _cleaner.CleanStale(_tempDir, "deploy", Array.Empty<string>());
+
+        Assert.Equal(1, deleted);
+        Assert.False(File.Exists(stale));
+        Assert.True(File.Exists(manifestPath));
+        Assert.True(File.Exists(tmpPath), ".tmp byproduct must survive the cleaner sweep");
+    }
+
+    [Fact]
     public void CleanStale_SymlinkEscapeAttempt_Rejected()
     {
         // T-37-01-01: cleaner must not follow a symlink out of modeRoot and delete files elsewhere.
