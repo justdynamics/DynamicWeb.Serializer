@@ -1,3 +1,5 @@
+using DynamicWeb.Serializer.Infrastructure;
+
 namespace DynamicWeb.Serializer.Providers;
 
 /// <summary>
@@ -16,6 +18,14 @@ public record SerializeResult
     /// <see cref="DynamicWeb.Serializer.Infrastructure.ManifestCleaner"/> post-run (Phase 37-01 Task 2).
     /// </summary>
     public IReadOnlyList<string> WrittenFiles { get; init; } = Array.Empty<string>();
+
+    /// <summary>
+    /// Phase 42-03 / PROVIDER-04: the manifest entry produced by this serialize call. Null on
+    /// validation failure / exception (the per-provider Serialize body returns early before
+    /// BuildManifestEntry runs in those cases). The orchestrator collects non-null entries
+    /// across all providers and hands them to <see cref="Infrastructure.ManifestWriter"/>.
+    /// </summary>
+    public ManifestEntry? Entry { get; init; }
 
     public bool HasErrors => Errors.Count > 0;
 

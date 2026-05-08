@@ -45,6 +45,15 @@ public abstract class SerializationProviderBase : ISerializationProvider
     public abstract ValidationResult ValidatePredicate(ProviderPredicateDefinition predicate);
 
     /// <summary>
+    /// Phase 42-03 / PROVIDER-01: see <see cref="ISerializationProvider.BuildManifestEntry"/>.
+    /// Re-declared here as <c>public abstract</c> so every subclass must implement it.
+    /// </summary>
+    public abstract ManifestEntry BuildManifestEntry(
+        ProviderPredicateDefinition predicate,
+        string modeRoot,
+        IReadOnlyList<string> writtenFiles);
+
+    /// <summary>
     /// Builds a YAML serializer that does NOT omit nulls — emits null as ~ (tilde).
     /// Required for SQL table serialization where NULL vs empty string matters.
     /// </summary>

@@ -1,4 +1,5 @@
 using DynamicWeb.Serializer.Configuration;
+using DynamicWeb.Serializer.Infrastructure;
 using DynamicWeb.Serializer.Models;
 using DynamicWeb.Serializer.Serialization;
 
@@ -70,4 +71,17 @@ public interface ISerializationProvider
 
     /// <summary>Validate that a predicate is correctly configured for this provider.</summary>
     ValidationResult ValidatePredicate(ProviderPredicateDefinition predicate);
+
+    /// <summary>
+    /// Phase 42-03 / PROVIDER-01: build the manifest entry for this provider given the predicate
+    /// that drove the run, the mode root the run wrote into, and the absolute file paths produced.
+    /// Called from each provider's <see cref="Serialize"/> implementation just before returning.
+    /// Files in the returned <see cref="ManifestEntry.Files"/> MUST be POSIX-relative under
+    /// <paramref name="modeRoot"/> (forward slashes, no leading slash) so the manifest is portable
+    /// across Windows/Linux build hosts.
+    /// </summary>
+    ManifestEntry BuildManifestEntry(
+        ProviderPredicateDefinition predicate,
+        string modeRoot,
+        IReadOnlyList<string> writtenFiles);
 }
