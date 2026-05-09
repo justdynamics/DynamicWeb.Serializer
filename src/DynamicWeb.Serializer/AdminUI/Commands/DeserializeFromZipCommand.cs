@@ -45,10 +45,14 @@ public sealed class DeserializeFromZipCommand : CommandBase<DeserializeFromZipMo
             if (configPath == null)
                 return new() { Status = CommandResult.ResultType.Error, Message = "Serializer.config.json not found" };
 
-            var config = ConfigLoader.Load(configPath);
+            // Phase 43 / DESER-04 (per CONTEXT D-03 minimal-diff): config-free path resolution.
+            // The synthetic SerializerConfiguration below stays — it's a transient in-memory state
+            // holder for the zip-extraction call into ContentDeserializer, not config-on-disk.
+            // Phase 44 / CONVERGE-02 routes zip-import through SerializerOrchestrator and removes
+            // the synthetic config entirely.
             var filesRoot = Path.GetDirectoryName(configPath)!;
             var systemDir = Path.Combine(filesRoot, "System");
-            var paths = config.EnsureDirectories(systemDir);
+            var paths = SerializerPathResolver.EnsureDirectories(systemDir);
 
             // Use the ZipImport directory under System/Serializer/
             var zipImportDir = Path.Combine(filesRoot, "System", "Serializer", "ZipImport");
