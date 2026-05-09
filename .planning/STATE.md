@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v0.6.0
 milestone_name: Manifest-Driven Deserialize
 status: executing
-stopped_at: Phase 43 context gathered
-last_updated: "2026-05-09T15:30:55.839Z"
-last_activity: 2026-05-09 -- Phase 43 planning complete
+stopped_at: Phase 43 complete
+last_updated: "2026-05-09T17:00:00.000Z"
+last_activity: 2026-05-09 -- Phase 43 execution + verification complete
 progress:
   total_phases: 12
-  completed_phases: 10
+  completed_phases: 11
   total_plans: 37
-  completed_plans: 36
-  percent: 97
+  completed_plans: 37
+  percent: 100
 ---
 
 # Project State
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-03)
 
 **Core value:** Developers can reliably move DynamicWeb database state between environments through source control, with serialized YAML files as the single source of truth.
-**Current focus:** Phase 42 — manifest-schema-entry-hierarchy-serialize-side-build
+**Current focus:** Phase 44 — zip-import-convergence-cleanup-e2e
 
 ## Current Position
 
-Phase: 43
+Phase: 44
 Plan: Not started
-Status: Ready to execute
-Last activity: 2026-05-09 -- Phase 43 planning complete
+Status: Ready to discuss/plan
+Last activity: 2026-05-09 -- Phase 43 execution + verification complete (6/6 SCs, 861/861 tests, REVIEW issued advisory)
 
 ## Recent Session — 2026-04-17 Autonomous Baseline Test
 
@@ -168,6 +168,7 @@ Recent decisions affecting current work:
 - [Phase 38.1]: Plan 04: D-38.1-04-01 — halt per <failure_handling> step 3 on script 08 Msg 8623 + Part B/C predicate false-positive (1641 false matches vs expected 47); re-derivation requires DW ItemType metadata unavailable in SQL surface; Plan 02 artefact left intact for proper revision
 - [Phase 38.1]: Plan 04: scripts 06 + 07 re-proven on fresh bacpac — B.4.1 (SHOP19 1→0) and GRID-01 (142 stale-emails→0) remain CLOSED; scripts 01-07 chain is idempotent and safe for re-run
 - [Phase 38.1]: Plan 05: swift22-cleanup-overview.md ships as email-able single-document inventory of the Swift 2.2 cleanup surface; 8-section split (6 Class-A canonical + 2 Class-B defensive) reflects Plan 04 CLOSED reframing of scripts 08/09 as defensive tooling, not mandatory
+- [Phase 43]: Manifest-driven deserialize pivot — `SerializerOrchestrator.DeserializeAll(modeRoot, mode, ...)` reads `{mode}-manifest.json` via `_manifestWriter.Read`, dispatches per-entry through polymorphic switch on ContentEntry/SqlTableEntry; `EntryStatus`(Succeeded|Failed|Warned|Skipped) + `EntryOutcome` record + `ProviderCounts` ship as canonical reporting types; `OrchestratorResult.HasErrors` aggregates `EntryOutcomes.Any(Failed)` per REPORT-04/SC-3; `ConfigLoader.Load` removed from every deserialize entry point (SerializerDeserializeCommand, DeserializeFromZipCommand) per SC-4; strict-mode default sourced from `StrictModeResolver.Resolve(entryPoint, configValue: null, requestValue)`; `StrictModeDeprecationWarning.EmitIfLegacyValueSet` one-shot WARNING via raw `JsonDocument` peek when on-disk `config.StrictMode` still set; `SerializerPathResolver.EnsureDirectories` config-free helper replaces `SerializerConfiguration.EnsureDirectories` at zip-import call site; `ISerializationProvider.Deserialize(ManifestEntry, ...)` interface contract clean (`ValidatePredicate` removed from interface, retained as concrete method on Content/SqlTable providers behind orchestrator's typed-dispatch helper); `[Obsolete] DeserializeAll(predicates, ...)` overload retained as Phase-44 compile-bridge for predicate-fixture Layer B tests; `ToManifestEntry` reverse-shim retained as Rule-3 deferral (CONVERGE-03 deletes both in Phase 44). 9 atomic commits, 861/861 tests green.
 
 ### Pending Todos
 
@@ -180,6 +181,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-05-08T21:45:59.714Z
-Stopped at: Phase 43 context gathered
-Resume file: .planning/phases/43-manifest-driven-deserialize-per-entry-reporting-command-surface/43-CONTEXT.md
+Last session: 2026-05-09T17:00:00.000Z
+Stopped at: Phase 43 complete; Phase 44 not started
+Resume file: .planning/phases/43-manifest-driven-deserialize-per-entry-reporting-command-surface/43-01-SUMMARY.md

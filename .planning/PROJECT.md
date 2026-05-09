@@ -192,4 +192,4 @@ This document evolves at phase transitions and milestone boundaries.
 - **v0.5.0 Production-Ready Baseline** — Phases 37-41: Deploy/Seed split, strict mode, manifest cleanup, field-level merge, per-predicate mode, admin-UI polish (2026-05-01)
 
 ---
-*Last updated: 2026-05-08 — Milestone v0.6.0 Manifest-Driven Deserialize started. Pivot deserialize from config-driven to manifest-driven; serialize locks all knowledge into artifacts.*
+*Last updated: 2026-05-09 — Phase 43 (Manifest-driven deserialize pivot) complete. `SerializerOrchestrator.DeserializeAll` now reads manifest + dispatches per-entry; per-entry `EntryOutcome` reporting replaces aggregate `DeserializeResults`; zero `ConfigLoader.Load` references on the deserialize path; strict-mode sourced from `StrictModeResolver`. Phase 44 (zip-import convergence + cleanup + live E2E) remains.*

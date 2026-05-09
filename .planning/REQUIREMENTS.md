@@ -25,19 +25,19 @@
 
 ### Deserialize pivot (DESER)
 
-- [ ] **DESER-01**: `SerializerOrchestrator.DeserializeAll` no longer accepts a predicates parameter; signature is `DeserializeAll(modeRoot, mode, strategy, dryRun, providerFilter, escalator, ...)` — reads the manifest from `modeRoot` and dispatches each entry
-- [ ] **DESER-02**: FK ordering and Content-before-SqlTable reorder rules operate on `entries[]` (live-recomputed, not trusting manifest order); `FkDependencyResolver` is reused unchanged
-- [ ] **DESER-03**: `ISerializationProvider.Deserialize` accepts a `ManifestEntry` (not a `ProviderPredicateDefinition`); `ValidatePredicate` is removed from the provider interface
-- [ ] **DESER-04**: `SerializerDeserializeCommand`, `DeserializeFromZipCommand`, and any other deserialize entry point no longer call `ConfigLoader.Load` — config is irrelevant to the deserialize path
-- [ ] **DESER-05**: Strict-mode default is sourced from the entry-point (API/CLI=true, AdminUI=false) plus a per-call request override; `config.StrictMode` is no longer consulted on the deserialize path. A one-time WARNING surfaces if `config.StrictMode` is set but no longer effective
+- [x] **DESER-01**: `SerializerOrchestrator.DeserializeAll` no longer accepts a predicates parameter; signature is `DeserializeAll(modeRoot, mode, strategy, dryRun, providerFilter, escalator, ...)` — reads the manifest from `modeRoot` and dispatches each entry
+- [x] **DESER-02**: FK ordering and Content-before-SqlTable reorder rules operate on `entries[]` (live-recomputed, not trusting manifest order); `FkDependencyResolver` is reused unchanged
+- [x] **DESER-03**: `ISerializationProvider.Deserialize` accepts a `ManifestEntry` (not a `ProviderPredicateDefinition`); `ValidatePredicate` is removed from the provider interface
+- [x] **DESER-04**: `SerializerDeserializeCommand`, `DeserializeFromZipCommand`, and any other deserialize entry point no longer call `ConfigLoader.Load` — config is irrelevant to the deserialize path
+- [x] **DESER-05**: Strict-mode default is sourced from the entry-point (API/CLI=true, AdminUI=false) plus a per-call request override; `config.StrictMode` is no longer consulted on the deserialize path. A one-time WARNING surfaces if `config.StrictMode` is set but no longer effective
 
 ### Per-entry outcome reporting (REPORT)
 
-- [ ] **REPORT-01**: An `EntryStatus` enum exists with four values: `Succeeded`, `Failed`, `Warned`, `Skipped`. `Skipped` is distinct from `Succeeded` so today's silent-skip class becomes observable
-- [ ] **REPORT-02**: Each manifest entry produces an `EntryOutcome` record carrying `EntryId`, `ProviderType`, `Status`, `Message`, `Errors[]`, `Warnings[]`, `Counts` (created/updated/skipped/failed), and `Duration`
-- [ ] **REPORT-03**: `OrchestratorResult.EntryOutcomes` replaces `OrchestratorResult.DeserializeResults`. `ProviderDeserializeResult` survives as a per-table DTO that feeds `EntryOutcome.From(...)`
-- [ ] **REPORT-04**: `OrchestratorResult.HasErrors` aggregates from outcomes (`entries.Any(e => e.Status is Failed)`) and is the single source of truth for the HTTP-status invariant; the D-38-12 zero-error == HTTP 200 guard test is extended to cover entry-level failure shapes
-- [ ] **REPORT-05**: Per-entry log lines surface in the admin-UI log viewer (`Files/System/Serializer/Log/`) so operators can read per-entry outcomes without re-running
+- [x] **REPORT-01**: An `EntryStatus` enum exists with four values: `Succeeded`, `Failed`, `Warned`, `Skipped`. `Skipped` is distinct from `Succeeded` so today's silent-skip class becomes observable
+- [x] **REPORT-02**: Each manifest entry produces an `EntryOutcome` record carrying `EntryId`, `ProviderType`, `Status`, `Message`, `Errors[]`, `Warnings[]`, `Counts` (created/updated/skipped/failed), and `Duration`
+- [x] **REPORT-03**: `OrchestratorResult.EntryOutcomes` replaces `OrchestratorResult.DeserializeResults`. `ProviderDeserializeResult` survives as a per-table DTO that feeds `EntryOutcome.From(...)`
+- [x] **REPORT-04**: `OrchestratorResult.HasErrors` aggregates from outcomes (`entries.Any(e => e.Status is Failed)`) and is the single source of truth for the HTTP-status invariant; the D-38-12 zero-error == HTTP 200 guard test is extended to cover entry-level failure shapes
+- [x] **REPORT-05**: Per-entry log lines surface in the admin-UI log viewer (`Files/System/Serializer/Log/`) so operators can read per-entry outcomes without re-running
 
 ### Convergence + cleanup (CONVERGE)
 
@@ -89,16 +89,16 @@ Empty until roadmap creation. Each requirement maps to exactly one phase.
 | PROVIDER-03 | Phase 42 | Complete |
 | PROVIDER-04 | Phase 42 | Complete |
 | PROVIDER-05 | Phase 42 | Complete |
-| DESER-01 | Phase 43 | Pending |
-| DESER-02 | Phase 43 | Pending |
-| DESER-03 | Phase 43 | Pending |
-| DESER-04 | Phase 43 | Pending |
-| DESER-05 | Phase 43 | Pending |
-| REPORT-01 | Phase 43 | Pending |
-| REPORT-02 | Phase 43 | Pending |
-| REPORT-03 | Phase 43 | Pending |
-| REPORT-04 | Phase 43 | Pending |
-| REPORT-05 | Phase 43 | Pending |
+| DESER-01 | Phase 43 | Complete |
+| DESER-02 | Phase 43 | Complete |
+| DESER-03 | Phase 43 | Complete |
+| DESER-04 | Phase 43 | Complete |
+| DESER-05 | Phase 43 | Complete |
+| REPORT-01 | Phase 43 | Complete |
+| REPORT-02 | Phase 43 | Complete |
+| REPORT-03 | Phase 43 | Complete |
+| REPORT-04 | Phase 43 | Complete |
+| REPORT-05 | Phase 43 | Complete |
 | CONVERGE-01 | Phase 44 | Pending |
 | CONVERGE-02 | Phase 44 | Pending |
 | CONVERGE-03 | Phase 44 | Pending |
