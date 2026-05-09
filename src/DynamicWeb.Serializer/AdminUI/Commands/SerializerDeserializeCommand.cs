@@ -98,18 +98,19 @@ public sealed class SerializerDeserializeCommand : CommandBase
             if (configPath == null)
                 return new() { Status = CommandResult.ResultType.Error, Message = "Serializer.config.json not found (also checked ContentSync.config.json)" };
 
-            var config = ConfigLoader.Load(configPath);
-
-            // Phase 40 D-07: mode-filter the flat predicate list (mirrors SerializerSerializeCommand).
-            var modePredicates = config.Predicates.Where(p => p.Mode == deploymentMode).ToList();
-            var modeSubfolder = config.GetSubfolderForMode(deploymentMode);
-            var modeStrategy = config.GetConflictStrategyForMode(deploymentMode);
-
+            // Phase 43 / DESER-04: config-free deserialize path. Predicates are no longer
+            // consulted; the orchestrator reads the manifest from disk and dispatches per-entry.
+            // Mode subfolder is the lowercased mode name (Phase 42 ManifestWriter convention).
             var filesRoot = Path.GetDirectoryName(configPath)!;
             var systemDir = Path.Combine(filesRoot, "System");
-            var paths = config.EnsureDirectories(systemDir);
+            var paths = SerializerPathResolver.EnsureDirectories(systemDir);
 
-            var modeRoot = Path.Combine(paths.SerializeRoot, modeSubfolder);
+            var modeName = deploymentMode.ToString().ToLowerInvariant();
+            var modeRoot = Path.Combine(paths.SerializeRoot, modeName);
+
+            // Conflict strategy is hardcoded per mode (Deploy=SourceWins, Seed=DestinationWins).
+            // Pre-Phase-43 this lived on SerializerConfiguration; Phase 43 inlines it here.
+            var modeStrategy = DefaultConflictStrategyForMode(deploymentMode);
 
             _logFile = LogFileWriter.CreateLogFile(paths.Log, "Deserialize");
             Log($"=== Serializer Deserialize (API) started [mode: {deploymentMode}] ===");
@@ -121,48 +122,53 @@ public sealed class SerializerDeserializeCommand : CommandBase
             if (yamlCount == 0)
                 return new() { Status = CommandResult.ResultType.Error, Message = $"{modeRoot} contains no YAML files" };
 
-            // Phase 37-04: resolve strict-mode before orchestration.
+            // Phase 43 / DESER-05: strict-mode default sourced from entry-point + per-call request
+            // override. The configValue: null literal is grep-friendly per CONTEXT line 52 — the
+            // config.StrictMode setting is no longer consulted on the deserialize path. A one-time
+            // WARNING fires (Task 7) when the legacy setting is still on disk.
             var entryPoint = IsAdminUiInvocation
                 ? StrictModeResolver.EntryPoint.AdminUi
                 : StrictModeResolver.EntryPoint.Api;
-            var strict = StrictModeResolver.Resolve(entryPoint, config.StrictMode, StrictMode);
+            var strict = StrictModeResolver.Resolve(entryPoint, configValue: null, requestValue: StrictMode);
             Log($"=== Strict mode: {strict} (entry-point: {entryPoint}) ===");
             var escalator = new StrictModeEscalator(strict, Log);
 
+            // Phase 43 / DESER-01: orchestrator reads the manifest itself; no predicates parameter.
+            // The envelope's by-ItemType exclusion maps are consulted by the orchestrator (per
+            // MANIFEST-05), so the caller no longer threads them in.
             var orchestrator = ProviderRegistry.CreateOrchestrator(filesRoot);
             var result = orchestrator.DeserializeAll(
-                modePredicates,
                 modeRoot,
                 deploymentMode,
                 modeStrategy,
                 Log,
-                config.DryRun,
+                isDryRun: false,
                 providerFilter: null,
-                escalator: escalator,
-                excludeFieldsByItemType: config.ExcludeFieldsByItemType,
-                excludeXmlElementsByType: config.ExcludeXmlElementsByType);
+                escalator: escalator);
 
-            // Build summary with advice and flush log
+            // Build summary with advice and flush log. Phase 43 / REPORT-03: drive off
+            // result.EntryOutcomes (canonical) instead of DeserializeResults (transient,
+            // Phase 44 deletes).
             var advice = AdviceGenerator.GenerateAdvice(result);
             var summary = new LogFileSummary
             {
                 Operation = "Deserialize",
                 Timestamp = DateTime.UtcNow,
-                DryRun = config.DryRun,
-                Predicates = result.DeserializeResults.Select(r => new PredicateSummary
+                DryRun = false,
+                Predicates = result.EntryOutcomes.Select(o => new PredicateSummary
                 {
-                    Name = r.TableName,
-                    Table = r.TableName,
-                    Created = r.Created,
-                    Updated = r.Updated,
-                    Skipped = r.Skipped,
-                    Failed = r.Failed,
-                    Errors = r.Errors.ToList()
+                    Name = o.EntryId,
+                    Table = o.EntryId,
+                    Created = o.Counts.Created,
+                    Updated = o.Counts.Updated,
+                    Skipped = o.Counts.Skipped,
+                    Failed = o.Counts.Failed,
+                    Errors = o.Errors.ToList()
                 }).ToList(),
-                TotalCreated = result.DeserializeResults.Sum(r => r.Created),
-                TotalUpdated = result.DeserializeResults.Sum(r => r.Updated),
-                TotalSkipped = result.DeserializeResults.Sum(r => r.Skipped),
-                TotalFailed = result.DeserializeResults.Sum(r => r.Failed),
+                TotalCreated = result.EntryOutcomes.Sum(o => o.Counts.Created),
+                TotalUpdated = result.EntryOutcomes.Sum(o => o.Counts.Updated),
+                TotalSkipped = result.EntryOutcomes.Sum(o => o.Counts.Skipped),
+                TotalFailed = result.EntryOutcomes.Sum(o => o.Counts.Failed),
                 Errors = result.Errors.ToList(),
                 Advice = advice
             };
@@ -173,8 +179,8 @@ public sealed class SerializerDeserializeCommand : CommandBase
                 message += $" Errors: {string.Join("; ", result.Errors)}";
 
             // D-38-12: HTTP status is driven by result.HasErrors. Zero-error result maps to Ok
-            // regardless of Message content. Guard is in SerializerDeserializeCommandTests
-            // (unconditional zero-error == Ok assertion via SynthOrchestratorResult).
+            // regardless of Message content. Phase 43 / REPORT-04 / SC-3: HasErrors now aggregates
+            // from EntryOutcomes (any EntryStatus.Failed → true). Test seam at InvokeMapStatusForTest.
             return MapStatusFromResult(result, message);
         }
         catch (Exception ex)
@@ -182,6 +188,16 @@ public sealed class SerializerDeserializeCommand : CommandBase
             return new() { Status = CommandResult.ResultType.Error, Message = $"Deserialization failed: {ex.Message}" };
         }
     }
+
+    /// <summary>
+    /// Phase 43 / DESER-04: per-mode default conflict strategy. Replaces
+    /// <see cref="SerializerConfiguration.GetConflictStrategyForMode"/> on the deserialize path
+    /// (config is no longer consulted). Hardcoded per mode: Deploy=SourceWins,
+    /// Seed=DestinationWins. Per-call override is a Phase 44 candidate (D-38-11 ?strictMode=
+    /// query-string precedent).
+    /// </summary>
+    private static ConflictStrategy DefaultConflictStrategyForMode(DeploymentMode mode) =>
+        mode == DeploymentMode.Seed ? ConflictStrategy.DestinationWins : ConflictStrategy.SourceWins;
 
     /// <summary>
     /// D-38-12 test seam: exposes the status-mapping branch of <see cref="Handle"/> so
