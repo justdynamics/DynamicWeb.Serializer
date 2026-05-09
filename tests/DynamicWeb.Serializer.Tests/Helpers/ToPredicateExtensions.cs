@@ -4,56 +4,40 @@ using DynamicWeb.Serializer.Models;
 namespace DynamicWeb.Serializer.Tests.Helpers;
 
 /// <summary>
-/// Phase 43 transitional shim per CONTEXT D-04. Bridges Layer-B integration tests (which
-/// still use predicate fixtures) over the orchestrator pivot until Phase 44's Layer-B
-/// port migrates them to entry fixtures. DELETED at the end of Phase 43 (Task 9) along
-/// with ProviderPredicateDefinition references in test fixtures this PLAN touched.
+/// Phase 43 transitional shim. The original Entry → Predicate direction (ToPredicate)
+/// landed in Task 8 per CONTEXT D-04 and was deleted in Task 9 — Layer A test fixtures
+/// retargeted directly to entry shapes, so no call sites remained.
 ///
-/// <para>The shim's API is intentionally minimal — only the fields needed by the surviving
-/// predicate-typed orchestrator overload (now [Obsolete]). Field-by-field projection;
-/// no semantic transformation.</para>
+/// <para>
+/// The surviving Predicate → Entry direction (<see cref="ToManifestEntry"/>) is a Rule 3
+/// reverse-shim: many Layer B integration tests in <c>Providers/Content/</c>,
+/// <c>Providers/SqlTable/</c>, and <c>Integration/</c> dispatch through
+/// <c>provider.Deserialize(...)</c> directly (not via the orchestrator's
+/// <c>[Obsolete]</c> predicate overload), so the interface contract change in Phase 43
+/// Task 3 broke them. Bridging via <see cref="ToManifestEntry"/> is the smallest diff
+/// that keeps Phase 43's test suite green while Phase 44's CONVERGE-03 Layer B port
+/// migrates those tests to entry fixtures. CONVERGE-03 deletes this file.
+/// </para>
 ///
-/// <para>Layer A tests (orchestrator unit tests in SerializerOrchestratorTests) do NOT use
-/// the shim — they construct entry fixtures directly. The shim only exists to keep the
-/// existing predicate-fixture provider integration tests compiling against the [Obsolete]
-/// DeserializeAll(predicates, ...) signature that Phase 44 deletes.</para>
+/// <para>
+/// Lifecycle summary:
+/// <list type="bullet">
+/// <item>Phase 43 Task 8: file lands with both ToPredicate + ToManifestEntry shims.</item>
+/// <item>Phase 43 Task 9: ToPredicate (Entry → Predicate, original D-04 direction)
+/// deleted — zero call sites because Layer A retargeted to entry fixtures.</item>
+/// <item>Phase 44 CONVERGE-03: ToManifestEntry deleted along with this file as part
+/// of the Layer B port to entry fixtures.</item>
+/// </list>
+/// </para>
 /// </summary>
 internal static class ToPredicateExtensions
 {
-    /// <summary>Project a <see cref="ContentEntry"/> back into a synthetic predicate for tests.</summary>
-    internal static ProviderPredicateDefinition ToPredicate(this ContentEntry entry) =>
-        new()
-        {
-            Name = entry.EntryId,
-            ProviderType = "Content",
-            AreaId = entry.AreaId,
-            Path = entry.Path,
-            PageId = entry.PageId,
-            AcknowledgedOrphanPageIds = entry.AcknowledgedOrphanPageIds.ToList(),
-            ExcludeAreaColumns = entry.ExcludeAreaColumns.ToList()
-        };
-
-    /// <summary>Project a <see cref="SqlTableEntry"/> back into a synthetic predicate for tests.</summary>
-    internal static ProviderPredicateDefinition ToPredicate(this SqlTableEntry entry) =>
-        new()
-        {
-            Name = entry.EntryId,
-            ProviderType = "SqlTable",
-            Table = entry.Table,
-            NameColumn = entry.NameColumn,
-            CompareColumns = entry.CompareColumns,
-            XmlColumns = entry.XmlColumns.ToList(),
-            ResolveLinksInColumns = entry.ResolveLinksInColumns.ToList(),
-            ServiceCaches = entry.ServiceCaches.ToList(),
-            SchemaSync = entry.SchemaSync
-        };
-
     /// <summary>
-    /// Phase 43 / D-04 reverse shim: project a predicate fixture into a manifest entry
+    /// Phase 43 Rule 3 reverse-shim: project a predicate fixture into a manifest entry
     /// so existing predicate-fixture-flavored Layer B tests can keep dispatching through
     /// the new ManifestEntry-typed <c>provider.Deserialize</c> contract without rewriting
-    /// every call site to construct entries from scratch. Same lifecycle as
-    /// <see cref="ToPredicate(ContentEntry)"/> — deleted at end of Phase 43 (Task 9).
+    /// every call site. Phase 44 CONVERGE-03 ports those tests to entry fixtures and
+    /// deletes this shim.
     /// </summary>
     internal static ManifestEntry ToManifestEntry(this ProviderPredicateDefinition predicate)
     {
