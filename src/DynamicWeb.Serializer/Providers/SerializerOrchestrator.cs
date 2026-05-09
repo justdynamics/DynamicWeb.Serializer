@@ -2,6 +2,7 @@ using DynamicWeb.Serializer.Configuration;
 using DynamicWeb.Serializer.Infrastructure;
 using DynamicWeb.Serializer.Models;
 using DynamicWeb.Serializer.Providers.SqlTable;
+using DynamicWeb.Serializer.Reporting;
 using DynamicWeb.Serializer.Serialization;
 
 namespace DynamicWeb.Serializer.Providers;
@@ -369,7 +370,23 @@ public class SerializerOrchestrator
 public record OrchestratorResult
 {
     public List<SerializeResult> SerializeResults { get; init; } = new();
+
+    /// <summary>
+    /// Per-table deserialize results from the dispatch loop. Phase 43 / REPORT-03 demoted this
+    /// from canonical-truth to a transient compatibility surface during the orchestrator pivot.
+    /// New consumers MUST drive off <see cref="EntryOutcomes"/> instead. Phase 44 deletes this.
+    /// </summary>
     public List<ProviderDeserializeResult> DeserializeResults { get; init; } = new();
+
+    /// <summary>
+    /// Phase 43 / REPORT-03: per-entry outcomes — one <see cref="EntryOutcome"/> per dispatched
+    /// manifest entry, plus optional <c>Skipped</c> outcomes (providerFilter exclusion) and
+    /// optional run-level synthetic outcomes (strict-mode escalation). Replaces
+    /// <see cref="DeserializeResults"/> as the canonical source of truth driving
+    /// <see cref="HasErrors"/> per REPORT-04.
+    /// </summary>
+    public List<EntryOutcome> EntryOutcomes { get; init; } = new();
+
     public List<string> Errors { get; init; } = new();
 
     /// <summary>
@@ -378,10 +395,22 @@ public record OrchestratorResult
     /// </summary>
     public int StaleFilesDeleted { get; init; }
 
+    /// <summary>
+    /// Phase 43 / REPORT-04 / SC-3: HasErrors aggregates from
+    /// <list type="number">
+    /// <item>Run-level <see cref="Errors"/> (e.g. orchestrator-level wiring failures).</item>
+    /// <item>Any <see cref="SerializeResults"/> entry with errors.</item>
+    /// <item>Any <see cref="EntryOutcomes"/> entry whose status is <see cref="EntryStatus.Failed"/>.</item>
+    /// </list>
+    /// The <c>DeserializeResults.Any(r =&gt; r.HasErrors)</c> clause is intentionally dropped —
+    /// EntryOutcome.From propagates ProviderDeserializeResult.HasErrors into EntryStatus.Failed,
+    /// so the new clause covers exactly the same surface plus the orchestrator-level
+    /// failure modes (no provider registered, dispatch threw, strict-mode RunLevelError).
+    /// </summary>
     public bool HasErrors =>
         Errors.Count > 0 ||
         SerializeResults.Any(r => r.HasErrors) ||
-        DeserializeResults.Any(r => r.HasErrors);
+        EntryOutcomes.Any(e => e.Status == EntryStatus.Failed);
 
     public string Summary
     {
@@ -395,8 +424,21 @@ public record OrchestratorResult
                 parts.Add($"Serialized: {totalRows} rows across {SerializeResults.Count} predicates");
             }
 
-            if (DeserializeResults.Count > 0)
+            // Phase 43: prefer EntryOutcomes (canonical) once the dispatch loop populates it
+            // (Task 6 wires this); fall back to DeserializeResults for the transient state where
+            // Task 2 has shipped but Task 6 has not. The else-if branch is removed in Task 6.
+            if (EntryOutcomes.Count > 0)
             {
+                var created = EntryOutcomes.Sum(o => o.Counts.Created);
+                var updated = EntryOutcomes.Sum(o => o.Counts.Updated);
+                var skipped = EntryOutcomes.Sum(o => o.Counts.Skipped);
+                var failed = EntryOutcomes.Sum(o => o.Counts.Failed);
+                parts.Add($"Deserialized: {created} created, {updated} updated, {skipped} skipped, {failed} failed across {EntryOutcomes.Count} entries");
+            }
+            else if (DeserializeResults.Count > 0)
+            {
+                // Transient fallback — populated state lives in DeserializeResults until Task 6
+                // wires EntryOutcomes. Removed in Task 6.
                 var created = DeserializeResults.Sum(r => r.Created);
                 var updated = DeserializeResults.Sum(r => r.Updated);
                 var skipped = DeserializeResults.Sum(r => r.Skipped);
