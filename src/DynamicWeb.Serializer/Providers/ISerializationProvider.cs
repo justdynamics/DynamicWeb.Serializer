@@ -40,8 +40,16 @@ public interface ISerializationProvider
         IReadOnlyDictionary<string, List<string>>? excludeFieldsByItemType = null,
         IReadOnlyDictionary<string, List<string>>? excludeXmlElementsByType = null);
 
-    /// <summary>Deserialize YAML files from disk back into the database.</summary>
-    /// <param name="predicate">The predicate defining what to deserialize.</param>
+    /// <summary>
+    /// Phase 43 / DESER-03: deserialize YAML files from disk back into the database, driven
+    /// by a polymorphic <see cref="ManifestEntry"/> read from <c>{mode}-manifest.json</c>.
+    /// Implementations downcast the entry to their concrete type (<see cref="ContentEntry"/>
+    /// for ContentProvider, <see cref="SqlTableEntry"/> for SqlTableProvider) and return a
+    /// <see cref="ProviderDeserializeResult"/> with per-row counts for the orchestrator to
+    /// roll up into an <see cref="Reporting.EntryOutcome"/>.
+    /// </summary>
+    /// <param name="entry">The manifest entry defining what to deserialize. Must be the
+    /// concrete subtype matching <see cref="ProviderType"/>.</param>
     /// <param name="inputRoot">Root directory containing YAML files.</param>
     /// <param name="log">Optional logging callback.</param>
     /// <param name="isDryRun">When true, reports what would change without modifying the database.</param>
@@ -53,14 +61,13 @@ public interface ISerializationProvider
     /// <param name="linkResolver">
     /// Phase 37-05 / LINK-02 pass 2: optional cross-environment link resolver. SqlTableProvider
     /// threads this into <see cref="SqlTable.SqlTableWriter.ApplyLinkResolution"/> so every
-    /// row, for every column listed in <see cref="ProviderPredicateDefinition.ResolveLinksInColumns"/>,
-    /// gets its Default.aspx?ID=N references rewritten source→target. Null = no rewrite (the
-    /// provider's current behaviour when no Content-provider has yet populated the map).
+    /// row, for every column listed in <see cref="SqlTableEntry.ResolveLinksInColumns"/>,
+    /// gets its Default.aspx?ID=N references rewritten source→target. Null = no rewrite.
     /// </param>
     /// <param name="excludeFieldsByItemType">Parent mode's ItemType field exclusion dict (see <see cref="Serialize"/>).</param>
     /// <param name="excludeXmlElementsByType">Parent mode's XML element exclusion dict (see <see cref="Serialize"/>).</param>
     ProviderDeserializeResult Deserialize(
-        ProviderPredicateDefinition predicate,
+        ManifestEntry entry,
         string inputRoot,
         Action<string>? log = null,
         bool isDryRun = false,
@@ -69,8 +76,9 @@ public interface ISerializationProvider
         IReadOnlyDictionary<string, List<string>>? excludeFieldsByItemType = null,
         IReadOnlyDictionary<string, List<string>>? excludeXmlElementsByType = null);
 
-    /// <summary>Validate that a predicate is correctly configured for this provider.</summary>
-    ValidationResult ValidatePredicate(ProviderPredicateDefinition predicate);
+    // Phase 43 / DESER-03: ValidatePredicate removed from interface — validation moves
+    // to manifest read time (via ManifestSchema strict-read + ManifestEntry required modifiers).
+    // Per-provider internal validation surface lives on the concrete provider class.
 
     /// <summary>
     /// Phase 42-03 / PROVIDER-01: build the manifest entry for this provider given the predicate

@@ -175,7 +175,7 @@ public class SqlTableProvider : SerializationProviderBase
     }
 
     public override ProviderDeserializeResult Deserialize(
-        ProviderPredicateDefinition predicate,
+        ManifestEntry entry,
         string inputRoot,
         Action<string>? log = null,
         bool isDryRun = false,
@@ -187,16 +187,35 @@ public class SqlTableProvider : SerializationProviderBase
         _ = excludeFieldsByItemType;
         _ = excludeXmlElementsByType;
 
-        var validation = ValidatePredicate(predicate);
-        if (!validation.IsValid)
+        // Phase 43 / DESER-03: downcast at the entry-point. Validation moves to manifest
+        // read time (Phase 42 ManifestSchema strict-read + ManifestEntry/SqlTableEntry
+        // required-modifier on Table); this defensive downcast guards against a
+        // misregistered provider being asked to dispatch the wrong entry shape.
+        if (entry is not SqlTableEntry sqlEntry)
         {
             return new ProviderDeserializeResult
             {
-                Errors = validation.Errors
+                Errors = new[] { $"Expected SqlTableEntry, got {entry.GetType().Name}" }
             };
         }
 
-        var tableName = predicate.Table!;
+        var tableName = sqlEntry.Table;
+
+        // Phase 43 / DESER-03: synthesise a transient predicate carrying the deserialize-affecting
+        // SqlTableEntry fields so existing predicate-typed helpers (DataGroupMetadataReader.
+        // GetTableMetadata) keep working. The predicate never escapes this method.
+        var syntheticPredicate = new ProviderPredicateDefinition
+        {
+            Name = sqlEntry.EntryId,
+            ProviderType = "SqlTable",
+            Table = sqlEntry.Table,
+            NameColumn = sqlEntry.NameColumn,
+            CompareColumns = sqlEntry.CompareColumns,
+            XmlColumns = sqlEntry.XmlColumns.ToList(),
+            ResolveLinksInColumns = sqlEntry.ResolveLinksInColumns.ToList(),
+            ServiceCaches = sqlEntry.ServiceCaches.ToList(),
+            SchemaSync = sqlEntry.SchemaSync
+        };
 
         // If table doesn't exist in target, create it from serialized metadata
         if (!_metadataReader.TableExists(tableName))
@@ -223,7 +242,7 @@ public class SqlTableProvider : SerializationProviderBase
             }
         }
 
-        var metadata = _metadataReader.GetTableMetadata(predicate);
+        var metadata = _metadataReader.GetTableMetadata(syntheticPredicate);
         var yamlRows = _fileStore.ReadAllRows(inputRoot, metadata.TableName).ToList();
         Log($"Deserializing {yamlRows.Count} rows into {metadata.TableName} (isDryRun={isDryRun})", log);
 
@@ -262,23 +281,23 @@ public class SqlTableProvider : SerializationProviderBase
             }
 
             FixNotNullDefaults(row, columnTypesDict, notNullColumns);
-            if (predicate.XmlColumns.Count > 0)
-                CompactXmlColumns(row, predicate.XmlColumns);
+            if (sqlEntry.XmlColumns.Count > 0)
+                CompactXmlColumns(row, sqlEntry.XmlColumns);
 
             // Phase 37-05 / LINK-02 pass 2 (D-22): rewrite Default.aspx?ID=N in opted-in
             // string columns using the cross-environment page ID map built by preceding
-            // Content provider runs. No-op when no predicate column opted in or no resolver
+            // Content provider runs. No-op when no entry column opted in or no resolver
             // was threaded through by the orchestrator.
-            if (linkResolver != null && predicate.ResolveLinksInColumns.Count > 0)
-                _writer.ApplyLinkResolution(row, predicate.ResolveLinksInColumns, linkResolver);
+            if (linkResolver != null && sqlEntry.ResolveLinksInColumns.Count > 0)
+                _writer.ApplyLinkResolution(row, sqlEntry.ResolveLinksInColumns, linkResolver);
         }
 
-        if (predicate.ResolveLinksInColumns.Count > 0)
+        if (sqlEntry.ResolveLinksInColumns.Count > 0)
         {
-            var status = linkResolver != null ? "active" : "predicate configured but no map available";
+            var status = linkResolver != null ? "active" : "entry configured but no map available";
             Log(
                 $"Link resolution for [{metadata.TableName}] ({status}): " +
-                string.Join(", ", predicate.ResolveLinksInColumns),
+                string.Join(", ", sqlEntry.ResolveLinksInColumns),
                 log);
         }
 
@@ -544,7 +563,13 @@ public class SqlTableProvider : SerializationProviderBase
         }
     }
 
-    public override ValidationResult ValidatePredicate(ProviderPredicateDefinition predicate)
+    /// <summary>
+    /// Phase 43 / DESER-03: ValidatePredicate no longer satisfies the
+    /// <see cref="ISerializationProvider"/> contract (interface dropped it — validation moves
+    /// to manifest read time). Kept as a serialize-side input gate; the <see cref="Serialize"/>
+    /// body still calls it.
+    /// </summary>
+    public ValidationResult ValidatePredicate(ProviderPredicateDefinition predicate)
     {
         if (!string.Equals(predicate.ProviderType, "SqlTable", StringComparison.OrdinalIgnoreCase))
             return ValidationResult.Failure("Provider type mismatch");

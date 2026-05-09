@@ -29,6 +29,12 @@ public class ContentProvider : ISerializationProvider
         _filesRoot = filesRoot;
     }
 
+    /// <summary>
+    /// Phase 43 / DESER-03: ValidatePredicate no longer satisfies the
+    /// <see cref="ISerializationProvider"/> contract (interface dropped it — validation moves
+    /// to manifest read time). Kept as a serialize-side input gate; the <see cref="Serialize"/>
+    /// body still calls it.
+    /// </summary>
     public ValidationResult ValidatePredicate(ProviderPredicateDefinition predicate)
     {
         if (!string.Equals(predicate.ProviderType, "Content", StringComparison.OrdinalIgnoreCase))
@@ -148,7 +154,7 @@ public class ContentProvider : ISerializationProvider
     }
 
     public ProviderDeserializeResult Deserialize(
-        ProviderPredicateDefinition predicate,
+        ManifestEntry entry,
         string inputRoot,
         Action<string>? log = null,
         bool isDryRun = false,
@@ -162,13 +168,16 @@ public class ContentProvider : ISerializationProvider
         // We still accept the parameter to satisfy the ISerializationProvider contract.
         _ = linkResolver;
 
-        var validation = ValidatePredicate(predicate);
-        if (!validation.IsValid)
+        // Phase 43 / DESER-03: downcast at the entry-point. Validation moves to manifest
+        // read time (Phase 42 ManifestSchema strict-read + ManifestEntry required modifiers);
+        // this defensive downcast guards against a misregistered provider being asked to
+        // dispatch the wrong entry shape.
+        if (entry is not ContentEntry contentEntry)
         {
             return new ProviderDeserializeResult
             {
                 TableName = "Content",
-                Errors = validation.Errors
+                Errors = new[] { $"Expected ContentEntry, got {entry.GetType().Name}" }
             };
         }
 
@@ -186,7 +195,7 @@ public class ContentProvider : ISerializationProvider
             if (!Directory.Exists(contentDir))
                 contentDir = inputRoot;
 
-            var config = BuildSerializerConfiguration(predicate, contentDir,
+            var config = BuildSerializerConfigurationFromEntry(contentEntry, contentDir,
                 excludeFieldsByItemType, excludeXmlElementsByType);
             var deserializer = new ContentDeserializer(
                 config,
@@ -271,6 +280,36 @@ public class ContentProvider : ISerializationProvider
         }
 
         return InternalLinkResolver.BuildSourceToTargetMap(allYamlPages, allGuidCache);
+    }
+
+    /// <summary>
+    /// Phase 43 / DESER-03 deserialize-side: build a SerializerConfiguration from a
+    /// <see cref="ContentEntry"/> read out of the manifest. Constructs a transient
+    /// in-memory <see cref="ProviderPredicateDefinition"/> mirroring the entry's six
+    /// dispatch-affecting fields (AreaId, Path, PageId, AcknowledgedOrphanPageIds,
+    /// ExcludeAreaColumns, plus Name/ProviderType for the inner ContentDeserializer's
+    /// own internal logging). The synthetic predicate never escapes this method —
+    /// ContentDeserializer's API stays predicate-typed for now (Phase 44 candidate).
+    /// </summary>
+    private static SerializerConfiguration BuildSerializerConfigurationFromEntry(
+        ContentEntry entry,
+        string outputDirectory,
+        IReadOnlyDictionary<string, List<string>>? excludeFieldsByItemType = null,
+        IReadOnlyDictionary<string, List<string>>? excludeXmlElementsByType = null)
+    {
+        var syntheticPredicate = new ProviderPredicateDefinition
+        {
+            Name = entry.EntryId,
+            ProviderType = "Content",
+            AreaId = entry.AreaId,
+            Path = entry.Path,
+            PageId = entry.PageId,
+            AcknowledgedOrphanPageIds = entry.AcknowledgedOrphanPageIds.ToList(),
+            ExcludeAreaColumns = entry.ExcludeAreaColumns.ToList()
+        };
+
+        return BuildSerializerConfiguration(syntheticPredicate, outputDirectory,
+            excludeFieldsByItemType, excludeXmlElementsByType);
     }
 
     /// <summary>

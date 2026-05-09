@@ -99,7 +99,12 @@ public class SerializerOrchestrator
             }
 
             var provider = _registry.GetProvider(predicate.ProviderType);
-            var validation = provider.ValidatePredicate(predicate);
+
+            // Phase 43 / DESER-03: ValidatePredicate is no longer on the interface; each provider
+            // exposes it concretely. Pre-flight via SerializeAllValidate to keep this loop's
+            // skip-on-invalid behaviour. Each provider's own Serialize body validates again
+            // internally, so the pre-flight is a logging convenience, not a correctness gate.
+            var validation = ValidateBeforeSerialize(provider, predicate);
             if (!validation.IsValid)
             {
                 errors.AddRange(validation.Errors.Select(e => $"{predicate.Name}: {e}"));
@@ -252,7 +257,10 @@ public class SerializerOrchestrator
             }
 
             var provider = _registry.GetProvider(predicate.ProviderType);
-            var validation = provider.ValidatePredicate(predicate);
+
+            // Phase 43 / DESER-03: ValidatePredicate is no longer on the interface; each provider
+            // exposes it concretely. Pre-flight via typed dispatch to keep skip-on-invalid behaviour.
+            var validation = ValidateBeforeSerialize(provider, predicate);
             if (!validation.IsValid)
             {
                 errors.AddRange(validation.Errors.Select(e => $"{predicate.Name}: {e}"));
@@ -269,7 +277,12 @@ public class SerializerOrchestrator
             if (needsLinks)
                 perRunResolver = new InternalLinkResolver(aggregatedPageMap, wrappedLog);
 
-            var result = provider.Deserialize(predicate, inputRoot, wrappedLog, isDryRun, strategy, perRunResolver,
+            // Phase 43 / DESER-03: provider.Deserialize now takes a ManifestEntry. The legacy
+            // predicate-typed DeserializeAll converts via the provider's BuildManifestEntry
+            // (Phase 42 contract, predicate-typed input). The synthetic entry never escapes
+            // this loop. Phase 44 deletes this overload entirely.
+            var entry = provider.BuildManifestEntry(predicate, inputRoot, Array.Empty<string>());
+            var result = provider.Deserialize(entry, inputRoot, wrappedLog, isDryRun, strategy, perRunResolver,
                 excludeFieldsByItemType, excludeXmlElementsByType);
             results.Add(result);
 
@@ -334,6 +347,25 @@ public class SerializerOrchestrator
         }
 
         return new OrchestratorResult { DeserializeResults = results, Errors = errors };
+    }
+
+    /// <summary>
+    /// Phase 43 / DESER-03: typed-dispatch validation helper for the serialize-side and the
+    /// legacy predicate-typed DeserializeAll body. ValidatePredicate is no longer on the
+    /// <see cref="ISerializationProvider"/> contract; each concrete provider keeps it as a
+    /// public method for serialize-time input gating. This helper polymorphically routes to
+    /// the right concrete method without re-introducing the interface dependency. Returns
+    /// <see cref="ValidationResult.Success"/> for unrecognised provider types so callers
+    /// fall through to the provider's own internal validation in Serialize/Deserialize.
+    /// </summary>
+    private static ValidationResult ValidateBeforeSerialize(ISerializationProvider provider, ProviderPredicateDefinition predicate)
+    {
+        return provider switch
+        {
+            Content.ContentProvider c => c.ValidatePredicate(predicate),
+            SqlTable.SqlTableProvider s => s.ValidatePredicate(predicate),
+            _ => ValidationResult.Success()
+        };
     }
 
     /// <summary>

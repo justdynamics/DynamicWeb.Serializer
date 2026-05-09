@@ -33,7 +33,7 @@ public abstract class SerializationProviderBase : ISerializationProvider
         IReadOnlyDictionary<string, List<string>>? excludeXmlElementsByType = null);
 
     public abstract ProviderDeserializeResult Deserialize(
-        ProviderPredicateDefinition predicate,
+        ManifestEntry entry,
         string inputRoot,
         Action<string>? log = null,
         bool isDryRun = false,
@@ -42,7 +42,10 @@ public abstract class SerializationProviderBase : ISerializationProvider
         IReadOnlyDictionary<string, List<string>>? excludeFieldsByItemType = null,
         IReadOnlyDictionary<string, List<string>>? excludeXmlElementsByType = null);
 
-    public abstract ValidationResult ValidatePredicate(ProviderPredicateDefinition predicate);
+    // Phase 43 / DESER-03: abstract ValidatePredicate declaration removed — interface
+    // no longer requires it (validation moves to manifest read time). Concrete providers
+    // may keep ValidatePredicate as a private/public helper for serialize-side input
+    // gating, but it is no longer part of the polymorphic contract.
 
     /// <summary>
     /// Phase 42-03 / PROVIDER-01: see <see cref="ISerializationProvider.BuildManifestEntry"/>.
