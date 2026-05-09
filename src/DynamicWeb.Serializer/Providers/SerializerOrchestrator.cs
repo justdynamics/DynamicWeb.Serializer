@@ -19,17 +19,23 @@ public class SerializerOrchestrator
     private readonly FkDependencyResolver? _fkResolver;
     private readonly CacheInvalidator? _cacheInvalidator;
     private readonly EcomGroupFieldSchemaSync? _ecomSchemaSync;
+    private readonly ManifestWriter _manifestWriter;
 
     public SerializerOrchestrator(
         ProviderRegistry registry,
         FkDependencyResolver? fkResolver = null,
         CacheInvalidator? cacheInvalidator = null,
-        EcomGroupFieldSchemaSync? ecomSchemaSync = null)
+        EcomGroupFieldSchemaSync? ecomSchemaSync = null,
+        ManifestWriter? manifestWriter = null)
     {
         _registry = registry ?? throw new ArgumentNullException(nameof(registry));
         _fkResolver = fkResolver;
         _cacheInvalidator = cacheInvalidator;
         _ecomSchemaSync = ecomSchemaSync;
+        // Phase 43 / DESER-01: ManifestWriter is needed by the manifest-driven DeserializeAll
+        // signature. Defaulting to a fresh instance keeps the legacy DeserializeAll(predicates, ...)
+        // overload (which doesn't read the manifest) callable without explicit wiring.
+        _manifestWriter = manifestWriter ?? new ManifestWriter();
     }
 
     // -------------------------------------------------------------------------
@@ -145,14 +151,17 @@ public class SerializerOrchestrator
     }
 
     /// <summary>
-    /// Deserialize all predicates, scoped to the given mode. Under
-    /// <see cref="ConflictStrategy.DestinationWins"/> (default for Seed, per D-06), per-predicate
-    /// providers receive the strategy via <see cref="ISerializationProvider.Deserialize"/>'s
-    /// optional strategy parameter and MUST skip rows/pages whose natural key is already present
-    /// on target — SqlTableProvider skips by <c>RowExistsInTarget</c>, ContentProvider skips
-    /// by <c>PageUniqueId</c> match. Nested content (paragraphs within existing pages) is
-    /// out of scope for 37-01 and follows up in later plans.
+    /// Deserialize all predicates, scoped to the given mode.
     /// </summary>
+    /// <remarks>
+    /// Phase 43 / DESER-01: this predicate-typed overload is obsolete — Phase 44 deletes it
+    /// (CONVERGE-04). New callers MUST use <see cref="DeserializeAll(string, DeploymentMode, ConflictStrategy, Action{string}, bool, string, StrictModeEscalator, IReadOnlyDictionary{string, List{string}}, IReadOnlyDictionary{string, List{string}})"/>
+    /// which reads the manifest and dispatches per-entry. The body of this overload now
+    /// converts each predicate to a transient <see cref="ManifestEntry"/> via
+    /// <see cref="ISerializationProvider.BuildManifestEntry"/> before dispatching, but this
+    /// is a wave-bounded compile bridge — Phase 44 removes both the overload and the bridge.
+    /// </remarks>
+    [Obsolete("Phase 43 (DESER-01): pass modeRoot + mode and let the orchestrator read the manifest. This overload deletes in Phase 44 (CONVERGE-04). Use DeserializeAll(modeRoot, mode, strategy, log, isDryRun, providerFilter, escalator, ...).", error: false)]
     public OrchestratorResult DeserializeAll(
         List<ProviderPredicateDefinition> predicates,
         string inputRoot,
@@ -347,6 +356,281 @@ public class SerializerOrchestrator
         }
 
         return new OrchestratorResult { DeserializeResults = results, Errors = errors };
+    }
+
+    // -------------------------------------------------------------------------
+    // Phase 43 / DESER-01..05 + REPORT-01..05: manifest-driven deserialize.
+    // Reads {mode}-manifest.json from modeRoot and dispatches each entry. No
+    // predicates parameter; no ConfigLoader.Load; per-entry EntryOutcome reporting.
+    // -------------------------------------------------------------------------
+
+    /// <summary>
+    /// Phase 43 / DESER-01: manifest-driven deserialize. Reads
+    /// <c>{mode}-manifest.json</c> from <paramref name="modeRoot"/> and dispatches each entry
+    /// to the registered provider for its <c>ProviderType</c>. Per-entry outcomes (status,
+    /// counts, errors, duration) populate <see cref="OrchestratorResult.EntryOutcomes"/>.
+    /// </summary>
+    /// <param name="modeRoot">Mode-scoped serialize directory (the dir containing
+    /// <c>{mode}-manifest.json</c> + the per-provider subtrees).</param>
+    /// <param name="mode">Deployment mode. The lowercased form is used as the manifest filename
+    /// prefix (<c>"deploy"</c> / <c>"seed"</c>).</param>
+    /// <param name="strategy">Conflict strategy (Deploy=SourceWins, Seed=DestinationWins).</param>
+    /// <param name="log">Optional log sink — every entry emits a <c>[entryId] Status</c> line per
+    /// REPORT-05 / SC-5.</param>
+    /// <param name="isDryRun">When true, providers report would-be work without touching the DB.</param>
+    /// <param name="providerFilter">Optional filter. Entries whose <c>ProviderType</c> doesn't
+    /// match get an <see cref="EntryStatus.Skipped"/> outcome rather than being silently dropped
+    /// (per REPORT-01 / D-02).</param>
+    /// <param name="escalator">Optional strict-mode escalator. Phase 37-04 wiring is preserved
+    /// unchanged; <see cref="CumulativeStrictModeException"/> at end-of-run produces an
+    /// <see cref="EntryOutcome.RunLevelError"/> in addition to the run-level errors list.</param>
+    /// <param name="excludeFieldsByItemType">Caller-supplied fallback when the manifest envelope
+    /// has no envelope-level by-ItemType field exclusions. The manifest envelope (when populated
+    /// per MANIFEST-05) takes precedence.</param>
+    /// <param name="excludeXmlElementsByType">Same, for XML element exclusions.</param>
+    public OrchestratorResult DeserializeAll(
+        string modeRoot,
+        DeploymentMode mode,
+        ConflictStrategy strategy = ConflictStrategy.SourceWins,
+        Action<string>? log = null,
+        bool isDryRun = false,
+        string? providerFilter = null,
+        StrictModeEscalator? escalator = null,
+        IReadOnlyDictionary<string, List<string>>? excludeFieldsByItemType = null,
+        IReadOnlyDictionary<string, List<string>>? excludeXmlElementsByType = null)
+    {
+        var modeName = mode.ToString().ToLowerInvariant();
+        var manifest = _manifestWriter.Read(modeRoot, modeName)
+            ?? throw new InvalidOperationException(
+                $"Manifest not found at {Path.Combine(modeRoot, $"{modeName}-manifest.json")}. " +
+                "Run serialize first to produce the manifest, then re-run deserialize.");
+
+        // Per MANIFEST-05: envelope-level by-ItemType exclusions are baked at serialize time and
+        // take precedence over caller-supplied params (which exist only as a transitional fallback
+        // for tests / call sites that haven't migrated). Empty envelope dicts mean "no exclusions"
+        // — they don't fall back to caller; only an absent envelope key would, but Phase 42's
+        // Manifest.ExcludeFieldsByItemType is `required` so it's always present.
+        var effectiveExcludeFields = manifest.ExcludeFieldsByItemType.Count > 0
+            ? (IReadOnlyDictionary<string, List<string>>)manifest.ExcludeFieldsByItemType
+            : excludeFieldsByItemType;
+        var effectiveExcludeXml = manifest.ExcludeXmlElementsByType.Count > 0
+            ? (IReadOnlyDictionary<string, List<string>>)manifest.ExcludeXmlElementsByType
+            : excludeXmlElementsByType;
+
+        return DeserializeEntries(manifest.Entries, modeRoot, mode, strategy, log, isDryRun,
+            providerFilter, escalator, effectiveExcludeFields, effectiveExcludeXml);
+    }
+
+    /// <summary>
+    /// Phase 43 internal test seam (per ARCHITECTURE.md §5): dispatch a pre-built entry list
+    /// without touching the filesystem. Production callers go through the public
+    /// <see cref="DeserializeAll(string, DeploymentMode, ConflictStrategy, Action{string}, bool, string, StrictModeEscalator, IReadOnlyDictionary{string, List{string}}, IReadOnlyDictionary{string, List{string}})"/>
+    /// which reads the manifest and calls this. Tests construct entry fixtures directly.
+    /// </summary>
+    internal OrchestratorResult DeserializeEntries(
+        IReadOnlyList<ManifestEntry> entries,
+        string modeRoot,
+        DeploymentMode mode,
+        ConflictStrategy strategy,
+        Action<string>? log,
+        bool isDryRun,
+        string? providerFilter,
+        StrictModeEscalator? escalator,
+        IReadOnlyDictionary<string, List<string>>? excludeFieldsByItemType,
+        IReadOnlyDictionary<string, List<string>>? excludeXmlElementsByType)
+    {
+        // Phase 37-04 STRICT-01: wrap log with escalator (verbatim from legacy body).
+        escalator ??= StrictModeEscalator.Null;
+        var wrappedLog = WrapLogWithEscalator(log, escalator);
+        wrappedLog($"=== Mode: {mode} | Strategy: {strategy} | Strict: {escalator.IsStrict} ===");
+
+        var workingEntries = entries.ToList();
+
+        // Phase 43 / DESER-02 / SC-6: FK ordering on entries[]. Same algorithm as the
+        // predicate-typed legacy body, swapping `predicates` for `workingEntries.OfType<SqlTableEntry>`.
+        if (_fkResolver != null)
+        {
+            var sqlEntries = workingEntries.OfType<SqlTableEntry>().ToList();
+            if (sqlEntries.Count > 1)
+            {
+                var tableNames = sqlEntries
+                    .Where(e => !string.IsNullOrEmpty(e.Table))
+                    .Select(e => e.Table)
+                    .ToList();
+
+                var orderedTables = _fkResolver.GetDeserializationOrder(tableNames);
+
+                var orderIndex = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+                for (int i = 0; i < orderedTables.Count; i++)
+                    orderIndex[orderedTables[i]] = i;
+
+                // Reorder SqlTable entries by FK order; keep non-SqlTable entries in their
+                // original relative order. Same shape as the legacy predicate-typed sort.
+                var nonSqlEntries = workingEntries
+                    .Where(e => e is not SqlTableEntry)
+                    .ToList();
+                var sortedSqlEntries = sqlEntries
+                    .OrderBy(e => orderIndex.TryGetValue(e.Table, out var idx) ? idx : int.MaxValue)
+                    .Cast<ManifestEntry>()
+                    .ToList();
+
+                workingEntries = sortedSqlEntries.Concat(nonSqlEntries).ToList();
+
+                wrappedLog($"FK ordering: {string.Join(" -> ", orderedTables)}");
+            }
+        }
+
+        // Phase 37-05 / LINK-02 pass 2 (D-22): when ANY SqlTable entry has a non-empty
+        // ResolveLinksInColumns list, Content entries MUST run BEFORE those SqlTable entries
+        // so the source→target page ID map is built and available at write time.
+        var anySqlNeedsLinks = workingEntries
+            .OfType<SqlTableEntry>()
+            .Any(s => s.ResolveLinksInColumns.Count > 0);
+        if (anySqlNeedsLinks)
+        {
+            var contentEntries = workingEntries.OfType<ContentEntry>().Cast<ManifestEntry>().ToList();
+            var otherEntries = workingEntries.Where(e => e is not ContentEntry).ToList();
+            if (contentEntries.Count > 0)
+            {
+                workingEntries = contentEntries.Concat(otherEntries).ToList();
+                wrappedLog(
+                    $"LINK-02 ordering: running {contentEntries.Count} Content entries " +
+                    "first so cross-env page ID map is available to SqlTable link resolution.");
+            }
+        }
+
+        // Per-entry dispatch loop. Builds EntryOutcome per entry per REPORT-02; legacy
+        // ProviderDeserializeResult list stays populated as a transient compatibility surface
+        // (consumers should drive off EntryOutcomes per REPORT-03).
+        var entryOutcomes = new List<EntryOutcome>();
+        var legacyResults = new List<ProviderDeserializeResult>();
+        var errors = new List<string>();
+        var aggregatedPageMap = new Dictionary<int, int>();
+
+        foreach (var entry in workingEntries)
+        {
+            // providerFilter exclusion → Skipped per REPORT-01 / D-02 / SC-2.
+            if (providerFilter != null &&
+                !string.Equals(entry.ProviderType, providerFilter, StringComparison.OrdinalIgnoreCase))
+            {
+                entryOutcomes.Add(EntryOutcome.Skipped(entry,
+                    $"providerFilter='{providerFilter}' excluded providerType='{entry.ProviderType}'"));
+                wrappedLog($"[{entry.EntryId}] Skipped: providerFilter exclusion");
+                continue;
+            }
+
+            // No provider registered → Failed per D-02.
+            if (!_registry.HasProvider(entry.ProviderType))
+            {
+                var msg = $"No provider registered for type '{entry.ProviderType}' (entry: {entry.EntryId})";
+                errors.Add(msg);
+                entryOutcomes.Add(EntryOutcome.Failed(entry, msg));
+                wrappedLog($"[{entry.EntryId}] Failed: {msg}");
+                continue;
+            }
+
+            // Phase 37-05 / LINK-02 pass 2: build an InternalLinkResolver from the accumulated
+            // map when this entry is a SqlTableEntry that opted in via ResolveLinksInColumns.
+            InternalLinkResolver? perRunResolver = null;
+            var needsLinks = entry is SqlTableEntry sqlNeedsLinks
+                             && sqlNeedsLinks.ResolveLinksInColumns.Count > 0
+                             && aggregatedPageMap.Count > 0;
+            if (needsLinks)
+                perRunResolver = new InternalLinkResolver(aggregatedPageMap, wrappedLog);
+
+            var provider = _registry.GetProvider(entry.ProviderType);
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+            ProviderDeserializeResult result;
+            try
+            {
+                result = provider.Deserialize(entry, modeRoot, wrappedLog, isDryRun, strategy,
+                    perRunResolver, excludeFieldsByItemType, excludeXmlElementsByType);
+            }
+            catch (Exception ex)
+            {
+                sw.Stop();
+                var emsg = $"Entry '{entry.EntryId}' threw: {ex.Message}";
+                errors.Add(emsg);
+                entryOutcomes.Add(EntryOutcome.Failed(entry, emsg, sw.Elapsed));
+                wrappedLog($"[{entry.EntryId}] Failed: {emsg}");
+                continue;
+            }
+            sw.Stop();
+
+            legacyResults.Add(result);
+            entryOutcomes.Add(EntryOutcome.From(entry, result, sw.Elapsed));
+
+            // Per-entry log line per REPORT-05 / SC-5 (CONTEXT line 50 format).
+            wrappedLog($"[{entry.EntryId}] {entryOutcomes[^1].Status}: {result.Summary}");
+
+            // Aggregate source→target page map (Content provider populates it; downstream
+            // SqlTable entries with ResolveLinksInColumns consume it via perRunResolver).
+            if (result.SourceToTargetPageMap != null)
+            {
+                foreach (var kvp in result.SourceToTargetPageMap)
+                    aggregatedPageMap.TryAdd(kvp.Key, kvp.Value);
+            }
+
+            // Cache invalidation gated on entry being a SqlTableEntry with ServiceCaches set.
+            if (!isDryRun && entry is SqlTableEntry sqlEntryCache
+                && sqlEntryCache.ServiceCaches.Count > 0
+                && !result.HasErrors)
+            {
+                if (_cacheInvalidator == null)
+                {
+                    wrappedLog(
+                        $"WARNING: Entry '{entry.EntryId}' declares {sqlEntryCache.ServiceCaches.Count} " +
+                        "service cache(s) but no CacheInvalidator is wired — caches will NOT be cleared");
+                }
+                else
+                {
+                    try { _cacheInvalidator.InvalidateCaches(sqlEntryCache.ServiceCaches.ToList(), wrappedLog); }
+                    catch (Exception ex)
+                    {
+                        wrappedLog($"WARNING: Cache invalidation failed for entry '{entry.EntryId}': {ex.Message}");
+                    }
+                }
+            }
+
+            // Schema sync gated on entry being a SqlTableEntry with SchemaSync = "EcomGroupFields".
+            if (!isDryRun && _ecomSchemaSync != null
+                && entry is SqlTableEntry sqlEntrySync
+                && !string.IsNullOrEmpty(sqlEntrySync.SchemaSync)
+                && string.Equals(sqlEntrySync.SchemaSync, "EcomGroupFields", StringComparison.OrdinalIgnoreCase)
+                && !result.HasErrors)
+            {
+                try
+                {
+                    wrappedLog($"Running schema sync for {entry.EntryId}...");
+                    _ecomSchemaSync.SyncSchema(wrappedLog);
+                }
+                catch (Exception ex)
+                {
+                    wrappedLog($"WARNING: Schema sync failed for entry '{entry.EntryId}': {ex.Message}");
+                }
+            }
+        }
+
+        // Phase 37-04 STRICT-01: end-of-run gate. CONTEXT line 99-100 — strict-mode
+        // CumulativeStrictModeException is routed into both the run-level errors list AND
+        // a synthetic RunLevelError EntryOutcome so HasErrors aggregates from EntryOutcomes.
+        try
+        {
+            escalator.AssertNoWarnings();
+        }
+        catch (CumulativeStrictModeException ex)
+        {
+            errors.Add(ex.Message);
+            entryOutcomes.Add(EntryOutcome.RunLevelError(ex.Message));
+            wrappedLog($"ERROR: {ex.Message}");
+        }
+
+        return new OrchestratorResult
+        {
+            DeserializeResults = legacyResults,
+            EntryOutcomes = entryOutcomes,
+            Errors = errors
+        };
     }
 
     /// <summary>
