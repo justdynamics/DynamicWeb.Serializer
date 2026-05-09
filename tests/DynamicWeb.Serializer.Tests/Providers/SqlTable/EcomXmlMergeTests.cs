@@ -3,6 +3,7 @@ using DynamicWeb.Serializer.Configuration;
 using DynamicWeb.Serializer.Infrastructure;
 using DynamicWeb.Serializer.Models;
 using DynamicWeb.Serializer.Providers.SqlTable;
+using DynamicWeb.Serializer.Tests.Helpers;
 using Dynamicweb.Data;
 using Moq;
 using Xunit;
@@ -106,7 +107,7 @@ public class EcomXmlMergeTests
                 It.IsAny<bool>(), It.IsAny<Action<string>?>()))
             .Returns(WriteOutcome.Updated);
 
-        provider.Deserialize(PaymentPredicate, inputRoot,
+        provider.Deserialize(PaymentPredicate.ToManifestEntry(), inputRoot,
             strategy: ConflictStrategy.DestinationWins);
 
         writer.Verify(w => w.UpdateColumnSubset(
@@ -139,7 +140,7 @@ public class EcomXmlMergeTests
                 It.IsAny<bool>(), It.IsAny<Action<string>?>()))
             .Returns(WriteOutcome.Updated);
 
-        provider.Deserialize(PaymentPredicate, inputRoot,
+        provider.Deserialize(PaymentPredicate.ToManifestEntry(), inputRoot,
             strategy: ConflictStrategy.DestinationWins);
 
         writer.Verify(w => w.UpdateColumnSubset(
@@ -167,7 +168,7 @@ public class EcomXmlMergeTests
                 It.IsAny<bool>(), It.IsAny<Action<string>?>()))
             .Returns(WriteOutcome.Updated);
 
-        provider.Deserialize(PaymentPredicate, inputRoot,
+        provider.Deserialize(PaymentPredicate.ToManifestEntry(), inputRoot,
             strategy: ConflictStrategy.DestinationWins);
 
         // Target's Mail1SenderEmail is set -> merge preserves it. But Mail1SenderName is
@@ -201,7 +202,7 @@ public class EcomXmlMergeTests
                 It.IsAny<bool>(), It.IsAny<Action<string>?>()))
             .Returns(WriteOutcome.Updated);
 
-        provider.Deserialize(PaymentPredicate, inputRoot,
+        provider.Deserialize(PaymentPredicate.ToManifestEntry(), inputRoot,
             strategy: ConflictStrategy.DestinationWins);
 
         writer.Verify(w => w.UpdateColumnSubset(
@@ -236,7 +237,7 @@ public class EcomXmlMergeTests
                 It.IsAny<bool>(), It.IsAny<Action<string>?>()))
             .Returns(WriteOutcome.Updated);
 
-        provider.Deserialize(ShippingPredicate, inputRoot,
+        provider.Deserialize(ShippingPredicate.ToManifestEntry(), inputRoot,
             strategy: ConflictStrategy.DestinationWins);
 
         writer.Verify(w => w.UpdateColumnSubset(
@@ -267,7 +268,7 @@ public class EcomXmlMergeTests
                 It.IsAny<bool>(), It.IsAny<Action<string>?>()))
             .Returns(WriteOutcome.Updated);
 
-        provider.Deserialize(ShippingPredicate, inputRoot,
+        provider.Deserialize(ShippingPredicate.ToManifestEntry(), inputRoot,
             strategy: ConflictStrategy.DestinationWins);
 
         writer.Verify(w => w.UpdateColumnSubset(
@@ -289,7 +290,7 @@ public class EcomXmlMergeTests
         var (provider, _, writer, inputRoot) = CreateShippingsProvider(
             new[] { yamlRow }, new[] { existingRow });
 
-        provider.Deserialize(ShippingPredicate, inputRoot,
+        provider.Deserialize(ShippingPredicate.ToManifestEntry(), inputRoot,
             strategy: ConflictStrategy.DestinationWins);
 
         // Every seed element has a target counterpart already set -> no write fires.
@@ -315,7 +316,7 @@ public class EcomXmlMergeTests
                 It.IsAny<bool>(), It.IsAny<Action<string>?>()))
             .Returns(WriteOutcome.Updated);
 
-        provider.Deserialize(ShippingPredicate, inputRoot,
+        provider.Deserialize(ShippingPredicate.ToManifestEntry(), inputRoot,
             strategy: ConflictStrategy.DestinationWins);
 
         writer.Verify(w => w.UpdateColumnSubset(
@@ -384,7 +385,7 @@ public class EcomXmlMergeTests
                 It.IsAny<bool>(), It.IsAny<Action<string>?>()))
             .Returns(WriteOutcome.Updated);
 
-        provider.Deserialize(predicate, inputRoot,
+        provider.Deserialize(predicate.ToManifestEntry(), inputRoot,
             strategy: ConflictStrategy.DestinationWins);
 
         writer.Verify(w => w.UpdateColumnSubset(
@@ -417,7 +418,7 @@ public class EcomXmlMergeTests
         var (provider, _, writer, inputRoot) = CreatePaymentsProvider(
             new[] { yamlRow }, new[] { existingRow });
 
-        provider.Deserialize(PaymentPredicate, inputRoot,
+        provider.Deserialize(PaymentPredicate.ToManifestEntry(), inputRoot,
             strategy: ConflictStrategy.DestinationWins);
 
         // Idempotent: no column-subset write. (DisableForeignKeys/EnableForeignKeys DO run

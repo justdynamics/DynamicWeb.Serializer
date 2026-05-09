@@ -1,6 +1,7 @@
 using DynamicWeb.Serializer.Models;
 using DynamicWeb.Serializer.Providers;
 using DynamicWeb.Serializer.Providers.Content;
+using DynamicWeb.Serializer.Tests.Helpers;
 using Xunit;
 
 namespace DynamicWeb.Serializer.Tests.Providers.Content;
@@ -138,7 +139,8 @@ public class ContentProviderTests
         };
 
         // Call with a non-existent input root - should handle gracefully
-        var result = _provider.Deserialize(predicate, Path.Combine(Path.GetTempPath(), "nonexistent_" + Guid.NewGuid().ToString("N")));
+        // Phase 43 / D-04 reverse shim: predicate-fixture flavored test bridging via ToManifestEntry().
+        var result = _provider.Deserialize(predicate.ToManifestEntry(), Path.Combine(Path.GetTempPath(), "nonexistent_" + Guid.NewGuid().ToString("N")));
 
         Assert.IsType<ProviderDeserializeResult>(result);
         Assert.Equal("Content", result.TableName);
@@ -169,7 +171,10 @@ public class ContentProviderTests
             Table = "EcomOrderFlow"
         };
 
-        var result = _provider.Deserialize(predicate, Path.GetTempPath());
+        // Phase 43 / D-04 reverse shim: ToManifestEntry produces a SqlTableEntry; ContentProvider's
+        // type-mismatch downcast guard returns "Expected ContentEntry, got SqlTableEntry" — still an
+        // error result, so the test invariant holds.
+        var result = _provider.Deserialize(predicate.ToManifestEntry(), Path.GetTempPath());
 
         Assert.True(result.HasErrors);
     }

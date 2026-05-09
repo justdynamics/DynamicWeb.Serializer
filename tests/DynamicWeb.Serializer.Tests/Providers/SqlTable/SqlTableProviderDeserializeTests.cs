@@ -2,6 +2,7 @@ using System.Data;
 using DynamicWeb.Serializer.Infrastructure;
 using DynamicWeb.Serializer.Models;
 using DynamicWeb.Serializer.Providers.SqlTable;
+using DynamicWeb.Serializer.Tests.Helpers;
 using Dynamicweb.Data;
 using Moq;
 using Xunit;
@@ -43,7 +44,7 @@ public class SqlTableProviderDeserializeTests
             yamlRows: new[] { row },
             existingDbRows: new[] { row });
 
-        var result = provider.Deserialize(TestPredicate, inputRoot);
+        var result = provider.Deserialize(TestPredicate.ToManifestEntry(), inputRoot);
 
         Assert.Equal(0, result.Created);
         Assert.Equal(0, result.Updated);
@@ -69,7 +70,7 @@ public class SqlTableProviderDeserializeTests
         writer.Setup(w => w.WriteRow(It.IsAny<Dictionary<string, object?>>(), It.IsAny<TableMetadata>(), false, It.IsAny<Action<string>?>(), It.IsAny<HashSet<string>?>()))
             .Returns(WriteOutcome.Created);
 
-        var result = provider.Deserialize(TestPredicate, inputRoot);
+        var result = provider.Deserialize(TestPredicate.ToManifestEntry(), inputRoot);
 
         Assert.Equal(1, result.Created);
         Assert.Equal(0, result.Skipped);
@@ -100,7 +101,7 @@ public class SqlTableProviderDeserializeTests
         writer.Setup(w => w.WriteRow(It.IsAny<Dictionary<string, object?>>(), It.IsAny<TableMetadata>(), false, It.IsAny<Action<string>?>(), It.IsAny<HashSet<string>?>()))
             .Returns(WriteOutcome.Updated);
 
-        var result = provider.Deserialize(TestPredicate, inputRoot);
+        var result = provider.Deserialize(TestPredicate.ToManifestEntry(), inputRoot);
 
         Assert.Equal(0, result.Created);
         Assert.Equal(0, result.Skipped);
@@ -124,7 +125,7 @@ public class SqlTableProviderDeserializeTests
         writer.Setup(w => w.WriteRow(It.IsAny<Dictionary<string, object?>>(), It.IsAny<TableMetadata>(), true, It.IsAny<Action<string>?>(), It.IsAny<HashSet<string>?>()))
             .Returns(WriteOutcome.Created);
 
-        var result = provider.Deserialize(TestPredicate, inputRoot, isDryRun: true);
+        var result = provider.Deserialize(TestPredicate.ToManifestEntry(), inputRoot, isDryRun: true);
 
         Assert.Equal(1, result.Created);
         // Verify WriteRow was called with isDryRun=true
@@ -188,7 +189,7 @@ public class SqlTableProviderDeserializeTests
                 It.IsAny<TableMetadata>(), false, It.IsAny<Action<string>?>(), It.IsAny<HashSet<string>?>()))
             .Returns(WriteOutcome.Updated);
 
-        var result = provider.Deserialize(TestPredicate, inputRoot);
+        var result = provider.Deserialize(TestPredicate.ToManifestEntry(), inputRoot);
 
         Assert.Equal(1, result.Created);
         Assert.Equal(1, result.Updated);

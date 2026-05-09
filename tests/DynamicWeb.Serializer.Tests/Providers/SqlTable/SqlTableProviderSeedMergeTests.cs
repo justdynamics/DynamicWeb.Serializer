@@ -3,6 +3,7 @@ using DynamicWeb.Serializer.Configuration;
 using DynamicWeb.Serializer.Infrastructure;
 using DynamicWeb.Serializer.Models;
 using DynamicWeb.Serializer.Providers.SqlTable;
+using DynamicWeb.Serializer.Tests.Helpers;
 using Dynamicweb.Data;
 using Moq;
 using Xunit;
@@ -67,7 +68,7 @@ public class SqlTableProviderSeedMergeTests
                 It.IsAny<Action<string>?>()))
             .Returns(WriteOutcome.Updated);
 
-        var result = provider.Deserialize(TestPredicate, inputRoot,
+        var result = provider.Deserialize(TestPredicate.ToManifestEntry(), inputRoot,
             strategy: ConflictStrategy.DestinationWins);
 
         writer.Verify(w => w.UpdateColumnSubset(
@@ -105,7 +106,7 @@ public class SqlTableProviderSeedMergeTests
             existingDbRows: new[] { existingRow });
 
         var logs = new List<string>();
-        var result = provider.Deserialize(TestPredicate, inputRoot, log: logs.Add,
+        var result = provider.Deserialize(TestPredicate.ToManifestEntry(), inputRoot, log: logs.Add,
             strategy: ConflictStrategy.DestinationWins);
 
         writer.Verify(w => w.UpdateColumnSubset(
@@ -139,7 +140,7 @@ public class SqlTableProviderSeedMergeTests
                 It.IsAny<bool>(), It.IsAny<Action<string>?>()))
             .Returns(WriteOutcome.Updated);
 
-        provider.Deserialize(TestPredicate, inputRoot,
+        provider.Deserialize(TestPredicate.ToManifestEntry(), inputRoot,
             strategy: ConflictStrategy.DestinationWins);
 
         // Exactly Description in the subset, not Name.
@@ -177,7 +178,7 @@ public class SqlTableProviderSeedMergeTests
                 It.IsAny<HashSet<string>?>()))
             .Returns(WriteOutcome.Created);
 
-        provider.Deserialize(TestPredicate, inputRoot,
+        provider.Deserialize(TestPredicate.ToManifestEntry(), inputRoot,
             strategy: ConflictStrategy.DestinationWins);
 
         writer.Verify(w => w.WriteRow(
@@ -205,7 +206,7 @@ public class SqlTableProviderSeedMergeTests
             existingDbRows: new[] { sameRow });
 
         var logs = new List<string>();
-        var result = provider.Deserialize(TestPredicate, inputRoot, log: logs.Add,
+        var result = provider.Deserialize(TestPredicate.ToManifestEntry(), inputRoot, log: logs.Add,
             strategy: ConflictStrategy.DestinationWins);
 
         // Fast-path wins — merge never even runs.
@@ -247,7 +248,7 @@ public class SqlTableProviderSeedMergeTests
                 It.IsAny<bool>(), It.IsAny<Action<string>?>()))
             .Returns(WriteOutcome.Updated);
 
-        provider.Deserialize(TestPredicate, inputRoot, log: logs.Add,
+        provider.Deserialize(TestPredicate.ToManifestEntry(), inputRoot, log: logs.Add,
             strategy: ConflictStrategy.DestinationWins);
 
         // PhantomColumn must not appear in the column subset.
@@ -282,7 +283,7 @@ public class SqlTableProviderSeedMergeTests
             .Returns(WriteOutcome.Updated);
 
         var logs = new List<string>();
-        provider.Deserialize(TestPredicate, inputRoot, log: logs.Add, isDryRun: true,
+        provider.Deserialize(TestPredicate.ToManifestEntry(), inputRoot, log: logs.Add, isDryRun: true,
             strategy: ConflictStrategy.DestinationWins);
 
         executor.Verify(x => x.ExecuteNonQuery(It.IsAny<CommandBuilder>()), Times.Never);
@@ -306,7 +307,7 @@ public class SqlTableProviderSeedMergeTests
             yamlRows: new[] { yamlRow },
             existingDbRows: new[] { existingRow });
 
-        var result = provider.Deserialize(TestPredicate, inputRoot,
+        var result = provider.Deserialize(TestPredicate.ToManifestEntry(), inputRoot,
             strategy: ConflictStrategy.DestinationWins);
 
         writer.Verify(w => w.UpdateColumnSubset(
@@ -338,7 +339,7 @@ public class SqlTableProviderSeedMergeTests
             .Returns(WriteOutcome.Updated);
 
         var logs = new List<string>();
-        provider.Deserialize(TestPredicate, inputRoot, log: logs.Add,
+        provider.Deserialize(TestPredicate.ToManifestEntry(), inputRoot, log: logs.Add,
             strategy: ConflictStrategy.DestinationWins);
 
         Assert.Contains(logs, l =>
@@ -407,7 +408,7 @@ public class SqlTableProviderSeedMergeTests
                 It.IsAny<bool>(), It.IsAny<Action<string>?>()))
             .Returns(WriteOutcome.Updated);
 
-        provider.Deserialize(predicate, inputRoot,
+        provider.Deserialize(predicate.ToManifestEntry(), inputRoot,
             strategy: ConflictStrategy.DestinationWins);
 
         writer.Verify(w => w.UpdateColumnSubset(
@@ -471,7 +472,7 @@ public class SqlTableProviderSeedMergeTests
             metadata: metadata,
             columnTypes: columnTypes);
 
-        provider.Deserialize(predicate, inputRoot,
+        provider.Deserialize(predicate.ToManifestEntry(), inputRoot,
             strategy: ConflictStrategy.DestinationWins);
 
         // Zero columns needed filling — Seed-merge recognized no changes.
@@ -537,7 +538,7 @@ public class SqlTableProviderSeedMergeTests
                 It.IsAny<bool>(), It.IsAny<Action<string>?>()))
             .Returns(WriteOutcome.Updated);
 
-        provider.Deserialize(predicate, inputRoot,
+        provider.Deserialize(predicate.ToManifestEntry(), inputRoot,
             strategy: ConflictStrategy.DestinationWins);
 
         // Merged XML must contain both the target-only CustomLocal AND the seed-added Mail1SenderEmail.
@@ -599,7 +600,7 @@ public class SqlTableProviderSeedMergeTests
             columnTypes: columnTypes);
 
         var logs = new List<string>();
-        provider.Deserialize(predicate, inputRoot, log: logs.Add, isDryRun: true,
+        provider.Deserialize(predicate.ToManifestEntry(), inputRoot, log: logs.Add, isDryRun: true,
             strategy: ConflictStrategy.DestinationWins);
 
         Assert.Contains(logs, l =>
@@ -669,7 +670,7 @@ public class SqlTableProviderSeedMergeTests
                 It.IsAny<bool>(), It.IsAny<Action<string>?>()))
             .Returns(WriteOutcome.Updated);
 
-        provider.Deserialize(predicate, inputRoot,
+        provider.Deserialize(predicate.ToManifestEntry(), inputRoot,
             strategy: ConflictStrategy.DestinationWins);
 
         // The XML path fills via XmlMergeHelper, which inserts a full <Parameter> element.
@@ -729,7 +730,7 @@ public class SqlTableProviderSeedMergeTests
             metadata: metadata,
             columnTypes: columnTypes);
 
-        provider.Deserialize(predicate, inputRoot,
+        provider.Deserialize(predicate.ToManifestEntry(), inputRoot,
             strategy: ConflictStrategy.DestinationWins);
 
         // Malformed target → XmlMergeHelper returns target unchanged → no fills → no write.

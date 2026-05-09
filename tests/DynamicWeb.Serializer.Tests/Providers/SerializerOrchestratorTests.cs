@@ -4,9 +4,18 @@ using DynamicWeb.Serializer.Infrastructure;
 using DynamicWeb.Serializer.Models;
 using DynamicWeb.Serializer.Providers;
 using DynamicWeb.Serializer.Providers.SqlTable;
+using DynamicWeb.Serializer.Reporting;
+using DynamicWeb.Serializer.Tests.Helpers;
 using Dynamicweb.Data;
 using Moq;
 using Xunit;
+
+// Phase 43 / DESER-01 transitional: many tests still drive the orchestrator via the
+// [Obsolete] DeserializeAll(predicates, ...) overload (Phase 44 deletes it via CONVERGE-04).
+// File-scoped disable so the remaining predicate-fixture-flavored tests compile clean.
+// Layer A SC-1/2/3/6 tests below use the new manifest-driven overload + DeserializeEntries
+// test seam directly — they don't need the suppression.
+#pragma warning disable CS0618 // Obsolete
 
 namespace DynamicWeb.Serializer.Tests.Providers;
 
@@ -42,31 +51,73 @@ public class SerializerOrchestratorTests
         NameColumn = "OrderFlowName"
     };
 
+    // Phase 43 Layer A entry fixtures (per CONTEXT D-04 — Layer A retargets directly).
+    private static readonly ContentEntry ContentEntry1 = new()
+    {
+        EntryId = "content/area-1",
+        Files = new[] { "_content/area-1/page.yml" },
+        AreaId = 1,
+        AreaName = "Area 1",
+        Path = "/",
+        PageId = 0
+    };
+
+    private static readonly ContentEntry ContentEntry2 = new()
+    {
+        EntryId = "content/area-1/blog",
+        Files = new[] { "_content/area-1/blog/post.yml" },
+        AreaId = 1,
+        AreaName = "Area 1",
+        Path = "/blog",
+        PageId = 0
+    };
+
+    private static readonly SqlTableEntry SqlTableEntryFx = new()
+    {
+        EntryId = "sql/EcomOrderFlow",
+        Files = new[] { "_sql/EcomOrderFlow/row.yml" },
+        Table = "EcomOrderFlow",
+        NameColumn = "OrderFlowName"
+    };
+
     public SerializerOrchestratorTests()
     {
         _contentProvider = new Mock<ISerializationProvider>();
         _contentProvider.Setup(p => p.ProviderType).Returns("Content");
-        _contentProvider.Setup(p => p.ValidatePredicate(It.IsAny<ProviderPredicateDefinition>()))
-            .Returns(ValidationResult.Success());
         _contentProvider.Setup(p => p.Serialize(It.IsAny<ProviderPredicateDefinition>(), It.IsAny<string>(), It.IsAny<Action<string>?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>()))
             .Returns(new SerializeResult { RowsSerialized = 5, TableName = "Content" });
-        _contentProvider.Setup(p => p.Deserialize(It.IsAny<ProviderPredicateDefinition>(), It.IsAny<string>(), It.IsAny<Action<string>?>(), It.IsAny<bool>(), It.IsAny<ConflictStrategy>(), It.IsAny<DynamicWeb.Serializer.Serialization.InternalLinkResolver?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>()))
+        _contentProvider.Setup(p => p.Deserialize(It.IsAny<ManifestEntry>(), It.IsAny<string>(), It.IsAny<Action<string>?>(), It.IsAny<bool>(), It.IsAny<ConflictStrategy>(), It.IsAny<DynamicWeb.Serializer.Serialization.InternalLinkResolver?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>()))
             .Returns(new ProviderDeserializeResult { Created = 2, Updated = 1, TableName = "Content" });
+        // Phase 43 / DESER-03: legacy DeserializeAll(predicates, ...) bridge converts via
+        // BuildManifestEntry. Mock returns a canonical Content entry built from the predicate.
+        _contentProvider.Setup(p => p.BuildManifestEntry(It.IsAny<ProviderPredicateDefinition>(), It.IsAny<string>(), It.IsAny<IReadOnlyList<string>>()))
+            .Returns((ProviderPredicateDefinition pred, string _, IReadOnlyList<string> _) => pred.ToManifestEntry());
 
         _sqlTableProvider = new Mock<ISerializationProvider>();
         _sqlTableProvider.Setup(p => p.ProviderType).Returns("SqlTable");
-        _sqlTableProvider.Setup(p => p.ValidatePredicate(It.IsAny<ProviderPredicateDefinition>()))
-            .Returns(ValidationResult.Success());
         _sqlTableProvider.Setup(p => p.Serialize(It.IsAny<ProviderPredicateDefinition>(), It.IsAny<string>(), It.IsAny<Action<string>?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>()))
             .Returns(new SerializeResult { RowsSerialized = 10, TableName = "EcomOrderFlow" });
-        _sqlTableProvider.Setup(p => p.Deserialize(It.IsAny<ProviderPredicateDefinition>(), It.IsAny<string>(), It.IsAny<Action<string>?>(), It.IsAny<bool>(), It.IsAny<ConflictStrategy>(), It.IsAny<DynamicWeb.Serializer.Serialization.InternalLinkResolver?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>()))
+        _sqlTableProvider.Setup(p => p.Deserialize(It.IsAny<ManifestEntry>(), It.IsAny<string>(), It.IsAny<Action<string>?>(), It.IsAny<bool>(), It.IsAny<ConflictStrategy>(), It.IsAny<DynamicWeb.Serializer.Serialization.InternalLinkResolver?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>()))
             .Returns(new ProviderDeserializeResult { Created = 3, Updated = 2, Skipped = 1, TableName = "EcomOrderFlow" });
+        _sqlTableProvider.Setup(p => p.BuildManifestEntry(It.IsAny<ProviderPredicateDefinition>(), It.IsAny<string>(), It.IsAny<IReadOnlyList<string>>()))
+            .Returns((ProviderPredicateDefinition pred, string _, IReadOnlyList<string> _) => pred.ToManifestEntry());
 
         _registry = new ProviderRegistry();
         _registry.Register(_contentProvider.Object);
         _registry.Register(_sqlTableProvider.Object);
 
         _orchestrator = new SerializerOrchestrator(_registry);
+    }
+
+    /// <summary>
+    /// Phase 43 / DESER-03 helper: configure a fresh mock provider with the BuildManifestEntry
+    /// bridge setup the legacy DeserializeAll(predicates, ...) overload depends on. Used by
+    /// the per-test mock providers below.
+    /// </summary>
+    private static void StubBuildManifestEntry(Mock<ISerializationProvider> mock)
+    {
+        mock.Setup(p => p.BuildManifestEntry(It.IsAny<ProviderPredicateDefinition>(), It.IsAny<string>(), It.IsAny<IReadOnlyList<string>>()))
+            .Returns((ProviderPredicateDefinition pred, string _, IReadOnlyList<string> _) => pred.ToManifestEntry());
     }
 
     // --- SerializeAll tests ---
@@ -152,29 +203,11 @@ public class SerializerOrchestratorTests
         Assert.Contains("WARNING", logs.First(l => l.Contains("Nonexistent")));
     }
 
-    [Fact]
-    public void SerializeAll_FailedValidation_SkipsWithErrorLogged()
-    {
-        var invalidPred = new ProviderPredicateDefinition
-        {
-            Name = "BadPred",
-            ProviderType = "Content",
-            Path = "",
-            AreaId = 0
-        };
-        _contentProvider.Setup(p => p.ValidatePredicate(invalidPred))
-            .Returns(ValidationResult.Failure("Path is required"));
-
-        var predicates = new List<ProviderPredicateDefinition> { invalidPred, SqlTablePred };
-        var logs = new List<string>();
-
-        var result = _orchestrator.SerializeAll(predicates, "/output", log: msg => logs.Add(msg));
-
-        // Invalid predicate should be skipped, SqlTable should proceed
-        Assert.Single(result.SerializeResults);
-        Assert.Single(result.Errors);
-        Assert.Contains("Path is required", result.Errors[0]);
-    }
+    // Phase 43 / DESER-03: SerializeAll_FailedValidation_SkipsWithErrorLogged removed.
+    // ValidatePredicate is no longer on ISerializationProvider — the orchestrator now uses
+    // a typed-dispatch helper (ValidateBeforeSerialize) which routes only to concrete
+    // ContentProvider / SqlTableProvider. Mock providers don't get validation pre-flight;
+    // the test was probing the deprecated Mock-based plumbing.
 
     // --- DeserializeAll tests ---
 
@@ -183,10 +216,14 @@ public class SerializerOrchestratorTests
     {
         var predicates = new List<ProviderPredicateDefinition> { ContentPred1, SqlTablePred };
 
+#pragma warning disable CS0618 // [Obsolete] predicate-typed overload — Phase 44 deletes
         var result = _orchestrator.DeserializeAll(predicates, "/input");
 
-        _contentProvider.Verify(p => p.Deserialize(ContentPred1, "/input", It.IsAny<Action<string>?>(), false, It.IsAny<ConflictStrategy>(), It.IsAny<DynamicWeb.Serializer.Serialization.InternalLinkResolver?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>()), Times.Once);
-        _sqlTableProvider.Verify(p => p.Deserialize(SqlTablePred, "/input", It.IsAny<Action<string>?>(), false, It.IsAny<ConflictStrategy>(), It.IsAny<DynamicWeb.Serializer.Serialization.InternalLinkResolver?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>()), Times.Once);
+        // Phase 43: DeserializeAll(predicates, ...) bridges via BuildManifestEntry, so the
+        // dispatched ManifestEntry is a synthetic ContentEntry/SqlTableEntry, not the predicate.
+        // Verify against the entry's discriminator field instead.
+        _contentProvider.Verify(p => p.Deserialize(It.Is<ManifestEntry>(e => e.ProviderType == "Content"), "/input", It.IsAny<Action<string>?>(), false, It.IsAny<ConflictStrategy>(), It.IsAny<DynamicWeb.Serializer.Serialization.InternalLinkResolver?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>()), Times.Once);
+        _sqlTableProvider.Verify(p => p.Deserialize(It.Is<ManifestEntry>(e => e.ProviderType == "SqlTable"), "/input", It.IsAny<Action<string>?>(), false, It.IsAny<ConflictStrategy>(), It.IsAny<DynamicWeb.Serializer.Serialization.InternalLinkResolver?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>()), Times.Once);
         Assert.Equal(2, result.DeserializeResults.Count);
     }
 
@@ -197,8 +234,8 @@ public class SerializerOrchestratorTests
 
         var result = _orchestrator.DeserializeAll(predicates, "/input", isDryRun: true, providerFilter: "SqlTable");
 
-        _contentProvider.Verify(p => p.Deserialize(It.IsAny<ProviderPredicateDefinition>(), It.IsAny<string>(), It.IsAny<Action<string>?>(), It.IsAny<bool>(), It.IsAny<ConflictStrategy>(), It.IsAny<DynamicWeb.Serializer.Serialization.InternalLinkResolver?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>()), Times.Never);
-        _sqlTableProvider.Verify(p => p.Deserialize(SqlTablePred, "/input", It.IsAny<Action<string>?>(), true, It.IsAny<ConflictStrategy>(), It.IsAny<DynamicWeb.Serializer.Serialization.InternalLinkResolver?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>()), Times.Once);
+        _contentProvider.Verify(p => p.Deserialize(It.IsAny<ManifestEntry>(), It.IsAny<string>(), It.IsAny<Action<string>?>(), It.IsAny<bool>(), It.IsAny<ConflictStrategy>(), It.IsAny<DynamicWeb.Serializer.Serialization.InternalLinkResolver?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>()), Times.Never);
+        _sqlTableProvider.Verify(p => p.Deserialize(It.Is<ManifestEntry>(e => e.ProviderType == "SqlTable"), "/input", It.IsAny<Action<string>?>(), true, It.IsAny<ConflictStrategy>(), It.IsAny<DynamicWeb.Serializer.Serialization.InternalLinkResolver?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>()), Times.Once);
         Assert.Single(result.DeserializeResults);
     }
 
@@ -219,26 +256,9 @@ public class SerializerOrchestratorTests
         Assert.Contains("Nonexistent", result.Errors[0]);
     }
 
-    [Fact]
-    public void DeserializeAll_FailedValidation_SkipsWithErrorLogged()
-    {
-        var invalidPred = new ProviderPredicateDefinition
-        {
-            Name = "BadPred",
-            ProviderType = "SqlTable",
-            Table = ""
-        };
-        _sqlTableProvider.Setup(p => p.ValidatePredicate(invalidPred))
-            .Returns(ValidationResult.Failure("Table is required"));
-
-        var predicates = new List<ProviderPredicateDefinition> { invalidPred, ContentPred1 };
-
-        var result = _orchestrator.DeserializeAll(predicates, "/input");
-
-        Assert.Single(result.DeserializeResults);
-        Assert.Single(result.Errors);
-        Assert.Contains("Table is required", result.Errors[0]);
-    }
+    // Phase 43 / DESER-03: DeserializeAll_FailedValidation_SkipsWithErrorLogged removed.
+    // Same reason as SerializeAll_FailedValidation_* above — the deprecated ValidatePredicate
+    // mock setup never reached the production code; validation moves to manifest read time.
 
     // --- OrchestratorResult tests ---
 
@@ -321,13 +341,12 @@ public class SerializerOrchestratorTests
         var callOrder = new List<string>();
         var sqlProvider = new Mock<ISerializationProvider>();
         sqlProvider.Setup(p => p.ProviderType).Returns("SqlTable");
-        sqlProvider.Setup(p => p.ValidatePredicate(It.IsAny<ProviderPredicateDefinition>()))
-            .Returns(ValidationResult.Success());
-        sqlProvider.Setup(p => p.Deserialize(It.IsAny<ProviderPredicateDefinition>(), It.IsAny<string>(), It.IsAny<Action<string>?>(), It.IsAny<bool>(), It.IsAny<ConflictStrategy>(), It.IsAny<DynamicWeb.Serializer.Serialization.InternalLinkResolver?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>()))
-            .Returns((ProviderPredicateDefinition pred, string _, Action<string>? _, bool _, ConflictStrategy _, DynamicWeb.Serializer.Serialization.InternalLinkResolver? _, IReadOnlyDictionary<string, List<string>>? _, IReadOnlyDictionary<string, List<string>>? _) =>
+        StubBuildManifestEntry(sqlProvider);
+        sqlProvider.Setup(p => p.Deserialize(It.IsAny<ManifestEntry>(), It.IsAny<string>(), It.IsAny<Action<string>?>(), It.IsAny<bool>(), It.IsAny<ConflictStrategy>(), It.IsAny<DynamicWeb.Serializer.Serialization.InternalLinkResolver?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>()))
+            .Returns((ManifestEntry e, string _, Action<string>? _, bool _, ConflictStrategy _, DynamicWeb.Serializer.Serialization.InternalLinkResolver? _, IReadOnlyDictionary<string, List<string>>? _, IReadOnlyDictionary<string, List<string>>? _) =>
             {
-                callOrder.Add(pred.Table!);
-                return new ProviderDeserializeResult { Created = 1, TableName = pred.Table! };
+                callOrder.Add(((SqlTableEntry)e).Table);
+                return new ProviderDeserializeResult { Created = 1, TableName = ((SqlTableEntry)e).Table };
             });
 
         var registry = new ProviderRegistry();
@@ -359,24 +378,22 @@ public class SerializerOrchestratorTests
 
         var contentProvider = new Mock<ISerializationProvider>();
         contentProvider.Setup(p => p.ProviderType).Returns("Content");
-        contentProvider.Setup(p => p.ValidatePredicate(It.IsAny<ProviderPredicateDefinition>()))
-            .Returns(ValidationResult.Success());
-        contentProvider.Setup(p => p.Deserialize(It.IsAny<ProviderPredicateDefinition>(), It.IsAny<string>(), It.IsAny<Action<string>?>(), It.IsAny<bool>(), It.IsAny<ConflictStrategy>(), It.IsAny<DynamicWeb.Serializer.Serialization.InternalLinkResolver?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>()))
-            .Returns((ProviderPredicateDefinition pred, string _, Action<string>? _, bool _, ConflictStrategy _, DynamicWeb.Serializer.Serialization.InternalLinkResolver? _, IReadOnlyDictionary<string, List<string>>? _, IReadOnlyDictionary<string, List<string>>? _) =>
+        StubBuildManifestEntry(contentProvider);
+        contentProvider.Setup(p => p.Deserialize(It.IsAny<ManifestEntry>(), It.IsAny<string>(), It.IsAny<Action<string>?>(), It.IsAny<bool>(), It.IsAny<ConflictStrategy>(), It.IsAny<DynamicWeb.Serializer.Serialization.InternalLinkResolver?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>()))
+            .Returns((ManifestEntry e, string _, Action<string>? _, bool _, ConflictStrategy _, DynamicWeb.Serializer.Serialization.InternalLinkResolver? _, IReadOnlyDictionary<string, List<string>>? _, IReadOnlyDictionary<string, List<string>>? _) =>
             {
-                callOrder.Add($"Content:{pred.Name}");
+                callOrder.Add($"Content:{e.EntryId}");
                 return new ProviderDeserializeResult { Created = 1, TableName = "Content" };
             });
 
         var sqlProvider = new Mock<ISerializationProvider>();
         sqlProvider.Setup(p => p.ProviderType).Returns("SqlTable");
-        sqlProvider.Setup(p => p.ValidatePredicate(It.IsAny<ProviderPredicateDefinition>()))
-            .Returns(ValidationResult.Success());
-        sqlProvider.Setup(p => p.Deserialize(It.IsAny<ProviderPredicateDefinition>(), It.IsAny<string>(), It.IsAny<Action<string>?>(), It.IsAny<bool>(), It.IsAny<ConflictStrategy>(), It.IsAny<DynamicWeb.Serializer.Serialization.InternalLinkResolver?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>()))
-            .Returns((ProviderPredicateDefinition pred, string _, Action<string>? _, bool _, ConflictStrategy _, DynamicWeb.Serializer.Serialization.InternalLinkResolver? _, IReadOnlyDictionary<string, List<string>>? _, IReadOnlyDictionary<string, List<string>>? _) =>
+        StubBuildManifestEntry(sqlProvider);
+        sqlProvider.Setup(p => p.Deserialize(It.IsAny<ManifestEntry>(), It.IsAny<string>(), It.IsAny<Action<string>?>(), It.IsAny<bool>(), It.IsAny<ConflictStrategy>(), It.IsAny<DynamicWeb.Serializer.Serialization.InternalLinkResolver?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>()))
+            .Returns((ManifestEntry e, string _, Action<string>? _, bool _, ConflictStrategy _, DynamicWeb.Serializer.Serialization.InternalLinkResolver? _, IReadOnlyDictionary<string, List<string>>? _, IReadOnlyDictionary<string, List<string>>? _) =>
             {
-                callOrder.Add($"SqlTable:{pred.Table}");
-                return new ProviderDeserializeResult { Created = 1, TableName = pred.Table! };
+                callOrder.Add($"SqlTable:{((SqlTableEntry)e).Table}");
+                return new ProviderDeserializeResult { Created = 1, TableName = ((SqlTableEntry)e).Table };
             });
 
         var registry = new ProviderRegistry();
@@ -388,10 +405,12 @@ public class SerializerOrchestratorTests
         orchestrator.DeserializeAll(new List<ProviderPredicateDefinition> { sqlPredA, contentPred, sqlPredB }, "/input");
 
         Assert.Equal(3, callOrder.Count);
-        // SqlTable B before SqlTable A (B is parent), then Content last
+        // SqlTable B before SqlTable A (B is parent), then Content last.
+        // Phase 43: Content entry id is "content/area-{AreaId}" per ToManifestEntry helper —
+        // the assertion adapts to the entry-driven dispatch path.
         Assert.Equal("SqlTable:B", callOrder[0]);
         Assert.Equal("SqlTable:A", callOrder[1]);
-        Assert.Equal("Content:Pages", callOrder[2]);
+        Assert.Equal("Content:content/area-1", callOrder[2]);
     }
 
     [Fact]
@@ -415,9 +434,8 @@ public class SerializerOrchestratorTests
 
         var sqlProvider = new Mock<ISerializationProvider>();
         sqlProvider.Setup(p => p.ProviderType).Returns("SqlTable");
-        sqlProvider.Setup(p => p.ValidatePredicate(It.IsAny<ProviderPredicateDefinition>()))
-            .Returns(ValidationResult.Success());
-        sqlProvider.Setup(p => p.Deserialize(It.IsAny<ProviderPredicateDefinition>(), It.IsAny<string>(), It.IsAny<Action<string>?>(), It.IsAny<bool>(), It.IsAny<ConflictStrategy>(), It.IsAny<DynamicWeb.Serializer.Serialization.InternalLinkResolver?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>()))
+        StubBuildManifestEntry(sqlProvider);
+        sqlProvider.Setup(p => p.Deserialize(It.IsAny<ManifestEntry>(), It.IsAny<string>(), It.IsAny<Action<string>?>(), It.IsAny<bool>(), It.IsAny<ConflictStrategy>(), It.IsAny<DynamicWeb.Serializer.Serialization.InternalLinkResolver?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>()))
             .Returns(new ProviderDeserializeResult { Created = 1, TableName = "Test" });
 
         // Phase 37-04: CacheInvalidator resolves via DwCacheServiceRegistry-shaped
@@ -453,9 +471,8 @@ public class SerializerOrchestratorTests
 
         var sqlProvider = new Mock<ISerializationProvider>();
         sqlProvider.Setup(p => p.ProviderType).Returns("SqlTable");
-        sqlProvider.Setup(p => p.ValidatePredicate(It.IsAny<ProviderPredicateDefinition>()))
-            .Returns(ValidationResult.Success());
-        sqlProvider.Setup(p => p.Deserialize(It.IsAny<ProviderPredicateDefinition>(), It.IsAny<string>(), It.IsAny<Action<string>?>(), It.IsAny<bool>(), It.IsAny<ConflictStrategy>(), It.IsAny<DynamicWeb.Serializer.Serialization.InternalLinkResolver?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>()))
+        StubBuildManifestEntry(sqlProvider);
+        sqlProvider.Setup(p => p.Deserialize(It.IsAny<ManifestEntry>(), It.IsAny<string>(), It.IsAny<Action<string>?>(), It.IsAny<bool>(), It.IsAny<ConflictStrategy>(), It.IsAny<DynamicWeb.Serializer.Serialization.InternalLinkResolver?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>()))
             .Returns(new ProviderDeserializeResult { Created = 1, TableName = "EcomPayments" });
 
         var invokeCount = 0;
@@ -485,8 +502,7 @@ public class SerializerOrchestratorTests
         var callOrder = new List<string>();
         var sqlProvider = new Mock<ISerializationProvider>();
         sqlProvider.Setup(p => p.ProviderType).Returns("SqlTable");
-        sqlProvider.Setup(p => p.ValidatePredicate(It.IsAny<ProviderPredicateDefinition>()))
-            .Returns(ValidationResult.Success());
+        StubBuildManifestEntry(sqlProvider);
         sqlProvider.Setup(p => p.Serialize(It.IsAny<ProviderPredicateDefinition>(), It.IsAny<string>(), It.IsAny<Action<string>?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>()))
             .Returns((ProviderPredicateDefinition pred, string _, Action<string>? _, IReadOnlyDictionary<string, List<string>>? _, IReadOnlyDictionary<string, List<string>>? _) =>
             {
@@ -518,9 +534,8 @@ public class SerializerOrchestratorTests
 
         var sqlProvider = new Mock<ISerializationProvider>();
         sqlProvider.Setup(p => p.ProviderType).Returns("SqlTable");
-        sqlProvider.Setup(p => p.ValidatePredicate(It.IsAny<ProviderPredicateDefinition>()))
-            .Returns(ValidationResult.Success());
-        sqlProvider.Setup(p => p.Deserialize(It.IsAny<ProviderPredicateDefinition>(), It.IsAny<string>(), It.IsAny<Action<string>?>(), It.IsAny<bool>(), It.IsAny<ConflictStrategy>(), It.IsAny<DynamicWeb.Serializer.Serialization.InternalLinkResolver?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>()))
+        StubBuildManifestEntry(sqlProvider);
+        sqlProvider.Setup(p => p.Deserialize(It.IsAny<ManifestEntry>(), It.IsAny<string>(), It.IsAny<Action<string>?>(), It.IsAny<bool>(), It.IsAny<ConflictStrategy>(), It.IsAny<DynamicWeb.Serializer.Serialization.InternalLinkResolver?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>()))
             .Returns(new ProviderDeserializeResult { Created = 1, TableName = "EcomOrderFlow" });
 
         var resolverCalls = 0;
@@ -558,9 +573,8 @@ public class SerializerOrchestratorTests
 
         var sqlProvider = new Mock<ISerializationProvider>();
         sqlProvider.Setup(p => p.ProviderType).Returns("SqlTable");
-        sqlProvider.Setup(p => p.ValidatePredicate(It.IsAny<ProviderPredicateDefinition>()))
-            .Returns(ValidationResult.Success());
-        sqlProvider.Setup(p => p.Deserialize(It.IsAny<ProviderPredicateDefinition>(), It.IsAny<string>(), It.IsAny<Action<string>?>(), It.IsAny<bool>(), It.IsAny<ConflictStrategy>(), It.IsAny<DynamicWeb.Serializer.Serialization.InternalLinkResolver?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>()))
+        StubBuildManifestEntry(sqlProvider);
+        sqlProvider.Setup(p => p.Deserialize(It.IsAny<ManifestEntry>(), It.IsAny<string>(), It.IsAny<Action<string>?>(), It.IsAny<bool>(), It.IsAny<ConflictStrategy>(), It.IsAny<DynamicWeb.Serializer.Serialization.InternalLinkResolver?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>()))
             .Returns(new ProviderDeserializeResult { Created = 3, TableName = "EcomProductGroupField" });
 
         var mockSchemaSync = new Mock<EcomGroupFieldSchemaSync>(MockBehavior.Loose, new object[] { new Mock<ISqlExecutor>().Object });
@@ -589,9 +603,8 @@ public class SerializerOrchestratorTests
 
         var sqlProvider = new Mock<ISerializationProvider>();
         sqlProvider.Setup(p => p.ProviderType).Returns("SqlTable");
-        sqlProvider.Setup(p => p.ValidatePredicate(It.IsAny<ProviderPredicateDefinition>()))
-            .Returns(ValidationResult.Success());
-        sqlProvider.Setup(p => p.Deserialize(It.IsAny<ProviderPredicateDefinition>(), It.IsAny<string>(), It.IsAny<Action<string>?>(), It.IsAny<bool>(), It.IsAny<ConflictStrategy>(), It.IsAny<DynamicWeb.Serializer.Serialization.InternalLinkResolver?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>()))
+        StubBuildManifestEntry(sqlProvider);
+        sqlProvider.Setup(p => p.Deserialize(It.IsAny<ManifestEntry>(), It.IsAny<string>(), It.IsAny<Action<string>?>(), It.IsAny<bool>(), It.IsAny<ConflictStrategy>(), It.IsAny<DynamicWeb.Serializer.Serialization.InternalLinkResolver?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>()))
             .Returns(new ProviderDeserializeResult { Created = 3, TableName = "EcomProductGroupField" });
 
         var mockSchemaSync = new Mock<EcomGroupFieldSchemaSync>(MockBehavior.Loose, new object[] { new Mock<ISqlExecutor>().Object });
@@ -619,9 +632,8 @@ public class SerializerOrchestratorTests
 
         var sqlProvider = new Mock<ISerializationProvider>();
         sqlProvider.Setup(p => p.ProviderType).Returns("SqlTable");
-        sqlProvider.Setup(p => p.ValidatePredicate(It.IsAny<ProviderPredicateDefinition>()))
-            .Returns(ValidationResult.Success());
-        sqlProvider.Setup(p => p.Deserialize(It.IsAny<ProviderPredicateDefinition>(), It.IsAny<string>(), It.IsAny<Action<string>?>(), It.IsAny<bool>(), It.IsAny<ConflictStrategy>(), It.IsAny<DynamicWeb.Serializer.Serialization.InternalLinkResolver?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>()))
+        StubBuildManifestEntry(sqlProvider);
+        sqlProvider.Setup(p => p.Deserialize(It.IsAny<ManifestEntry>(), It.IsAny<string>(), It.IsAny<Action<string>?>(), It.IsAny<bool>(), It.IsAny<ConflictStrategy>(), It.IsAny<DynamicWeb.Serializer.Serialization.InternalLinkResolver?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>()))
             .Returns(new ProviderDeserializeResult { Created = 1, TableName = "EcomOrderFlow" });
 
         var mockSchemaSync = new Mock<EcomGroupFieldSchemaSync>(MockBehavior.Loose, new object[] { new Mock<ISqlExecutor>().Object });
@@ -656,9 +668,8 @@ public class SerializerOrchestratorTests
 
         var sqlProvider = new Mock<ISerializationProvider>();
         sqlProvider.Setup(p => p.ProviderType).Returns("SqlTable");
-        sqlProvider.Setup(p => p.ValidatePredicate(It.IsAny<ProviderPredicateDefinition>()))
-            .Returns(ValidationResult.Success());
-        sqlProvider.Setup(p => p.Deserialize(It.IsAny<ProviderPredicateDefinition>(), It.IsAny<string>(), It.IsAny<Action<string>?>(), It.IsAny<bool>(), It.IsAny<ConflictStrategy>(), It.IsAny<DynamicWeb.Serializer.Serialization.InternalLinkResolver?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>()))
+        StubBuildManifestEntry(sqlProvider);
+        sqlProvider.Setup(p => p.Deserialize(It.IsAny<ManifestEntry>(), It.IsAny<string>(), It.IsAny<Action<string>?>(), It.IsAny<bool>(), It.IsAny<ConflictStrategy>(), It.IsAny<DynamicWeb.Serializer.Serialization.InternalLinkResolver?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>()))
             .Returns(new ProviderDeserializeResult { Created = 1, TableName = "Test" });
 
         // Phase 37-04: CacheInvalidator that throws on "BadCache" (resolver returns null → throw)
@@ -682,5 +693,160 @@ public class SerializerOrchestratorTests
         Assert.Contains(logs, l => l.Contains("WARNING") && l.Contains("Cache invalidation failed"));
         // Good cache was still cleared
         Assert.Equal(1, goodInvoked);
+    }
+
+    // =========================================================================
+    // Phase 43 Layer A acceptance tests — SC-1, SC-2, SC-3, SC-6
+    // These exercise the new manifest-driven DeserializeAll path via the
+    // internal DeserializeEntries test seam (avoids on-disk manifest setup).
+    // =========================================================================
+
+    /// <summary>
+    /// SC-1: orchestrator dispatches every entry from a manifest, populating EntryOutcomes
+    /// with one outcome per dispatched entry.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Phase43")]
+    public void DeserializeAll_ManifestDriven_DispatchesEachEntry_SC1()
+    {
+        var entries = new List<ManifestEntry> { ContentEntry1, SqlTableEntryFx };
+
+        var result = _orchestrator.DeserializeEntries(
+            entries,
+            modeRoot: "/tmp/modeRoot",
+            mode: DeploymentMode.Deploy,
+            strategy: ConflictStrategy.SourceWins,
+            log: null,
+            isDryRun: false,
+            providerFilter: null,
+            escalator: null,
+            excludeFieldsByItemType: null,
+            excludeXmlElementsByType: null);
+
+        Assert.Equal(2, result.EntryOutcomes.Count);
+        Assert.Contains(result.EntryOutcomes, o => o.EntryId == "content/area-1" && o.Status == EntryStatus.Succeeded);
+        Assert.Contains(result.EntryOutcomes, o => o.EntryId == "sql/EcomOrderFlow" && o.Status == EntryStatus.Succeeded);
+        Assert.False(result.HasErrors);
+    }
+
+    /// <summary>
+    /// SC-2: providerFilter exclusion produces an EntryStatus.Skipped outcome (today's
+    /// silent-skip class becomes observable per REPORT-01 / D-02).
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Phase43")]
+    public void DeserializeAll_ProviderFilterExclusion_ReportsSkipped_SC2()
+    {
+        var entries = new List<ManifestEntry> { ContentEntry1, SqlTableEntryFx };
+
+        var result = _orchestrator.DeserializeEntries(
+            entries,
+            modeRoot: "/tmp/modeRoot",
+            mode: DeploymentMode.Deploy,
+            strategy: ConflictStrategy.SourceWins,
+            log: null,
+            isDryRun: false,
+            providerFilter: "Content",
+            escalator: null,
+            excludeFieldsByItemType: null,
+            excludeXmlElementsByType: null);
+
+        Assert.Contains(result.EntryOutcomes, o => o.EntryId == "sql/EcomOrderFlow" && o.Status == EntryStatus.Skipped);
+        Assert.Contains(result.EntryOutcomes, o => o.EntryId == "content/area-1" && o.Status == EntryStatus.Succeeded);
+        // Skipped is not a failure → HasErrors stays false.
+        Assert.False(result.HasErrors);
+    }
+
+    /// <summary>
+    /// SC-3a: HasErrors is true when at least one EntryOutcome has Status == Failed.
+    /// Direct test of the aggregation invariant in OrchestratorResult.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Phase43")]
+    public void OrchestratorResult_HasErrors_TrueWhenAnyEntryFailed_SC3()
+    {
+        var result = new OrchestratorResult
+        {
+            EntryOutcomes = new List<EntryOutcome>
+            {
+                EntryOutcome.Skipped(ContentEntry1, "filtered"),
+                EntryOutcome.Failed(SqlTableEntryFx, "FK violation")
+            }
+        };
+        Assert.True(result.HasErrors);
+    }
+
+    /// <summary>
+    /// SC-3b: HasErrors is false when no entry outcome failed, even with mixed Skipped
+    /// + Succeeded outcomes.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Phase43")]
+    public void OrchestratorResult_HasErrors_FalseWhenAllSucceededOrSkipped_SC3()
+    {
+        var result = new OrchestratorResult
+        {
+            EntryOutcomes = new List<EntryOutcome>
+            {
+                EntryOutcome.Skipped(ContentEntry1, "filtered"),
+                EntryOutcome.From(SqlTableEntryFx,
+                    new ProviderDeserializeResult { Created = 5, TableName = "EcomOrderFlow" },
+                    TimeSpan.FromMilliseconds(50))
+            }
+        };
+        Assert.False(result.HasErrors);
+    }
+
+    /// <summary>
+    /// SC-6: FK ordering operates on entries[] live-recomputed regardless of input order.
+    /// Two different input orderings produce identical dispatch order.
+    /// </summary>
+    [Fact]
+    [Trait("Category", "Phase43")]
+    public void DeserializeAll_ShuffledManifestEntries_ProducesSameDispatchOrder_SC6()
+    {
+        // 3 SqlTableEntries A, B, C where FK requires C before B before A.
+        var entryA = new SqlTableEntry { EntryId = "sql/A", Files = Array.Empty<string>(), Table = "A" };
+        var entryB = new SqlTableEntry { EntryId = "sql/B", Files = Array.Empty<string>(), Table = "B" };
+        var entryC = new SqlTableEntry { EntryId = "sql/C", Files = Array.Empty<string>(), Table = "C" };
+
+        var fkResolver = CreateFkResolver(("A", "B"), ("B", "C"));
+
+        var dispatchedOrder = new List<string>();
+        var sqlProvider = new Mock<ISerializationProvider>();
+        sqlProvider.Setup(p => p.ProviderType).Returns("SqlTable");
+        StubBuildManifestEntry(sqlProvider);
+        sqlProvider.Setup(p => p.Deserialize(It.IsAny<ManifestEntry>(),
+                It.IsAny<string>(), It.IsAny<Action<string>?>(), It.IsAny<bool>(), It.IsAny<ConflictStrategy>(),
+                It.IsAny<DynamicWeb.Serializer.Serialization.InternalLinkResolver?>(),
+                It.IsAny<IReadOnlyDictionary<string, List<string>>?>(),
+                It.IsAny<IReadOnlyDictionary<string, List<string>>?>()))
+            .Returns((ManifestEntry e, string _, Action<string>? _, bool _, ConflictStrategy _, DynamicWeb.Serializer.Serialization.InternalLinkResolver? _, IReadOnlyDictionary<string, List<string>>? _, IReadOnlyDictionary<string, List<string>>? _) =>
+            {
+                dispatchedOrder.Add(((SqlTableEntry)e).Table);
+                return new ProviderDeserializeResult { Created = 1, TableName = ((SqlTableEntry)e).Table };
+            });
+
+        var registry = new ProviderRegistry();
+        registry.Register(sqlProvider.Object);
+        var orchestrator = new SerializerOrchestrator(registry, fkResolver);
+
+        // Run with ABC ordering.
+        var unshuffled = new List<ManifestEntry> { entryA, entryB, entryC };
+        orchestrator.DeserializeEntries(unshuffled, "/tmp", DeploymentMode.Deploy, ConflictStrategy.SourceWins,
+            log: null, isDryRun: false, providerFilter: null, escalator: null,
+            excludeFieldsByItemType: null, excludeXmlElementsByType: null);
+        var orderUnshuffled = dispatchedOrder.ToList();
+        dispatchedOrder.Clear();
+
+        // Run with shuffled ordering — FK reorder must produce the same dispatch sequence.
+        var shuffled = new List<ManifestEntry> { entryC, entryA, entryB };
+        orchestrator.DeserializeEntries(shuffled, "/tmp", DeploymentMode.Deploy, ConflictStrategy.SourceWins,
+            log: null, isDryRun: false, providerFilter: null, escalator: null,
+            excludeFieldsByItemType: null, excludeXmlElementsByType: null);
+        var orderShuffled = dispatchedOrder.ToList();
+
+        Assert.Equal(orderUnshuffled, orderShuffled);
+        Assert.Equal(new[] { "C", "B", "A" }, orderUnshuffled);
     }
 }

@@ -2,6 +2,7 @@ using System.Data;
 using DynamicWeb.Serializer.Infrastructure;
 using DynamicWeb.Serializer.Models;
 using DynamicWeb.Serializer.Providers.SqlTable;
+using DynamicWeb.Serializer.Tests.Helpers;
 using Dynamicweb.Data;
 using Moq;
 using Xunit;
@@ -86,7 +87,7 @@ public class SqlTableProviderCoercionTests
                 return WriteOutcome.Created;
             });
 
-        var result = provider.Deserialize(TestPredicate, inputRoot, log: logged.Add);
+        var result = provider.Deserialize(TestPredicate.ToManifestEntry(), inputRoot, log: logged.Add);
 
         // Unknown column stripped before MERGE command composition
         Assert.NotNull(capturedRow);
@@ -160,7 +161,7 @@ public class SqlTableProviderCoercionTests
                 return WriteOutcome.Created;
             });
 
-        _ = provider.Deserialize(predicate, inputRoot);
+        _ = provider.Deserialize(predicate.ToManifestEntry(), inputRoot);
 
         Assert.NotNull(capturedRow);
         Assert.IsType<DateTime>(capturedRow!["CreatedDate"]);

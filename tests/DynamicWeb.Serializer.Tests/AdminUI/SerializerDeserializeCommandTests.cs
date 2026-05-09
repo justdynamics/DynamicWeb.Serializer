@@ -1,5 +1,7 @@
 using DynamicWeb.Serializer.AdminUI.Commands;
+using DynamicWeb.Serializer.Infrastructure;
 using DynamicWeb.Serializer.Providers;
+using DynamicWeb.Serializer.Reporting;
 using Dynamicweb.CoreUI.Data;
 using Xunit;
 
@@ -59,6 +61,44 @@ public class SerializerDeserializeCommandTests
 
         var mapped = SerializerDeserializeCommand.InvokeMapStatusForTest(synth);
 
+        Assert.Equal(CommandResult.ResultType.Ok, mapped.Status);
+    }
+
+    // =========================================================================
+    // Phase 43 / SC-3: D-38-12 zero-error-equals-Ok guard extended to entry-level
+    // failure shapes per REPORT-04 (HasErrors aggregates from EntryOutcomes).
+    // =========================================================================
+
+    private static ManifestEntry MakeFakeEntry() =>
+        new SqlTableEntry { EntryId = "sql/Test", Files = Array.Empty<string>(), Table = "Test" };
+
+    [Fact]
+    [Trait("Category", "Phase43")]
+    public void MapStatusFromResult_AnyEntryFailed_ReturnsError_SC3()
+    {
+        var result = new OrchestratorResult
+        {
+            EntryOutcomes = { EntryOutcome.Failed(MakeFakeEntry(), "fk violation") }
+        };
+        var mapped = SerializerDeserializeCommand.InvokeMapStatusForTest(result);
+        Assert.Equal(CommandResult.ResultType.Error, mapped.Status);
+    }
+
+    [Fact]
+    [Trait("Category", "Phase43")]
+    public void MapStatusFromResult_AllSucceededWithSkipped_ReturnsOk_SC3()
+    {
+        var result = new OrchestratorResult
+        {
+            EntryOutcomes =
+            {
+                EntryOutcome.From(MakeFakeEntry(),
+                    new ProviderDeserializeResult { Created = 2, TableName = "Test" },
+                    TimeSpan.FromMilliseconds(10)),
+                EntryOutcome.Skipped(MakeFakeEntry(), "providerFilter")
+            }
+        };
+        var mapped = SerializerDeserializeCommand.InvokeMapStatusForTest(result);
         Assert.Equal(CommandResult.ResultType.Ok, mapped.Status);
     }
 }
