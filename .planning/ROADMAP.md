@@ -439,7 +439,8 @@ Plans:
   4. `SerializerDeserializeCommand`, `DeserializeFromZipCommand`, and every other deserialize entry point compile and pass tests with zero references to `ConfigLoader.Load` (verified by repository-wide grep at end of phase); strict-mode default is sourced from `StrictModeResolver.Resolve(entryPoint, configValue: null, requestValue)` and a one-time WARNING fires when `config.StrictMode` is set but no longer consulted.
   5. The admin-UI log viewer (`Files/System/Serializer/Log/`) shows one log line per entry tagged with the `EntryId` (e.g. `[content/area-1/customer-center] Succeeded`, `[sql/EcomOrderFlow] Failed: 3 of 47 rows failed FK validation`) for every deserialize run, observable without re-running.
   6. FK ordering and Content-before-SqlTable reorder rules operate on the live `entries[]` list (not trusting manifest order); shuffling the manifest entry array in a test fixture produces the same dispatch order as the unshuffled fixture (`FkDependencyResolver` reused unchanged).
-**Plans:** TBD
+**Plans:** 1 plan
+- [ ] 43-01-PLAN.md - Big-bang manifest-driven deserialize pivot (9 atomic commits per D-01)
 
 ### Phase 44: Zip-import convergence + test cleanup + schedule-task removal + live E2E
 **Goal**: All deserialize entry points (full deserialize, zip-import) converge on shared entry-builder helpers; predicate-fixture test debt cleared; `[Obsolete]` overloads + schedule-task code paths removed; live E2E re-validation under `strictMode: true`.
