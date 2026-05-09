@@ -138,7 +138,8 @@ public class SerializerOrchestrator
                 .ToList();
 
             // Phase 42-03 / MANIFEST-05: bake the by-ItemType exclusion maps into the envelope
-            // so the deserialize path (Phase 43) does not need ConfigLoader.Load to read them.
+            // so the deserialize path (Phase 43) does not need to consult Serializer.config.json
+            // to read them.
             manifestWriter?.Write(outputRoot, modeName, entries,
                 excludeFieldsByItemType: excludeFieldsByItemType,
                 excludeXmlElementsByType: excludeXmlElementsByType);
@@ -361,7 +362,8 @@ public class SerializerOrchestrator
     // -------------------------------------------------------------------------
     // Phase 43 / DESER-01..05 + REPORT-01..05: manifest-driven deserialize.
     // Reads {mode}-manifest.json from modeRoot and dispatches each entry. No
-    // predicates parameter; no ConfigLoader.Load; per-entry EntryOutcome reporting.
+    // predicates parameter; no Serializer.config.json consultation; per-entry
+    // EntryOutcome reporting.
     // -------------------------------------------------------------------------
 
     /// <summary>

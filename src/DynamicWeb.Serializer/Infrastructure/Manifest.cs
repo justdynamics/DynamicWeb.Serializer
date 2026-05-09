@@ -29,7 +29,7 @@ public sealed record Manifest
 
     /// <summary>
     /// Top-level by-ItemType field exclusions baked into the manifest at serialize time so the
-    /// deserialize path does not need <see cref="Configuration.ConfigLoader.Load"/> to read them
+    /// deserialize path does not need to consult <c>Serializer.config.json</c> to read them
     /// (per MANIFEST-05 / SUMMARY.md settled question 1). Empty dict when none configured.
     /// </summary>
     public required IReadOnlyDictionary<string, List<string>> ExcludeFieldsByItemType { get; init; }

@@ -131,6 +131,12 @@ public sealed class SerializerDeserializeCommand : CommandBase
                 : StrictModeResolver.EntryPoint.Api;
             var strict = StrictModeResolver.Resolve(entryPoint, configValue: null, requestValue: StrictMode);
             Log($"=== Strict mode: {strict} (entry-point: {entryPoint}) ===");
+
+            // Phase 43 / DESER-05 final: emit a one-time WARNING when the on-disk config still
+            // carries the legacy strictMode setting. Route through the same log channel as
+            // everything else; once-per-run is naturally enforced by command-per-request lifecycle.
+            StrictModeDeprecationWarning.EmitIfLegacyValueSet(configPath, Log);
+
             var escalator = new StrictModeEscalator(strict, Log);
 
             // Phase 43 / DESER-01: orchestrator reads the manifest itself; no predicates parameter.
