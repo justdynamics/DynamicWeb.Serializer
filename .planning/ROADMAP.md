@@ -442,23 +442,22 @@ Plans:
 **Plans:** 1/1 plans complete
 - [x] 43-01-PLAN.md - Big-bang manifest-driven deserialize pivot (9 atomic commits per D-01)
 
-### Phase 44: Zip-import convergence + test cleanup + schedule-task removal + live E2E
-**Goal**: All deserialize entry points (full deserialize, zip-import) converge on shared entry-builder helpers; predicate-fixture test debt cleared; `[Obsolete]` overloads + schedule-task code paths removed; live E2E re-validation under `strictMode: true`.
+### Phase 44: Zip-import convergence + test cleanup + Obsolete deletion + REVIEW fold-in
+**Goal**: All deserialize entry points (full deserialize, zip-import) converge on shared entry-builder helpers; predicate-fixture test debt cleared; three `[Obsolete]` overloads removed; schedule-task absence ratified; Phase 43 REVIEW.md findings (WR-02..04, IN-01..03, IN-06) folded in. **Live E2E re-validation was scoped here as CONVERGE-06 but dropped 2026-05-11 — see REQUIREMENTS.md.**
 **Depends on**: Phase 43 (zip-import convergence depends on the stable `DeserializeAll(manifest,...)` surface)
-**Requirements**: CONVERGE-01, CONVERGE-02, CONVERGE-03, CONVERGE-04, CONVERGE-05, CONVERGE-06
+**Requirements**: CONVERGE-01, CONVERGE-02, CONVERGE-03, CONVERGE-04, CONVERGE-05, CONVERGE-07
 **Success Criteria** (what must be TRUE):
-  1. `DeserializeFromZipCommand` builds an in-memory `Manifest` via shared `BuildContentEntryForArea` and runs through `SerializerOrchestrator.DeserializeAll` (no separate `ContentDeserializer` direct-call code path); a zip-import test under `strictMode: true` honors strict mode (today's bypass closed).
-  2. Repository grep at end of phase finds zero references to predicate-fixture types in `ContentProviderTests`, `SqlTableProviderDeserializeTests`, `SqlTableProviderSeedMergeTests`, `SqlTableLinkResolutionIntegrationTests`, `SerializerDeserializeCommandTests`, `SerializerSerializeCommandTests`, and `StrictModeIntegrationTests`; the transitional `ToPredicate(Entry)` test-helper shim is removed.
-  3. The two `[Obsolete]` `SerializeAll` / `DeserializeAll` overloads on `SerializerOrchestrator` are deleted; remaining schedule-task code paths (already in PROJECT.md Active list) are removed; `git grep` confirms.
-  4. A live Swift 2.2 → CleanDB round-trip via `tools/e2e/full-clean-roundtrip.ps1` under `strictMode: true` returns HTTP 200 on all four API calls (serialize deploy/seed, deserialize deploy/seed) and `EcomProducts` source-vs-target row count matches (2051 → 2051).
-  5. A live deploy of the DAP / `pim.carriageservices` baseline under `strictMode: true` returns HTTP 200 on serialize + deserialize and produces a per-entry log report with zero `Failed` outcomes.
-  6. Full solution build + test run is green; no regressions surface in the existing Phase 41 admin-UI suite or the Phase 39 seed-merge suite.
+  1. `DeserializeFromZipCommand` builds an in-memory `Manifest` via shared `ContentProvider.BuildContentEntryForArea` and runs through the new `SerializerOrchestrator.DeserializeAll(Manifest, contentRoot, ...)` public overload (no separate `ContentDeserializer` direct-call code path); `ContentDeserializer.Deserialize` itself pivots to `ContentEntry`-typed; a zip-import test under `strictMode: true` honors strict mode (today's bypass closed).
+  2. Repository grep at end of phase finds zero references to predicate-fixture types in `ContentProviderTests`, `SqlTableProviderDeserializeTests`, `SqlTableProviderSeedMergeTests`, `SqlTableLinkResolutionIntegrationTests`, `SerializerDeserializeCommandTests`, `SerializerSerializeCommandTests`, and `StrictModeIntegrationTests`; the transitional `ToPredicateExtensions.ToManifestEntry` reverse-shim is removed along with its file; Layer A predicate-fixture residual in `SerializerOrchestratorTests.cs` is reconciled (legacy-overload-specific tests deleted with the overload; remaining tests ported to entry fixtures).
+  3. Three `[Obsolete]` overloads on `SerializerOrchestrator` are deleted: `SerializeAll(predicates, outputRoot, log, providerFilter)` + `DeserializeAll(predicates, log, isDryRun, providerFilter)` + `DeserializeAll(predicates, inputRoot, mode, strategy, ...)` along with the predicate→entry bridge inside the body; CONVERGE-05 grep-gates the absence of schedule-task code paths in `src/` (commit `a32703f` already removed them — this phase ratifies via assertion-only verification).
+  4. CONVERGE-07 / Phase 43 REVIEW.md fold-in: `EntryStatus.Warned` dead enum value deleted (WR-02); `StrictModeDeprecationWarning` catch tightened to specific exceptions (WR-03); `SerializerDeserializeCommand` initialises the log file before emitting the deprecation warning (WR-04); `OrchestratorResult.DeserializeResults` field deleted and `AdviceGenerator` migrated to consume `EntryOutcomes` (IN-01); dead `Summary` branch deleted (IN-02); `"<run-level>"` string literals replaced with named constants in `EntryOutcome` (IN-03 + IN-06).
+  5. Full solution build + test run is green; no regressions surface in the existing Phase 41 admin-UI suite or the Phase 39 seed-merge suite.
 **Plans:** TBD
 
 **Execution waves** (for /gsd-execute-phase):
 - Wave 1: Phase 42 (foundation — purely additive on serialize side; no Phase 43/44 work can begin until v2 manifest shape stabilizes on disk)
 - Wave 2: Phase 43 (depends_on: [42] — reads what Phase 42 writes; pivot lands together with public-API reshape, command-surface change, strict-mode location decision)
-- Wave 3: Phase 44 (depends_on: [42, 43] — zip-import convergence + Layer B test port + obsolete-overload removal + schedule-task removal + live E2E gate)
+- Wave 3: Phase 44 (depends_on: [42, 43] — zip-import convergence + Layer B test port + Obsolete-overload removal + Phase 43 REVIEW fold-in)
 
 Phases v0.6.0 are **strictly sequential** per research SUMMARY.md ("Phase 2 reads what Phase 1 wrote — atomic-write + schema-version + entry shape on disk before reader is testable... Test-coverage ratchet: round-trip property test (Phase 1) → orchestrator unit tests on entry fixtures (Phase 2) → bulk integration test port (Phase 3). No big-bang.") — do NOT parallelize.
 

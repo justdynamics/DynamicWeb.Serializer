@@ -46,7 +46,9 @@
 - [ ] **CONVERGE-03**: All predicate-fixture test files migrate to entry fixtures via a ratchet (Layer A: orchestrator unit tests in the pivot phase; Layer B: provider integration + command + strict-mode integration tests in the cleanup phase). A transitional `ToPredicate(Entry)` test-helper shim is permitted during Phase 2 and removed in Phase 3
 - [ ] **CONVERGE-04**: The two `[Obsolete]` `SerializeAll`/`DeserializeAll` overloads on `SerializerOrchestrator` are removed
 - [ ] **CONVERGE-05**: Remaining schedule-task code paths (already in PROJECT.md Active list) are removed as part of the cleanup phase
-- [ ] **CONVERGE-06**: Live E2E re-validation passes against Swift 2.2 → CleanDB and against the DAP/pim.carriageservices deploy under `strictMode: true`
+- [ ] **CONVERGE-07**: Phase 43 REVIEW.md fold-in — delete dead `EntryStatus.Warned` enum value (WR-02), tighten `StrictModeDeprecationWarning` catch (WR-03), initialise the log file before emitting the deprecation warning in `SerializerDeserializeCommand` (WR-04), delete `OrchestratorResult.DeserializeResults` field + migrate `AdviceGenerator` to consume `EntryOutcomes` (IN-01), delete dead Summary branch (IN-02), replace `"<run-level>"` string literals in `EntryOutcome` with named constants (IN-03 + IN-06)
+
+> **CONVERGE-06 (dropped 2026-05-11, Phase 44 discuss):** Live E2E re-validation against Swift 2.2 → CleanDB and DAP/pim.carriageservices under `strictMode: true` was dropped from v0.6.0 scope. The Phase 38.1 pipeline at `tools/e2e/full-clean-roundtrip.ps1` remains in-repo for on-demand runs. Rationale: the 861/861 unit + integration suite covers the refactor; Phase 38.1 validated the pipeline once; live E2E wall-clock + machine setup cost was not worth a second proof.
 
 ## Future Requirements (deferred — tracked, not in v0.6.0 roadmap)
 
@@ -104,11 +106,12 @@ Empty until roadmap creation. Each requirement maps to exactly one phase.
 | CONVERGE-03 | Phase 44 | Pending |
 | CONVERGE-04 | Phase 44 | Pending |
 | CONVERGE-05 | Phase 44 | Pending |
-| CONVERGE-06 | Phase 44 | Pending |
+| CONVERGE-06 | — | Dropped 2026-05-11 (Phase 44 discuss) |
+| CONVERGE-07 | Phase 44 | Pending |
 
 **Coverage:**
-- v0.6.0 requirements: 26 total
-- Mapped to phases: 26 (Phase 42: 10, Phase 43: 10, Phase 44: 6)
+- v0.6.0 requirements: 26 active (CONVERGE-06 dropped; CONVERGE-07 added in Phase 44 discuss as Phase 43 REVIEW.md fold-in)
+- Mapped to phases: 26 (Phase 42: 10, Phase 43: 10, Phase 44: 6 — CONVERGE-01..05, CONVERGE-07)
 - Unmapped: 0 ✓
 
 ---
