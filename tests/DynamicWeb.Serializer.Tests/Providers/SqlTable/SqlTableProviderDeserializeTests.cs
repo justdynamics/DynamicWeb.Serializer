@@ -2,7 +2,6 @@ using System.Data;
 using DynamicWeb.Serializer.Infrastructure;
 using DynamicWeb.Serializer.Models;
 using DynamicWeb.Serializer.Providers.SqlTable;
-using DynamicWeb.Serializer.Tests.Helpers;
 using Dynamicweb.Data;
 using Moq;
 using Xunit;
@@ -21,10 +20,11 @@ public class SqlTableProviderDeserializeTests
         AllColumns = new List<string> { "OrderFlowId", "OrderFlowName", "OrderFlowDescription" }
     };
 
-    private static readonly ProviderPredicateDefinition TestPredicate = new()
+    // Phase 44 / CONVERGE-03: ported from predicate fixture to SqlTableEntry literal.
+    private static readonly SqlTableEntry TestEntry = new()
     {
-        Name = "Order Flows",
-        ProviderType = "SqlTable",
+        EntryId = "sql/EcomOrderFlow",
+        Files = Array.Empty<string>(),
         Table = "EcomOrderFlow",
         NameColumn = "OrderFlowName"
     };
@@ -44,7 +44,7 @@ public class SqlTableProviderDeserializeTests
             yamlRows: new[] { row },
             existingDbRows: new[] { row });
 
-        var result = provider.Deserialize(TestPredicate.ToManifestEntry(), inputRoot);
+        var result = provider.Deserialize(TestEntry, inputRoot);
 
         Assert.Equal(0, result.Created);
         Assert.Equal(0, result.Updated);
@@ -70,7 +70,7 @@ public class SqlTableProviderDeserializeTests
         writer.Setup(w => w.WriteRow(It.IsAny<Dictionary<string, object?>>(), It.IsAny<TableMetadata>(), false, It.IsAny<Action<string>?>(), It.IsAny<HashSet<string>?>()))
             .Returns(WriteOutcome.Created);
 
-        var result = provider.Deserialize(TestPredicate.ToManifestEntry(), inputRoot);
+        var result = provider.Deserialize(TestEntry, inputRoot);
 
         Assert.Equal(1, result.Created);
         Assert.Equal(0, result.Skipped);
@@ -101,7 +101,7 @@ public class SqlTableProviderDeserializeTests
         writer.Setup(w => w.WriteRow(It.IsAny<Dictionary<string, object?>>(), It.IsAny<TableMetadata>(), false, It.IsAny<Action<string>?>(), It.IsAny<HashSet<string>?>()))
             .Returns(WriteOutcome.Updated);
 
-        var result = provider.Deserialize(TestPredicate.ToManifestEntry(), inputRoot);
+        var result = provider.Deserialize(TestEntry, inputRoot);
 
         Assert.Equal(0, result.Created);
         Assert.Equal(0, result.Skipped);
@@ -125,7 +125,7 @@ public class SqlTableProviderDeserializeTests
         writer.Setup(w => w.WriteRow(It.IsAny<Dictionary<string, object?>>(), It.IsAny<TableMetadata>(), true, It.IsAny<Action<string>?>(), It.IsAny<HashSet<string>?>()))
             .Returns(WriteOutcome.Created);
 
-        var result = provider.Deserialize(TestPredicate.ToManifestEntry(), inputRoot, isDryRun: true);
+        var result = provider.Deserialize(TestEntry, inputRoot, isDryRun: true);
 
         Assert.Equal(1, result.Created);
         // Verify WriteRow was called with isDryRun=true
@@ -189,7 +189,7 @@ public class SqlTableProviderDeserializeTests
                 It.IsAny<TableMetadata>(), false, It.IsAny<Action<string>?>(), It.IsAny<HashSet<string>?>()))
             .Returns(WriteOutcome.Updated);
 
-        var result = provider.Deserialize(TestPredicate.ToManifestEntry(), inputRoot);
+        var result = provider.Deserialize(TestEntry, inputRoot);
 
         Assert.Equal(1, result.Created);
         Assert.Equal(1, result.Updated);
@@ -275,6 +275,9 @@ public class SqlTableProviderDeserializeTests
         var mockExecutor = new Mock<ISqlExecutor>();
 
         // DataGroupMetadataReader mock
+        // NOTE (Phase 44 / CONVERGE-03): DataGroupMetadataReader.GetTableMetadata keeps its
+        // predicate-typed signature -- internal helper, no public-API surface. SqlTableProvider.Deserialize
+        // synthesises a transient predicate to call it. The mock setup mirrors that internal contract.
         var mockMetadataReader = new Mock<DataGroupMetadataReader>(mockExecutor.Object) { CallBase = false };
         mockMetadataReader.Setup(x => x.GetTableMetadata(It.IsAny<ProviderPredicateDefinition>(), It.IsAny<bool>()))
             .Returns(TestMetadata);
