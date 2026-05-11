@@ -1,7 +1,7 @@
+using DynamicWeb.Serializer.Infrastructure;
 using DynamicWeb.Serializer.Models;
 using DynamicWeb.Serializer.Providers;
 using DynamicWeb.Serializer.Providers.Content;
-using DynamicWeb.Serializer.Tests.Helpers;
 using Xunit;
 
 namespace DynamicWeb.Serializer.Tests.Providers.Content;
@@ -113,6 +113,9 @@ public class ContentProviderTests
     {
         // ContentProvider.Serialize calls ContentSerializer which requires DW runtime.
         // We can only test that the provider returns errors gracefully when runtime unavailable.
+        // Phase 44 / CONVERGE-03: SerializeAll path retains the predicate-typed contract
+        // (only DeserializeAll's three [Obsolete] overloads delete in Phase 44); Serialize
+        // tests stay predicate-fixture-driven.
         var predicate = new ProviderPredicateDefinition
         {
             Name = "Customer Center",
@@ -130,17 +133,19 @@ public class ContentProviderTests
     [Fact]
     public void Deserialize_ReturnsProviderDeserializeResult_WithContentTableName()
     {
-        var predicate = new ProviderPredicateDefinition
+        // Phase 44 / CONVERGE-03: ported from predicate fixture to ContentEntry literal.
+        var entry = new ContentEntry
         {
-            Name = "Customer Center",
-            ProviderType = "Content",
+            EntryId = "content/area-1",
+            Files = Array.Empty<string>(),
+            AreaId = 1,
+            AreaName = "Area 1",
             Path = "/Customer Center",
-            AreaId = 1
+            PageId = 0
         };
 
-        // Call with a non-existent input root - should handle gracefully
-        // Phase 43 / D-04 reverse shim: predicate-fixture flavored test bridging via ToManifestEntry().
-        var result = _provider.Deserialize(predicate.ToManifestEntry(), Path.Combine(Path.GetTempPath(), "nonexistent_" + Guid.NewGuid().ToString("N")));
+        // Call with a non-existent input root - should handle gracefully.
+        var result = _provider.Deserialize(entry, Path.Combine(Path.GetTempPath(), "nonexistent_" + Guid.NewGuid().ToString("N")));
 
         Assert.IsType<ProviderDeserializeResult>(result);
         Assert.Equal("Content", result.TableName);
@@ -149,6 +154,8 @@ public class ContentProviderTests
     [Fact]
     public void Serialize_InvalidPredicate_ReturnsErrorResult()
     {
+        // Phase 44 / CONVERGE-03: Serialize path stays predicate-typed (see note in
+        // Serialize_ReturnsSerializeResult_WithContentTableName).
         var predicate = new ProviderPredicateDefinition
         {
             Name = "Bad",
@@ -164,17 +171,19 @@ public class ContentProviderTests
     [Fact]
     public void Deserialize_InvalidPredicate_ReturnsErrorResult()
     {
-        var predicate = new ProviderPredicateDefinition
+        // Phase 44 / CONVERGE-03: ported to SqlTableEntry literal — preserves
+        // downcast-guard coverage. ContentProvider.Deserialize receives a SqlTableEntry
+        // and the type-mismatch downcast guard returns
+        // "Expected ContentEntry, got SqlTableEntry" — still an error result, so the
+        // test invariant holds.
+        var entry = new SqlTableEntry
         {
-            Name = "Bad",
-            ProviderType = "SqlTable",
+            EntryId = "sql/EcomOrderFlow",
+            Files = Array.Empty<string>(),
             Table = "EcomOrderFlow"
         };
 
-        // Phase 43 / D-04 reverse shim: ToManifestEntry produces a SqlTableEntry; ContentProvider's
-        // type-mismatch downcast guard returns "Expected ContentEntry, got SqlTableEntry" — still an
-        // error result, so the test invariant holds.
-        var result = _provider.Deserialize(predicate.ToManifestEntry(), Path.GetTempPath());
+        var result = _provider.Deserialize(entry, Path.GetTempPath());
 
         Assert.True(result.HasErrors);
     }
