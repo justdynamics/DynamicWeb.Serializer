@@ -3,7 +3,6 @@ using DynamicWeb.Serializer.Configuration;
 using DynamicWeb.Serializer.Infrastructure;
 using DynamicWeb.Serializer.Models;
 using DynamicWeb.Serializer.Providers.SqlTable;
-using DynamicWeb.Serializer.Tests.Helpers;
 using Dynamicweb.Data;
 using Moq;
 using Xunit;
@@ -107,7 +106,7 @@ public class EcomXmlMergeTests
                 It.IsAny<bool>(), It.IsAny<Action<string>?>()))
             .Returns(WriteOutcome.Updated);
 
-        provider.Deserialize(PaymentPredicate.ToManifestEntry(), inputRoot,
+        provider.Deserialize(PaymentEntry, inputRoot,
             strategy: ConflictStrategy.DestinationWins);
 
         writer.Verify(w => w.UpdateColumnSubset(
@@ -140,7 +139,7 @@ public class EcomXmlMergeTests
                 It.IsAny<bool>(), It.IsAny<Action<string>?>()))
             .Returns(WriteOutcome.Updated);
 
-        provider.Deserialize(PaymentPredicate.ToManifestEntry(), inputRoot,
+        provider.Deserialize(PaymentEntry, inputRoot,
             strategy: ConflictStrategy.DestinationWins);
 
         writer.Verify(w => w.UpdateColumnSubset(
@@ -168,7 +167,7 @@ public class EcomXmlMergeTests
                 It.IsAny<bool>(), It.IsAny<Action<string>?>()))
             .Returns(WriteOutcome.Updated);
 
-        provider.Deserialize(PaymentPredicate.ToManifestEntry(), inputRoot,
+        provider.Deserialize(PaymentEntry, inputRoot,
             strategy: ConflictStrategy.DestinationWins);
 
         // Target's Mail1SenderEmail is set -> merge preserves it. But Mail1SenderName is
@@ -202,7 +201,7 @@ public class EcomXmlMergeTests
                 It.IsAny<bool>(), It.IsAny<Action<string>?>()))
             .Returns(WriteOutcome.Updated);
 
-        provider.Deserialize(PaymentPredicate.ToManifestEntry(), inputRoot,
+        provider.Deserialize(PaymentEntry, inputRoot,
             strategy: ConflictStrategy.DestinationWins);
 
         writer.Verify(w => w.UpdateColumnSubset(
@@ -237,7 +236,7 @@ public class EcomXmlMergeTests
                 It.IsAny<bool>(), It.IsAny<Action<string>?>()))
             .Returns(WriteOutcome.Updated);
 
-        provider.Deserialize(ShippingPredicate.ToManifestEntry(), inputRoot,
+        provider.Deserialize(ShippingEntry, inputRoot,
             strategy: ConflictStrategy.DestinationWins);
 
         writer.Verify(w => w.UpdateColumnSubset(
@@ -268,7 +267,7 @@ public class EcomXmlMergeTests
                 It.IsAny<bool>(), It.IsAny<Action<string>?>()))
             .Returns(WriteOutcome.Updated);
 
-        provider.Deserialize(ShippingPredicate.ToManifestEntry(), inputRoot,
+        provider.Deserialize(ShippingEntry, inputRoot,
             strategy: ConflictStrategy.DestinationWins);
 
         writer.Verify(w => w.UpdateColumnSubset(
@@ -290,7 +289,7 @@ public class EcomXmlMergeTests
         var (provider, _, writer, inputRoot) = CreateShippingsProvider(
             new[] { yamlRow }, new[] { existingRow });
 
-        provider.Deserialize(ShippingPredicate.ToManifestEntry(), inputRoot,
+        provider.Deserialize(ShippingEntry, inputRoot,
             strategy: ConflictStrategy.DestinationWins);
 
         // Every seed element has a target counterpart already set -> no write fires.
@@ -316,7 +315,7 @@ public class EcomXmlMergeTests
                 It.IsAny<bool>(), It.IsAny<Action<string>?>()))
             .Returns(WriteOutcome.Updated);
 
-        provider.Deserialize(ShippingPredicate.ToManifestEntry(), inputRoot,
+        provider.Deserialize(ShippingEntry, inputRoot,
             strategy: ConflictStrategy.DestinationWins);
 
         writer.Verify(w => w.UpdateColumnSubset(
@@ -354,10 +353,12 @@ public class EcomXmlMergeTests
             IdentityColumns = new List<string>(),
             AllColumns = new List<string> { "Id", xmlColumn }
         };
-        var predicate = new ProviderPredicateDefinition
+        var entry = new SqlTableEntry
         {
-            Name = "x", ProviderType = "SqlTable",
-            Table = tableName, NameColumn = "Id"
+            EntryId = $"sql/{tableName}",
+            Files = Array.Empty<string>(),
+            Table = tableName,
+            NameColumn = "Id"
         };
         var columnTypes = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
@@ -385,7 +386,7 @@ public class EcomXmlMergeTests
                 It.IsAny<bool>(), It.IsAny<Action<string>?>()))
             .Returns(WriteOutcome.Updated);
 
-        provider.Deserialize(predicate.ToManifestEntry(), inputRoot,
+        provider.Deserialize(entry, inputRoot,
             strategy: ConflictStrategy.DestinationWins);
 
         writer.Verify(w => w.UpdateColumnSubset(
@@ -418,7 +419,7 @@ public class EcomXmlMergeTests
         var (provider, _, writer, inputRoot) = CreatePaymentsProvider(
             new[] { yamlRow }, new[] { existingRow });
 
-        provider.Deserialize(PaymentPredicate.ToManifestEntry(), inputRoot,
+        provider.Deserialize(PaymentEntry, inputRoot,
             strategy: ConflictStrategy.DestinationWins);
 
         // Idempotent: no column-subset write. (DisableForeignKeys/EnableForeignKeys DO run
@@ -437,16 +438,21 @@ public class EcomXmlMergeTests
 
     // ====== Helpers ======
 
-    private static readonly ProviderPredicateDefinition PaymentPredicate = new()
+    // Phase 44 / CONVERGE-03: ported from predicate fixtures to SqlTableEntry literals.
+    private static readonly SqlTableEntry PaymentEntry = new()
     {
-        Name = "Payments", ProviderType = "SqlTable",
-        Table = "EcomPayments", NameColumn = "PaymentId"
+        EntryId = "sql/EcomPayments",
+        Files = Array.Empty<string>(),
+        Table = "EcomPayments",
+        NameColumn = "PaymentId"
     };
 
-    private static readonly ProviderPredicateDefinition ShippingPredicate = new()
+    private static readonly SqlTableEntry ShippingEntry = new()
     {
-        Name = "Shippings", ProviderType = "SqlTable",
-        Table = "EcomShippings", NameColumn = "ShippingId"
+        EntryId = "sql/EcomShippings",
+        Files = Array.Empty<string>(),
+        Table = "EcomShippings",
+        NameColumn = "ShippingId"
     };
 
     private static TableMetadata PaymentMetadata => new()
@@ -524,6 +530,9 @@ public class EcomXmlMergeTests
     {
         var mockExecutor = new Mock<ISqlExecutor>();
 
+        // NOTE (Phase 44 / CONVERGE-03): DataGroupMetadataReader.GetTableMetadata keeps its
+        // predicate-typed signature -- internal helper, no public-API surface. SqlTableProvider.Deserialize
+        // synthesises a transient predicate to call it. The mock setup mirrors that internal contract.
         var mockMetadataReader = new Mock<DataGroupMetadataReader>(mockExecutor.Object) { CallBase = false };
         mockMetadataReader.Setup(x => x.GetTableMetadata(It.IsAny<ProviderPredicateDefinition>(), It.IsAny<bool>()))
             .Returns(metadata);
