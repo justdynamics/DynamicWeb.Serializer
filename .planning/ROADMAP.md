@@ -401,7 +401,7 @@ Plans:
 
 - [x] **Phase 42: Manifest schema + entry hierarchy + serialize-side build** — Purely additive on the serialize side; existing deserialize tests pass unchanged. (completed 2026-05-08)
 - [x] **Phase 43: Manifest-driven deserialize + per-entry reporting + command surface** — The pivot. Reads what Phase 42 wrote; drops `ConfigLoader.Load` and predicates parameter from the deserialize path; per-entry `EntryOutcome` replaces aggregate `DeserializeResults`. (completed 2026-05-09)
-- [ ] **Phase 44: Zip-import convergence + test cleanup + schedule-task removal + live E2E** — Cleanup behind Phase 43. Zip-import routes through shared `BuildContentEntryForArea`; Layer B test port; `[Obsolete]` overload removal; schedule-task removal; live E2E re-validation against Swift 2.2 → CleanDB and DAP/pim.carriageservices under `strictMode: true`.
+- [x] **Phase 44: Zip-import convergence + test cleanup + schedule-task removal + live E2E** — Cleanup behind Phase 43. Zip-import routes through shared `BuildContentEntryForArea`; Layer B test port; `[Obsolete]` overload removal; schedule-task removal; live E2E re-validation against Swift 2.2 → CleanDB and DAP/pim.carriageservices under `strictMode: true`. (completed 2026-05-11)
 
 ### Phase 42: Manifest schema + entry hierarchy + serialize-side build
 **Goal**: Serialize emits a versioned, polymorphic `entries[]` manifest carrying everything the deserialize path will need (no deserialize-side change yet).
@@ -452,10 +452,10 @@ Plans:
   3. Three `[Obsolete]` overloads on `SerializerOrchestrator` are deleted: `SerializeAll(predicates, outputRoot, log, providerFilter)` + `DeserializeAll(predicates, log, isDryRun, providerFilter)` + `DeserializeAll(predicates, inputRoot, mode, strategy, ...)` along with the predicate→entry bridge inside the body; CONVERGE-05 grep-gates the absence of schedule-task code paths in `src/` (commit `a32703f` already removed them — this phase ratifies via assertion-only verification).
   4. CONVERGE-07 / Phase 43 REVIEW.md fold-in: `EntryStatus.Warned` dead enum value deleted (WR-02); `StrictModeDeprecationWarning` catch tightened to specific exceptions (WR-03); `SerializerDeserializeCommand` initialises the log file before emitting the deprecation warning (WR-04); `OrchestratorResult.DeserializeResults` field deleted and `AdviceGenerator` migrated to consume `EntryOutcomes` (IN-01); dead `Summary` branch deleted (IN-02); `"<run-level>"` string literals replaced with named constants in `EntryOutcome` (IN-03 + IN-06).
   5. Full solution build + test run is green; no regressions surface in the existing Phase 41 admin-UI suite or the Phase 39 seed-merge suite.
-**Plans:** 1 plan
+**Plans:** 1/1 plans complete
 
 Plans:
-- [ ] 44-01-PLAN.md — Zip-import convergence (D-01..D-04) + Layer B test port (CONVERGE-03) + [Obsolete] overload deletion (CONVERGE-04) + schedule-task ratification (CONVERGE-05) + Phase 43 REVIEW fold-in (CONVERGE-07: WR-02..04, IN-01..03, IN-06); 7 atomic commits per D-05 ratchet
+- [x] 44-01-PLAN.md — Zip-import convergence (D-01..D-04) + Layer B test port (CONVERGE-03) + [Obsolete] overload deletion (CONVERGE-04) + schedule-task ratification (CONVERGE-05) + Phase 43 REVIEW fold-in (CONVERGE-07: WR-02..04, IN-01..03, IN-06); 7 atomic commits per D-05 ratchet
 
 **Execution waves** (for /gsd-execute-phase):
 - Wave 1: Phase 42 (foundation — purely additive on serialize side; no Phase 43/44 work can begin until v2 manifest shape stabilizes on disk)
