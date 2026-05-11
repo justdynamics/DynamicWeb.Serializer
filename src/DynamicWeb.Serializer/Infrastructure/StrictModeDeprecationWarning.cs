@@ -21,6 +21,13 @@ public static class StrictModeDeprecationWarning
     /// JSON-parse failure — peek failure is non-fatal because the deserialize path
     /// doesn't depend on this signal; the warning is purely advisory.
     /// </summary>
+    /// <remarks>
+    /// Phase 44 / WR-03: the previously-bare <c>catch</c> was narrowed to the three
+    /// exception types this peek path can realistically encounter — malformed JSON,
+    /// transient file-share / read race, permission denied. Unexpected exceptions
+    /// (<see cref="OutOfMemoryException"/>, thread-abort-class, etc.) now propagate
+    /// rather than being silently swallowed.
+    /// </remarks>
     public static void EmitIfLegacyValueSet(string? configPath, Action<string>? log)
     {
         if (string.IsNullOrEmpty(configPath) || !File.Exists(configPath)) return;
@@ -37,9 +44,19 @@ public static class StrictModeDeprecationWarning
                 "the deserialize path; use the per-call ?strictMode=true query parameter or rely " +
                 "on the entry-point default");
         }
-        catch
+        catch (JsonException)
         {
-            // Peek failure is non-fatal — the deserialize path doesn't need this; leave silent.
+            // Malformed JSON — non-fatal advisory.
         }
+        catch (IOException)
+        {
+            // Transient file-share race / temporary read failure — non-fatal advisory.
+        }
+        catch (UnauthorizedAccessException)
+        {
+            // Permission denied — non-fatal advisory (operator should be aware but deserialize proceeds).
+        }
+        // Phase 44 / WR-03: bare catch removed. OutOfMemoryException, ThreadAbortException
+        // analogues, and any other unexpected throw propagate to the caller's outer catch.
     }
 }

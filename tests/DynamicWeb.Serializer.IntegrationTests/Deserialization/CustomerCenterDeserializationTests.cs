@@ -12,6 +12,7 @@
 
 using Dynamicweb.Content;
 using DynamicWeb.Serializer.Configuration;
+using DynamicWeb.Serializer.Infrastructure;
 using DynamicWeb.Serializer.Models;
 using DynamicWeb.Serializer.Serialization;
 using Xunit;
@@ -59,15 +60,36 @@ public class CustomerCenterDeserializationTests : IDisposable
         };
     }
 
-    private (SerializerConfiguration config, int areaId) SerializeCustomerCenter()
+    /// <summary>
+    /// Phase 44 / D-04 + BLOCKER 1: ContentDeserializer constructor pivoted from
+    /// SerializerConfiguration to (ContentEntry, contentRoot). Build a ContentEntry from
+    /// the same areaId + pagePath the BuildConfig predicate used to drive the serialize
+    /// pass, so deserialize sees the same dispatch target. SerializerConfiguration is still
+    /// required for the serialize-side ContentSerializer (unchanged in Phase 44).
+    /// </summary>
+    private static ContentEntry BuildContentEntry(int areaId, string pagePath) => new()
+    {
+        EntryId = $"content/area-{areaId}",
+        Files = Array.Empty<string>(),
+        AreaId = areaId,
+        AreaName = string.Empty,
+        Path = pagePath,
+        PageId = 0,
+        AcknowledgedOrphanPageIds = Array.Empty<int>(),
+        ExcludeAreaColumns = Array.Empty<string>(),
+        ExcludeFields = Array.Empty<string>()
+    };
+
+    private (SerializerConfiguration config, int areaId, string pagePath) SerializeCustomerCenter()
     {
         var page = Services.Pages.GetPage(8385);
         Assert.NotNull(page);
         var areaId = page.AreaId;
-        var config = BuildConfig(_outputDir, areaId, "/" + page.MenuText);
+        var pagePath = "/" + page.MenuText;
+        var config = BuildConfig(_outputDir, areaId, pagePath);
         var serializer = new ContentSerializer(config);
         serializer.Serialize();
-        return (config, areaId);
+        return (config, areaId, pagePath);
     }
 
     // -------------------------------------------------------------------------
@@ -84,10 +106,12 @@ public class CustomerCenterDeserializationTests : IDisposable
     public void Deserialize_CustomerCenter_CompletesWithoutErrors()
     {
         // Arrange: serialize first to produce YAML files
-        var (config, areaId) = SerializeCustomerCenter();
+        var (config, areaId, pagePath) = SerializeCustomerCenter();
 
-        // Act: deserialize back into the same DW instance (UPDATE path — same GUIDs exist)
-        var deserializer = new ContentDeserializer(config, log: msg => { });
+        // Act: deserialize back into the same DW instance (UPDATE path — same GUIDs exist).
+        // Phase 44 / D-04: constructor is (ContentEntry, contentRoot) — the serialize-side
+        // SerializerConfiguration is unchanged.
+        var deserializer = new ContentDeserializer(BuildContentEntry(areaId, pagePath), _outputDir, log: msg => { });
         var result = deserializer.Deserialize();
 
         // Assert: no errors, some items updated (same GUIDs already exist)
@@ -105,13 +129,14 @@ public class CustomerCenterDeserializationTests : IDisposable
     public void Deserialize_CustomerCenter_GuidIdentity_UpdatesInPlace()
     {
         // Arrange
-        var (config, areaId) = SerializeCustomerCenter();
+        var (config, areaId, pagePath) = SerializeCustomerCenter();
 
-        // Act: deserialize twice — second run should still succeed (idempotent)
-        var deserializer1 = new ContentDeserializer(config, log: msg => { });
+        // Act: deserialize twice — second run should still succeed (idempotent).
+        // Phase 44 / D-04: pass a fresh ContentEntry per call (the deserializer holds state).
+        var deserializer1 = new ContentDeserializer(BuildContentEntry(areaId, pagePath), _outputDir, log: msg => { });
         var result1 = deserializer1.Deserialize();
 
-        var deserializer2 = new ContentDeserializer(config, log: msg => { });
+        var deserializer2 = new ContentDeserializer(BuildContentEntry(areaId, pagePath), _outputDir, log: msg => { });
         var result2 = deserializer2.Deserialize();
 
         // Assert: second run has zero failures, items matched by GUID
@@ -129,11 +154,11 @@ public class CustomerCenterDeserializationTests : IDisposable
     public void Deserialize_DryRun_ReportsChangesWithoutWriting()
     {
         // Arrange
-        var (config, areaId) = SerializeCustomerCenter();
+        var (config, areaId, pagePath) = SerializeCustomerCenter();
         var logMessages = new List<string>();
 
-        // Act: dry-run deserialization
-        var deserializer = new ContentDeserializer(config, log: msg => logMessages.Add(msg), isDryRun: true);
+        // Act: dry-run deserialization. Phase 44 / D-04: ContentEntry-typed constructor.
+        var deserializer = new ContentDeserializer(BuildContentEntry(areaId, pagePath), _outputDir, log: msg => logMessages.Add(msg), isDryRun: true);
         var result = deserializer.Deserialize();
 
         // Assert: dry-run produces results but writes nothing

@@ -53,16 +53,18 @@ public class AreaIdentityInsertTests
         });
     }
 
-    // Phase 40 D-02 / D-04: flat shape — DeployOutputSubfolder / SeedOutputSubfolder are
-    // top-level scalars; Predicates is empty for this test (it drives the area-create path
-    // through the InvokeCreateAreaFromPropertiesForTest test hook, which does not iterate
-    // predicates). Mode-defaulting is irrelevant here.
-    private static SerializerConfiguration MakeMinimalConfig() => new()
+    // Phase 44 / D-04 + BLOCKER 1: ContentDeserializer constructor pivoted from
+    // SerializerConfiguration to (ContentEntry, contentRoot). The test hook
+    // InvokeCreateAreaFromPropertiesForTest does NOT iterate the entry (predicate-loop
+    // gone), so a minimal stub ContentEntry suffices.
+    private static ContentEntry StubContentEntry() => new()
     {
-        OutputDirectory = "X",
-        DeployOutputSubfolder = "deploy",
-        SeedOutputSubfolder = "seed",
-        Predicates = new List<ProviderPredicateDefinition>()
+        EntryId = "test/stub",
+        Files = Array.Empty<string>(),
+        AreaId = 42,
+        AreaName = "Test",
+        Path = "/",
+        PageId = 0
     };
 
     private static SerializedArea MakeSerializedArea() => new()
@@ -82,7 +84,8 @@ public class AreaIdentityInsertTests
                 .Returns(1);
 
         var deserializer = new ContentDeserializer(
-            configuration: MakeMinimalConfig(),
+            entry: StubContentEntry(),
+            contentRoot: Path.GetTempPath(),
             store: null,
             log: null,
             isDryRun: false,
@@ -130,7 +133,8 @@ public class AreaIdentityInsertTests
                 .Returns(1);
 
         var deserializer = new ContentDeserializer(
-            configuration: MakeMinimalConfig(),
+            entry: StubContentEntry(),
+            contentRoot: Path.GetTempPath(),
             store: null, log: null, isDryRun: false, filesRoot: null,
             conflictStrategy: ConflictStrategy.SourceWins,
             schemaCache: MakeAreaSchemaCache(),

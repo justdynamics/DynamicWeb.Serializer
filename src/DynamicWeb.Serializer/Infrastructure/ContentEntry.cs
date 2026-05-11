@@ -31,4 +31,16 @@ public sealed record ContentEntry : ManifestEntry
 
     /// <summary>Area SQL-table column names to exclude from serialization output — see ProviderPredicateDefinition.ExcludeAreaColumns.</summary>
     public IReadOnlyList<string> ExcludeAreaColumns { get; init; } = Array.Empty<string>();
+
+    /// <summary>
+    /// Phase 44 / D-04 (BLOCKER 2 fix): item-field exclusion list — promoted from
+    /// <see cref="DynamicWeb.Serializer.Models.ProviderPredicateDefinition.ExcludeFields"/>
+    /// when ContentDeserializer pivots to ContentEntry-typed dispatch. Read at the per-area
+    /// exclusion-set build inside ContentDeserializer.DeserializePredicate before
+    /// area-creation runs. Defaults to empty (zero exclusions) so existing on-disk manifest
+    /// fixtures stay compatible without schema-version bump — the
+    /// <see cref="JsonUnmappedMemberHandlingAttribute"/> on ContentEntry accepts MISSING
+    /// members; only EXTRA members are rejected.
+    /// </summary>
+    public IReadOnlyList<string> ExcludeFields { get; init; } = Array.Empty<string>();
 }

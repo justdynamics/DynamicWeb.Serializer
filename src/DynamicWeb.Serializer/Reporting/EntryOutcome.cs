@@ -20,6 +20,19 @@ namespace DynamicWeb.Serializer.Reporting;
 /// </remarks>
 public sealed record EntryOutcome
 {
+    /// <summary>
+    /// Phase 44 / IN-03 (D-09): reserved EntryId for synthetic run-level outcomes (e.g.,
+    /// <see cref="RunLevelError"/> from strict-mode escalation). Grep-friendly literal —
+    /// downstream consumers filter via <c>o.EntryId == EntryOutcome.RunLevelEntryId</c> per IN-06.
+    /// </summary>
+    public const string RunLevelEntryId = "<run-level>";
+
+    /// <summary>
+    /// Phase 44 / IN-03: reserved ProviderType for run-level synthetic outcomes — matches
+    /// <see cref="RunLevelEntryId"/> so the pair is grep-equivalent.
+    /// </summary>
+    public const string RunLevelProviderType = "<run-level>";
+
     public required string EntryId { get; init; }
     public required string ProviderType { get; init; }
     public required EntryStatus Status { get; init; }
@@ -33,18 +46,20 @@ public sealed record EntryOutcome
     /// Build an outcome from a dispatched <see cref="ProviderDeserializeResult"/>. Status
     /// is <see cref="EntryStatus.Failed"/> when <see cref="ProviderDeserializeResult.HasErrors"/>
     /// is true (covers both <c>Failed &gt; 0</c> and non-empty <c>Errors</c> per D-02);
-    /// <see cref="EntryStatus.Warned"/> when <paramref name="warnings"/> is non-empty;
     /// otherwise <see cref="EntryStatus.Succeeded"/>.
     /// </summary>
+    /// <remarks>
+    /// Phase 44 / WR-02: the <c>warnings</c> parameter + <c>Warned</c> EntryStatus value
+    /// were dropped — no production caller passed warnings and the dead branch invited
+    /// drift. If a future warning emitter wants the surface back, re-introduce explicitly
+    /// alongside the call site that produces warnings.
+    /// </remarks>
     public static EntryOutcome From(
         ManifestEntry entry,
         ProviderDeserializeResult r,
-        TimeSpan duration,
-        IReadOnlyList<string>? warnings = null)
+        TimeSpan duration)
     {
-        var status = r.HasErrors
-            ? EntryStatus.Failed
-            : (warnings is { Count: > 0 } ? EntryStatus.Warned : EntryStatus.Succeeded);
+        var status = r.HasErrors ? EntryStatus.Failed : EntryStatus.Succeeded;
 
         return new EntryOutcome
         {
@@ -53,7 +68,7 @@ public sealed record EntryOutcome
             Status = status,
             Message = r.Summary,
             Errors = r.Errors.ToList(),
-            Warnings = warnings?.ToList() ?? (IReadOnlyList<string>)Array.Empty<string>(),
+            Warnings = Array.Empty<string>(),
             Counts = ProviderCounts.From(r),
             Duration = duration
         };
@@ -101,11 +116,18 @@ public sealed record EntryOutcome
     /// <see cref="OrchestratorResult.HasErrors"/> aggregates them via the same path as
     /// per-entry failures.
     /// </summary>
+    /// <remarks>
+    /// Phase 44 / IN-03 + IN-06: the <c>"&lt;run-level&gt;"</c> literals are now sourced from
+    /// <see cref="RunLevelEntryId"/> / <see cref="RunLevelProviderType"/> public const strings
+    /// so downstream filter expressions (<see cref="OrchestratorResult.Summary"/>,
+    /// command summary builders) can identify run-level synthesis via grep-friendly constants
+    /// rather than open-coded literals.
+    /// </remarks>
     public static EntryOutcome RunLevelError(string error) =>
         new()
         {
-            EntryId = "<run-level>",
-            ProviderType = "<run-level>",
+            EntryId = RunLevelEntryId,
+            ProviderType = RunLevelProviderType,
             Status = EntryStatus.Failed,
             Message = error,
             Errors = new[] { error },
