@@ -2,7 +2,6 @@ using System.Data;
 using DynamicWeb.Serializer.Infrastructure;
 using DynamicWeb.Serializer.Models;
 using DynamicWeb.Serializer.Providers.SqlTable;
-using DynamicWeb.Serializer.Tests.Helpers;
 using Dynamicweb.Data;
 using Moq;
 using Xunit;
@@ -26,10 +25,11 @@ public class SqlTableProviderCoercionTests
         AllColumns = new List<string> { "OrderFlowId", "OrderFlowName", "OrderFlowDescription" }
     };
 
-    private static readonly ProviderPredicateDefinition TestPredicate = new()
+    // Phase 44 / CONVERGE-03: ported from predicate fixture to SqlTableEntry literal.
+    private static readonly SqlTableEntry TestEntry = new()
     {
-        Name = "Order Flows",
-        ProviderType = "SqlTable",
+        EntryId = "sql/EcomOrderFlow",
+        Files = Array.Empty<string>(),
         Table = "EcomOrderFlow",
         NameColumn = "OrderFlowName"
     };
@@ -87,7 +87,7 @@ public class SqlTableProviderCoercionTests
                 return WriteOutcome.Created;
             });
 
-        var result = provider.Deserialize(TestPredicate.ToManifestEntry(), inputRoot, log: logged.Add);
+        var result = provider.Deserialize(TestEntry, inputRoot, log: logged.Add);
 
         // Unknown column stripped before MERGE command composition
         Assert.NotNull(capturedRow);
@@ -114,10 +114,11 @@ public class SqlTableProviderCoercionTests
             IdentityColumns = new List<string>(),
             AllColumns = new List<string> { "Id", "Name", "CreatedDate" }
         };
-        var predicate = new ProviderPredicateDefinition
+        // Phase 44 / CONVERGE-03: ad-hoc predicate ported to SqlTableEntry literal.
+        var entry = new SqlTableEntry
         {
-            Name = "Test",
-            ProviderType = "SqlTable",
+            EntryId = "sql/TestTable",
+            Files = Array.Empty<string>(),
             Table = "TestTable",
             NameColumn = "Name"
         };
@@ -161,7 +162,7 @@ public class SqlTableProviderCoercionTests
                 return WriteOutcome.Created;
             });
 
-        _ = provider.Deserialize(predicate.ToManifestEntry(), inputRoot);
+        _ = provider.Deserialize(entry, inputRoot);
 
         Assert.NotNull(capturedRow);
         Assert.IsType<DateTime>(capturedRow!["CreatedDate"]);
@@ -182,6 +183,9 @@ public class SqlTableProviderCoercionTests
         var mockExecutor = new Mock<ISqlExecutor>();
 
         var mockMetadataReader = new Mock<DataGroupMetadataReader>(mockExecutor.Object) { CallBase = false };
+        // NOTE (Phase 44 / CONVERGE-03): DataGroupMetadataReader.GetTableMetadata keeps its
+        // predicate-typed signature — internal helper, no public-API surface. SqlTableProvider.Deserialize
+        // synthesises a transient predicate to call it. The mock setup mirrors that internal contract.
         mockMetadataReader.Setup(x => x.GetTableMetadata(It.IsAny<ProviderPredicateDefinition>(), It.IsAny<bool>()))
             .Returns(md);
         mockMetadataReader.Setup(x => x.TableExists(It.IsAny<string>())).Returns(true);
