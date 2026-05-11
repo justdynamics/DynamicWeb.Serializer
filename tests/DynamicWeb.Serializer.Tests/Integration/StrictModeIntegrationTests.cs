@@ -12,15 +12,24 @@ namespace DynamicWeb.Serializer.Tests.Integration;
 /// Uses a Mock&lt;ISerializationProvider&gt; to emit a WARNING through the log callback and verifies
 /// the orchestrator's wrapper routes it through the escalator, accumulates, and throws at
 /// end-of-run in strict mode.
+///
+/// <para>
+/// Phase 44 / CONVERGE-03: ported from predicate-fixture-driven
+/// <c>orchestrator.DeserializeAll(predicates, ...)</c> ([Obsolete] overload, deleted in
+/// commit 7) to entry-fixture-driven <c>orchestrator.DeserializeEntries(entries, ...)</c>
+/// internal test seam (retained per CONTEXT D-06 / must_haves.truths #14 — Layer A tests
+/// in <see cref="Providers.SerializerOrchestratorTests"/> use this seam to bypass on-disk
+/// manifest setup, and the StrictMode integration tests share that need).
+/// </para>
 /// </summary>
 [Trait("Category", "Phase37-04")]
 public class StrictModeIntegrationTests
 {
-    private static ProviderPredicateDefinition SqlPred(string name) =>
+    private static SqlTableEntry SqlEntry(string name) =>
         new()
         {
-            Name = name,
-            ProviderType = "SqlTable",
+            EntryId = $"sql/{name}",
+            Files = Array.Empty<string>(),
             Table = name
         };
 
@@ -58,13 +67,17 @@ public class StrictModeIntegrationTests
         var logs = new List<string>();
         var escalator = new StrictModeEscalator(strict: true, log: logs.Add);
 
-        var result = orchestrator.DeserializeAll(
-            new List<ProviderPredicateDefinition> { SqlPred("EcomPayments") },
-            inputRoot: "/input",
+        var result = orchestrator.DeserializeEntries(
+            new List<ManifestEntry> { SqlEntry("EcomPayments") },
+            modeRoot: "/input",
             mode: DeploymentMode.Deploy,
             strategy: ConflictStrategy.SourceWins,
             log: logs.Add,
-            escalator: escalator);
+            isDryRun: false,
+            providerFilter: null,
+            escalator: escalator,
+            excludeFieldsByItemType: null,
+            excludeXmlElementsByType: null);
 
         // Strict mode: the warning escalated → AssertNoWarnings threw → errors list has the
         // CumulativeStrictModeException message appended.
@@ -83,13 +96,17 @@ public class StrictModeIntegrationTests
         var logs = new List<string>();
         var escalator = new StrictModeEscalator(strict: false, log: logs.Add);
 
-        var result = orchestrator.DeserializeAll(
-            new List<ProviderPredicateDefinition> { SqlPred("EcomPayments") },
-            inputRoot: "/input",
+        var result = orchestrator.DeserializeEntries(
+            new List<ManifestEntry> { SqlEntry("EcomPayments") },
+            modeRoot: "/input",
             mode: DeploymentMode.Deploy,
             strategy: ConflictStrategy.SourceWins,
             log: logs.Add,
-            escalator: escalator);
+            isDryRun: false,
+            providerFilter: null,
+            escalator: escalator,
+            excludeFieldsByItemType: null,
+            excludeXmlElementsByType: null);
 
         // Lenient mode: the warning was logged (real-time) but did not escalate to Errors.
         Assert.False(result.HasErrors);
@@ -105,11 +122,17 @@ public class StrictModeIntegrationTests
         registry.Register(MakeWarningProvider("WARNING: something").Object);
         var orchestrator = new SerializerOrchestrator(registry);
 
-        var result = orchestrator.DeserializeAll(
-            new List<ProviderPredicateDefinition> { SqlPred("EcomPayments") },
-            inputRoot: "/input",
+        var result = orchestrator.DeserializeEntries(
+            new List<ManifestEntry> { SqlEntry("EcomPayments") },
+            modeRoot: "/input",
             mode: DeploymentMode.Deploy,
-            strategy: ConflictStrategy.SourceWins);
+            strategy: ConflictStrategy.SourceWins,
+            log: null,
+            isDryRun: false,
+            providerFilter: null,
+            escalator: null,
+            excludeFieldsByItemType: null,
+            excludeXmlElementsByType: null);
 
         Assert.False(result.HasErrors);
     }
@@ -136,20 +159,27 @@ public class StrictModeIntegrationTests
 
         var escalator = new StrictModeEscalator(strict: true, log: null);
 
-        var contentPred = new ProviderPredicateDefinition
+        var contentEntry = new ContentEntry
         {
-            Name = "Pages",
-            ProviderType = "Content",
+            EntryId = "content/area-1",
+            Files = Array.Empty<string>(),
+            AreaId = 1,
+            AreaName = "Area 1",
             Path = "/",
-            AreaId = 1
+            PageId = 0
         };
 
-        var result = orchestrator.DeserializeAll(
-            new List<ProviderPredicateDefinition> { SqlPred("EcomPayments"), contentPred },
-            inputRoot: "/input",
+        var result = orchestrator.DeserializeEntries(
+            new List<ManifestEntry> { SqlEntry("EcomPayments"), contentEntry },
+            modeRoot: "/input",
             mode: DeploymentMode.Deploy,
             strategy: ConflictStrategy.SourceWins,
-            escalator: escalator);
+            log: null,
+            isDryRun: false,
+            providerFilter: null,
+            escalator: escalator,
+            excludeFieldsByItemType: null,
+            excludeXmlElementsByType: null);
 
         Assert.True(result.HasErrors);
         var cumulativeMessage = result.Errors.Single(e => e.StartsWith("Strict mode"));
@@ -168,13 +198,17 @@ public class StrictModeIntegrationTests
         var logs = new List<string>();
         var escalator = new StrictModeEscalator(strict: true, log: null);
 
-        orchestrator.DeserializeAll(
-            new List<ProviderPredicateDefinition> { SqlPred("EcomPayments") },
-            inputRoot: "/input",
+        orchestrator.DeserializeEntries(
+            new List<ManifestEntry> { SqlEntry("EcomPayments") },
+            modeRoot: "/input",
             mode: DeploymentMode.Deploy,
             strategy: ConflictStrategy.SourceWins,
             log: logs.Add,
-            escalator: escalator);
+            isDryRun: false,
+            providerFilter: null,
+            escalator: escalator,
+            excludeFieldsByItemType: null,
+            excludeXmlElementsByType: null);
 
         // The header includes the strict flag so operators see whether the run is gated.
         Assert.Contains(logs, l => l.Contains("Strict: True"));
