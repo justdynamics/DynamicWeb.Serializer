@@ -2,6 +2,7 @@ using DynamicWeb.Serializer.Configuration;
 using DynamicWeb.Serializer.Infrastructure;
 using DynamicWeb.Serializer.Models;
 using DynamicWeb.Serializer.Providers;
+using DynamicWeb.Serializer.Reporting;
 using Dynamicweb.CoreUI.Data;
 
 namespace DynamicWeb.Serializer.AdminUI.Commands;
@@ -112,85 +113,116 @@ public sealed class SerializerDeserializeCommand : CommandBase
             // Pre-Phase-43 this lived on SerializerConfiguration; Phase 43 inlines it here.
             var modeStrategy = DefaultConflictStrategyForMode(deploymentMode);
 
+            // Phase 44 / WR-04: _logFile is created BEFORE the inner try region so the
+            // outer-most catch can flush accumulated lines even if a downstream call throws
+            // before reaching the inner try/finally.
             _logFile = LogFileWriter.CreateLogFile(paths.Log, "Deserialize");
             Log($"=== Serializer Deserialize (API) started [mode: {deploymentMode}] ===");
 
-            if (!Directory.Exists(modeRoot))
-                return new() { Status = CommandResult.ResultType.Error, Message = $"Mode subfolder not found: {modeRoot}" };
-
-            var yamlCount = Directory.GetFiles(modeRoot, "*.yml", SearchOption.AllDirectories).Length;
-            if (yamlCount == 0)
-                return new() { Status = CommandResult.ResultType.Error, Message = $"{modeRoot} contains no YAML files" };
-
-            // Phase 43 / DESER-05: strict-mode default sourced from entry-point + per-call request
-            // override. The configValue: null literal is grep-friendly per CONTEXT line 52 — the
-            // config.StrictMode setting is no longer consulted on the deserialize path. A one-time
-            // WARNING fires (Task 7) when the legacy setting is still on disk.
-            var entryPoint = IsAdminUiInvocation
-                ? StrictModeResolver.EntryPoint.AdminUi
-                : StrictModeResolver.EntryPoint.Api;
-            var strict = StrictModeResolver.Resolve(entryPoint, configValue: null, requestValue: StrictMode);
-            Log($"=== Strict mode: {strict} (entry-point: {entryPoint}) ===");
-
-            // Phase 43 / DESER-05 final: emit a one-time WARNING when the on-disk config still
-            // carries the legacy strictMode setting. Route through the same log channel as
-            // everything else; once-per-run is naturally enforced by command-per-request lifecycle.
-            StrictModeDeprecationWarning.EmitIfLegacyValueSet(configPath, Log);
-
-            var escalator = new StrictModeEscalator(strict, Log);
-
-            // Phase 43 / DESER-01: orchestrator reads the manifest itself; no predicates parameter.
-            // The envelope's by-ItemType exclusion maps are consulted by the orchestrator (per
-            // MANIFEST-05), so the caller no longer threads them in.
-            var orchestrator = ProviderRegistry.CreateOrchestrator(filesRoot);
-            var result = orchestrator.DeserializeAll(
-                modeRoot,
-                deploymentMode,
-                modeStrategy,
-                Log,
-                isDryRun: false,
-                providerFilter: null,
-                escalator: escalator);
-
-            // Build summary with advice and flush log. Phase 43 / REPORT-03: drive off
-            // result.EntryOutcomes (canonical) instead of DeserializeResults (transient,
-            // Phase 44 deletes).
-            var advice = AdviceGenerator.GenerateAdvice(result);
-            var summary = new LogFileSummary
+            try
             {
-                Operation = "Deserialize",
-                Timestamp = DateTime.UtcNow,
-                DryRun = false,
-                Predicates = result.EntryOutcomes.Select(o => new PredicateSummary
+                if (!Directory.Exists(modeRoot))
+                    return new() { Status = CommandResult.ResultType.Error, Message = $"Mode subfolder not found: {modeRoot}" };
+
+                var yamlCount = Directory.GetFiles(modeRoot, "*.yml", SearchOption.AllDirectories).Length;
+                if (yamlCount == 0)
+                    return new() { Status = CommandResult.ResultType.Error, Message = $"{modeRoot} contains no YAML files" };
+
+                // Phase 43 / DESER-05: strict-mode default sourced from entry-point + per-call request
+                // override. The configValue: null literal is grep-friendly per CONTEXT line 52 — the
+                // config.StrictMode setting is no longer consulted on the deserialize path. A one-time
+                // WARNING fires (Task 7) when the legacy setting is still on disk.
+                var entryPoint = IsAdminUiInvocation
+                    ? StrictModeResolver.EntryPoint.AdminUi
+                    : StrictModeResolver.EntryPoint.Api;
+                var strict = StrictModeResolver.Resolve(entryPoint, configValue: null, requestValue: StrictMode);
+                Log($"=== Strict mode: {strict} (entry-point: {entryPoint}) ===");
+
+                // Phase 43 / DESER-05 final: emit a one-time WARNING when the on-disk config still
+                // carries the legacy strictMode setting. Route through the same log channel as
+                // everything else; once-per-run is naturally enforced by command-per-request lifecycle.
+                StrictModeDeprecationWarning.EmitIfLegacyValueSet(configPath, Log);
+
+                var escalator = new StrictModeEscalator(strict, Log);
+
+                // Phase 43 / DESER-01: orchestrator reads the manifest itself; no predicates parameter.
+                // The envelope's by-ItemType exclusion maps are consulted by the orchestrator (per
+                // MANIFEST-05), so the caller no longer threads them in.
+                var orchestrator = ProviderRegistry.CreateOrchestrator(filesRoot);
+                var result = orchestrator.DeserializeAll(
+                    modeRoot,
+                    deploymentMode,
+                    modeStrategy,
+                    Log,
+                    isDryRun: false,
+                    providerFilter: null,
+                    escalator: escalator);
+
+                // Build summary with advice and flush log. Phase 43 / REPORT-03: drive off
+                // result.EntryOutcomes (canonical) — Phase 44 / IN-01 deleted DeserializeResults.
+                var advice = AdviceGenerator.GenerateAdvice(result);
+                var summary = new LogFileSummary
                 {
-                    Name = o.EntryId,
-                    Table = o.EntryId,
-                    Created = o.Counts.Created,
-                    Updated = o.Counts.Updated,
-                    Skipped = o.Counts.Skipped,
-                    Failed = o.Counts.Failed,
-                    Errors = o.Errors.ToList()
-                }).ToList(),
-                TotalCreated = result.EntryOutcomes.Sum(o => o.Counts.Created),
-                TotalUpdated = result.EntryOutcomes.Sum(o => o.Counts.Updated),
-                TotalSkipped = result.EntryOutcomes.Sum(o => o.Counts.Skipped),
-                TotalFailed = result.EntryOutcomes.Sum(o => o.Counts.Failed),
-                Errors = result.Errors.ToList(),
-                Advice = advice
-            };
-            FlushLog(_logFile, summary);
+                    Operation = "Deserialize",
+                    Timestamp = DateTime.UtcNow,
+                    DryRun = false,
+                    Predicates = result.EntryOutcomes
+                        .Where(o => o.EntryId != EntryOutcome.RunLevelEntryId)  // Phase 44 / IN-06
+                        .Select(o => new PredicateSummary
+                        {
+                            Name = o.EntryId,
+                            Table = o.EntryId,
+                            Created = o.Counts.Created,
+                            Updated = o.Counts.Updated,
+                            Skipped = o.Counts.Skipped,
+                            Failed = o.Counts.Failed,
+                            Errors = o.Errors.ToList()
+                        }).ToList(),
+                    TotalCreated = result.EntryOutcomes.Sum(o => o.Counts.Created),
+                    TotalUpdated = result.EntryOutcomes.Sum(o => o.Counts.Updated),
+                    TotalSkipped = result.EntryOutcomes.Sum(o => o.Counts.Skipped),
+                    TotalFailed = result.EntryOutcomes.Sum(o => o.Counts.Failed),
+                    Errors = result.Errors.ToList(),
+                    Advice = advice
+                };
+                FlushLog(_logFile, summary);
 
-            var message = $"[{deploymentMode}] {result.Summary}";
-            if (result.HasErrors)
-                message += $" Errors: {string.Join("; ", result.Errors)}";
+                var message = $"[{deploymentMode}] {result.Summary}";
+                if (result.HasErrors)
+                    message += $" Errors: {string.Join("; ", result.Errors)}";
 
-            // D-38-12: HTTP status is driven by result.HasErrors. Zero-error result maps to Ok
-            // regardless of Message content. Phase 43 / REPORT-04 / SC-3: HasErrors now aggregates
-            // from EntryOutcomes (any EntryStatus.Failed → true). Test seam at InvokeMapStatusForTest.
-            return MapStatusFromResult(result, message);
+                // D-38-12: HTTP status is driven by result.HasErrors. Zero-error result maps to Ok
+                // regardless of Message content. Phase 43 / REPORT-04 / SC-3: HasErrors now aggregates
+                // from EntryOutcomes (any EntryStatus.Failed → true). Test seam at InvokeMapStatusForTest.
+                return MapStatusFromResult(result, message);
+            }
+            catch (Exception ex)
+            {
+                // Phase 44 / WR-04: flush accumulated log lines on the way out so the
+                // deprecation WARNING + any other in-flight diagnostics survive the
+                // exception path. Without this, an orchestrator throw discarded every
+                // log line emitted between _logFile creation and the throw.
+                Log($"ERROR: Deserialization failed: {ex.Message}");
+                try
+                {
+                    var failSummary = new LogFileSummary
+                    {
+                        Operation = "Deserialize",
+                        Timestamp = DateTime.UtcNow,
+                        DryRun = false,
+                        Predicates = new List<PredicateSummary>(),
+                        Errors = new List<string> { ex.Message }
+                    };
+                    FlushLog(_logFile, failSummary);
+                }
+                catch { /* best effort — flush failure must not mask the original exception */ }
+                return new() { Status = CommandResult.ResultType.Error, Message = $"Deserialization failed: {ex.Message}" };
+            }
         }
         catch (Exception ex)
         {
+            // Outer catch — pre-_logFile-creation failure (configPath not found, etc.).
+            // No log to flush.
             return new() { Status = CommandResult.ResultType.Error, Message = $"Deserialization failed: {ex.Message}" };
         }
     }

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using DynamicWeb.Serializer.Providers;
+using DynamicWeb.Serializer.Reporting;
 
 namespace DynamicWeb.Serializer.Tests.AdminUI;
 
@@ -11,13 +12,18 @@ namespace DynamicWeb.Serializer.Tests.AdminUI;
 /// evaluates to <c>false</c> — any implementation that maps that state to anything
 /// other than <see cref="Dynamicweb.CoreUI.Data.CommandResult.ResultType.Ok"/> has
 /// regressed D-38-12.
+///
+/// <para>Phase 44 / IN-01: <c>OrchestratorResult.DeserializeResults</c> was deleted; this
+/// factory now seeds the empty <c>EntryOutcomes</c> list, which carries the same zero-error
+/// invariant via <see cref="EntryStatus.Failed"/> aggregation.</para>
 /// </summary>
 internal static class SynthOrchestratorResult
 {
     /// <summary>
-    /// Construct an <see cref="OrchestratorResult"/> whose <c>Errors</c> list and
-    /// <c>SerializeResults</c> collection are both empty. The computed
-    /// <c>HasErrors</c> expression is therefore guaranteed to be <c>false</c>.
+    /// Construct an <see cref="OrchestratorResult"/> whose <c>Errors</c> list,
+    /// <c>SerializeResults</c> collection, and <c>EntryOutcomes</c> collection are all
+    /// empty. The computed <c>HasErrors</c> expression is therefore guaranteed to be
+    /// <c>false</c>.
     /// </summary>
     public static OrchestratorResult WithEmptyErrors()
     {
@@ -25,7 +31,7 @@ internal static class SynthOrchestratorResult
         {
             Errors = new List<string>(),
             SerializeResults = new List<SerializeResult>(),
-            DeserializeResults = new List<ProviderDeserializeResult>()
+            EntryOutcomes = new List<EntryOutcome>()
         };
     }
 }

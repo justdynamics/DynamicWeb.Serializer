@@ -1,7 +1,7 @@
 namespace DynamicWeb.Serializer.Reporting;
 
 /// <summary>
-/// Phase 43 / REPORT-01: per-entry outcome status. Distinct from
+/// Phase 43 / REPORT-01 + Phase 44 / WR-02: per-entry outcome status. Distinct from
 /// <see cref="DynamicWeb.Serializer.Providers.ProviderDeserializeResult.HasErrors"/>
 /// because today's silent-skip class (entry filtered out by providerFilter) has no error
 /// but also no work — it needs its own observable. Per CONTEXT D-02 (tight definition):
@@ -12,12 +12,14 @@ namespace DynamicWeb.Serializer.Reporting;
 /// <item><b>Failed</b> — entry dispatched (or attempted), returned errors OR validation/dispatch
 /// failure. Includes "files don't exist on disk" (drift between manifest and disk is a real
 /// failure, not a quiet case).</item>
-/// <item><b>Warned</b> — entry succeeded but emitted strict-mode warnings captured in
-/// <c>EntryOutcome.Warnings</c>.</item>
 /// <item><b>Skipped</b> — orchestrator NEVER dispatched the entry to a provider. Currently
 /// exclusively from <c>providerFilter</c> exclusion (per ROADMAP SC-2). Reserved category —
 /// do not extend without updating CONTEXT D-02.</item>
 /// </list>
+/// Phase 44 / WR-02: the previous <c>Warned</c> enum value was deleted — no production code
+/// path produced it; <see cref="EntryOutcome.From"/> mapped <c>warnings.Count &gt; 0</c> to
+/// it but that branch was only reachable via a parameter no caller passed. If a future
+/// warning emitter wants the value back, re-introduce explicitly with an emitter using it.
 /// The enum round-trips through
 /// <see cref="DynamicWeb.Serializer.Infrastructure.ManifestSchema.ManifestJsonOptions"/>
 /// which already has <see cref="System.Text.Json.Serialization.JsonStringEnumConverter"/>.
@@ -27,6 +29,5 @@ public enum EntryStatus
 {
     Succeeded,
     Failed,
-    Warned,
     Skipped
 }

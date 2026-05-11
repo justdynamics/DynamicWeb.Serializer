@@ -12,10 +12,20 @@ namespace DynamicWeb.Serializer.Serialization;
 /// reads YAML files via FileSystemStore.ReadTree(), resolves GUID identity against
 /// the target database, writes items in dependency order (Area > Pages > GridRows > Paragraphs),
 /// supports dry-run mode with field-level diffs, and handles errors with cascade-skip semantics.
+///
+/// <para>
+/// Phase 44 / CONVERGE-01 + D-04: pivoted from <see cref="SerializerConfiguration"/>-driven
+/// dispatch (predicate list inside config) to a single <see cref="ContentEntry"/> per call.
+/// One area's worth of work per <see cref="Deserialize"/> invocation — the orchestrator
+/// invokes this once per <see cref="ContentEntry"/> in the manifest. The synthetic predicate
+/// at the previous <c>ContentProvider.Deserialize</c> call site is gone.
+/// </para>
 /// </summary>
 public class ContentDeserializer
 {
-    private readonly SerializerConfiguration _configuration;
+    private readonly ContentEntry _entry;
+    private readonly string _contentRoot;
+    private readonly IReadOnlyDictionary<string, List<string>>? _excludeFieldsByItemType;
     private readonly IContentStore _store;
     private readonly Action<string>? _log;
     private readonly bool _isDryRun;
@@ -40,6 +50,16 @@ public class ContentDeserializer
     /// Seed UPDATE path (D-06). Phase 39 supersedes the Phase 37-01 row-level skip that
     /// previously short-circuited the UPDATE here.
     /// </summary>
+    /// <param name="entry">Manifest entry for the single area subtree to deserialize.
+    /// Carries AreaId, Path, PageId, AcknowledgedOrphanPageIds, ExcludeAreaColumns, and
+    /// ExcludeFields (the latter promoted from <c>ProviderPredicateDefinition.ExcludeFields</c>
+    /// per Phase 44 D-04 / BLOCKER 2).</param>
+    /// <param name="contentRoot">Filesystem root containing the per-area YAML subtrees
+    /// (replaces the pre-pivot <c>SerializerConfiguration.OutputDirectory</c>).</param>
+    /// <param name="excludeFieldsByItemType">Optional by-ItemType field exclusions threaded
+    /// from the orchestrator (envelope-level per MANIFEST-05). Null/empty → no by-type
+    /// exclusions; preserved exactly to keep the Deploy-side area-creation path's exclusion
+    /// semantics identical to Phase 43.</param>
     /// <param name="schemaCache">
     /// Shared target-schema cache used by the Area write path for schema-drift tolerance and
     /// YAML→CLR type coercion (Phase 37-02). Defaults to a new instance backed by the live
@@ -52,7 +72,8 @@ public class ContentDeserializer
     /// assert on the SET IDENTITY_INSERT [Area] ON/INSERT/OFF ordering.
     /// </param>
     public ContentDeserializer(
-        SerializerConfiguration configuration,
+        ContentEntry entry,
+        string contentRoot,
         IContentStore? store = null,
         Action<string>? log = null,
         bool isDryRun = false,
@@ -60,9 +81,14 @@ public class ContentDeserializer
         ConflictStrategy conflictStrategy = ConflictStrategy.SourceWins,
         TargetSchemaCache? schemaCache = null,
         // Phase 38 A.2 (D-38-05): test seam for Area write paths.
-        ISqlExecutor? sqlExecutor = null)
+        ISqlExecutor? sqlExecutor = null,
+        // Phase 44 / D-04: envelope-level by-ItemType field exclusions threaded from
+        // SerializerOrchestrator (MANIFEST-05). Optional; null/empty = no by-type exclusions.
+        IReadOnlyDictionary<string, List<string>>? excludeFieldsByItemType = null)
     {
-        _configuration = configuration;
+        _entry = entry ?? throw new ArgumentNullException(nameof(entry));
+        _contentRoot = contentRoot ?? throw new ArgumentNullException(nameof(contentRoot));
+        _excludeFieldsByItemType = excludeFieldsByItemType;
         _store = store ?? new FileSystemStore();
         _log = log;
         _isDryRun = isDryRun;
@@ -107,14 +133,16 @@ public class ContentDeserializer
     // -------------------------------------------------------------------------
 
     /// <summary>
-    /// Deserializes all predicates defined in the configuration from disk to DW.
-    /// Returns a DeserializeResult with aggregate counts and any errors encountered.
+    /// Phase 44 / D-04: deserialize the single <see cref="ContentEntry"/> threaded in via the
+    /// constructor. The orchestrator's per-entry switch dispatches one invocation per Content
+    /// entry, so this body does one area's worth of work — read its YAML subtree, write pages,
+    /// then resolve cross-area links over the content root once.
     /// </summary>
     public DeserializeResult Deserialize()
     {
-        if (!Directory.Exists(_configuration.OutputDirectory))
+        if (!Directory.Exists(_contentRoot))
         {
-            var msg = $"OutputDirectory '{_configuration.OutputDirectory}' does not exist. " +
+            var msg = $"contentRoot '{_contentRoot}' does not exist. " +
                       "Cannot deserialize — run serialization first to create it.";
             Log(msg);
             return new DeserializeResult
@@ -123,12 +151,6 @@ public class ContentDeserializer
             };
         }
 
-        int totalCreated = 0;
-        int totalUpdated = 0;
-        int totalSkipped = 0;
-        int totalFailed = 0;
-        var allErrors = new List<string>();
-
         // Phase 37-05 / TEMPLATE-01: pre-flight template manifest validation. Runs once
         // before any page writes so operators see missing-template errors up-front rather
         // than per-page during the run. Missing templates flow through the escalator —
@@ -136,44 +158,42 @@ public class ContentDeserializer
         // exception when strict mode is active.
         ValidateTemplateManifest();
 
-        // Collect all areas and their deserialized page caches for cross-area link resolution
+        // Collect this area's pages + GUID cache for the cross-area link-resolution pass
+        // that runs after the per-entry write loop.
         var allAreaPages = new List<SerializedPage>();
         var globalPageGuidCache = new Dictionary<Guid, int>();
 
-        foreach (var predicate in _configuration.Predicates)
-        {
-            // Resolve the area name from the predicate AreaId to read the correct subfolder
-            var dwArea = Services.Areas.GetArea(predicate.AreaId);
-            var areaName = dwArea?.Name;
-            var area = _store.ReadTree(_configuration.OutputDirectory, areaName);
+        // Phase 44 / D-04: a single ContentEntry drives a single area subtree write.
+        // The orchestrator's per-entry switch dispatches one invocation per Content entry.
+        var dwArea = Services.Areas.GetArea(_entry.AreaId);
+        var areaName = dwArea?.Name;
+        var area = _store.ReadTree(_contentRoot, areaName);
 
-            var result = DeserializePredicate(predicate, area, globalPageGuidCache, allAreaPages);
-            totalCreated += result.Created;
-            totalUpdated += result.Updated;
-            totalSkipped += result.Skipped;
-            totalFailed += result.Failed;
-            allErrors.AddRange(result.Errors);
-        }
+        var result = DeserializePredicate(_entry, area, globalPageGuidCache, allAreaPages);
+        int totalCreated = result.Created;
+        int totalUpdated = result.Updated;
+        int totalSkipped = result.Skipped;
+        int totalFailed = result.Failed;
+        var allErrors = new List<string>(result.Errors);
 
         // Phase 2: Resolve internal links using a CROSS-AREA map
         // Read ALL area directories from the content root to build a complete source→target map
         // (ContentProvider calls us per-area, but links reference pages across areas)
-        if (!_isDryRun && globalPageGuidCache != null && globalPageGuidCache.Count > 0)
+        if (!_isDryRun && globalPageGuidCache.Count > 0)
         {
             // Collect pages from ALL area directories for a complete source ID map
             var allYamlPages = new List<SerializedPage>();
             var allGuidCache = new Dictionary<Guid, int>();
 
             // Scan all area subdirectories in the content root
-            var contentRoot = _configuration.OutputDirectory;
-            foreach (var areaDir in Directory.GetDirectories(contentRoot))
+            foreach (var areaDir in Directory.GetDirectories(_contentRoot))
             {
                 var areaYml = Path.Combine(areaDir, "area.yml");
                 if (!File.Exists(areaYml)) continue;
 
                 try
                 {
-                    var areaData = _store.ReadTree(contentRoot, Path.GetFileName(areaDir));
+                    var areaData = _store.ReadTree(_contentRoot, Path.GetFileName(areaDir));
                     allYamlPages.AddRange(areaData.Pages);
                 }
                 catch { /* skip unreadable areas */ }
@@ -188,7 +208,7 @@ public class ContentDeserializer
             }
 
             var crossAreaMap = InternalLinkResolver.BuildSourceToTargetMap(allYamlPages, allGuidCache);
-            Log($"Cross-area link resolution: {crossAreaMap.Count} page ID mappings from {Directory.GetDirectories(contentRoot).Length} areas");
+            Log($"Cross-area link resolution: {crossAreaMap.Count} page ID mappings from {Directory.GetDirectories(_contentRoot).Length} areas");
 
             // Build paragraph map too
             var paragraphCache = new Dictionary<Guid, int>();
@@ -200,8 +220,7 @@ public class ContentDeserializer
             var paragraphMap = InternalLinkResolver.BuildSourceToTargetParagraphMap(allYamlPages, paragraphCache);
 
             var resolver = new InternalLinkResolver(crossAreaMap, _log, sourceToTargetParagraphIds: paragraphMap);
-            foreach (var predicate in _configuration.Predicates)
-                ResolveLinksInArea(predicate.AreaId, resolver);
+            ResolveLinksInArea(_entry.AreaId, resolver);
 
             var (resolved, unresolved, paraResolved, paraUnresolved) = resolver.GetStats();
             if (resolved > 0 || unresolved > 0)
@@ -241,7 +260,7 @@ public class ContentDeserializer
         List<TemplateReference>? refs;
         try
         {
-            refs = _templateManifest.Read(_configuration.OutputDirectory);
+            refs = _templateManifest.Read(_contentRoot);
         }
         catch (Exception ex)
         {
@@ -257,92 +276,94 @@ public class ContentDeserializer
     }
 
     // -------------------------------------------------------------------------
-    // Predicate-level processing
+    // Entry-level processing (Phase 44 / D-04: ContentEntry-typed)
     // -------------------------------------------------------------------------
 
-    private DeserializeResult DeserializePredicate(ProviderPredicateDefinition predicate, SerializedArea area,
+    private DeserializeResult DeserializePredicate(ContentEntry entry, SerializedArea area,
         Dictionary<Guid, int>? globalPageGuidCache = null, List<SerializedPage>? allAreaPages = null)
     {
-        // Build excludeFields set early — needed for area creation before WriteContext
-        var excludeFieldsSet = predicate.ExcludeFields.Count > 0
-            ? new HashSet<string>(predicate.ExcludeFields, StringComparer.OrdinalIgnoreCase)
+        // Phase 44 / D-04 (BLOCKER 2): read ExcludeFields from the constructor-injected
+        // _entry — not from a transient predicate that no longer exists on this path.
+        var excludeFieldsSet = _entry.ExcludeFields.Count > 0
+            ? new HashSet<string>(_entry.ExcludeFields, StringComparer.OrdinalIgnoreCase)
             : null;
 
-        var targetArea = Services.Areas.GetArea(predicate.AreaId);
+        var targetArea = Services.Areas.GetArea(entry.AreaId);
         if (targetArea == null)
         {
             // AREA-04: Create the area if it doesn't exist on target
             if (!_isDryRun && area.Properties.Count > 0)
             {
-                Log($"Area with ID {predicate.AreaId} not found. Creating from YAML data.");
+                Log($"Area with ID {entry.AreaId} not found. Creating from YAML data.");
                 try
                 {
                     // Phase 40 D-04: exclusion dicts moved from per-ModeConfig to top-level on SerializerConfiguration.
                     // The Deploy-side area-creation path is mode-agnostic w.r.t. the exclusion dict — Phase 39 Seed
                     // merge does not run this code path (Seed reaches WriteSimpleScalarFieldsViaMerge / etc.) so
-                    // a top-level read is correct for both modes.
-                    var createAreaExclude = _configuration.ExcludeFieldsByItemType.Count > 0 && !string.IsNullOrEmpty(area.ItemType)
+                    // a top-level read is correct for both modes. Phase 44: sourced from constructor-injected
+                    // envelope dict instead of SerializerConfiguration.
+                    var createAreaExclude = _excludeFieldsByItemType != null && _excludeFieldsByItemType.Count > 0 && !string.IsNullOrEmpty(area.ItemType)
                     ? ExclusionMerger.MergeFieldExclusions(
                         excludeFieldsSet?.ToList() ?? new List<string>(),
-                        _configuration.ExcludeFieldsByItemType,
+                        _excludeFieldsByItemType,
                         area.ItemType)
                     : excludeFieldsSet;
-                CreateAreaFromProperties(predicate.AreaId, area, createAreaExclude);
+                CreateAreaFromProperties(entry.AreaId, area, createAreaExclude);
                     Services.Areas.ClearCache(); // Critical: per project_dw_area_cache.md
-                    targetArea = Services.Areas.GetArea(predicate.AreaId);
+                    targetArea = Services.Areas.GetArea(entry.AreaId);
                     if (targetArea == null)
                     {
-                        Log($"ERROR: Area creation succeeded but GetArea still returns null after cache clear. Skipping predicate '{predicate.Name}'.");
+                        Log($"ERROR: Area creation succeeded but GetArea still returns null after cache clear. Skipping entry '{entry.EntryId}'.");
                         return new DeserializeResult();
                     }
-                    Log($"Area created: ID={predicate.AreaId}, Name={area.Name}");
+                    Log($"Area created: ID={entry.AreaId}, Name={area.Name}");
                 }
                 catch (Exception ex)
                 {
-                    Log($"ERROR: Failed to create area {predicate.AreaId}: {ex.Message}. Skipping predicate '{predicate.Name}'.");
+                    Log($"ERROR: Failed to create area {entry.AreaId}: {ex.Message}. Skipping entry '{entry.EntryId}'.");
                     return new DeserializeResult();
                 }
             }
             else
             {
-                Log($"Warning: Area with ID {predicate.AreaId} not found. Skipping predicate '{predicate.Name}'.");
+                Log($"Warning: Area with ID {entry.AreaId} not found. Skipping entry '{entry.EntryId}'.");
                 return new DeserializeResult();
             }
         }
 
-        Log($"Deserializing predicate '{predicate.Name}' into area ID={predicate.AreaId}");
+        Log($"Deserializing entry '{entry.EntryId}' into area ID={entry.AreaId}");
 
         // Pre-build page GUID cache for the entire area (avoids per-item full table scans)
-        var allPages = Services.Pages.GetPagesByAreaID(predicate.AreaId);
+        var allPages = Services.Pages.GetPagesByAreaID(entry.AreaId);
         var pageGuidCache = allPages
             .Where(p => p.UniqueId != Guid.Empty)
             .ToDictionary(p => p.UniqueId, p => p.ID);
 
         var ctx = new WriteContext
         {
-            TargetAreaId = predicate.AreaId,
+            TargetAreaId = entry.AreaId,
             ParentPageId = 0,
             PageGuidCache = pageGuidCache,
             ExcludeFields = excludeFieldsSet,
-            ExcludeFieldsByItemType = _configuration.ExcludeFieldsByItemType.Count > 0
-                ? _configuration.ExcludeFieldsByItemType
+            ExcludeFieldsByItemType = _excludeFieldsByItemType != null && _excludeFieldsByItemType.Count > 0
+                ? _excludeFieldsByItemType
                 : null
         };
 
         // Write full area properties (AREA-04)
         if (area.Properties.Count > 0 && !_isDryRun)
         {
-            Log($"Writing {area.Properties.Count} area properties for area ID={predicate.AreaId}");
+            Log($"Writing {area.Properties.Count} area properties for area ID={entry.AreaId}");
             var areaPropsExclude = ctx.ExcludeFieldsByItemType != null && !string.IsNullOrEmpty(area.ItemType)
                 ? ExclusionMerger.MergeFieldExclusions(
                     ctx.ExcludeFields?.ToList() ?? new List<string>(),
                     ctx.ExcludeFieldsByItemType,
                     area.ItemType)
                 : ctx.ExcludeFields;
-            var excludeAreaColumnsSet = predicate.ExcludeAreaColumns.Count > 0
-                ? new HashSet<string>(predicate.ExcludeAreaColumns, StringComparer.OrdinalIgnoreCase)
+            var excludeAreaColumnsSet = entry.ExcludeAreaColumns.Count > 0
+                ? new HashSet<string>(entry.ExcludeAreaColumns, StringComparer.OrdinalIgnoreCase)
                 : null;
-            WriteAreaProperties(predicate.AreaId, area.Properties, areaPropsExclude, excludeAreaColumnsSet);
+            WriteAreaProperties(entry.AreaId, area.Properties, areaPropsExclude, excludeAreaColumnsSet);
             Services.Areas.ClearCache();
         }
 
