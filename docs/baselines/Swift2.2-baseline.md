@@ -391,7 +391,7 @@ cp src/DynamicWeb.Serializer/Configuration/swift2.2-baseline.json \
 # Trigger serialize via admin UI (Settings → Serializer → Run Serialize)
 # Or via API:
 curl -X POST https://localhost:54035/Admin/TokenAuthentication/authenticate \
-  -d '{"username":"Administrator","password":"Administrator1"}'
+  -d "{\"username\":\"$DW_ADMIN_USER\",\"password\":\"$DW_ADMIN_PASSWORD\"}"
 # ... then use bearer token to call the serialize endpoint
 ```
 

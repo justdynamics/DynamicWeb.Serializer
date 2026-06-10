@@ -9,7 +9,7 @@ End-to-end, unattended execution of the Phase 38.1 gap-closure pipeline:
   2. Detect or install sqlpackage.exe
   3. Restore Swift-2.2 from tools/swift2.2.0-20260129-database.zip via
      sqlpackage Import (drops + re-creates the DB)
-  4. Reseed Administrator password to 'Administrator1' if token auth fails
+  4. Verify Administrator token auth once the host is up (manual reseed fallback)
   5. Apply cleanup scripts 01..09 in order against Swift-2.2
   6. Build + deploy the DynamicWeb.Serializer DLL to both hosts'
      bin/Debug/net10.0 directories
@@ -30,7 +30,7 @@ End-to-end, unattended execution of the Phase 38.1 gap-closure pipeline:
  20. Emit pass/fail summary JSON
 
 All steps write logs to a timestamped run directory under
-.planning/phases/38.1-close-phase-38-deferrals/pipeline-runs/<yyyyMMdd-HHmmss>/.
+tools/e2e/runs/<yyyyMMdd-HHmmss>/ (gitignored).
 Each step fails loudly (throw with message) and leaves evidence on disk.
 
 Exit code:
@@ -63,6 +63,13 @@ Public URL of the Swift-2.2 host. Default 'https://localhost:54035'.
 .PARAMETER CleanDbHostUrl
 Public URL of the CleanDB host. Default 'https://localhost:58217'.
 
+.PARAMETER AdminUser
+DW admin username used for token auth against both hosts. Default 'Administrator'.
+
+.PARAMETER AdminPassword
+DW admin password used for token auth against both hosts. Required; can also be
+supplied via the DW_ADMIN_PASSWORD environment variable.
+
 .PARAMETER SkipBacpacRestore
 For debugging only. When set, skip step 3 and assume Swift-2.2 is already
 in the expected state.
@@ -86,10 +93,15 @@ param(
     [string]$CleanDbHostPath = 'C:\Projects\Solutions\swift.test.forsync\Swift.CleanDB\Dynamicweb.Host.Suite',
     [string]$SwiftHostUrl    = 'https://localhost:54035',
     [string]$CleanDbHostUrl  = 'https://localhost:58217',
+    [string]$AdminUser       = 'Administrator',
+    [string]$AdminPassword   = $env:DW_ADMIN_PASSWORD,
     [switch]$SkipBacpacRestore
 )
 
 $ErrorActionPreference = 'Stop'
+if ([string]::IsNullOrEmpty($AdminPassword)) {
+    throw 'AdminPassword is required: pass -AdminPassword or set the DW_ADMIN_PASSWORD environment variable.'
+}
 $script:repoRoot  = (Get-Location).Path
 $script:bacpacZip = Join-Path $script:repoRoot 'tools/swift2.2.0-20260129-database.zip'
 
@@ -97,7 +109,7 @@ $script:bacpacZip = Join-Path $script:repoRoot 'tools/swift2.2.0-20260129-databa
 # Run directory — all logs + evidence land here
 # ============================================================================
 $ts = (Get-Date -Format 'yyyyMMdd-HHmmss')
-$runDir = Join-Path $script:repoRoot ".planning/phases/38.1-close-phase-38-deferrals/pipeline-runs/$ts"
+$runDir = Join-Path $script:repoRoot "tools/e2e/runs/$ts"
 New-Item -ItemType Directory -Force -Path $runDir | Out-Null
 $script:runDir = $runDir
 
@@ -252,8 +264,8 @@ function Wait-DwReady {
 function Get-DwToken {
     param(
         [string]$HostUrl,
-        [string]$Username = 'Administrator',
-        [string]$Password = 'Administrator1'
+        [string]$Username = $AdminUser,
+        [string]$Password = $AdminPassword
     )
     $body = @{ Username = $Username; Password = $Password } | ConvertTo-Json
     $resp = Invoke-WebRequest -Uri "$HostUrl/Admin/TokenAuthentication/authenticate" `
@@ -364,10 +376,10 @@ if ($SkipBacpacRestore) {
     }
 }
 
-# ----- Step 4: Reseed Administrator password (conditional) --------------------
+# ----- Step 4: Verify Administrator credentials (conditional) -----------------
 # The bacpac ships with Administrator credentials. If token auth fails post-restore,
-# we halt and point the operator at tools/e2e/reseed-admin.sql (a documented
-# fallback path). The README explains manual reseed + re-run with -SkipBacpacRestore.
+# we halt and point the operator at the manual reseed fallback documented in
+# tools/e2e/README.md, then re-run with -SkipBacpacRestore.
 #
 # NOTE: In principle the pipeline could PBKDF2-compute the DW password hash and
 # UPDATE AccessUser directly — but the exact DW hash format (iterations, column
@@ -452,7 +464,7 @@ try {
 $tokenCheck = Try-DwToken -HostUrl $SwiftHostUrl
 if (-not $tokenCheck.Ok) {
     if ($tokenCheck.Code -eq 401) {
-        throw "Administrator password is not 'Administrator1' on [$SwiftDb] after bacpac restore. Run tools/e2e/reseed-admin.sql against [$SwiftDb] in SSMS (see tools/e2e/README.md §Fallback), then re-run this pipeline with -SkipBacpacRestore."
+        throw "Token auth as '$AdminUser' failed (401) on [$SwiftDb] after bacpac restore. Reseed the admin password manually (see tools/e2e/README.md §Fallback), then re-run this pipeline with -SkipBacpacRestore."
     } else {
         throw "Swift-2.2 token endpoint returned unexpected status $($tokenCheck.Code) — $($tokenCheck.Error)"
     }

@@ -107,17 +107,20 @@ Expected contents:
 | `-CleanDbHostPath`   | `C:\Projects\Solutions\swift.test.forsync\Swift.CleanDB\Dynamicweb.Host.Suite` | CleanDB host project dir |
 | `-SwiftHostUrl`      | `https://localhost:54035` | Swift-2.2 public URL |
 | `-CleanDbHostUrl`    | `https://localhost:58217` | CleanDB public URL |
+| `-AdminUser`         | `Administrator`         | DW admin username for token auth |
+| `-AdminPassword`     | `$env:DW_ADMIN_PASSWORD` | DW admin password for token auth (required) |
 | `-SkipBacpacRestore` | (unset)                 | debugging flag — skip Step 3 bacpac restore; assume Swift-2.2 already restored |
 
 ## Fallback — manual password reseed
 
 If the bacpac restore leaves Administrator without the expected password
-(`Administrator1`) and the pipeline's Step 7 token-auth check throws 401, the
-pipeline halts with a message pointing here. Resolution:
+(the one you pass via `-AdminPassword` / `DW_ADMIN_PASSWORD`) and the pipeline's
+Step 7 token-auth check throws 401, the pipeline halts with a message pointing
+here. Resolution:
 
 1. Open SSMS against `[Swift-2.2]`.
 2. Run a manual `UPDATE AccessUser SET AccessUserPassword = ...` for the
-   Administrator row with a known-good PBKDF2 hash of `Administrator1`. The
+   Administrator row with a known-good PBKDF2 hash of that password. The
    exact column shape (`AccessUserPassword` / `AccessUserPasswordSalt`,
    iterations, hash format) is DW-version-specific — if unsure, the simplest
    path is to use the DW admin UI "Reset password" flow once, then export the
