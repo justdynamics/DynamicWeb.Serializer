@@ -80,6 +80,35 @@ curl -X POST https://target.example.com/Admin/Api/SerializerDeserialize \
 
 Full walkthrough: [`docs/getting-started.md`](docs/getting-started.md).
 
+### Start from the Swift starter configuration
+
+For a Swift site, copy
+[`src/Truvio.Commerce.Serializer/Configuration/swift-starter.json`](src/Truvio.Commerce.Serializer/Configuration/swift-starter.json)
+to `Files/Serializer.config.json`. It encodes the recommended split:
+
+- **Deploy** — `Site structure and design` (the whole site **excluding** `/Posts`) plus the
+  commerce framework tables (countries, currencies, languages, VAT, shops, payments,
+  shippings, order flow, URL paths). Identical on every environment; re-deploys overwrite.
+- **Seed** — `Starter blog posts` (`/Posts`) plus starter catalog data (groups, products,
+  variants, discounts). Lands once; afterwards the receiving environment owns it — re-deploys
+  only fill fields that are still empty.
+- **Everything else** (orders, users, logs) is environment data and is never serialized.
+
+### Reading the content tree
+
+The admin content tree shows per-page coverage so you can see what deploys without opening
+the config:
+
+| Icon | Meaning |
+|---|---|
+| sync | Fully managed at deploy — tooltip names the predicate |
+| sync-slash | Partially managed — tooltip lists the excluded paths below this page, or the deploy-managed subtrees under an unmanaged page |
+| flower | Seeded starter content — lands once, local edits on the target are preserved |
+| *(none)* | Not serialized (environment-owned) |
+
+Every page also gets right-click **Serialize subtree** (zip download) and
+**Deserialize from zip** (upload into this website) actions.
+
 ## How it works
 
 ```
