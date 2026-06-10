@@ -261,6 +261,30 @@ function Wait-DwReady {
     throw "Host at $Url ($Label) did not respond within ${TimeoutSec}s"
 }
 
+function Ensure-DwLicense {
+    param([string]$HostUrl, [string]$Label)
+    # Fresh scaffolds have no license (InstallationId is per-installation): /Admin redirects
+    # to /admin/license. Register the default full trial via the two-step form POST.
+    try {
+        $probe = Invoke-WebRequest -Uri "$HostUrl/Admin/" -SkipCertificateCheck -MaximumRedirection 0 -ErrorAction Stop
+        return  # 200 — licensed
+    } catch {
+        $loc = ''
+        try { $loc = "$($_.Exception.Response.Headers.Location)" } catch { }
+        if ($loc -notlike '*license*') { return }  # redirect elsewhere (login) — licensed
+    }
+    Write-Host "  $Label is unlicensed — registering trial license"
+    $form = Invoke-WebRequest -Uri "$HostUrl/Admin/License/TrialInstallStep" -SkipCertificateCheck -SessionVariable web
+    $token = ([regex]::Match($form.Content, '__RequestVerificationToken[^>]*value="([^"]+)"')).Groups[1].Value
+    $trialId = ([regex]::Match($form.Content, 'type="radio" value="([^"]+)"[^>]*checked')).Groups[1].Value
+    if (-not $trialId) { $trialId = ([regex]::Match($form.Content, 'type="radio" value="([^"]+)"')).Groups[1].Value }
+    if (-not $token -or -not $trialId) { throw "$Label : could not parse the trial-license form at /Admin/License/TrialInstallStep" }
+    $resp = Invoke-WebRequest -Uri "$HostUrl/Admin/License/TrialInstallStep" -Method POST -WebSession $web `
+        -SkipCertificateCheck -Body @{ trialId = $trialId; __RequestVerificationToken = $token } -MaximumRedirection 5
+    if ($resp.StatusCode -ne 200) { throw "$Label : trial-license POST returned HTTP $($resp.StatusCode)" }
+    Write-Host "  $Label trial license registered"
+}
+
 function Get-DwToken {
     param(
         [string]$HostUrl,
@@ -461,6 +485,7 @@ try {
 } catch {
     throw "Swift-2.2 host failed to start at $SwiftHostUrl within 180s. See $swiftHostLog"
 }
+Ensure-DwLicense -HostUrl $SwiftHostUrl -Label 'source'
 
 # Administrator password check (Step 4 deferred verification)
 $tokenCheck = Try-DwToken -HostUrl $SwiftHostUrl
@@ -500,6 +525,7 @@ try {
 } catch {
     throw "CleanDB host failed to start at $CleanDbHostUrl within 180s. See $cleanHostLog"
 }
+Ensure-DwLicense -HostUrl $CleanDbHostUrl -Label 'target'
 
 # ----- Steps 11-12: Serialize Deploy + Seed against Swift-2.2 -----------------
 Write-Step 'Steps 11-12: Serialize Deploy + Seed (Swift-2.2 -> YAML)'

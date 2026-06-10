@@ -28,6 +28,14 @@ DECLARE @before INT = (
 );
 PRINT CONCAT('Stale-email GridRow rows before: ', @before);
 
+IF @before = 0
+BEGIN
+    PRINT 'OK-ZERO: stale-email GridRow rows already absent. Script is a no-op (idempotent re-run). Committing empty transaction.';
+    COMMIT TRAN;
+    PRINT 'Done - 07-delete-stale-email-gridrows.sql (no-op)';
+    RETURN;
+END
+
 IF @before <> 142
 BEGIN
     PRINT CONCAT('ABORT: expected exactly 142 stale-email GridRow rows, found ', @before, '. Has script 05 run? Aborting without DELETE.');
@@ -54,3 +62,4 @@ END
 
 COMMIT TRAN;
 PRINT 'Done — 07-delete-stale-email-gridrows.sql';
+

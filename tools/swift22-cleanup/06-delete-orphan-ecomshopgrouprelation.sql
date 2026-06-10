@@ -21,9 +21,17 @@ DECLARE @before INT = (
 );
 PRINT CONCAT('SHOP19/GROUP253 rows before: ', @before);
 
-IF @before <> 1
+IF @before = 0
 BEGIN
-    PRINT 'ABORT: expected exactly 1 SHOP19/GROUP253 orphan row; aborting without DELETE.';
+    PRINT 'OK-ZERO: SHOP19/GROUP253 orphan row already absent. Script is a no-op (idempotent re-run). Committing empty transaction.';
+    COMMIT TRAN;
+    PRINT 'Done - 06-delete-orphan-ecomshopgrouprelation.sql (no-op)';
+    RETURN;
+END
+
+IF @before > 1
+BEGIN
+    PRINT 'ABORT: expected at most 1 SHOP19/GROUP253 orphan row; aborting without DELETE.';
     ROLLBACK TRAN;
     RETURN;
 END
@@ -55,3 +63,4 @@ SELECT 'remaining-orphans' AS stage, COUNT(*) AS n
 
 COMMIT TRAN;
 PRINT 'Done — 06-delete-orphan-ecomshopgrouprelation.sql';
+
