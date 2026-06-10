@@ -234,9 +234,13 @@ public class ContentDeserializer
                             paragraphCache.TryAdd(para.UniqueId, para.ID);
             var paragraphMap = InternalLinkResolver.BuildSourceToTargetParagraphMap(allYamlPages, paragraphCache);
 
+            var acknowledgedIds = _entry.AcknowledgedOrphanPageIds.Count > 0
+                ? new HashSet<int>(_entry.AcknowledgedOrphanPageIds)
+                : null;
             var resolver = new InternalLinkResolver(crossAreaMap, _log,
                 sourceToTargetParagraphIds: paragraphMap,
-                deferredSourcePageIds: deferredIds.Count > 0 ? deferredIds : null);
+                deferredSourcePageIds: deferredIds.Count > 0 ? deferredIds : null,
+                acknowledgedSourcePageIds: acknowledgedIds);
             ResolveLinksInArea(_entry.AreaId, resolver);
 
             var (resolved, unresolved, paraResolved, paraUnresolved) = resolver.GetStats();

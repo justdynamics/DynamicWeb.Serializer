@@ -15,6 +15,7 @@ public class InternalLinkResolver
     private readonly Dictionary<int, int> _sourceToTargetPageIds;
     private readonly Dictionary<int, int> _sourceToTargetParagraphIds;
     private readonly IReadOnlySet<int>? _deferredSourcePageIds;
+    private readonly IReadOnlySet<int>? _acknowledgedSourcePageIds;
     private readonly Action<string>? _log;
     private int _resolvedCount;
     private int _unresolvedCount;
@@ -47,16 +48,25 @@ public class InternalLinkResolver
     /// (NOT as WARNING — they are rewritten during the sibling mode's own pass and must not
     /// escalate under strict mode).
     /// </param>
+    /// <param name="acknowledgedSourcePageIds">
+    /// Source page IDs the owning predicate acknowledges as known-broken
+    /// (ContentEntry.AcknowledgedOrphanPageIds). Links to these are left unchanged and logged
+    /// without the WARNING prefix so they do not escalate under strict mode. DW stringifies
+    /// raw link-typed integers only when items are read back, so these orphans are invisible
+    /// to the serialize-side sweep and MUST be handled here.
+    /// </param>
     public InternalLinkResolver(
         Dictionary<int, int> sourceToTargetPageIds,
         Action<string>? log = null,
         Dictionary<int, int>? sourceToTargetParagraphIds = null,
-        IReadOnlySet<int>? deferredSourcePageIds = null)
+        IReadOnlySet<int>? deferredSourcePageIds = null,
+        IReadOnlySet<int>? acknowledgedSourcePageIds = null)
     {
         _sourceToTargetPageIds = sourceToTargetPageIds;
         _log = log;
         _sourceToTargetParagraphIds = sourceToTargetParagraphIds ?? new Dictionary<int, int>();
         _deferredSourcePageIds = deferredSourcePageIds;
+        _acknowledgedSourcePageIds = acknowledgedSourcePageIds;
     }
 
     /// <summary>
@@ -126,6 +136,12 @@ public class InternalLinkResolver
             else if (_deferredSourcePageIds?.Contains(sourcePageId) == true)
             {
                 _log?.Invoke($"  Link deferred: page ID {sourcePageId} ships via another mode in this run — rewritten during that mode's pass");
+                _deferredCount++;
+                return match.Value;
+            }
+            else if (_acknowledgedSourcePageIds?.Contains(sourcePageId) == true)
+            {
+                _log?.Invoke($"  Acknowledged orphan link: page ID {sourcePageId} — left as-is per the predicate's acknowledgedOrphanPageIds");
                 _deferredCount++;
                 return match.Value;
             }
