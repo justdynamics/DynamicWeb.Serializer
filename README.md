@@ -2,6 +2,11 @@
 
 **Git-versioned content and data sync for Truvio Commerce 10.**
 
+> Truvio Commerce is the platform formerly known as Dynamicweb. The platform's
+> NuGet packages, API namespaces, and host binaries still carry the `Dynamicweb`
+> name (e.g. `Dynamicweb 10.23.9`, `Dynamicweb.Host.Suite`), and this project's
+> docs use "DW" as shorthand for the platform throughout.
+
 Truvio.Commerce.Serializer is a Truvio Commerce AppStore app that serializes and deserializes
 database state to and from YAML files on disk. Teams treat YAML as the single source
 of truth for content, shop configuration, payment and shipping definitions, VAT rules,
@@ -150,13 +155,16 @@ secret management, pre-commit link sweeps, and the Seed-vs-Deploy split — are 
 
 ## Project status
 
-Active development. Current milestone: **v0.4.0 Full Page Fidelity** (nearing
-completion). Phase 38.1 closed 2026-04-22 with a full Swift 2.2 → CleanDB round-trip
+Shared with partners as open source — usable today, not a fully productized
+offering. You are expected to build the DLL yourself, validate against your own
+solution, and read the docs; there is no SLA or formal support channel. Issues
+and PRs are welcome.
+
+Milestone history: v0.6.0 **Manifest-Driven Deserialize** completed 2026-05-11
+(manifest-driven entry dispatch, zip import/export convergence). v0.5.0
+**Production-Ready Baseline** closed with a full Swift 2.2 → CleanDB round-trip
 passing under `strictMode: true` end-to-end via `tools/e2e/full-clean-roundtrip.ps1`.
-Phase 41 closed 2026-05-01 with admin-UI polish across the Predicate, Item Type
-Excludes, and Embedded XML Excludes screens (per-predicate Mode binding, dual-list
-saved-exclusion merge, screen-name and tooltip cleanup). Test suite: 821 unit and
-integration tests.
+Test suite: 851 unit tests, plus integration tests that require a live DW host.
 
 The API surface (Management API commands, predicate shape, YAML format) is stable
 for the current release line. Config schema and runtime-exclusion defaults may
@@ -166,4 +174,4 @@ evolve before 1.0.
 
 - Source: <https://github.com/justdynamics/Truvio.Commerce.Serializer>
 - Issue tracker: <https://github.com/justdynamics/Truvio.Commerce.Serializer/issues>
-- License: open source, no licensing required
+- License: [MIT](LICENSE)

@@ -16,6 +16,7 @@
     <Title>Truvio Commerce Serializer</Title>
     <Description>Serialize and deserialize Truvio Commerce (Dynamicweb 10) database state to YAML files for version control and environment sync.</Description>
     <Authors>Truvio Commerce Serializer Contributors</Authors>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/justdynamics/Truvio.Commerce.Serializer</PackageProjectUrl>
     <RepositoryUrl>https://github.com/justdynamics/Truvio.Commerce.Serializer</RepositoryUrl>
     <PackageTags>truvio-commerce dynamicweb dw10 addin serializer</PackageTags>
