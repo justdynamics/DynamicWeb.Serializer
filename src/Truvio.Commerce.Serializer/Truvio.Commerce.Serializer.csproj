@@ -11,15 +11,19 @@
 
     <!-- NuGet package metadata -->
     <PackageId>Truvio.Commerce.Serializer</PackageId>
-    <Version>0.3.0</Version>
-    <AssemblyVersion>0.3.0.0</AssemblyVersion>
+    <!-- Prerelease suffix renders as the BETA flag in the DW10 admin "Available apps" list -->
+    <Version>0.6.0-beta</Version>
+    <AssemblyVersion>0.6.0.0</AssemblyVersion>
     <Title>Truvio Commerce Serializer</Title>
     <Description>Serialize and deserialize Truvio Commerce (Dynamicweb 10) database state to YAML files for version control and environment sync.</Description>
     <Authors>Truvio Commerce Serializer Contributors</Authors>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/justdynamics/Truvio.Commerce.Serializer</PackageProjectUrl>
     <RepositoryUrl>https://github.com/justdynamics/Truvio.Commerce.Serializer</RepositoryUrl>
-    <PackageTags>truvio-commerce dynamicweb dw10 addin serializer</PackageTags>
+    <!-- "dynamicweb-app-store" + "Addin" + "dw10" are required by the DW10 admin app-store
+         search (NuGetAddinProvider DEFAULT_SEARCH_TERM); "commerce" and "integration" map to
+         the Categories column via GetCategoriesFromTags. -->
+    <PackageTags>dynamicweb-app-store Addin dw10 commerce integration truvio-commerce dynamicweb serializer</PackageTags>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
   </PropertyGroup>
 
