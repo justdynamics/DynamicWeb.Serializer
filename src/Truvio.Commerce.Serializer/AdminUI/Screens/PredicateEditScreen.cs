@@ -37,6 +37,7 @@ public sealed class PredicateEditScreen : EditScreenBase<PredicateEditModel>
             {
                 EditorFor(m => m.AreaId),
                 EditorFor(m => m.PageId),
+                EditorFor(m => m.IncludeLanguageLayers),
                 EditorFor(m => m.Excludes)
             }));
             groups.Add(new("Filtering", new List<EditorBase>

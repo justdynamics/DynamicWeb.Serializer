@@ -30,6 +30,14 @@ public record SerializedPage
     public DateTime? ActiveFrom { get; init; }
     public DateTime? ActiveTo { get; init; }
     public int PermissionType { get; init; }
+    /// <summary>
+    /// GUID of the master page when this page is a language-layer copy (Page.MasterPageId > 0).
+    /// The master page lives in the master area; deserialize resolves it back to the target's
+    /// numeric page ID in the post-write link pass.
+    /// </summary>
+    public Guid? MasterPageGuid { get; init; }
+    /// <summary>DW MasterType (None/Lock/Inherit) for language-layer pages; null when not a language copy.</summary>
+    public string? MasterType { get; init; }
     public SerializedSeoSettings? Seo { get; init; }
     public SerializedUrlSettings? UrlSettings { get; init; }
     public SerializedVisibilitySettings? Visibility { get; init; }

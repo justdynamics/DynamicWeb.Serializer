@@ -225,6 +225,12 @@ public class ContentDeserializer
             var (resolved, unresolved, paraResolved, paraUnresolved) = resolver.GetStats();
             if (resolved > 0 || unresolved > 0)
                 Log($"Link resolution: {resolved} page links resolved, {unresolved} unresolvable; {paraResolved} paragraph anchors resolved, {paraUnresolved} unresolvable");
+
+            // Multi-language: restore master links (Page.MasterPageId/MasterType,
+            // Paragraph.MasterParagraphID/GlobalRecordPageID) from the GUID references the
+            // mapper emitted. Runs against the full-DB caches so cross-area masters resolve;
+            // masters not yet on target (language entry ordered before its master) warn.
+            RestoreMasterLinks(allAreaPages, allGuidCache, paragraphCache);
         }
 
         var aggregated = new DeserializeResult
@@ -332,6 +338,10 @@ public class ContentDeserializer
         }
 
         Log($"Deserializing entry '{entry.EntryId}' into area ID={entry.AreaId}");
+
+        // Multi-language: when this area is a language layer, validate its master area and
+        // ecom language exist on target before pages are written.
+        ValidateLanguageLayerArea(entry.AreaId, area.Properties);
 
         // Pre-build page GUID cache for the entire area (avoids per-item full table scans)
         var allPages = Services.Pages.GetPagesByAreaID(entry.AreaId);
@@ -1215,7 +1225,7 @@ public class ContentDeserializer
 
     private static readonly HashSet<string> ItemSystemFields = new(StringComparer.OrdinalIgnoreCase)
     {
-        "Id", "ItemInstanceType", "Sort", "GlobalRecordPageGuid"
+        "Id", "ItemInstanceType", "Sort", "GlobalRecordPageGuid", "MasterParagraphGuid"
     };
 
     /// <summary>
@@ -1664,6 +1674,148 @@ public class ContentDeserializer
 
         if (diffs.Count == 0) ctx.Skipped++;
         else ctx.Updated++;
+    }
+
+    // -------------------------------------------------------------------------
+    // Multi-language: master-link restore + language-layer validation
+    // -------------------------------------------------------------------------
+
+    /// <summary>
+    /// Restores master links captured as GUID references during serialization:
+    /// Page.MasterPageId + MasterType (language-layer pages), Paragraph.MasterParagraphID
+    /// (language-layer paragraphs) and Paragraph.GlobalRecordPageID (global paragraphs).
+    /// Runs in the post-write pass so both sides of each link exist on target. Unresolved
+    /// masters warn — order master-area predicates before their language layers.
+    /// </summary>
+    private void RestoreMasterLinks(
+        List<SerializedPage> pages,
+        Dictionary<Guid, int> pageGuidCache,
+        Dictionary<Guid, int> paragraphGuidCache)
+    {
+        var (pageUpdates, pageUnresolved) = MasterLinkRestorer.ComputePageLinkUpdates(pages, pageGuidCache);
+        int pagesLinked = 0;
+        foreach (var update in pageUpdates)
+        {
+            try
+            {
+                var page = Services.Pages.GetPage(update.TargetPageId);
+                if (page == null) continue;
+
+                var needsSave = false;
+                if (page.MasterPageId != update.TargetMasterPageId)
+                {
+                    page.MasterPageId = update.TargetMasterPageId;
+                    needsSave = true;
+                }
+                if (!string.IsNullOrEmpty(update.MasterType)
+                    && Enum.TryParse<MasterType>(update.MasterType, ignoreCase: true, out var masterType)
+                    && page.MasterType != masterType)
+                {
+                    page.MasterType = masterType;
+                    needsSave = true;
+                }
+                if (needsSave)
+                {
+                    Services.Pages.SavePage(page);
+                    pagesLinked++;
+                }
+            }
+            catch (Exception ex)
+            {
+                Log($"WARNING: Could not restore master link for page ID {update.TargetPageId}: {ex.Message}");
+            }
+        }
+
+        var (paraUpdates, paraUnresolved) = MasterLinkRestorer.ComputeParagraphLinkUpdates(pages, paragraphGuidCache, pageGuidCache);
+        int paragraphsLinked = 0;
+        foreach (var update in paraUpdates)
+        {
+            try
+            {
+                var para = Services.Paragraphs.GetParagraph(update.TargetParagraphId);
+                if (para == null) continue;
+
+                var needsSave = false;
+                if (update.TargetMasterParagraphId.HasValue && para.MasterParagraphID != update.TargetMasterParagraphId.Value)
+                {
+                    para.MasterParagraphID = update.TargetMasterParagraphId.Value;
+                    needsSave = true;
+                }
+                if (update.TargetGlobalRecordPageId.HasValue && para.GlobalRecordPageID != update.TargetGlobalRecordPageId.Value)
+                {
+                    para.GlobalRecordPageID = update.TargetGlobalRecordPageId.Value;
+                    needsSave = true;
+                }
+                if (needsSave)
+                {
+                    Services.Paragraphs.SaveParagraph(para);
+                    paragraphsLinked++;
+                }
+            }
+            catch (Exception ex)
+            {
+                Log($"WARNING: Could not restore master link for paragraph ID {update.TargetParagraphId}: {ex.Message}");
+            }
+        }
+
+        if (pagesLinked > 0 || paragraphsLinked > 0)
+            Log($"Master links restored: {pagesLinked} page(s), {paragraphsLinked} paragraph(s)");
+
+        foreach (var miss in pageUnresolved)
+            Log($"WARNING: Master page {miss.MasterGuid} for language page {miss.OwnerGuid} not found on target — " +
+                "order the master area's predicate before its language layers and re-run.");
+        foreach (var miss in paraUnresolved)
+            Log($"WARNING: Master reference {miss.MasterGuid} ({miss.Kind}) for paragraph {miss.OwnerGuid} not found on target.");
+    }
+
+    /// <summary>
+    /// When the area being deserialized is a language layer (AreaMasterAreaID > 0 in its
+    /// serialized properties), verify the master area and the referenced ecom language exist
+    /// on target. Warnings only — the write proceeds either way (area IDs are stable across
+    /// environments, so the link self-heals once the master is deserialized).
+    /// </summary>
+    private void ValidateLanguageLayerArea(int areaId, Dictionary<string, object> properties)
+    {
+        var masterAreaId = ReadIntProperty(properties, "AreaMasterAreaID");
+        if (masterAreaId > 0)
+        {
+            try
+            {
+                if (Services.Areas.GetArea(masterAreaId) == null)
+                    Log($"WARNING: Area {areaId} is a language layer of master area {masterAreaId}, " +
+                        "which does not exist on target yet. Deserialize the master area first.");
+                else
+                    Log($"Area {areaId} is a language layer of master area {masterAreaId} (master present on target).");
+            }
+            catch { /* DW runtime unavailable — skip validation */ }
+        }
+
+        var ecomLanguageId = ReadStringProperty(properties, "AreaEcomLanguageID");
+        if (!string.IsNullOrEmpty(ecomLanguageId))
+        {
+            try
+            {
+                var cb = new CommandBuilder();
+                cb.Add("SELECT COUNT(*) FROM [EcomLanguages] WHERE [LanguageID] = {0}", ecomLanguageId);
+                var count = Convert.ToInt32(Database.ExecuteScalar(cb) ?? 0);
+                if (count == 0)
+                    Log($"WARNING: Area {areaId} references ecom language '{ecomLanguageId}' which does not exist " +
+                        "on target. Add an EcomLanguages predicate or create the language before going live.");
+            }
+            catch { /* Ecom not installed or DW runtime unavailable — skip validation */ }
+        }
+    }
+
+    private static int ReadIntProperty(Dictionary<string, object> properties, string key)
+    {
+        var match = properties.FirstOrDefault(kvp => string.Equals(kvp.Key, key, StringComparison.OrdinalIgnoreCase));
+        return match.Key != null && int.TryParse(match.Value?.ToString(), out var value) ? value : 0;
+    }
+
+    private static string? ReadStringProperty(Dictionary<string, object> properties, string key)
+    {
+        var match = properties.FirstOrDefault(kvp => string.Equals(kvp.Key, key, StringComparison.OrdinalIgnoreCase));
+        return match.Key != null ? match.Value?.ToString() : null;
     }
 
     // -------------------------------------------------------------------------

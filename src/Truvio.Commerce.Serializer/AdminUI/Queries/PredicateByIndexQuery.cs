@@ -34,6 +34,7 @@ public sealed class PredicateByIndexQuery : DataQueryIdentifiableModelBase<Predi
             ProviderType = pred.ProviderType,
             AreaId = pred.AreaId,
             PageId = pred.PageId,
+            IncludeLanguageLayers = pred.IncludeLanguageLayers,
             Excludes = string.Join("\n", pred.Excludes),
             Table = pred.Table ?? string.Empty,
             NameColumn = pred.NameColumn ?? string.Empty,

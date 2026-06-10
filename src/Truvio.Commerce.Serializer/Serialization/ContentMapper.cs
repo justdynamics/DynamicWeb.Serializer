@@ -89,6 +89,12 @@ public class ContentMapper
         var fields = ExtractItemFields(page.Item, effectiveExcludeFields);
         var propertyFields = ExtractPropertyItemFields(page, effectiveExcludeFields);
 
+        // Language-layer pages reference their master page (in the master area) by numeric ID;
+        // resolve to GUID so the link survives cross-environment deserialization.
+        Guid? masterPageGuid = page.MasterPageId > 0
+            ? _resolver.ResolvePageGuid(page.MasterPageId)
+            : null;
+
         return new SerializedPage
         {
             PageUniqueId = page.UniqueId,
@@ -120,6 +126,8 @@ public class ContentMapper
             ActiveFrom = page.ActiveFrom,
             ActiveTo = page.ActiveTo,
             PermissionType = page.PermissionType,
+            MasterPageGuid = masterPageGuid,
+            MasterType = page.MasterPageId > 0 ? page.MasterType.ToString() : null,
             Seo = new SerializedSeoSettings
             {
                 MetaTitle = page.MetaTitle,

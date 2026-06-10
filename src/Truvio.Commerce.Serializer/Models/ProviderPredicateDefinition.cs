@@ -37,6 +37,16 @@ public record ProviderPredicateDefinition
     /// <summary>Area ID for Content predicates.</summary>
     public int AreaId { get; init; } = 0;
 
+    /// <summary>
+    /// Content predicates only: when true and <see cref="AreaId"/> is a master area, the
+    /// serialize run expands this predicate into one synthetic predicate per language-layer
+    /// area (Area.MasterAreaId == AreaId) so language versions of the selected subtree are
+    /// serialized alongside the master. Language pages are matched against this predicate's
+    /// <see cref="Path"/> via their master-page chain (language MenuTexts are translated, so
+    /// the master's path space is the stable predicate coordinate system).
+    /// </summary>
+    public bool IncludeLanguageLayers { get; init; } = false;
+
     /// <summary>Root path for Content predicates.</summary>
     public string Path { get; init; } = "";
 

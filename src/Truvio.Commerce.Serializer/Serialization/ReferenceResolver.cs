@@ -22,11 +22,18 @@ public class ReferenceResolver
         if (_pageGuidCache.TryGetValue(numericId, out var cached))
             return cached;
 
-        var page = Services.Pages.GetPage(numericId);
-        if (page != null)
+        try
         {
-            _pageGuidCache[numericId] = page.UniqueId;
-            return page.UniqueId;
+            var page = Services.Pages.GetPage(numericId);
+            if (page != null)
+            {
+                _pageGuidCache[numericId] = page.UniqueId;
+                return page.UniqueId;
+            }
+        }
+        catch
+        {
+            // DW runtime unavailable (unit tests) — fall through to the warning below.
         }
 
         Console.Error.WriteLine($"[Serializer] Warning: Could not resolve page ID {numericId} to GUID");

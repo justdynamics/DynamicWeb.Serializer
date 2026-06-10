@@ -71,6 +71,12 @@ public class SerializerOrchestrator
     {
         log?.Invoke($"=== Mode: {mode} | Strategy: {strategy} ===");
 
+        // Multi-language: expand includeLanguageLayers Content predicates into one synthetic
+        // predicate per language-layer area so each layer serializes (and gets a manifest
+        // entry) like any other area. No-op when no predicate carries the flag.
+        predicates = LanguageLayerExpander.Expand(
+            predicates, LanguageLayerExpander.GetLanguageAreaIdsFromDw, log);
+
         var results = new List<SerializeResult>();
         var errors = new List<string>();
 

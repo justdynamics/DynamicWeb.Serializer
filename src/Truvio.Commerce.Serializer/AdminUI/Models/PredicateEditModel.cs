@@ -38,6 +38,10 @@ public sealed class PredicateEditModel : DataViewModelBase, IIdentifiable
     [ConfigurableProperty("Page", explanation: "Root page for this predicate")]
     public int PageId { get; set; }
 
+    [ConfigurableProperty("Include language layers",
+        explanation: "Content only. Also serialize the language-layer areas of this (master) area. Language pages are matched against this predicate's path via their master page.")]
+    public bool IncludeLanguageLayers { get; set; }
+
     [ConfigurableProperty("Excludes", explanation: "One path per line. Pages under these paths will be excluded from sync.")]
     public string Excludes { get; set; } = string.Empty;
 

@@ -19,8 +19,17 @@ public class ContentSerializer
     private readonly PermissionMapper _permissionMapper;
     private readonly ContentPredicateSet _predicateSet;
     private readonly Action<string>? _log;
+    private readonly bool _lenientLinkSweep;
 
-    public ContentSerializer(SerializerConfiguration configuration, IContentStore? store = null, Action<string>? log = null)
+    /// <param name="lenientLinkSweep">
+    /// When true, unresolvable internal links found by the <see cref="BaselineLinkSweeper"/>
+    /// are logged as warnings instead of failing the run. Used by ad-hoc subtree exports
+    /// (tree right-click "Serialize subtree"), where references out of the exported subtree
+    /// are expected — they resolve against the target DB at import time. Baseline runs keep
+    /// the default fatal semantics (D-22).
+    /// </param>
+    public ContentSerializer(SerializerConfiguration configuration, IContentStore? store = null, Action<string>? log = null,
+        bool lenientLinkSweep = false)
     {
         _configuration = configuration;
         _store = store ?? new FileSystemStore();
@@ -29,6 +38,7 @@ public class ContentSerializer
         _permissionMapper = new PermissionMapper(log);
         _predicateSet = new ContentPredicateSet(configuration);
         _log = log;
+        _lenientLinkSweep = lenientLinkSweep;
     }
 
     private void Log(string message) => _log?.Invoke(message);
@@ -107,6 +117,16 @@ public class ContentSerializer
             $"(ack deploy={deployAck.Count}, seed={seedAck.Count})");
         if (sweepResult.Unresolved.Count > 0)
         {
+            if (_lenientLinkSweep)
+            {
+                // Ad-hoc subtree export: out-of-subtree references are expected and resolve
+                // against the target DB at import time. Warn and continue.
+                foreach (var u in sweepResult.Unresolved)
+                    Log($"WARNING: reference out of exported subtree, ID {u.UnresolvablePageId} in {u.SourcePageIdentifier} / {u.FieldName}: {u.Context}");
+                Log($"Serialization complete: {totalPages} pages, {totalGridRows} grid rows, {totalParagraphs} paragraphs serialized.");
+                return;
+            }
+
             var acknowledged = new HashSet<int>(deployAck.Concat(seedAck));
             var (accepted, fatal) = sweepResult.Unresolved
                 .GroupBy(u => acknowledged.Contains(u.UnresolvablePageId))
@@ -198,13 +218,16 @@ public class ContentSerializer
 
     private SerializedPage? SerializePage(Page page, ProviderPredicateDefinition predicate, string contentPath, HashSet<string>? excludeFields = null, IReadOnlyList<string>? excludeXmlElements = null)
     {
-        // Check predicate inclusion BEFORE loading children (short-circuit optimization)
-        if (!_predicateSet.ShouldInclude(contentPath, predicate.AreaId))
+        // Check predicate inclusion BEFORE loading children (short-circuit optimization).
+        // Language-layer pages carry translated MenuTexts, so their own path never matches a
+        // predicate authored against the master area — match them in master-path space instead.
+        var checkPath = GetPredicateCheckPath(page, contentPath);
+        if (!_predicateSet.ShouldInclude(checkPath, predicate.AreaId))
         {
-            Log($"  Predicate excluded: '{contentPath}'");
+            Log($"  Predicate excluded: '{checkPath}'");
             return null;
         }
-        Log($"  Predicate included: '{contentPath}' (page ID={page.ID})");
+        Log($"  Predicate included: '{checkPath}' (page ID={page.ID})");
 
         // Fetch grid rows and paragraphs for this page.
         // DW allows multiple rows on the same page to share Sort (default is 0; manual
@@ -253,6 +276,37 @@ public class ContentSerializer
         var permissions = _permissionMapper.MapPermissions(page.ID);
         return _mapper.MapPage(page, serializedGridRows, serializedChildren, permissions, excludeFields, excludeXmlElements,
             _configuration.ExcludeFieldsByItemType, _configuration.ExcludeXmlElementsByType);
+    }
+
+    /// <summary>
+    /// Predicate paths are authored in the master area's path space. For a language-layer page
+    /// (MasterPageId > 0) the path is rebuilt from the master page's parent chain; pages without
+    /// a master link (master-area pages, or layer-only pages) use their own path.
+    /// </summary>
+    private static string GetPredicateCheckPath(Page page, string ownPath)
+    {
+        if (page.MasterPageId <= 0)
+            return ownPath;
+
+        try
+        {
+            var master = Services.Pages.GetPage(page.MasterPageId);
+            if (master == null)
+                return ownPath;
+
+            var segments = new List<string>();
+            var current = master;
+            while (current != null)
+            {
+                segments.Insert(0, current.MenuText ?? string.Empty);
+                current = current.ParentPageId > 0 ? Services.Pages.GetPage(current.ParentPageId) : null;
+            }
+            return "/" + string.Join("/", segments);
+        }
+        catch
+        {
+            return ownPath;
+        }
     }
 
     private static void CountItems(IEnumerable<SerializedPage> pages, ref int pageCount, ref int gridRowCount, ref int paragraphCount)

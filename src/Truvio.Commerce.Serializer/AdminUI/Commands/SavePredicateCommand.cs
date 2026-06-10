@@ -173,6 +173,7 @@ public sealed class SavePredicateCommand : CommandBase<PredicateEditModel>
                     Path = path,
                     AreaId = Model.AreaId,
                     PageId = Model.PageId,
+                    IncludeLanguageLayers = Model.IncludeLanguageLayers,
                     Excludes = excludes,
                     ExcludeFields = excludeFields,
                     ExcludeXmlElements = excludeXmlElements,
