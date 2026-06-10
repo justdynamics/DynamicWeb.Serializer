@@ -3,6 +3,7 @@ using Truvio.Commerce.Serializer.AdminUI.Queries;
 using Truvio.Commerce.Serializer.AdminUI.Screens;
 using Truvio.Commerce.Serializer.Configuration;
 using Truvio.Commerce.Serializer.Models;
+using Truvio.Commerce.Serializer.Serialization;
 using Dynamicweb.Application.UI.TreeNavigation;
 using Dynamicweb.Content;
 using Dynamicweb.Content.UI;
@@ -32,9 +33,9 @@ public sealed class SerializerTreeNodesInjector : ScreenInjector<TreeNodesScreen
         if (!content.TryGet<TreeNodes>(out var tree) || tree is null)
             return;
 
-        var matcher = TreeNodeDecorator.DeployPredicateMatcher.TryCreate();
+        var evaluator = TreeNodeDecorator.TryCreateEvaluator();
         foreach (var node in tree.Nodes)
-            TreeNodeDecorator.Decorate(node, matcher);
+            TreeNodeDecorator.Decorate(node, evaluator);
     }
 }
 
@@ -52,10 +53,10 @@ public sealed class SerializerTreeInjector : ScreenInjector<TreeScreen>
         if (!content.TryGet<Dynamicweb.CoreUI.Navigation.Tree>(out var tree) || tree is null)
             return;
 
-        var matcher = TreeNodeDecorator.DeployPredicateMatcher.TryCreate();
+        var evaluator = TreeNodeDecorator.TryCreateEvaluator();
         foreach (var section in tree.Sections)
             foreach (var node in section.Nodes)
-                TreeNodeDecorator.Decorate(node, matcher);
+                TreeNodeDecorator.Decorate(node, evaluator);
     }
 }
 
@@ -68,7 +69,7 @@ internal static class TreeNodeDecorator
         => path is not null
            && string.Equals(path.First, typeof(ContentArea).FullName, StringComparison.Ordinal);
 
-    public static void Decorate(NavigationNode node, DeployPredicateMatcher? matcher)
+    public static void Decorate(NavigationNode node, ContentCoverageEvaluator? evaluator)
     {
         if (int.TryParse(node.Id, out var pageId) && pageId > 0)
         {
@@ -96,15 +97,18 @@ internal static class TreeNodeDecorator
                     ]
                 });
 
-                if (matcher is not null)
+                if (evaluator is not null)
                 {
-                    var contentPath = SerializeSubtreeCommand.BuildContentPath(page);
-                    if (matcher.IsManagedAtDeploy(contentPath, page.AreaId))
+                    // Language-layer pages are matched in their master's path space — predicate
+                    // paths are authored against the master area (same rule as serialize time).
+                    var checkPath = GetPredicateCheckPath(page);
+                    var result = evaluator.Evaluate(checkPath, page.AreaId);
+                    if (result.Coverage != ContentCoverage.None)
                     {
                         node.Annotations.Add(new ActionNode
                         {
-                            Name = "Managed by Truvio Serializer at deploy",
-                            Icon = Icon.Sync,
+                            Name = result.Explanation,
+                            Icon = result.Coverage == ContentCoverage.Full ? Icon.Sync : Icon.SyncSlash,
                             Sort = 200
                         });
                     }
@@ -114,47 +118,60 @@ internal static class TreeNodeDecorator
 
         // OpenTo deep-links and section loads can deliver pre-expanded children.
         foreach (var child in node.Nodes)
-            Decorate(child, matcher);
+            Decorate(child, evaluator);
     }
 
     /// <summary>
-    /// Evaluates whether a content path/area is covered by any deploy-mode Content predicate.
-    /// Built once per tree render; null when no config exists on this solution.
+    /// Builds the coverage evaluator from the deploy-mode Content predicates, expanded for
+    /// language layers (so language-area pages report coverage like their masters).
+    /// Built once per tree render; null when no config / no deploy Content predicates exist.
     /// </summary>
-    internal sealed class DeployPredicateMatcher
+    public static ContentCoverageEvaluator? TryCreateEvaluator()
     {
-        private readonly List<ContentPredicate> _predicates;
-
-        private DeployPredicateMatcher(List<ContentPredicate> predicates)
+        try
         {
-            _predicates = predicates;
-        }
-
-        public static DeployPredicateMatcher? TryCreate()
-        {
-            try
-            {
-                var configPath = ConfigPathResolver.FindConfigFile();
-                if (configPath == null)
-                    return null;
-
-                var config = ConfigLoader.Load(configPath);
-                var predicates = config.Predicates
-                    .Where(p => p.Mode == DeploymentMode.Deploy
-                        && string.Equals(p.ProviderType, "Content", StringComparison.OrdinalIgnoreCase))
-                    .Select(p => new ContentPredicate(p))
-                    .ToList();
-
-                return predicates.Count > 0 ? new DeployPredicateMatcher(predicates) : null;
-            }
-            catch
-            {
-                // Tree decoration is best-effort; never break the admin tree over config issues.
+            var configPath = ConfigPathResolver.FindConfigFile();
+            if (configPath == null)
                 return null;
-            }
-        }
 
-        public bool IsManagedAtDeploy(string contentPath, int areaId)
-            => _predicates.Any(p => p.ShouldInclude(contentPath, areaId));
+            var predicates = ConfigLoader.Load(configPath).Predicates
+                .Where(p => p.Mode == DeploymentMode.Deploy
+                    && string.Equals(p.ProviderType, "Content", StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            if (predicates.Count == 0)
+                return null;
+
+            var expanded = LanguageLayerExpander.Expand(
+                predicates, LanguageLayerExpander.GetLanguageAreaIdsFromDw);
+            return new ContentCoverageEvaluator(expanded);
+        }
+        catch
+        {
+            // Tree decoration is best-effort; never break the admin tree over config issues.
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Predicate paths live in the master area's path space; for a language-layer page
+    /// (MasterPageId > 0) rebuild the path from the master chain, otherwise use its own path.
+    /// </summary>
+    private static string GetPredicateCheckPath(Page page)
+    {
+        if (page.MasterPageId <= 0)
+            return SerializeSubtreeCommand.BuildContentPath(page);
+
+        try
+        {
+            var master = Services.Pages.GetPage(page.MasterPageId);
+            return master is not null
+                ? SerializeSubtreeCommand.BuildContentPath(master)
+                : SerializeSubtreeCommand.BuildContentPath(page);
+        }
+        catch
+        {
+            return SerializeSubtreeCommand.BuildContentPath(page);
+        }
     }
 }

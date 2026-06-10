@@ -35,8 +35,9 @@ public class ContentPredicate
     /// <summary>
     /// Returns true if candidatePath equals basePath or starts with basePath followed by a "/" (path boundary check).
     /// Comparison is case-insensitive (OrdinalIgnoreCase).
+    /// Internal so <see cref="ContentCoverageEvaluator"/> shares the exact same path semantics.
     /// </summary>
-    private static bool IsUnderPath(string candidatePath, string basePath)
+    internal static bool IsUnderPath(string candidatePath, string basePath)
     {
         if (string.Equals(candidatePath, basePath, StringComparison.OrdinalIgnoreCase))
             return true;
