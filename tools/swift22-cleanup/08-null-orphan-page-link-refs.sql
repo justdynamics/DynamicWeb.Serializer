@@ -21,21 +21,20 @@
 --
 -- Fix:
 --   Dynamic-SQL sweep over INFORMATION_SCHEMA.COLUMNS (same pattern as
---   script 01's ID-15717 cleanup). Three passes:
+--   script 01's ID-15717 cleanup). One pass:
 --     Part A — string columns: REPLACE Default.aspx?ID=<N>/Id=<N> with ''
 --              for each of the 20 IDs, with a digit-boundary guard in the
 --              WHERE clause so "=4" does not match "=40" / "=42" / "=44" / "=48"
 --              / "=490" / "=4897" etc.
---     Part B — string columns: SET column = '' when the whole value (after
---              NULLIF-empty) parses as an INT in the 20-ID set.
---     Part C — nullable integer columns: SET column = NULL when value IN 20-ID set.
 --
---   2026-06-11: the pre/post count assertion previously aggregated every
---   column via a single giant UNION ALL statement — hundreds of branches with
---   ~40 LIKE predicates each. On fresh restores SQL Server fails to compile
---   it (Msg 8623 "ran out of internal resources ... could not produce a query
---   plan"). Counting now runs one small query per column accumulated in a
---   cursor loop — same totals, no compile bomb.
+--   2026-06-11: two structural repairs.
+--   (1) The pre/post count previously aggregated every column via a single
+--       giant UNION ALL statement — hundreds of branches with ~40 LIKE
+--       predicates each. On fresh restores SQL Server fails to compile it
+--       (Msg 8623). Counting now runs one small query per column in a cursor.
+--   (2) Former Parts B/C (whole-value numeric strings / nullable-int columns
+--       IN the 20-ID set) are REMOVED — see the inline note where they used
+--       to live. They matched Sort/style/Id columns wholesale (1641 hits).
 --
 -- Ordering:
 --   MUST run AFTER the baseline is restored from bacpac (Plan 04 pipeline).
@@ -106,10 +105,10 @@ BEGIN
         SET @colExpr = N'CAST([' + @cn + N'] AS NVARCHAR(MAX))';
         SET @sql = N'SELECT @c = COUNT(*) FROM [' + @tn + N'] WHERE ('
             + REPLACE(@formA, N'<COL>', @colExpr)
-            + N' OR TRY_CAST(NULLIF(CAST([' + @cn + N'] AS NVARCHAR(4000)), '''') AS INT) IN (' + @idList + N'))';
+            + N')';
     END
     ELSE
-        SET @sql = N'SELECT @c = COUNT(*) FROM [' + @tn + N'] WHERE [' + @cn + N'] IN (' + @idList + N')';
+        SET @sql = N'SELECT @c = 0';
     EXEC sp_executesql @sql, N'@c INT OUTPUT', @c = @cnt OUTPUT;
     SET @before = @before + ISNULL(@cnt, 0);
     FETCH NEXT FROM precur INTO @tn, @cn, @kind;
@@ -166,27 +165,16 @@ END
 CLOSE idcur;
 DEALLOCATE idcur;
 
--- Part B — string columns: clear whole-value raw-numeric matches to ''.
-PRINT '--- Part B: string-column clear-to-empty for raw-numeric orphan IDs ---';
-DECLARE @updB NVARCHAR(MAX) = N'';
-SELECT @updB = @updB
-    + N'UPDATE [' + c.TableName + N'] SET [' + c.ColumnName + N'] = '''' '
-    + N'WHERE TRY_CAST(NULLIF(CAST([' + c.ColumnName + N'] AS NVARCHAR(4000)), '''') AS INT) IN (' + @idList + N');' + CHAR(10)
-FROM @cols c
-WHERE c.Kind = 'S';
-IF @updB <> N''
-    EXEC sp_executesql @updB;
-
--- Part C — nullable integer columns: SET NULL.
-PRINT '--- Part C: integer-column SET NULL for orphan IDs ---';
-DECLARE @updC NVARCHAR(MAX) = N'';
-SELECT @updC = @updC
-    + N'UPDATE [' + c.TableName + N'] SET [' + c.ColumnName + N'] = NULL '
-    + N'WHERE [' + c.ColumnName + N'] IN (' + @idList + N');' + CHAR(10)
-FROM @cols c
-WHERE c.Kind = 'I';
-IF @updC <> N''
-    EXEC sp_executesql @updC;
+-- Parts B and C REMOVED (2026-06-11). The blanket whole-value-numeric (Form B) and
+-- nullable-int (Form C) predicates matched 1641 occurrences on a fresh restore — almost
+-- all of them Sort orders, style values (Padding/BorderThicknes/FontSize/Height), and
+-- item Id fields whose values merely happen to be small integers. Blanking those corrupts
+-- legitimate content. The original script never caught this because its single-statement
+-- string-concat aggregation (undefined multi-row behavior + Msg 8623 compile failures)
+-- silently under-scanned. Raw-value orphan LINK fields, if any remain, surface by exact
+-- page + field name in the serialize-time BaselineLinkSweeper output — clean those
+-- specifically (or acknowledge via the predicate's acknowledgedOrphanPageIds) instead of
+-- pattern-matching every numeric column.
 
 -- =========================================================================
 -- STEP 4: Post-count assertion (same per-column accumulation as STEP 2).
@@ -204,10 +192,10 @@ BEGIN
         SET @colExpr = N'CAST([' + @cn + N'] AS NVARCHAR(MAX))';
         SET @sql = N'SELECT @c = COUNT(*) FROM [' + @tn + N'] WHERE ('
             + REPLACE(@formA, N'<COL>', @colExpr)
-            + N' OR TRY_CAST(NULLIF(CAST([' + @cn + N'] AS NVARCHAR(4000)), '''') AS INT) IN (' + @idList + N'))';
+            + N')';
     END
     ELSE
-        SET @sql = N'SELECT @c = COUNT(*) FROM [' + @tn + N'] WHERE [' + @cn + N'] IN (' + @idList + N')';
+        SET @sql = N'SELECT @c = 0';
     EXEC sp_executesql @sql, N'@c INT OUTPUT', @c = @cnt OUTPUT;
     SET @after = @after + ISNULL(@cnt, 0);
     FETCH NEXT FROM postcur INTO @tn, @cn, @kind;
@@ -226,3 +214,4 @@ END
 
 COMMIT TRAN;
 PRINT 'Done — 08-null-orphan-page-link-refs.sql';
+
