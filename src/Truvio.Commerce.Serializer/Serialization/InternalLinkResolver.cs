@@ -14,9 +14,11 @@ public class InternalLinkResolver
 {
     private readonly Dictionary<int, int> _sourceToTargetPageIds;
     private readonly Dictionary<int, int> _sourceToTargetParagraphIds;
+    private readonly IReadOnlySet<int>? _deferredSourcePageIds;
     private readonly Action<string>? _log;
     private int _resolvedCount;
     private int _unresolvedCount;
+    private int _deferredCount;
     private int _paragraphResolvedCount;
     private int _paragraphUnresolvedCount;
 
@@ -39,14 +41,22 @@ public class InternalLinkResolver
         @"(""SelectedValue"":\s*"")(\d+)("")",
         RegexOptions.Compiled);
 
+    /// <param name="deferredSourcePageIds">
+    /// Source page IDs known to ship via a sibling mode in the same run (e.g. seed pages
+    /// while deserializing deploy). Links to these are left unchanged and logged as deferred
+    /// (NOT as WARNING — they are rewritten during the sibling mode's own pass and must not
+    /// escalate under strict mode).
+    /// </param>
     public InternalLinkResolver(
         Dictionary<int, int> sourceToTargetPageIds,
         Action<string>? log = null,
-        Dictionary<int, int>? sourceToTargetParagraphIds = null)
+        Dictionary<int, int>? sourceToTargetParagraphIds = null,
+        IReadOnlySet<int>? deferredSourcePageIds = null)
     {
         _sourceToTargetPageIds = sourceToTargetPageIds;
         _log = log;
         _sourceToTargetParagraphIds = sourceToTargetParagraphIds ?? new Dictionary<int, int>();
+        _deferredSourcePageIds = deferredSourcePageIds;
     }
 
     /// <summary>
@@ -113,6 +123,12 @@ public class InternalLinkResolver
 
                 return result;
             }
+            else if (_deferredSourcePageIds?.Contains(sourcePageId) == true)
+            {
+                _log?.Invoke($"  Link deferred: page ID {sourcePageId} ships via another mode in this run — rewritten during that mode's pass");
+                _deferredCount++;
+                return match.Value;
+            }
             else
             {
                 _log?.Invoke($"  WARNING: Unresolvable page ID {sourcePageId} in link");
@@ -143,6 +159,9 @@ public class InternalLinkResolver
     /// </summary>
     public (int resolved, int unresolved, int paragraphResolved, int paragraphUnresolved) GetStats() =>
         (_resolvedCount, _unresolvedCount, _paragraphResolvedCount, _paragraphUnresolvedCount);
+
+    /// <summary>Links left unchanged because their target ships via a sibling mode in the same run.</summary>
+    public int DeferredCount => _deferredCount;
 
     /// <summary>
     /// Builds a source-to-target paragraph ID mapping by recursively walking

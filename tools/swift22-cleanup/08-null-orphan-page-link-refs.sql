@@ -30,6 +30,13 @@
 --              NULLIF-empty) parses as an INT in the 20-ID set.
 --     Part C — nullable integer columns: SET column = NULL when value IN 20-ID set.
 --
+--   2026-06-11: the pre/post count assertion previously aggregated every
+--   column via a single giant UNION ALL statement — hundreds of branches with
+--   ~40 LIKE predicates each. On fresh restores SQL Server fails to compile
+--   it (Msg 8623 "ran out of internal resources ... could not produce a query
+--   plan"). Counting now runs one small query per column accumulated in a
+--   cursor loop — same totals, no compile bomb.
+--
 -- Ordering:
 --   MUST run AFTER the baseline is restored from bacpac (Plan 04 pipeline).
 --   MUST run AFTER 01-null-orphan-page-refs.sql (different 5 orphan IDs, overlap-safe).
@@ -51,39 +58,13 @@ BEGIN TRAN;
 DECLARE @idList NVARCHAR(MAX) = N'1, 2, 4, 16, 19, 21, 23, 33, 34, 37, 40, 41, 42, 44, 48, 60, 97, 98, 104, 113';
 
 -- =========================================================================
--- STEP 1: Build the count query used for pre- and post-assertions.
--- The query aggregates residual orphan occurrences across all three forms.
+-- STEP 1: Enumerate target columns once + build the per-column Form A
+-- predicate template (<COL> placeholder substituted per column).
 -- =========================================================================
-DECLARE @countSql NVARCHAR(MAX) = N'SELECT @total = SUM(n) FROM (SELECT 0 AS n ';
+DECLARE @cols TABLE (TableName SYSNAME, ColumnName SYSNAME, Kind CHAR(1)); -- S = string, I = nullable int
 
--- Form A + Form B aggregated on string columns (one SELECT per column)
-SELECT @countSql = @countSql
-    + N' UNION ALL SELECT COUNT(*) FROM [' + c.TABLE_NAME + N'] WHERE '
-    -- Form A: Default.aspx?ID=<any of 20> with non-digit tail guard
-    + N'('
-        + N'(CAST([' + c.COLUMN_NAME + N'] AS NVARCHAR(MAX)) LIKE ''%Default.aspx?%=1%''    AND CAST([' + c.COLUMN_NAME + N'] AS NVARCHAR(MAX)) NOT LIKE ''%Default.aspx?%=1[0-9]%'')'
-        + N' OR (CAST([' + c.COLUMN_NAME + N'] AS NVARCHAR(MAX)) LIKE ''%Default.aspx?%=2%''   AND CAST([' + c.COLUMN_NAME + N'] AS NVARCHAR(MAX)) NOT LIKE ''%Default.aspx?%=2[0-9]%'')'
-        + N' OR (CAST([' + c.COLUMN_NAME + N'] AS NVARCHAR(MAX)) LIKE ''%Default.aspx?%=4%''   AND CAST([' + c.COLUMN_NAME + N'] AS NVARCHAR(MAX)) NOT LIKE ''%Default.aspx?%=4[0-9]%'')'
-        + N' OR (CAST([' + c.COLUMN_NAME + N'] AS NVARCHAR(MAX)) LIKE ''%Default.aspx?%=16%''  AND CAST([' + c.COLUMN_NAME + N'] AS NVARCHAR(MAX)) NOT LIKE ''%Default.aspx?%=16[0-9]%'')'
-        + N' OR (CAST([' + c.COLUMN_NAME + N'] AS NVARCHAR(MAX)) LIKE ''%Default.aspx?%=19%''  AND CAST([' + c.COLUMN_NAME + N'] AS NVARCHAR(MAX)) NOT LIKE ''%Default.aspx?%=19[0-9]%'')'
-        + N' OR (CAST([' + c.COLUMN_NAME + N'] AS NVARCHAR(MAX)) LIKE ''%Default.aspx?%=21%''  AND CAST([' + c.COLUMN_NAME + N'] AS NVARCHAR(MAX)) NOT LIKE ''%Default.aspx?%=21[0-9]%'')'
-        + N' OR (CAST([' + c.COLUMN_NAME + N'] AS NVARCHAR(MAX)) LIKE ''%Default.aspx?%=23%''  AND CAST([' + c.COLUMN_NAME + N'] AS NVARCHAR(MAX)) NOT LIKE ''%Default.aspx?%=23[0-9]%'')'
-        + N' OR (CAST([' + c.COLUMN_NAME + N'] AS NVARCHAR(MAX)) LIKE ''%Default.aspx?%=33%''  AND CAST([' + c.COLUMN_NAME + N'] AS NVARCHAR(MAX)) NOT LIKE ''%Default.aspx?%=33[0-9]%'')'
-        + N' OR (CAST([' + c.COLUMN_NAME + N'] AS NVARCHAR(MAX)) LIKE ''%Default.aspx?%=34%''  AND CAST([' + c.COLUMN_NAME + N'] AS NVARCHAR(MAX)) NOT LIKE ''%Default.aspx?%=34[0-9]%'')'
-        + N' OR (CAST([' + c.COLUMN_NAME + N'] AS NVARCHAR(MAX)) LIKE ''%Default.aspx?%=37%''  AND CAST([' + c.COLUMN_NAME + N'] AS NVARCHAR(MAX)) NOT LIKE ''%Default.aspx?%=37[0-9]%'')'
-        + N' OR (CAST([' + c.COLUMN_NAME + N'] AS NVARCHAR(MAX)) LIKE ''%Default.aspx?%=40%''  AND CAST([' + c.COLUMN_NAME + N'] AS NVARCHAR(MAX)) NOT LIKE ''%Default.aspx?%=40[0-9]%'')'
-        + N' OR (CAST([' + c.COLUMN_NAME + N'] AS NVARCHAR(MAX)) LIKE ''%Default.aspx?%=41%''  AND CAST([' + c.COLUMN_NAME + N'] AS NVARCHAR(MAX)) NOT LIKE ''%Default.aspx?%=41[0-9]%'')'
-        + N' OR (CAST([' + c.COLUMN_NAME + N'] AS NVARCHAR(MAX)) LIKE ''%Default.aspx?%=42%''  AND CAST([' + c.COLUMN_NAME + N'] AS NVARCHAR(MAX)) NOT LIKE ''%Default.aspx?%=42[0-9]%'')'
-        + N' OR (CAST([' + c.COLUMN_NAME + N'] AS NVARCHAR(MAX)) LIKE ''%Default.aspx?%=44%''  AND CAST([' + c.COLUMN_NAME + N'] AS NVARCHAR(MAX)) NOT LIKE ''%Default.aspx?%=44[0-9]%'')'
-        + N' OR (CAST([' + c.COLUMN_NAME + N'] AS NVARCHAR(MAX)) LIKE ''%Default.aspx?%=48%''  AND CAST([' + c.COLUMN_NAME + N'] AS NVARCHAR(MAX)) NOT LIKE ''%Default.aspx?%=48[0-9]%'')'
-        + N' OR (CAST([' + c.COLUMN_NAME + N'] AS NVARCHAR(MAX)) LIKE ''%Default.aspx?%=60%''  AND CAST([' + c.COLUMN_NAME + N'] AS NVARCHAR(MAX)) NOT LIKE ''%Default.aspx?%=60[0-9]%'')'
-        + N' OR (CAST([' + c.COLUMN_NAME + N'] AS NVARCHAR(MAX)) LIKE ''%Default.aspx?%=97%''  AND CAST([' + c.COLUMN_NAME + N'] AS NVARCHAR(MAX)) NOT LIKE ''%Default.aspx?%=97[0-9]%'')'
-        + N' OR (CAST([' + c.COLUMN_NAME + N'] AS NVARCHAR(MAX)) LIKE ''%Default.aspx?%=98%''  AND CAST([' + c.COLUMN_NAME + N'] AS NVARCHAR(MAX)) NOT LIKE ''%Default.aspx?%=98[0-9]%'')'
-        + N' OR (CAST([' + c.COLUMN_NAME + N'] AS NVARCHAR(MAX)) LIKE ''%Default.aspx?%=104%'' AND CAST([' + c.COLUMN_NAME + N'] AS NVARCHAR(MAX)) NOT LIKE ''%Default.aspx?%=104[0-9]%'')'
-        + N' OR (CAST([' + c.COLUMN_NAME + N'] AS NVARCHAR(MAX)) LIKE ''%Default.aspx?%=113%'' AND CAST([' + c.COLUMN_NAME + N'] AS NVARCHAR(MAX)) NOT LIKE ''%Default.aspx?%=113[0-9]%'')'
-    -- Form B: raw-numeric-string storage
-    + N' OR TRY_CAST(NULLIF(CAST([' + c.COLUMN_NAME + N'] AS NVARCHAR(4000)), '''') AS INT) IN (' + @idList + N')'
-    + N')'
+INSERT INTO @cols (TableName, ColumnName, Kind)
+SELECT c.TABLE_NAME, c.COLUMN_NAME, 'S'
 FROM INFORMATION_SCHEMA.COLUMNS c
 JOIN INFORMATION_SCHEMA.TABLES t ON t.TABLE_NAME = c.TABLE_NAME AND t.TABLE_SCHEMA = c.TABLE_SCHEMA
 WHERE c.TABLE_NAME LIKE 'ItemType_Swift-v2_%'
@@ -91,10 +72,8 @@ WHERE c.TABLE_NAME LIKE 'ItemType_Swift-v2_%'
   AND t.TABLE_TYPE = 'BASE TABLE'
   AND c.DATA_TYPE IN ('nvarchar','ntext','varchar','nchar','text');
 
--- Form C on nullable integer columns
-SELECT @countSql = @countSql
-    + N' UNION ALL SELECT COUNT(*) FROM [' + c.TABLE_NAME + N'] '
-    + N'WHERE [' + c.COLUMN_NAME + N'] IN (' + @idList + N')'
+INSERT INTO @cols (TableName, ColumnName, Kind)
+SELECT c.TABLE_NAME, c.COLUMN_NAME, 'I'
 FROM INFORMATION_SCHEMA.COLUMNS c
 JOIN INFORMATION_SCHEMA.TABLES t ON t.TABLE_NAME = c.TABLE_NAME AND t.TABLE_SCHEMA = c.TABLE_SCHEMA
 WHERE c.TABLE_NAME LIKE 'ItemType_Swift-v2_%'
@@ -103,14 +82,41 @@ WHERE c.TABLE_NAME LIKE 'ItemType_Swift-v2_%'
   AND c.DATA_TYPE IN ('int','bigint','smallint','tinyint')
   AND c.IS_NULLABLE = 'YES';
 
-SET @countSql = @countSql + N') q;';
+-- Form A predicate template: one (LIKE AND NOT LIKE) pair per orphan ID.
+DECLARE @formA NVARCHAR(MAX) = N'';
+SELECT @formA = @formA
+    + CASE WHEN @formA = N'' THEN N'' ELSE N' OR ' END
+    + N'(<COL> LIKE ''%Default.aspx?%=' + v.n + N'%'' AND <COL> NOT LIKE ''%Default.aspx?%=' + v.n + N'[0-9]%'')'
+FROM (VALUES ('1'),('2'),('4'),('16'),('19'),('21'),('23'),('33'),('34'),('37'),
+             ('40'),('41'),('42'),('44'),('48'),('60'),('97'),('98'),('104'),('113')) v(n);
 
 -- =========================================================================
--- STEP 2: Pre-count assertion.
+-- STEP 2: Pre-count assertion (one small query per column — no compile bomb).
 -- =========================================================================
 PRINT '--- Before ---';
-DECLARE @before INT;
-EXEC sp_executesql @countSql, N'@total INT OUTPUT', @total = @before OUTPUT;
+DECLARE @before INT = 0, @cnt INT, @sql NVARCHAR(MAX), @tn SYSNAME, @cn SYSNAME, @kind CHAR(1), @colExpr NVARCHAR(400);
+
+DECLARE precur CURSOR LOCAL FAST_FORWARD FOR SELECT TableName, ColumnName, Kind FROM @cols;
+OPEN precur;
+FETCH NEXT FROM precur INTO @tn, @cn, @kind;
+WHILE @@FETCH_STATUS = 0
+BEGIN
+    IF @kind = 'S'
+    BEGIN
+        SET @colExpr = N'CAST([' + @cn + N'] AS NVARCHAR(MAX))';
+        SET @sql = N'SELECT @c = COUNT(*) FROM [' + @tn + N'] WHERE ('
+            + REPLACE(@formA, N'<COL>', @colExpr)
+            + N' OR TRY_CAST(NULLIF(CAST([' + @cn + N'] AS NVARCHAR(4000)), '''') AS INT) IN (' + @idList + N'))';
+    END
+    ELSE
+        SET @sql = N'SELECT @c = COUNT(*) FROM [' + @tn + N'] WHERE [' + @cn + N'] IN (' + @idList + N')';
+    EXEC sp_executesql @sql, N'@c INT OUTPUT', @c = @cnt OUTPUT;
+    SET @before = @before + ISNULL(@cnt, 0);
+    FETCH NEXT FROM precur INTO @tn, @cn, @kind;
+END
+CLOSE precur;
+DEALLOCATE precur;
+
 PRINT CONCAT('Orphan page-ID link occurrences before: ', ISNULL(@before, 0));
 
 IF @before IS NULL OR @before = 0
@@ -145,18 +151,14 @@ BEGIN
     DECLARE @nStr NVARCHAR(10) = CAST(@id AS NVARCHAR(10));
     SET @updA = N'';
     SELECT @updA = @updA
-        + N'UPDATE [' + c.TABLE_NAME + N'] SET [' + c.COLUMN_NAME + N'] = '
-        + N'REPLACE(REPLACE(CAST([' + c.COLUMN_NAME + N'] AS NVARCHAR(MAX)), '
+        + N'UPDATE [' + c.TableName + N'] SET [' + c.ColumnName + N'] = '
+        + N'REPLACE(REPLACE(CAST([' + c.ColumnName + N'] AS NVARCHAR(MAX)), '
         + N'''Default.aspx?ID=' + @nStr + N''', ''''), '
         + N'''Default.aspx?Id=' + @nStr + N''', '''') '
-        + N'WHERE CAST([' + c.COLUMN_NAME + N'] AS NVARCHAR(MAX)) LIKE ''%Default.aspx?%=' + @nStr + N'%'' '
-        + N'  AND CAST([' + c.COLUMN_NAME + N'] AS NVARCHAR(MAX)) NOT LIKE ''%Default.aspx?%=' + @nStr + N'[0-9]%'';' + CHAR(10)
-    FROM INFORMATION_SCHEMA.COLUMNS c
-    JOIN INFORMATION_SCHEMA.TABLES t ON t.TABLE_NAME = c.TABLE_NAME AND t.TABLE_SCHEMA = c.TABLE_SCHEMA
-    WHERE c.TABLE_NAME LIKE 'ItemType_Swift-v2_%'
-      AND c.TABLE_NAME NOT LIKE '%_BAK_%'
-      AND t.TABLE_TYPE = 'BASE TABLE'
-      AND c.DATA_TYPE IN ('nvarchar','ntext','varchar','nchar','text');
+        + N'WHERE CAST([' + c.ColumnName + N'] AS NVARCHAR(MAX)) LIKE ''%Default.aspx?%=' + @nStr + N'%'' '
+        + N'  AND CAST([' + c.ColumnName + N'] AS NVARCHAR(MAX)) NOT LIKE ''%Default.aspx?%=' + @nStr + N'[0-9]%'';' + CHAR(10)
+    FROM @cols c
+    WHERE c.Kind = 'S';
     IF @updA <> N''
         EXEC sp_executesql @updA;
     FETCH NEXT FROM idcur INTO @id;
@@ -168,14 +170,10 @@ DEALLOCATE idcur;
 PRINT '--- Part B: string-column clear-to-empty for raw-numeric orphan IDs ---';
 DECLARE @updB NVARCHAR(MAX) = N'';
 SELECT @updB = @updB
-    + N'UPDATE [' + c.TABLE_NAME + N'] SET [' + c.COLUMN_NAME + N'] = '''' '
-    + N'WHERE TRY_CAST(NULLIF(CAST([' + c.COLUMN_NAME + N'] AS NVARCHAR(4000)), '''') AS INT) IN (' + @idList + N');' + CHAR(10)
-FROM INFORMATION_SCHEMA.COLUMNS c
-JOIN INFORMATION_SCHEMA.TABLES t ON t.TABLE_NAME = c.TABLE_NAME AND t.TABLE_SCHEMA = c.TABLE_SCHEMA
-WHERE c.TABLE_NAME LIKE 'ItemType_Swift-v2_%'
-  AND c.TABLE_NAME NOT LIKE '%_BAK_%'
-  AND t.TABLE_TYPE = 'BASE TABLE'
-  AND c.DATA_TYPE IN ('nvarchar','varchar','nchar','text','ntext');
+    + N'UPDATE [' + c.TableName + N'] SET [' + c.ColumnName + N'] = '''' '
+    + N'WHERE TRY_CAST(NULLIF(CAST([' + c.ColumnName + N'] AS NVARCHAR(4000)), '''') AS INT) IN (' + @idList + N');' + CHAR(10)
+FROM @cols c
+WHERE c.Kind = 'S';
 IF @updB <> N''
     EXEC sp_executesql @updB;
 
@@ -183,24 +181,40 @@ IF @updB <> N''
 PRINT '--- Part C: integer-column SET NULL for orphan IDs ---';
 DECLARE @updC NVARCHAR(MAX) = N'';
 SELECT @updC = @updC
-    + N'UPDATE [' + c.TABLE_NAME + N'] SET [' + c.COLUMN_NAME + N'] = NULL '
-    + N'WHERE [' + c.COLUMN_NAME + N'] IN (' + @idList + N');' + CHAR(10)
-FROM INFORMATION_SCHEMA.COLUMNS c
-JOIN INFORMATION_SCHEMA.TABLES t ON t.TABLE_NAME = c.TABLE_NAME AND t.TABLE_SCHEMA = c.TABLE_SCHEMA
-WHERE c.TABLE_NAME LIKE 'ItemType_Swift-v2_%'
-  AND c.TABLE_NAME NOT LIKE '%_BAK_%'
-  AND t.TABLE_TYPE = 'BASE TABLE'
-  AND c.DATA_TYPE IN ('int','bigint','smallint','tinyint')
-  AND c.IS_NULLABLE = 'YES';
+    + N'UPDATE [' + c.TableName + N'] SET [' + c.ColumnName + N'] = NULL '
+    + N'WHERE [' + c.ColumnName + N'] IN (' + @idList + N');' + CHAR(10)
+FROM @cols c
+WHERE c.Kind = 'I';
 IF @updC <> N''
     EXEC sp_executesql @updC;
 
 -- =========================================================================
--- STEP 4: Post-count assertion.
+-- STEP 4: Post-count assertion (same per-column accumulation as STEP 2).
 -- =========================================================================
 PRINT '--- After ---';
-DECLARE @after INT;
-EXEC sp_executesql @countSql, N'@total INT OUTPUT', @total = @after OUTPUT;
+DECLARE @after INT = 0;
+
+DECLARE postcur CURSOR LOCAL FAST_FORWARD FOR SELECT TableName, ColumnName, Kind FROM @cols;
+OPEN postcur;
+FETCH NEXT FROM postcur INTO @tn, @cn, @kind;
+WHILE @@FETCH_STATUS = 0
+BEGIN
+    IF @kind = 'S'
+    BEGIN
+        SET @colExpr = N'CAST([' + @cn + N'] AS NVARCHAR(MAX))';
+        SET @sql = N'SELECT @c = COUNT(*) FROM [' + @tn + N'] WHERE ('
+            + REPLACE(@formA, N'<COL>', @colExpr)
+            + N' OR TRY_CAST(NULLIF(CAST([' + @cn + N'] AS NVARCHAR(4000)), '''') AS INT) IN (' + @idList + N'))';
+    END
+    ELSE
+        SET @sql = N'SELECT @c = COUNT(*) FROM [' + @tn + N'] WHERE [' + @cn + N'] IN (' + @idList + N')';
+    EXEC sp_executesql @sql, N'@c INT OUTPUT', @c = @cnt OUTPUT;
+    SET @after = @after + ISNULL(@cnt, 0);
+    FETCH NEXT FROM postcur INTO @tn, @cn, @kind;
+END
+CLOSE postcur;
+DEALLOCATE postcur;
+
 PRINT CONCAT('Orphan page-ID link occurrences after: ', ISNULL(@after, 0));
 
 IF @after IS NOT NULL AND @after <> 0

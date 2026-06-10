@@ -119,19 +119,7 @@ public sealed class SerializeSubtreeCommand : CommandBase
     /// So for a page at /CustomerCenter/SubPage, the path is "/CustomerCenter/SubPage".
     /// A predicate with this path will include this page and all its children.
     /// </summary>
-    internal static string BuildContentPath(Page page)
-    {
-        var segments = new List<string>();
-        var current = page;
-        while (current != null)
-        {
-            segments.Insert(0, current.MenuText ?? string.Empty);
-            current = current.ParentPageId > 0
-                ? Services.Pages.GetPage(current.ParentPageId)
-                : null;
-        }
-        return "/" + string.Join("/", segments);
-    }
+    internal static string BuildContentPath(Page page) => ContentPathBuilder.BuildContentPath(page);
 
     private static void CopyToDownloadDir(string zipPath, string zipFileName)
     {

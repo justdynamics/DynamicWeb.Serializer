@@ -199,6 +199,14 @@ public class ContentDeserializer
                 catch { /* skip unreadable areas */ }
             }
 
+            // Multi-mode runs ship sibling YAML (deploy + seed under the same SerializeRoot).
+            // Include sibling pages in the map so links to already-deserialized sibling pages
+            // resolve, and remember which sibling pages are NOT on target yet — links to those
+            // are deferred (rewritten during the sibling mode's own pass), not warnings.
+            var siblingPages = ReadSiblingModePages();
+            if (siblingPages.Count > 0)
+                allYamlPages.AddRange(siblingPages);
+
             // Build GUID cache from ALL areas in the target DB
             foreach (var masterArea in Services.Areas.GetAreas())
             {
@@ -210,6 +218,13 @@ public class ContentDeserializer
             var crossAreaMap = InternalLinkResolver.BuildSourceToTargetMap(allYamlPages, allGuidCache);
             Log($"Cross-area link resolution: {crossAreaMap.Count} page ID mappings from {Directory.GetDirectories(_contentRoot).Length} areas");
 
+            // Sibling pages not yet on target = deferred link targets for this pass.
+            var deferredIds = new HashSet<int>();
+            CollectSourcePageIds(siblingPages, deferredIds);
+            deferredIds.ExceptWith(crossAreaMap.Keys);
+            if (deferredIds.Count > 0)
+                Log($"Sibling-mode link targets not yet on target (deferred to their own pass): {deferredIds.Count}");
+
             // Build paragraph map too
             var paragraphCache = new Dictionary<Guid, int>();
             foreach (var masterArea in Services.Areas.GetAreas())
@@ -219,12 +234,14 @@ public class ContentDeserializer
                             paragraphCache.TryAdd(para.UniqueId, para.ID);
             var paragraphMap = InternalLinkResolver.BuildSourceToTargetParagraphMap(allYamlPages, paragraphCache);
 
-            var resolver = new InternalLinkResolver(crossAreaMap, _log, sourceToTargetParagraphIds: paragraphMap);
+            var resolver = new InternalLinkResolver(crossAreaMap, _log,
+                sourceToTargetParagraphIds: paragraphMap,
+                deferredSourcePageIds: deferredIds.Count > 0 ? deferredIds : null);
             ResolveLinksInArea(_entry.AreaId, resolver);
 
             var (resolved, unresolved, paraResolved, paraUnresolved) = resolver.GetStats();
-            if (resolved > 0 || unresolved > 0)
-                Log($"Link resolution: {resolved} page links resolved, {unresolved} unresolvable; {paraResolved} paragraph anchors resolved, {paraUnresolved} unresolvable");
+            if (resolved > 0 || unresolved > 0 || resolver.DeferredCount > 0)
+                Log($"Link resolution: {resolved} page links resolved, {unresolved} unresolvable, {resolver.DeferredCount} deferred to sibling mode; {paraResolved} paragraph anchors resolved, {paraUnresolved} unresolvable");
 
             // Multi-language: restore master links (Page.MasterPageId/MasterType,
             // Paragraph.MasterParagraphID/GlobalRecordPageID) from the GUID references the
@@ -250,6 +267,57 @@ public class ContentDeserializer
         }
 
         return aggregated;
+    }
+
+    /// <summary>
+    /// Locates sibling mode roots (e.g. <c>SerializeRoot/seed</c> while deserializing
+    /// <c>SerializeRoot/deploy</c>) and reads their page trees. Only applies when the content
+    /// root follows the <c>&lt;SerializeRoot&gt;/&lt;mode&gt;/_content</c> convention — zip
+    /// imports and ad-hoc roots return empty. Best-effort: unreadable areas are skipped.
+    /// </summary>
+    private List<SerializedPage> ReadSiblingModePages()
+    {
+        var result = new List<SerializedPage>();
+        try
+        {
+            if (!string.Equals(Path.GetFileName(_contentRoot.TrimEnd('/', '\\')), "_content", StringComparison.OrdinalIgnoreCase))
+                return result;
+
+            var modeRoot = Path.GetDirectoryName(_contentRoot.TrimEnd('/', '\\'));
+            var serializeRoot = modeRoot is null ? null : Path.GetDirectoryName(modeRoot);
+            if (serializeRoot is null || !Directory.Exists(serializeRoot))
+                return result;
+
+            foreach (var siblingModeRoot in Directory.GetDirectories(serializeRoot))
+            {
+                if (string.Equals(Path.GetFullPath(siblingModeRoot), Path.GetFullPath(modeRoot!), StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                var siblingContent = Path.Combine(siblingModeRoot, "_content");
+                if (!Directory.Exists(siblingContent))
+                    continue;
+
+                foreach (var areaDir in Directory.GetDirectories(siblingContent))
+                {
+                    if (!File.Exists(Path.Combine(areaDir, "area.yml")))
+                        continue;
+                    try { result.AddRange(_store.ReadTree(siblingContent, Path.GetFileName(areaDir)).Pages); }
+                    catch { /* best-effort */ }
+                }
+            }
+        }
+        catch { /* best-effort — sibling awareness must never break the run */ }
+        return result;
+    }
+
+    private static void CollectSourcePageIds(List<SerializedPage> pages, HashSet<int> ids)
+    {
+        foreach (var page in pages)
+        {
+            if (page.SourcePageId.HasValue)
+                ids.Add(page.SourcePageId.Value);
+            CollectSourcePageIds(page.Children, ids);
+        }
     }
 
     /// <summary>

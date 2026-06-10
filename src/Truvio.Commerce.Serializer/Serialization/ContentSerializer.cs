@@ -59,12 +59,15 @@ public class ContentSerializer
         int totalPages = 0, totalGridRows = 0, totalParagraphs = 0;
         var allSerializedPages = new List<SerializedPage>();
 
-        // Phase 40 D-07: ContentSerializer is Deploy-scoped by convention. The orchestrator routes
-        // Deploy and Seed predicates through separate calls into providers; ContentSerializer itself
-        // emits Deploy YAML only. Filter the flat predicate list down to Deploy entries explicitly
-        // so the single-mode intent is visible at the call site and matches the Deploy-only
-        // exclusion-dict reads on lines 189 / 229 / 250.
-        foreach (var predicate in _configuration.Predicates.Where(p => p.Mode == DeploymentMode.Deploy))
+        // 2026-06-11 fix: serialize every Content predicate handed to us, regardless of Mode.
+        // Callers pre-filter by mode (SerializerSerializeCommand filters config.Predicates by
+        // the requested mode before SerializeAll; ContentProvider passes exactly one predicate;
+        // SerializeSubtreeCommand builds a single Deploy predicate). The previous
+        // `Mode == DeploymentMode.Deploy` filter here — a Phase 40 D-07 leftover — silently
+        // produced ZERO YAML for Seed-mode Content predicates: the orchestrator dispatched the
+        // seed predicate, this loop skipped it, and the run still reported success.
+        foreach (var predicate in _configuration.Predicates.Where(p =>
+                     string.Equals(p.ProviderType, "Content", StringComparison.OrdinalIgnoreCase)))
         {
             var area = SerializePredicate(predicate);
             _referenceResolver.Clear();
@@ -144,13 +147,25 @@ public class ContentSerializer
 
             if (fatal.Count > 0)
             {
-                var lines = fatal.Select(u =>
-                    $"  - ID {u.UnresolvablePageId} in {u.SourcePageIdentifier} / {u.FieldName}: {u.Context}");
-                throw new InvalidOperationException(
-                    $"Baseline link sweep found {fatal.Count} unresolvable reference(s):\n" +
-                    string.Join("\n", lines) +
-                    "\nFix the source baseline: include the referenced pages in a predicate path, or remove the references. " +
-                    "Known-broken source refs may be listed under AcknowledgedOrphanPageIds on the owning Content predicate.");
+                // A reference leaving THIS predicate's tree is not broken when another content
+                // predicate in the same configuration (either mode) ships the target page —
+                // e.g. deploy pages linking into an excluded subtree that arrives via a seed
+                // predicate. Check the on-disk config before declaring the baseline broken.
+                var (shipsViaSibling, trulyFatal) = PartitionBySiblingPredicateCoverage(fatal);
+                foreach (var (u, via) in shipsViaSibling)
+                    Log($"Deferred link: ID {u.UnresolvablePageId} in {u.SourcePageIdentifier} / {u.FieldName} " +
+                        $"is outside this predicate but ships via {via} in the same configuration — resolved on target during that pass.");
+
+                if (trulyFatal.Count > 0)
+                {
+                    var lines = trulyFatal.Select(u =>
+                        $"  - ID {u.UnresolvablePageId} in {u.SourcePageIdentifier} / {u.FieldName}: {u.Context}");
+                    throw new InvalidOperationException(
+                        $"Baseline link sweep found {trulyFatal.Count} unresolvable reference(s):\n" +
+                        string.Join("\n", lines) +
+                        "\nFix the source baseline: include the referenced pages in a predicate path, or remove the references. " +
+                        "Known-broken source refs may be listed under AcknowledgedOrphanPageIds on the owning Content predicate.");
+                }
             }
         }
 
@@ -276,6 +291,56 @@ public class ContentSerializer
         var permissions = _permissionMapper.MapPermissions(page.ID);
         return _mapper.MapPage(page, serializedGridRows, serializedChildren, permissions, excludeFields, excludeXmlElements,
             _configuration.ExcludeFieldsByItemType, _configuration.ExcludeXmlElementsByType);
+    }
+
+    /// <summary>
+    /// For each fatal unresolved link, checks whether the referenced source page is covered by
+    /// ANY content predicate (either mode) in the on-disk Serializer.config.json. Covered links
+    /// ship in the same run via that sibling predicate and are deferred (logged, non-fatal);
+    /// the rest stay fatal. Conservative on any failure: the link remains fatal.
+    /// </summary>
+    private static (List<(UnresolvedLink Link, string ShipsVia)> Deferred, List<UnresolvedLink> Fatal)
+        PartitionBySiblingPredicateCoverage(List<UnresolvedLink> fatal)
+    {
+        var deferred = new List<(UnresolvedLink, string)>();
+
+        List<ProviderPredicateDefinition>? contentPredicates = null;
+        try
+        {
+            var configPath = ConfigPathResolver.FindConfigFile();
+            if (configPath != null)
+            {
+                contentPredicates = ConfigLoader.Load(configPath).Predicates
+                    .Where(p => string.Equals(p.ProviderType, "Content", StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+            }
+        }
+        catch { /* no config readable (unit tests, ad-hoc runs) — keep everything fatal */ }
+
+        if (contentPredicates is null || contentPredicates.Count == 0)
+            return (deferred, fatal);
+
+        var trulyFatal = new List<UnresolvedLink>(fatal.Count);
+        foreach (var u in fatal)
+        {
+            try
+            {
+                var page = Services.Pages.GetPage(u.UnresolvablePageId);
+                var match = page is null
+                    ? null
+                    : contentPredicates.FirstOrDefault(p =>
+                        new ContentPredicate(p).ShouldInclude(ContentPathBuilder.BuildContentPath(page), page.AreaId));
+                if (match is not null)
+                    deferred.Add((u, $"'{match.Name}' ({match.Mode})"));
+                else
+                    trulyFatal.Add(u);
+            }
+            catch
+            {
+                trulyFatal.Add(u);
+            }
+        }
+        return (deferred, trulyFatal);
     }
 
     /// <summary>
