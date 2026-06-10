@@ -1,4 +1,4 @@
-# Roadmap: DynamicWeb.Serializer
+# Roadmap: Truvio.Commerce.Serializer
 
 ## Milestones
 
@@ -6,7 +6,7 @@
 - [x] **v1.1 Robustness** - Phase 6 (shipped 2026-03-20) - [Archive](milestones/v1.1-ROADMAP.md)
 - [x] **v1.2 Admin UI** - Phases 7-10 (shipped 2026-03-22)
 - [x] **v1.3 Permissions** - Phases 11-12 (shipped 2026-03-23)
-- [x] **v2.0 DynamicWeb.Serializer** - Phases 13-18 (shipped 2026-03-24)
+- [x] **v2.0 Truvio.Commerce.Serializer** - Phases 13-18 (shipped 2026-03-24)
 - [x] **v0.3.1 Internal Link Resolution** - Phases 19-22 (shipped 2026-04-03)
 - [ ] **v0.4.0 Full Page Fidelity** - Phases 23-25 (in progress)
 - [ ] **v0.6.0 Manifest-Driven Deserialize** - Phases 42-44 (planning)
@@ -50,7 +50,7 @@
 </details>
 
 <details>
-<summary>v2.0 DynamicWeb.Serializer (Phases 13-18) - SHIPPED 2026-03-24</summary>
+<summary>v2.0 Truvio.Commerce.Serializer (Phases 13-18) - SHIPPED 2026-03-24</summary>
 
 - [x] Phase 13: Provider Foundation + SqlTableProvider Proof (3/3 plans) - completed 2026-03-23
 - [x] Phase 14: Content Migration + Orchestrator (2/2 plans) - completed 2026-03-24

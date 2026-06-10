@@ -12,7 +12,7 @@
 - Recursive multi-level page tree serialization via nested folder structure, with INF-03 long-path safety tests and a SafeGetDirectory overflow bug fix
 - JWT-style GUID-only DW content serialization via ContentMapper, ReferenceResolver, and ContentSerializer connecting live DW content APIs to the existing FileSystemStore/YAML infrastructure
 - Serialization pipeline verified live against Swift2.2: 73 YAML files produced from Customer Center tree (pageid=8385) with GUID identity, reference resolution, and mirror folder hierarchy
-- ContentDeserializer writes YAML DTOs to DynamicWeb via GUID identity resolution, dependency-ordered saves (Page>GridRow>Paragraph), dry-run diffs, and cascade-skip error handling
+- ContentDeserializer writes YAML DTOs to Truvio Commerce via GUID identity resolution, dependency-ordered saves (Page>GridRow>Paragraph), dry-run diffs, and cascade-skip error handling
 - DeserializeScheduledTask DW add-in and 4 integration tests covering GUID roundtrip, idempotency, dry-run, and GUID preservation on INSERT
 - NuGet AppStore packaging with Dynamicweb 10.23.9 package reference replacing DLL HintPaths, and ContentSerializer.Serialize() logs aggregate page/gridrow/paragraph counts after processing all predicates.
 - E2E xunit integration tests for SerializeScheduledTask and DeserializeScheduledTask: OPS-01 asserts byte-identical YAML output vs direct ContentSerializer call, OPS-02 asserts successful roundtrip through the deserialize entry point.

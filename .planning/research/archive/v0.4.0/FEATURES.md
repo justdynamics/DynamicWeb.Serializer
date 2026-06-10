@@ -1,6 +1,6 @@
 # Feature Landscape: Full Page Fidelity (v0.4.0)
 
-**Domain:** DynamicWeb 10 page-level content serialization completeness
+**Domain:** Truvio Commerce 10 page-level content serialization completeness
 **Researched:** 2026-04-02
 
 ## Table Stakes

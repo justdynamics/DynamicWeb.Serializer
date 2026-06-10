@@ -1,6 +1,6 @@
 # Swift 2.2 Data Cleanup Scripts
 
-Re-runnable SQL scripts to clean up "obviously wrong" data in a Swift 2.2 DynamicWeb database before serializing it as a deployment baseline.
+Re-runnable SQL scripts to clean up "obviously wrong" data in a Swift 2.2 Truvio Commerce database before serializing it as a deployment baseline.
 
 **Author:** 2026-04-21 autonomous session
 **Target DB:** Any Swift 2.2 instance on SQL Server (tested on `localhost\SQLEXPRESS`, DB `Swift-2.2`)

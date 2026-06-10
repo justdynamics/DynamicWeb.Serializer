@@ -54,7 +54,7 @@ The pipeline:
 2. Auto-installs `sqlpackage` if absent (`dotnet tool install --global microsoft.sqlpackage`).
 3. Drops and re-imports Swift-2.2 from `tools/swift2.2.0-20260129-database.zip`.
 4. Applies cleanup scripts `00 → 09` (scripts `08` and `09` run as no-ops against the pristine bacpac — see §"Class B: defensive operational tooling" below).
-5. Deploys `DynamicWeb.Serializer.dll` to both host bins (MD5-verified).
+5. Deploys `Truvio.Commerce.Serializer.dll` to both host bins (MD5-verified).
 6. Boots the Swift-2.2 host, purges CleanDB, applies `cleandb-align-schema.sql`, boots the CleanDB host.
 7. Runs the four API calls: `Serialize Deploy`, `Serialize Seed`, `Deserialize Deploy`, `Deserialize Seed` — each MUST return HTTP 200.
 8. Mirrors Swift-2.2's `SerializeRoot` → CleanDB between the serialize and deserialize phases.
@@ -422,7 +422,7 @@ B.4.1, B.3.1, GRID-01) plus the wider orphan-gap investigation are resolved.
 
 ## Contact
 
-Captured by the DynamicWeb.Serializer baseline-refresh pipeline (Phase 38.1
+Captured by the Truvio.Commerce.Serializer baseline-refresh pipeline (Phase 38.1
 gap closure, 2026-04-22). Email-safe standalone — no PII, no credentials, no
 secrets; all cited identifiers are Swift-v2 reference-install table/column
 names and numeric page IDs.

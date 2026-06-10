@@ -1,7 +1,7 @@
 # Requirements: v0.6.0 Manifest-Driven Deserialize
 
 **Defined:** 2026-05-08
-**Core Value:** Developers can reliably move DynamicWeb database state between environments through source control, with serialized YAML files as the single source of truth.
+**Core Value:** Developers can reliably move Truvio Commerce database state between environments through source control, with serialized YAML files as the single source of truth.
 
 **Milestone goal:** Pivot serialize to lock all knowledge into the artifact (manifest); deserialize executes purely from the manifest, no config consultation. Per-item `Succeeded | Failed | Warned | Skipped` reporting replaces today's silent-skip-on-config-mismatch model.
 

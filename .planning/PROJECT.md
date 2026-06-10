@@ -1,12 +1,12 @@
-# DynamicWeb.Serializer (formerly Dynamicweb.ContentSync)
+# Truvio.Commerce.Serializer (formerly Dynamicweb.ContentSync)
 
 ## What This Is
 
-A DynamicWeb AppStore app that serializes and deserializes database content to/from YAML files on disk, enabling full database state to be version-controlled and deployed alongside code. Started as a content-only sync tool (Sitecore Unicorn equivalent), now expanding to cover all DynamicWeb data groups — ecommerce settings, users, marketing, PIM, and more — via a pluggable provider architecture. Configurable via DynamicWeb admin UI (Settings > Database > Serialize).
+A Truvio Commerce AppStore app that serializes and deserializes database content to/from YAML files on disk, enabling full database state to be version-controlled and deployed alongside code. Started as a content-only sync tool (Sitecore Unicorn equivalent), now expanding to cover all Truvio Commerce data groups — ecommerce settings, users, marketing, PIM, and more — via a pluggable provider architecture. Configurable via Truvio Commerce admin UI (Settings > Database > Serialize).
 
 ## Core Value
 
-Developers can reliably move DynamicWeb database state between environments through source control, with serialized YAML files as the single source of truth.
+Developers can reliably move Truvio Commerce database state between environments through source control, with serialized YAML files as the single source of truth.
 
 ## Current Milestone: v0.6.0 Manifest-Driven Deserialize
 
@@ -29,11 +29,11 @@ Developers can reliably move DynamicWeb database state between environments thro
 - [x] Unicorn-style predicate configuration to define which content trees to include/exclude — v1.0
 - [x] PageUniqueId (GUID) as canonical identity — match on GUID, not numeric ID — v1.0
 - [x] Source-wins conflict strategy: serialized files always overwrite target DB on deserialize — v1.0
-- [x] Deserialize YAML files back into a DynamicWeb database — v1.0
+- [x] Deserialize YAML files back into a Truvio Commerce database — v1.0
 - [x] New numeric IDs assigned on deserialize when GUID doesn't exist in target — v1.0
-- [x] Configurable via standalone config file (not DynamicWeb admin UI) — v1.0
+- [x] Configurable via standalone config file (not Truvio Commerce admin UI) — v1.0
 - [x] Two scheduled tasks: one for full serialization, one for full deserialization — v1.0
-- [x] Structured as a DynamicWeb AppStore app (NuGet package with `dynamicweb-app-store` tag) — v1.0
+- [x] Structured as a Truvio Commerce AppStore app (NuGet package with `dynamicweb-app-store` tag) — v1.0
 - [x] Comprehensive error handling and logging — v1.0
 - [x] Cross-environment visual editor fidelity (grid rows, page properties, icons, spacing) — v1.0
 - [x] Multi-column paragraph attribution preserved on round-trip — v1.1
@@ -52,7 +52,7 @@ Developers can reliably move DynamicWeb database state between environments thro
 
 ### Active
 
-- [x] Rename project to DynamicWeb.Serializer — v2.0 Phase 16
+- [x] Rename project to Truvio.Commerce.Serializer — v2.0 Phase 16
 - [x] Pluggable provider architecture per data group — v2.0 Phase 13
 - [x] SqlTableProvider for generic SQL table serialization — v2.0 Phase 13
 - [x] Migrate existing ContentProvider into provider architecture — v2.0 Phase 14
@@ -98,7 +98,7 @@ Developers can reliably move DynamicWeb database state between environments thro
 
 **Current State (v1.3 shipped, starting v2.0):**
 - ~3,743 LOC C# across 100+ files
-- Tech stack: .NET 8.0, DynamicWeb 10.23.9 NuGet, YamlDotNet, System.IO.Compression
+- Tech stack: .NET 8.0, Truvio Commerce 10.23.9 NuGet, YamlDotNet, System.IO.Compression
 - Verified on Swift 2.2 → Swift 2.1 cross-environment sync including permissions
 - Admin UI at Settings > Content > Sync with predicate management
 - Management API commands for CI/CD integration
@@ -116,20 +116,20 @@ Developers can reliably move DynamicWeb database state between environments thro
 From DataGroup XMLs, each SQL data item has: Table, NameColumn, CompareColumns.
 Generic provider reads all rows, serializes to YAML, deserializes back by matching NameColumn or primary key.
 
-**DynamicWeb Content Hierarchy:**
+**Truvio Commerce Content Hierarchy:**
 - Website (Area) → Pages → Grid → Rows → Columns → Paragraphs
 - Pages use numeric IDs as primary keys but also have PageUniqueId (GUID)
 - Item Types extend pages, paragraphs, and grid rows with custom fields
 - Pages have PropertyItem fields (Icon, SubmenuType) separate from Item fields
 
 **Test Environment:**
-- Two pre-configured DynamicWeb instances at `C:\Projects\Solutions\swift.test.forsync`
+- Two pre-configured Truvio Commerce instances at `C:\Projects\Solutions\swift.test.forsync`
 - Test case: serialize "Customer Center" content tree from Swift 2.2, deserialize into Swift 2.1
 - Both instances started with `dotnet run` on ports 5000/5001
 
 ## Constraints
 
-- **Tech stack**: .NET 8.0+, DynamicWeb 10.2+ APIs — must be a valid AppStore app
+- **Tech stack**: .NET 8.0+, Truvio Commerce 10.2+ APIs — must be a valid AppStore app
 - **Serialization format**: YAML — chosen for readability and git-friendly diffs
 - **Config approach**: Config file as source of truth, admin UI as management layer (both coexist)
 - **Sync model**: Full sync only for v1 (no incremental/delta sync)
@@ -186,7 +186,7 @@ This document evolves at phase transitions and milestone boundaries.
 - **v1.1 Robustness** — Multi-column paragraphs, dry-run, validation (2026-03-20)
 - **v1.2 Admin UI** — Settings screen, predicate management, serialize action, API commands (2026-03-22)
 - **v1.3 Permissions** — Permission serialization/deserialization with safety fallback (2026-03-23)
-- **v2.0 DynamicWeb.Serializer** — Pluggable provider architecture, SqlTableProvider, ecommerce tables (2026-03-24)
+- **v2.0 Truvio.Commerce.Serializer** — Pluggable provider architecture, SqlTableProvider, ecommerce tables (2026-03-24)
 - **v0.3.1 Internal Link Resolution** — Cross-environment page ID rewriting (2026-04-03)
 - **v0.4.0 Full Page Fidelity** — Phases 23-25: full page properties, area item types, ecom schema sync (2026-04-03)
 - **v0.5.0 Production-Ready Baseline** — Phases 37-41: Deploy/Seed split, strict mode, manifest cleanup, field-level merge, per-predicate mode, admin-UI polish (2026-05-01)

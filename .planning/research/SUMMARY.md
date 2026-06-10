@@ -1,6 +1,6 @@
 # Project Research Summary — v0.6.0 Manifest-Driven Deserialize
 
-**Project:** DynamicWeb.Serializer
+**Project:** Truvio.Commerce.Serializer
 **Domain:** Self-describing apply-pipeline artifact (Liquibase / Terraform-plan family) over a pluggable provider architecture
 **Researched:** 2026-05-08
 **Confidence:** HIGH

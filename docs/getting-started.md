@@ -1,7 +1,7 @@
 # Getting started
 
 This page takes you from a fresh repo clone to a working round-trip: serialize
-data from one DynamicWeb instance, commit the YAML, deserialize into a second
+data from one Truvio Commerce instance, commit the YAML, deserialize into a second
 instance, and verify the result. You need about twenty minutes and two reachable
 DW hosts (local or cloud).
 
@@ -19,7 +19,7 @@ DW hosts (local or cloud).
 ## Prerequisites
 
 - .NET 8.0 SDK
-- Two DynamicWeb 10.23.9+ instances you can reach over HTTP(S) and deploy a
+- Two Truvio Commerce 10.23.9+ instances you can reach over HTTP(S) and deploy a
   DLL to. Local `dotnet run` hosts work fine for a first pass.
 - A Management API bearer token on each host. Create one in admin under
   `Settings > Integration > API management` if you don't have one.
@@ -36,14 +36,14 @@ Optional but recommended:
 From the repo root:
 
 ```bash
-dotnet build src/DynamicWeb.Serializer/ -c Release
+dotnet build src/Truvio.Commerce.Serializer/ -c Release
 ```
 
 Copy the built DLL to both DW hosts:
 
 ```bash
 # Repeat for the target host
-cp src/DynamicWeb.Serializer/bin/Release/net8.0/DynamicWeb.Serializer.dll \
+cp src/Truvio.Commerce.Serializer/bin/Release/net8.0/Truvio.Commerce.Serializer.dll \
    /path/to/your-dw-host/bin/
 ```
 
@@ -217,7 +217,7 @@ serialize → commit → deserialize → serialize.
 ## What next
 
 - **Expand the config.** Start with the reference baseline at
-  `src/DynamicWeb.Serializer/Configuration/swift2.2-combined.json` — a working
+  `src/Truvio.Commerce.Serializer/Configuration/swift2.2-combined.json` — a working
   Content predicate plus seventeen SqlTable predicates covering the full Swift 2.2
   deployment surface. Trim to what your project needs.
 - **Turn on strict mode for CI.** Flip `"strictMode": true` in config, or pass

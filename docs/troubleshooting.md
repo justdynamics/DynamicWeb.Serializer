@@ -105,7 +105,7 @@ registry. Either:
 - The name is misspelled. Re-check against the "Supported" list in the
   error message.
 - The service needs to be added to the registry. Append an entry to
-  `src/DynamicWeb.Serializer/Infrastructure/DwCacheServiceRegistry.cs`,
+  `src/Truvio.Commerce.Serializer/Infrastructure/DwCacheServiceRegistry.cs`,
   rebuild the DLL, redeploy. See
   [`strict-mode.md`](strict-mode.md#adding-a-new-cache-service).
 
@@ -290,7 +290,7 @@ expiry or host restart. Under strict mode, the warning escalates.
 The DLL isn't loaded. Confirm:
 
 ```bash
-ls /path/to/dw-host/bin/DynamicWeb.Serializer.dll
+ls /path/to/dw-host/bin/Truvio.Commerce.Serializer.dll
 ```
 
 If missing, build and redeploy. If present, check the DW host log for

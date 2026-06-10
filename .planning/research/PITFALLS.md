@@ -43,13 +43,13 @@ Three layered defenses, all cheap:
 ### Pitfall 2: Lost post-processing metadata silently skips drift
 
 **What goes wrong:**
-This has already happened once. v0.5.0 / Phase 37 added an explicit WARNING ([SerializerOrchestrator.cs:274](C:\VibeCode\DynamicWeb.Serializer\src\DynamicWeb.Serializer\Providers\SerializerOrchestrator.cs)):
+This has already happened once. v0.5.0 / Phase 37 added an explicit WARNING ([SerializerOrchestrator.cs:274](C:\VibeCode\Truvio.Commerce.Serializer\src\Truvio.Commerce.Serializer\Providers\SerializerOrchestrator.cs)):
 
 > `WARNING: Predicate '{Name}' declares {N} service cache(s) but no CacheInvalidator is wired — caches will NOT be cleared`
 
 That fix only catches the *infrastructure* gap (CacheInvalidator absent). The new failure mode is shape-equivalent but at the data layer: if `BuildManifestEntry` on a provider forgets to copy `ServiceCaches` (or `SchemaSync`, `ResolveLinksInColumns`, `ExcludeAreaColumns`, `Excludes`) into the manifest entry, deserialize-side post-processing **never fires** — and there is no warning, because as far as the deserializer can see, the entry simply has no caches to clear.
 
-The current predicate has *eight* fields the orchestrator threads into deserialize-time behavior ([ProviderPredicateDefinition.cs:53–108](C:\VibeCode\DynamicWeb.Serializer\src\DynamicWeb.Serializer\Models\ProviderPredicateDefinition.cs)): `ServiceCaches`, `SchemaSync`, `XmlColumns`, `ExcludeFields`, `ExcludeXmlElements`, `ExcludeAreaColumns`, `ResolveLinksInColumns`, `AcknowledgedOrphanPageIds`. Each is a distinct silent-skip vector.
+The current predicate has *eight* fields the orchestrator threads into deserialize-time behavior ([ProviderPredicateDefinition.cs:53–108](C:\VibeCode\Truvio.Commerce.Serializer\src\Truvio.Commerce.Serializer\Models\ProviderPredicateDefinition.cs)): `ServiceCaches`, `SchemaSync`, `XmlColumns`, `ExcludeFields`, `ExcludeXmlElements`, `ExcludeAreaColumns`, `ResolveLinksInColumns`, `AcknowledgedOrphanPageIds`. Each is a distinct silent-skip vector.
 
 The cache-invalidator incident shipped in v0.4.x; it took weeks to detect in baseline-test FINDINGS F-10 ("string-based serviceCaches config is essentially dead code right now — the type-name→runtime-type lookup fails silently for most entries"). We do not want to repeat that lifecycle for seven more fields.
 
@@ -89,7 +89,7 @@ Fail-fast on `schemaVersion mismatch` solves the *detection* half but stops ther
 
 1. **Lock the v0.6.0 schema explicitly.** Document `schemaVersion: 1` as the v0.6.0 contract. Any field added to Entry in v0.6.x patch releases must be optional with a compatible default.
 2. **Two-step migration on read, not write.** When deserializer encounters `schemaVersion < current`, it runs an **in-memory upgrade pipeline** before dispatch (e.g. `UpgradeFromV1ToV2(json) → UpgradeFromV2ToV3(json)`). The original file on disk is untouched. This matches Liquibase's "checksum + upgrade-on-read" approach — Liquibase records a checksum per migration; mismatched checksums fail validation, but Liquibase also has explicit `ALTER` workflow for schema evolution. We need the analogous "manifest evolution" hook.
-3. **Refuse to deserialize a *newer* manifest than the binary understands.** A v0.7 manifest fed to a v0.6 deployer should fail with a clear message ("manifest schemaVersion 2 > maxSupportedVersion 1, upgrade DynamicWeb.Serializer"). Better than silently dropping new fields.
+3. **Refuse to deserialize a *newer* manifest than the binary understands.** A v0.7 manifest fed to a v0.6 deployer should fail with a clear message ("manifest schemaVersion 2 > maxSupportedVersion 1, upgrade Truvio.Commerce.Serializer"). Better than silently dropping new fields.
 4. **Document the migration policy in `docs/manifest-evolution.md`** at v0.6.0 launch. Set the precedent before the first bump.
 
 **Warning signs:**
@@ -112,7 +112,7 @@ The new `entries[]` array is the textbook polymorphic-deserialization case: each
 - **Discriminator cannot be marked `[Required]`** — STJ throws if you try.
 - **Discriminator must have the shortest key length** in some configurations ([JasperFx/marten#2586](https://github.com/JasperFx/marten/issues/2586)). A `"providerType"` key (12 chars) silently wins over `"version"` (7 chars) — meaning if `"version"` is shorter than the discriminator, deserialization fails non-obviously.
 
-The `ManifestWriter` already uses `PropertyNamingPolicy = JsonNamingPolicy.CamelCase` ([ManifestWriter.cs:23](C:\VibeCode\DynamicWeb.Serializer\src\DynamicWeb.Serializer\Infrastructure\ManifestWriter.cs)). Without explicit handling, the discriminator name will be camelCase'd asymmetrically with whatever attribute we choose.
+The `ManifestWriter` already uses `PropertyNamingPolicy = JsonNamingPolicy.CamelCase` ([ManifestWriter.cs:23](C:\VibeCode\Truvio.Commerce.Serializer\src\Truvio.Commerce.Serializer\Infrastructure\ManifestWriter.cs)). Without explicit handling, the discriminator name will be camelCase'd asymmetrically with whatever attribute we choose.
 
 **Why it happens:**
 STJ's polymorphism story shipped in .NET 7 and is still rough. Most teams hit these issues only at production-scale data; toy round-trip tests use a single object literal and pass.
@@ -162,7 +162,7 @@ Specifically:
 3. **No automatic regeneration on drift.** "Auto-rebuild manifest from disk" sounds helpful but defeats the purpose; the manifest is supposed to be the audit record of what serialize chose to emit.
 4. **Match the strictness defaults:** Liquibase fails by default; Helm 3.18.5 fails by default; Unicorn warns by default but has strict-mode evaluators. Our `StrictModeEscalator` already exists — drift becomes another escalation channel.
 
-This aligns with v0.5.0's strict-mode philosophy: production runs (CI/CD entry points) default strict, admin-UI runs default lenient ([StrictModeEscalator.cs:107–122](C:\VibeCode\DynamicWeb.Serializer\src\DynamicWeb.Serializer\Infrastructure\StrictModeEscalator.cs)).
+This aligns with v0.5.0's strict-mode philosophy: production runs (CI/CD entry points) default strict, admin-UI runs default lenient ([StrictModeEscalator.cs:107–122](C:\VibeCode\Truvio.Commerce.Serializer\src\Truvio.Commerce.Serializer\Infrastructure\StrictModeEscalator.cs)).
 
 **Warning signs:**
 - Manifest `writtenAtUtc` more than ~1s older or newer than YAML file mtimes (within tolerance for clock skew).
@@ -177,7 +177,7 @@ This aligns with v0.5.0's strict-mode philosophy: production runs (CI/CD entry p
 ### Pitfall 6: Manifest reorder breaks FK / link-resolution ordering
 
 **What goes wrong:**
-Today, `DeserializeAll` recomputes ordering live ([SerializerOrchestrator.cs:160–218](C:\VibeCode\DynamicWeb.Serializer\src\DynamicWeb.Serializer\Providers\SerializerOrchestrator.cs)):
+Today, `DeserializeAll` recomputes ordering live ([SerializerOrchestrator.cs:160–218](C:\VibeCode\Truvio.Commerce.Serializer\src\Truvio.Commerce.Serializer\Providers\SerializerOrchestrator.cs)):
 
 - FK ordering: SqlTable predicates are sorted by FkDependencyResolver.
 - LINK-02 ordering: any SqlTable with `ResolveLinksInColumns` non-empty forces Content predicates to run first.
@@ -209,7 +209,7 @@ If we recompute live, why even record the order in the manifest?
 ### Pitfall 7: DeserializeFromZipCommand drifts from manifest-driven path
 
 **What goes wrong:**
-Today ([DeserializeFromZipCommand.cs:74–93](C:\VibeCode\DynamicWeb.Serializer\src\DynamicWeb.Serializer\AdminUI\Commands\DeserializeFromZipCommand.cs)) the zip-import path constructs a synthetic predicate:
+Today ([DeserializeFromZipCommand.cs:74–93](C:\VibeCode\Truvio.Commerce.Serializer\src\Truvio.Commerce.Serializer\AdminUI\Commands\DeserializeFromZipCommand.cs)) the zip-import path constructs a synthetic predicate:
 
 ```csharp
 var importPredicate = new ProviderPredicateDefinition {
@@ -286,11 +286,11 @@ Predicate-driven test coverage was the *correct* coverage strategy under v0.5.0.
 ### Pitfall 9: Per-entry reporting that aggregates wrong
 
 **What goes wrong:**
-PROJECT.md commits to *per-entry succeeded/failed/warned reporting* in `OrchestratorResult`. The shape today aggregates by predicate ([SerializerOrchestrator.cs:355–399](C:\VibeCode\DynamicWeb.Serializer\src\DynamicWeb.Serializer\Providers\SerializerOrchestrator.cs)), which already loses some granularity. Naive ports preserve the bug:
+PROJECT.md commits to *per-entry succeeded/failed/warned reporting* in `OrchestratorResult`. The shape today aggregates by predicate ([SerializerOrchestrator.cs:355–399](C:\VibeCode\Truvio.Commerce.Serializer\src\Truvio.Commerce.Serializer\Providers\SerializerOrchestrator.cs)), which already loses some granularity. Naive ports preserve the bug:
 
 - One entry processes multiple files (a Content entry covers many pages). If three pages succeed and one fails, "succeeded/failed/warned" is *what* — succeed-1-fail-1-warn-0? Or succeed-3-fail-1?
 - A warning during entry processing escalates via `StrictModeEscalator` end-of-run. The per-entry report says "warned: yes", but if the user inspects only the per-entry summary they don't see *which* warnings escalated.
-- `result.HasErrors` today drives HTTP status mapping ([SerializerDeserializeCommand.cs:199–206](C:\VibeCode\DynamicWeb.Serializer\src\DynamicWeb.Serializer\AdminUI\Commands\SerializerDeserializeCommand.cs)). If we add per-entry status without rewiring `HasErrors`, an entry-level failure with zero predicate-level errors returns HTTP 200 OK.
+- `result.HasErrors` today drives HTTP status mapping ([SerializerDeserializeCommand.cs:199–206](C:\VibeCode\Truvio.Commerce.Serializer\src\Truvio.Commerce.Serializer\AdminUI\Commands\SerializerDeserializeCommand.cs)). If we add per-entry status without rewiring `HasErrors`, an entry-level failure with zero predicate-level errors returns HTTP 200 OK.
 
 **Why it happens:**
 "Add a list" is the simplest implementation. Status aggregation is fiddly, easy to get wrong, and the existing API contract (`HasErrors` ⇒ HTTP error) is load-bearing for D-38-12 callers.
@@ -314,7 +314,7 @@ PROJECT.md commits to *per-entry succeeded/failed/warned reporting* in `Orchestr
 ### Pitfall 10: Strict-mode default location — config vs runtime vs entry-point
 
 **What goes wrong:**
-The user explicitly flagged this as an open question. Today strict mode is read from `config.StrictMode` and defaulted via `StrictModeResolver` based on entry point ([StrictModeEscalator.cs:107–122](C:\VibeCode\DynamicWeb.Serializer\src\DynamicWeb.Serializer\Infrastructure\StrictModeEscalator.cs)). Since the v0.6.0 milestone *removes config consultation from the deserialize path*, strict mode loses its current home.
+The user explicitly flagged this as an open question. Today strict mode is read from `config.StrictMode` and defaulted via `StrictModeResolver` based on entry point ([StrictModeEscalator.cs:107–122](C:\VibeCode\Truvio.Commerce.Serializer\src\Truvio.Commerce.Serializer\Infrastructure\StrictModeEscalator.cs)). Since the v0.6.0 milestone *removes config consultation from the deserialize path*, strict mode loses its current home.
 
 Three options:
 
@@ -329,7 +329,7 @@ Three options:
 Rationale:
 
 1. **Aligns with milestone goal.** v0.6.0 explicitly removes config consultation. Option (c) fights the milestone; option (b) re-introduces config under a different name.
-2. **The use case for per-environment strict-vs-lenient is already covered by the request-parameter override.** `StrictModeResolver.Resolve(entryPoint, configValue: null, requestValue)` already accepts a per-call value with highest precedence ([StrictModeEscalator.cs:111](C:\VibeCode\DynamicWeb.Serializer\src\DynamicWeb.Serializer\Infrastructure\StrictModeEscalator.cs)). CI/CD environments pass it explicitly via `--strict=true|false` or query param; admin-UI clicks pass nothing and get the entry-point default.
+2. **The use case for per-environment strict-vs-lenient is already covered by the request-parameter override.** `StrictModeResolver.Resolve(entryPoint, configValue: null, requestValue)` already accepts a per-call value with highest precedence ([StrictModeEscalator.cs:111](C:\VibeCode\Truvio.Commerce.Serializer\src\Truvio.Commerce.Serializer\Infrastructure\StrictModeEscalator.cs)). CI/CD environments pass it explicitly via `--strict=true|false` or query param; admin-UI clicks pass nothing and get the entry-point default.
 3. **Option (b) sounds like a tiny convenience but has 80% of config's lifecycle costs.** Where does it live in git? Who edits it? How do tests fixture it? Once it exists, it grows fields.
 4. **Per-environment strict policy belongs in the deploy-pipeline shell, not in the artifact.** A baseline that's strict-only-on-prod is a deploy-time policy, not an artifact-level fact.
 5. **Backward-compatibility cost is low** per `feedback_no_backcompat.md` — no users depending on `config.StrictMode` behavior we'd break. The path being removed *will* break (correctly), and the migration is "set the entry-point default in your CI script."
@@ -382,7 +382,7 @@ Manifest-driven deserialize doesn't introduce new perf-cliff scale thresholds be
 
 | Mistake | Risk | Prevention |
 |---------|------|------------|
-| Symlink in manifest's `files[]` lets entry resolve to a path outside `modeRoot` | Path traversal — deserialize reads/overwrites arbitrary files (already exploitable via `ManifestCleaner.CleanStale` if the corresponding guard is missing on the read side) | Reuse the `T-37-01-01` resolved-path-must-start-with-modeRootPrefix check from `ManifestCleaner` ([ManifestCleaner.cs:24–55](C:\VibeCode\DynamicWeb.Serializer\src\DynamicWeb.Serializer\Infrastructure\ManifestCleaner.cs)) on the deserialize side. Ship as part of Phase 43. |
+| Symlink in manifest's `files[]` lets entry resolve to a path outside `modeRoot` | Path traversal — deserialize reads/overwrites arbitrary files (already exploitable via `ManifestCleaner.CleanStale` if the corresponding guard is missing on the read side) | Reuse the `T-37-01-01` resolved-path-must-start-with-modeRootPrefix check from `ManifestCleaner` ([ManifestCleaner.cs:24–55](C:\VibeCode\Truvio.Commerce.Serializer\src\Truvio.Commerce.Serializer\Infrastructure\ManifestCleaner.cs)) on the deserialize side. Ship as part of Phase 43. |
 | Manifest field that names a SQL table not in the predicate-time validation set | Phase 37-03 SqlTable provider validates table names against `INFORMATION_SCHEMA`; Entry might bypass that gate if dispatch trusts the manifest | Re-run identifier-whitelist validation on Entry dispatch — the validation lives in the provider's deserialize path today; verify it still runs when input is Entry-shaped, not Predicate-shaped |
 | Manifest entry contains a `where` clause (currently a Predicate field per Phase 37-03) | Same SQL-injection surface as today | Keep the `SqlWhereClauseValidator` invocation; if the Entry copies `where` from Predicate, validation must also copy |
 
@@ -412,7 +412,7 @@ Manifest-driven deserialize doesn't introduce new perf-cliff scale thresholds be
 | Pitfall | Recovery Cost | Recovery Steps |
 |---------|---------------|----------------|
 | Torn manifest detected | LOW | Re-run serialize. Cleaner + atomic write produces a clean state |
-| Manifest schema mismatch (older binary, newer manifest) | LOW–MEDIUM | Upgrade `DynamicWeb.Serializer` package; re-run deserialize. Migration story (Phase 47) makes this MEDIUM if upgraders accumulate |
+| Manifest schema mismatch (older binary, newer manifest) | LOW–MEDIUM | Upgrade `Truvio.Commerce.Serializer` package; re-run deserialize. Migration story (Phase 47) makes this MEDIUM if upgraders accumulate |
 | Hand-edit drift detected by checksum | LOW | Operator inspects drift report; either accepts the edit (re-serialize to refresh manifest) or reverts. No data loss |
 | Lost post-processing metadata after `BuildManifestEntry` bug | MEDIUM–HIGH | Once shipped to prod and a deploy ran with `ServiceCaches` lost, caches are stale until manual app restart. Operationally recoverable, but requires identifying the symptom (stale data in admin UI) |
 | Per-entry status mis-aggregation → false-positive HTTP 200 | HIGH | Failed deploys ship as successful; only detected by downstream symptoms. Recovery is forensic — comb logs, identify the run, manually replay |
@@ -435,7 +435,7 @@ Manifest-driven deserialize doesn't introduce new perf-cliff scale thresholds be
 
 ## Sources
 
-- **Internal incident history:** Phase 37 cache-invalidator silent-skip fix ([SerializerOrchestrator.cs:274](C:\VibeCode\DynamicWeb.Serializer\src\DynamicWeb.Serializer\Providers\SerializerOrchestrator.cs)); baseline test FINDINGS F-04 (stale output), F-10 (cache types not resolved); v0.5.0 strict-mode design ([StrictModeEscalator.cs](C:\VibeCode\DynamicWeb.Serializer\src\DynamicWeb.Serializer\Infrastructure\StrictModeEscalator.cs))
+- **Internal incident history:** Phase 37 cache-invalidator silent-skip fix ([SerializerOrchestrator.cs:274](C:\VibeCode\Truvio.Commerce.Serializer\src\Truvio.Commerce.Serializer\Providers\SerializerOrchestrator.cs)); baseline test FINDINGS F-04 (stale output), F-10 (cache types not resolved); v0.5.0 strict-mode design ([StrictModeEscalator.cs](C:\VibeCode\Truvio.Commerce.Serializer\src\Truvio.Commerce.Serializer\Infrastructure\StrictModeEscalator.cs))
 - **System.Text.Json polymorphism issues:**
   - [dotnet/runtime#78338 — discriminator must be first property](https://github.com/dotnet/runtime/issues/78338)
   - [dotnet/runtime#118786 — case-insensitive discriminator bug](https://github.com/dotnet/runtime/issues/118786)

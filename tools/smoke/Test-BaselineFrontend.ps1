@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-Post-deserialize frontend smoke test for a DynamicWeb Swift baseline deploy.
+Post-deserialize frontend smoke test for a Truvio Commerce Swift baseline deploy.
 
 .DESCRIPTION
 Enumerates every PageActive = 1 page under the target area in the DW database,
@@ -51,7 +51,7 @@ param(
     [string]$SqlPassword = ''
 )
 
-Write-Host "=== DynamicWeb.Serializer Frontend Smoke Test ===" -ForegroundColor Cyan
+Write-Host "=== Truvio.Commerce.Serializer Frontend Smoke Test ===" -ForegroundColor Cyan
 Write-Host "Host:       $HostUrl"
 Write-Host "AreaID:     $AreaId"
 Write-Host "LangPrefix: $LangPrefix"

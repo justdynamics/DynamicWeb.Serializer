@@ -58,16 +58,16 @@ any of:
 
 Splicing sites:
 
-- `src/DynamicWeb.Serializer/Providers/SqlTable/SqlTableReader.cs` — `SELECT ... FROM {table}`
-- `src/DynamicWeb.Serializer/Providers/SqlTable/SqlTableWriter.cs` — `MERGE ... INTO {table}` / `INSERT INTO {table}`
-- `src/DynamicWeb.Serializer/Providers/SqlTable/FkDependencyResolver.cs` — queries `INFORMATION_SCHEMA` already, reuse pattern
-- `src/DynamicWeb.Serializer/Providers/SqlTable/DataGroupMetadataReader.cs`
-- `src/DynamicWeb.Serializer/Providers/SqlTable/EcomGroupFieldSchemaSync.cs` — also composes DDL
+- `src/Truvio.Commerce.Serializer/Providers/SqlTable/SqlTableReader.cs` — `SELECT ... FROM {table}`
+- `src/Truvio.Commerce.Serializer/Providers/SqlTable/SqlTableWriter.cs` — `MERGE ... INTO {table}` / `INSERT INTO {table}`
+- `src/Truvio.Commerce.Serializer/Providers/SqlTable/FkDependencyResolver.cs` — queries `INFORMATION_SCHEMA` already, reuse pattern
+- `src/Truvio.Commerce.Serializer/Providers/SqlTable/DataGroupMetadataReader.cs`
+- `src/Truvio.Commerce.Serializer/Providers/SqlTable/EcomGroupFieldSchemaSync.cs` — also composes DDL
 
 Validation entry points:
 
-- `src/DynamicWeb.Serializer/Configuration/SerializerConfiguration.cs` — config load
-- `src/DynamicWeb.Serializer/AdminUI/Commands/SavePredicateCommand.cs` — UI save
+- `src/Truvio.Commerce.Serializer/Configuration/SerializerConfiguration.cs` — config load
+- `src/Truvio.Commerce.Serializer/AdminUI/Commands/SavePredicateCommand.cs` — UI save
 
 ## Notes
 

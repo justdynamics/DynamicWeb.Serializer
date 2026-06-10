@@ -17,7 +17,7 @@ missing on target.
 
 ## What gets serialized
 
-DynamicWeb.Serializer serializes **explicit** page permissions only.
+Truvio.Commerce.Serializer serializes **explicit** page permissions only.
 Pages that inherit from their parent (no explicit overrides) have no
 `permissions` section in their YAML and are left alone on deserialize.
 

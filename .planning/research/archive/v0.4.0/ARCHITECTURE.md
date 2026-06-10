@@ -1,6 +1,6 @@
 # Architecture: Full Page Fidelity Extension
 
-**Domain:** DynamicWeb content serialization -- extending existing pipeline for ~30 missing page properties
+**Domain:** Truvio Commerce content serialization -- extending existing pipeline for ~30 missing page properties
 **Researched:** 2026-04-02
 **Overall confidence:** HIGH (verified via DW 10.23.9 DLL decompilation)
 

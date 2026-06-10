@@ -11,7 +11,7 @@ End-to-end, unattended execution of the Phase 38.1 gap-closure pipeline:
      sqlpackage Import (drops + re-creates the DB)
   4. Verify Administrator token auth once the host is up (manual reseed fallback)
   5. Apply cleanup scripts 01..09 in order against Swift-2.2
-  6. Build + deploy the DynamicWeb.Serializer DLL to both hosts'
+  6. Build + deploy the Truvio.Commerce.Serializer DLL to both hosts'
      bin/Debug/net10.0 directories
   7. Start Swift-2.2 host on https://localhost:54035 and wait for ready
   8. Purge CleanDB via tools/purge-cleandb.sql
@@ -414,13 +414,13 @@ foreach ($s in $scripts) {
 }
 
 # ----- Step 6: Build + deploy DLL ---------------------------------------------
-Write-Step 'Step 6: Build + deploy DynamicWeb.Serializer DLL'
-$dllSourceDir = Join-Path $script:repoRoot 'src/DynamicWeb.Serializer/bin/Debug/net8.0'
-$dllSource    = Join-Path $dllSourceDir 'DynamicWeb.Serializer.dll'
+Write-Step 'Step 6: Build + deploy Truvio.Commerce.Serializer DLL'
+$dllSourceDir = Join-Path $script:repoRoot 'src/Truvio.Commerce.Serializer/bin/Debug/net8.0'
+$dllSource    = Join-Path $dllSourceDir 'Truvio.Commerce.Serializer.dll'
 
-Write-Host '  dotnet build src/DynamicWeb.Serializer'
+Write-Host '  dotnet build src/Truvio.Commerce.Serializer'
 $buildLog = Join-Path $runDir 'dotnet-build.log'
-& dotnet build (Join-Path $script:repoRoot 'src/DynamicWeb.Serializer/DynamicWeb.Serializer.csproj') -c Debug *>&1 | Tee-Object -FilePath $buildLog | Out-Host
+& dotnet build (Join-Path $script:repoRoot 'src/Truvio.Commerce.Serializer/Truvio.Commerce.Serializer.csproj') -c Debug *>&1 | Tee-Object -FilePath $buildLog | Out-Host
 if ($LASTEXITCODE -ne 0) {
     throw "dotnet build failed (exit $LASTEXITCODE). See $buildLog"
 }
@@ -436,8 +436,8 @@ foreach ($d in @($swiftDllDir, $cleanDllDir)) {
     }
 }
 
-$swiftDllPath = Join-Path $swiftDllDir 'DynamicWeb.Serializer.dll'
-$cleanDllPath = Join-Path $cleanDllDir 'DynamicWeb.Serializer.dll'
+$swiftDllPath = Join-Path $swiftDllDir 'Truvio.Commerce.Serializer.dll'
+$cleanDllPath = Join-Path $cleanDllDir 'Truvio.Commerce.Serializer.dll'
 Copy-Item -Force $dllSource $swiftDllPath
 Copy-Item -Force $dllSource $cleanDllPath
 

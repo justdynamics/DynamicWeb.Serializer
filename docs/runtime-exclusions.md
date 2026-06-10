@@ -33,9 +33,9 @@ whether or not the predicate lists them in `excludeFields`.
 The list is conservative by design. An entry is added only when the
 column is demonstrably runtime-only or environment-specific on every
 DW 10.x install. New entries require a PR against
-`src/DynamicWeb.Serializer/Configuration/RuntimeExcludes.cs`.
+`src/Truvio.Commerce.Serializer/Configuration/RuntimeExcludes.cs`.
 
-Source: `src/DynamicWeb.Serializer/Configuration/RuntimeExcludes.cs`.
+Source: `src/Truvio.Commerce.Serializer/Configuration/RuntimeExcludes.cs`.
 
 ## Opting back in with includeFields
 

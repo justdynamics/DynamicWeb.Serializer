@@ -20,7 +20,7 @@ progress:
 
 See: .planning/PROJECT.md (updated 2026-04-03)
 
-**Core value:** Developers can reliably move DynamicWeb database state between environments through source control, with serialized YAML files as the single source of truth.
+**Core value:** Developers can reliably move Truvio Commerce database state between environments through source control, with serialized YAML files as the single source of truth.
 **Current focus:** Phase 44 — zip-import-convergence-test-cleanup-schedule-task-removal-live-e2e
 
 ## Current Position
@@ -35,7 +35,7 @@ Last activity: 2026-05-11 -- Phase 44 marked complete
 **Deliverables produced:**
 
 - **D1 — Swift 2.2 baseline** (commits `9aa8421`, `f14f5ad`-adjacent):
-  - `src/DynamicWeb.Serializer/Configuration/swift2.2-baseline.json` — 17-predicate
+  - `src/Truvio.Commerce.Serializer/Configuration/swift2.2-baseline.json` — 17-predicate
     deployment config
 
   - `docs/baselines/Swift2.2-baseline.md` — reasoning doc with the

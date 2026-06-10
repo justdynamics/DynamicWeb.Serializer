@@ -1,6 +1,6 @@
 # Concepts
 
-The mental model for DynamicWeb.Serializer. Read this once before configuring a
+The mental model for Truvio.Commerce.Serializer. Read this once before configuring a
 real baseline — most "why isn't it doing X" questions resolve to one of these
 concepts.
 

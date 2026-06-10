@@ -1,6 +1,6 @@
 # Architecture Research — Manifest-Driven Deserialize (v0.6.0)
 
-**Domain:** Manifest-driven dispatch over a pluggable provider architecture (DynamicWeb.Serializer)
+**Domain:** Manifest-driven dispatch over a pluggable provider architecture (Truvio.Commerce.Serializer)
 **Researched:** 2026-05-08
 **Confidence:** HIGH — grounded in current code, no upstream library questions involved.
 
@@ -577,21 +577,21 @@ If Phase 2's scope shows up larger in the plan than expected (likely culprits: `
 
 ## Sources
 
-- `src/DynamicWeb.Serializer/Providers/SerializerOrchestrator.cs` (lines 1–399)
-- `src/DynamicWeb.Serializer/Providers/SerializationProviderBase.cs`
-- `src/DynamicWeb.Serializer/Providers/Content/ContentProvider.cs`
-- `src/DynamicWeb.Serializer/Providers/SqlTable/SqlTableProvider.cs`
-- `src/DynamicWeb.Serializer/Providers/SqlTable/FkDependencyResolver.cs`
-- `src/DynamicWeb.Serializer/Providers/SerializeResult.cs`, `ProviderDeserializeResult.cs`
-- `src/DynamicWeb.Serializer/Providers/ProviderRegistry.cs`, `ISerializationProvider.cs`
-- `src/DynamicWeb.Serializer/Models/ProviderPredicateDefinition.cs`
-- `src/DynamicWeb.Serializer/Infrastructure/ManifestWriter.cs`, `ManifestCleaner.cs`
-- `src/DynamicWeb.Serializer/Configuration/SerializerConfiguration.cs`
-- `src/DynamicWeb.Serializer/AdminUI/Commands/SerializerSerializeCommand.cs`, `SerializerDeserializeCommand.cs`, `DeserializeFromZipCommand.cs`
-- `tests/DynamicWeb.Serializer.Tests/Providers/SerializerOrchestratorTests.cs`
-- `tests/DynamicWeb.Serializer.Tests/Integration/StrictModeIntegrationTests.cs`
+- `src/Truvio.Commerce.Serializer/Providers/SerializerOrchestrator.cs` (lines 1–399)
+- `src/Truvio.Commerce.Serializer/Providers/SerializationProviderBase.cs`
+- `src/Truvio.Commerce.Serializer/Providers/Content/ContentProvider.cs`
+- `src/Truvio.Commerce.Serializer/Providers/SqlTable/SqlTableProvider.cs`
+- `src/Truvio.Commerce.Serializer/Providers/SqlTable/FkDependencyResolver.cs`
+- `src/Truvio.Commerce.Serializer/Providers/SerializeResult.cs`, `ProviderDeserializeResult.cs`
+- `src/Truvio.Commerce.Serializer/Providers/ProviderRegistry.cs`, `ISerializationProvider.cs`
+- `src/Truvio.Commerce.Serializer/Models/ProviderPredicateDefinition.cs`
+- `src/Truvio.Commerce.Serializer/Infrastructure/ManifestWriter.cs`, `ManifestCleaner.cs`
+- `src/Truvio.Commerce.Serializer/Configuration/SerializerConfiguration.cs`
+- `src/Truvio.Commerce.Serializer/AdminUI/Commands/SerializerSerializeCommand.cs`, `SerializerDeserializeCommand.cs`, `DeserializeFromZipCommand.cs`
+- `tests/Truvio.Commerce.Serializer.Tests/Providers/SerializerOrchestratorTests.cs`
+- `tests/Truvio.Commerce.Serializer.Tests/Integration/StrictModeIntegrationTests.cs`
 - `.planning/PROJECT.md` (milestone v0.6.0 section)
 
 ---
-*Architecture research for: DynamicWeb.Serializer v0.6.0 Manifest-Driven Deserialize*
+*Architecture research for: Truvio.Commerce.Serializer v0.6.0 Manifest-Driven Deserialize*
 *Researched: 2026-05-08*

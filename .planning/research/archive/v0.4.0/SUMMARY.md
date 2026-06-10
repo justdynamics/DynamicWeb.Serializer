@@ -1,6 +1,6 @@
 # Research Summary: Full Page Fidelity (v0.4.0)
 
-**Domain:** DynamicWeb 10 page-level content serialization completeness
+**Domain:** Truvio Commerce 10 page-level content serialization completeness
 **Researched:** 2026-04-02 (updated with DLL decompilation verification)
 **Overall confidence:** HIGH
 

@@ -3,7 +3,7 @@
 DW stores internal page references as numeric IDs: `Default.aspx?ID=5862`
 lives inside item-type string fields, rich-text HTML, grid-row XML, and
 ButtonEditor JSON. Those numeric IDs differ across environments — the page
-that is `5862` on dev may be `9421` on staging. DynamicWeb.Serializer
+that is `5862` on dev may be `9421` on staging. Truvio.Commerce.Serializer
 rewrites those references as part of deserialize, using the stable
 `PageUniqueId` GUID as the bridge.
 
@@ -90,7 +90,7 @@ ordinary numeric fields (sort orders, widths, prices). The deserialize-time
 resolver still handles them via its "entire string is a pure number in the
 map" check.
 
-Source: `src/DynamicWeb.Serializer/Infrastructure/BaselineLinkSweeper.cs`.
+Source: `src/Truvio.Commerce.Serializer/Infrastructure/BaselineLinkSweeper.cs`.
 
 ## Pass 2a: Content deserialize rewriting
 
@@ -123,7 +123,7 @@ The resolver `ResolveLinks` method runs three regex passes per string:
 The resolver counts resolved and unresolved refs across all calls. At end
 of run, `ContentDeserializer` logs the totals as part of the run summary.
 
-Source: `src/DynamicWeb.Serializer/Serialization/InternalLinkResolver.cs`.
+Source: `src/Truvio.Commerce.Serializer/Serialization/InternalLinkResolver.cs`.
 
 ## Pass 2b: SqlTable column opt-in
 
@@ -304,5 +304,5 @@ real future drift.
 - [Concepts](concepts.md#the-serialize-flow) — where link resolution fits
 - [SQL tables](sql-tables.md#resolvelinksincolumns) — `resolveLinksInColumns` in depth
 - [Strict mode](strict-mode.md) — how warnings escalate
-- [`BaselineLinkSweeper.cs`](../src/DynamicWeb.Serializer/Infrastructure/BaselineLinkSweeper.cs) — serialize-time sweep source
-- [`InternalLinkResolver.cs`](../src/DynamicWeb.Serializer/Serialization/InternalLinkResolver.cs) — deserialize-time resolver source
+- [`BaselineLinkSweeper.cs`](../src/Truvio.Commerce.Serializer/Infrastructure/BaselineLinkSweeper.cs) — serialize-time sweep source
+- [`InternalLinkResolver.cs`](../src/Truvio.Commerce.Serializer/Serialization/InternalLinkResolver.cs) — deserialize-time resolver source

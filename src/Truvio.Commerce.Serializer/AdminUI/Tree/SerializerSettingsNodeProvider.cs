@@ -1,0 +1,331 @@
+using Dynamicweb.Application.UI;
+using Truvio.Commerce.Serializer.AdminUI.Models;
+using Truvio.Commerce.Serializer.AdminUI.Queries;
+using Truvio.Commerce.Serializer.AdminUI.Screens;
+using Truvio.Commerce.Serializer.Configuration;
+using Dynamicweb.Content.Items;
+using Dynamicweb.Content.Items.Metadata;
+using Dynamicweb.CoreUI.Actions.Implementations;
+using Dynamicweb.CoreUI.Icons;
+using Dynamicweb.CoreUI.Navigation;
+using Dynamicweb.Core.UI.Icons;
+
+namespace Truvio.Commerce.Serializer.AdminUI.Tree;
+
+public sealed class SerializerSettingsNodeProvider : NavigationNodeProvider<SystemSection>
+{
+    // Parent node ID under Settings > System > Developer. Moved from Settings > Database
+    // to Settings > Developer because Serialize is a developer/deployment tool, not a
+    // database-administration tool.
+    public const string DeveloperRootId = "Settings_Developer";
+    public const string SerializeNodeId = "Serializer_Settings";
+
+    // Phase 40 D-06: single flat tree under Serialize — Predicates, Item Types, Embedded XML, Log Viewer.
+    // No Deploy/Seed group split: each predicate carries its own Mode (D-01) and exclusion dicts are
+    // top-level mode-agnostic (D-04).
+    public const string PredicatesNodeId = "Serializer_Predicates";
+    public const string ItemTypesNodeId = "Serializer_ItemTypes";
+    public const string XmlTypesNodeId = "Serializer_XmlTypes";
+    public const string LogViewerNodeId = "Serializer_LogViewer";
+
+    private const string ItemTypeCatPrefix = "Serializer_ItemType_Cat_";
+    private const string ItemTypeLeafPrefix = "Serializer_ItemType_";
+
+    // Node IDs cannot contain '/' — DW NavigationNodePath splits on it.
+    // Use '~' as separator in node IDs and convert back to '/' for category matching.
+    private const char NodeIdCategorySeparator = '~';
+
+    public override IEnumerable<NavigationNode> GetRootNodes()
+    {
+        // We do NOT create a root node -- "Content" already exists
+        yield break;
+    }
+
+    public override IEnumerable<NavigationNode> GetSubNodes(NavigationNodePath parentNodePath)
+    {
+        if (parentNodePath.Last == DeveloperRootId)
+        {
+            yield return new NavigationNode
+            {
+                Id = SerializeNodeId,
+                Name = "Serialize",
+                Icon = Icon.Exchange,
+                Sort = 100,
+                HasSubNodes = true,
+                NodeAction = NavigateScreenAction.To<SerializerSettingsEditScreen>()
+                    .With(new SerializerSettingsQuery())
+            };
+        }
+        else if (parentNodePath.Last == SerializeNodeId)
+        {
+            yield return new NavigationNode
+            {
+                Id = PredicatesNodeId,
+                Name = "Predicates",
+                Icon = Icon.Filter,
+                Sort = 10,
+                HasSubNodes = true,
+                NodeAction = NavigateScreenAction.To<PredicateListScreen>()
+                    .With(new PredicateListQuery())
+            };
+
+            yield return new NavigationNode
+            {
+                Id = ItemTypesNodeId,
+                Name = "Item Type Excludes",  // Phase 41 D-01: page manages per-ItemType field exclusions, not item types themselves. Const ItemTypesNodeId stays "Serializer_ItemTypes" per D-02.
+                Icon = Icon.ListUl,
+                Sort = 20,
+                HasSubNodes = true,
+                NodeAction = NavigateScreenAction.To<ItemTypeListScreen>()
+                    .With(new ItemTypeListQuery())
+            };
+
+            yield return new NavigationNode
+            {
+                Id = XmlTypesNodeId,
+                Name = "Embedded XML Excludes",
+                Icon = Icon.BracketsCurly,
+                Sort = 30,
+                HasSubNodes = HasXmlTypes(),
+                NodeAction = NavigateScreenAction.To<XmlTypeListScreen>()
+                    .With(new XmlTypeListQuery())
+            };
+
+            yield return new NavigationNode
+            {
+                Id = LogViewerNodeId,
+                Name = "Log Viewer",
+                Icon = Icon.History,
+                Sort = 40,
+                HasSubNodes = false,
+                NodeAction = NavigateScreenAction.To<LogViewerScreen>()
+                    .With(new LogViewerQuery())
+            };
+        }
+        else if (parentNodePath.Last == PredicatesNodeId)
+        {
+            foreach (var node in GetPredicateNodes())
+                yield return node;
+        }
+        else if (parentNodePath.Last == XmlTypesNodeId)
+        {
+            foreach (var node in GetXmlTypeNodes())
+                yield return node;
+        }
+        else if (parentNodePath.Last == ItemTypesNodeId)
+        {
+            foreach (var node in GetItemTypeCategoryNodes(null))
+                yield return node;
+        }
+        else if (parentNodePath.Last.StartsWith(ItemTypeCatPrefix, StringComparison.Ordinal))
+        {
+            var categoryPath = parentNodePath.Last[ItemTypeCatPrefix.Length..].Replace(NodeIdCategorySeparator, '/');
+            foreach (var node in GetItemTypeCategoryNodes(categoryPath))
+                yield return node;
+        }
+    }
+
+    /// <summary>
+    /// Phase 40 D-06: returns true when the top-level <see cref="SerializerConfiguration.ExcludeXmlElementsByType"/>
+    /// dict has at least one key. Used to set <see cref="NavigationNode.HasSubNodes"/> honestly —
+    /// an empty dict means the node should render as a leaf (no expand arrow), not as an empty
+    /// expandable branch.
+    /// </summary>
+    private static bool HasXmlTypes()
+    {
+        var configPath = ConfigPathResolver.FindConfigFile();
+        if (configPath == null) return false;
+
+        try
+        {
+            var config = ConfigLoader.Load(configPath);
+            return config.ExcludeXmlElementsByType.Count > 0;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Phase 40 D-06: emits one XML-type leaf per key in the top-level
+    /// <see cref="SerializerConfiguration.ExcludeXmlElementsByType"/> dict.
+    /// </summary>
+    private static IEnumerable<NavigationNode> GetXmlTypeNodes()
+    {
+        var configPath = ConfigPathResolver.FindConfigFile();
+        if (configPath == null) yield break;
+
+        SerializerConfiguration config;
+        try { config = ConfigLoader.Load(configPath); }
+        catch { yield break; }
+
+        var sort = 0;
+        foreach (var typeName in config.ExcludeXmlElementsByType.Keys.OrderBy(k => k, StringComparer.OrdinalIgnoreCase))
+        {
+            yield return new NavigationNode
+            {
+                Id = $"Serializer_XmlType_{typeName}",
+                Name = typeName,
+                Icon = Icon.BracketsCurly,
+                Sort = sort++,
+                HasSubNodes = false,
+                NodeAction = NavigateScreenAction.To<XmlTypeEditScreen>()
+                    .With(new XmlTypeByNameQuery { ModelIdentifier = typeName })
+            };
+        }
+    }
+
+    /// <summary>
+    /// Phase 40 D-06: emits a child predicate node for each predicate in the flat
+    /// <see cref="SerializerConfiguration.Predicates"/> list. Display name carries the mode badge
+    /// so users can see at a glance which mode each predicate runs under.
+    /// </summary>
+    private static IEnumerable<NavigationNode> GetPredicateNodes()
+    {
+        var configPath = ConfigPathResolver.FindConfigFile();
+        if (configPath == null) yield break;
+
+        SerializerConfiguration config;
+        try { config = ConfigLoader.Load(configPath); }
+        catch { yield break; }
+
+        for (var i = 0; i < config.Predicates.Count; i++)
+        {
+            var pred = config.Predicates[i];
+            yield return new NavigationNode
+            {
+                Id = $"Serializer_Predicate_{i}",
+                Name = $"{pred.Name} ({pred.Mode})",  // mode badge in display name (D-06)
+                Icon = pred.ProviderType == "SqlTable" ? Icon.Table : Icon.FileAlt,
+                Sort = i,
+                HasSubNodes = false,
+                NodeAction = NavigateScreenAction.To<PredicateEditScreen>()
+                    .With(new PredicateByIndexQuery { ModelIdentifier = (i + 1).ToString() })
+            };
+        }
+    }
+
+    /// <summary>
+    /// Phase 40 D-06: single Item Type category tree (no per-mode split). Same shape as the
+    /// pre-37-01.1 shared tree — leaves open <see cref="ItemTypeBySystemNameQuery"/> without a Mode.
+    /// </summary>
+    private static IEnumerable<NavigationNode> GetItemTypeCategoryNodes(string? parentCategory)
+    {
+        List<ItemType> allTypes;
+        try
+        {
+            var metadata = ItemManager.Metadata.GetMetadata();
+            if (metadata?.Items == null || metadata.Items.Count == 0)
+                yield break;
+            allTypes = metadata.Items.ToList();
+        }
+        catch
+        {
+            // Graceful degradation if DW runtime not initialized
+            yield break;
+        }
+
+        if (parentCategory == null)
+        {
+            // Top-level: group by first category segment
+            var grouped = allTypes
+                .GroupBy(t => GetTopLevelCategory(t.Category?.FullName))
+                .OrderBy(g => g.Key == "Uncategorized" ? 1 : 0)
+                .ThenBy(g => g.Key, StringComparer.OrdinalIgnoreCase);
+
+            var sort = 0;
+            foreach (var group in grouped)
+            {
+                yield return new NavigationNode
+                {
+                    Id = ItemTypeCatPrefix + group.Key.Replace('/', NodeIdCategorySeparator),
+                    Name = group.Key,
+                    Icon = Icon.Folder,
+                    Sort = sort++,
+                    HasSubNodes = true,
+                    NodeAction = NavigateScreenAction.To<ItemTypeListScreen>()
+                        .With(new ItemTypeListQuery())
+                };
+            }
+        }
+        else
+        {
+            // Sub-category: find types matching this category path
+            var matchingTypes = allTypes
+                .Where(t => (t.Category?.FullName ?? "") == parentCategory
+                    || (t.Category?.FullName ?? "").StartsWith(parentCategory + "/"))
+                .ToList();
+
+            // Find distinct next-level sub-categories
+            var subCategories = matchingTypes
+                .Where(t => (t.Category?.FullName ?? "") != parentCategory
+                    && (t.Category?.FullName ?? "").StartsWith(parentCategory + "/"))
+                .Select(t => GetNextSegment(t.Category?.FullName ?? "", parentCategory))
+                .Where(s => s != null)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(s => s, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            var sort = 0;
+
+            // Emit sub-category folders
+            foreach (var subCat in subCategories)
+            {
+                var fullPath = parentCategory + "/" + subCat;
+                yield return new NavigationNode
+                {
+                    Id = ItemTypeCatPrefix + fullPath.Replace('/', NodeIdCategorySeparator),
+                    Name = subCat!,
+                    Icon = Icon.Folder,
+                    Sort = sort++,
+                    HasSubNodes = true,
+                    NodeAction = NavigateScreenAction.To<ItemTypeListScreen>()
+                        .With(new ItemTypeListQuery())
+                };
+            }
+
+            // Emit leaf item type nodes for types whose category exactly matches
+            var leafTypes = matchingTypes
+                .Where(t => (t.Category?.FullName ?? "") == parentCategory)
+                .OrderBy(t => t.Name, StringComparer.OrdinalIgnoreCase);
+
+            foreach (var itemType in leafTypes)
+            {
+                var icon = itemType.Icon != KnownIcon.None
+                    ? IconMapper.KnownIconToIcon(itemType.Icon)
+                    : Icon.FileAlt;
+
+                yield return new NavigationNode
+                {
+                    Id = ItemTypeLeafPrefix + itemType.SystemName,
+                    Name = itemType.Name,
+                    Icon = icon,
+                    Sort = sort++,
+                    HasSubNodes = false,
+                    NodeAction = NavigateScreenAction.To<ItemTypeEditScreen>()
+                        .With(new ItemTypeBySystemNameQuery { ModelIdentifier = itemType.SystemName })
+                };
+            }
+        }
+    }
+
+    private static string GetTopLevelCategory(string? fullName)
+    {
+        if (string.IsNullOrEmpty(fullName))
+            return "Uncategorized";
+
+        var slashIndex = fullName.IndexOf('/');
+        return slashIndex > 0 ? fullName[..slashIndex] : fullName;
+    }
+
+    private static string? GetNextSegment(string fullPath, string parentPath)
+    {
+        if (!fullPath.StartsWith(parentPath + "/"))
+            return null;
+
+        var remainder = fullPath[(parentPath.Length + 1)..];
+        var slashIndex = remainder.IndexOf('/');
+        return slashIndex > 0 ? remainder[..slashIndex] : remainder;
+    }
+}

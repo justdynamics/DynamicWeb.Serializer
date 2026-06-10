@@ -148,7 +148,7 @@ jobs:
           dotnet-version: "8.0.x"
 
       - name: Build
-        run: dotnet build src/DynamicWeb.Serializer/ -c Release
+        run: dotnet build src/Truvio.Commerce.Serializer/ -c Release
 
       - name: Deploy app to Azure
         uses: azure/webapps-deploy@v3
@@ -292,7 +292,7 @@ stages:
             inputs:
               version: "8.0.x"
 
-          - script: dotnet build src/DynamicWeb.Serializer/ -c Release
+          - script: dotnet build src/Truvio.Commerce.Serializer/ -c Release
             displayName: Build
 
           - task: AzureWebApp@1
@@ -398,10 +398,10 @@ build:dll:
   only:
     - main
   script:
-    - dotnet build src/DynamicWeb.Serializer/ -c Release
+    - dotnet build src/Truvio.Commerce.Serializer/ -c Release
   artifacts:
     paths:
-      - src/DynamicWeb.Serializer/bin/Release/net8.0/DynamicWeb.Serializer.dll
+      - src/Truvio.Commerce.Serializer/bin/Release/net8.0/Truvio.Commerce.Serializer.dll
 
 # --- Deploy: on merge to main, deploy + deserialize under strict mode ---
 deploy:target:
@@ -414,8 +414,8 @@ deploy:target:
     # 1. Deploy the app — mechanism depends on hosting; this example assumes
     #    an App Service deploy via publish profile. Swap for rsync/scp/etc.
     - az webapp deploy --resource-group "$AZURE_RG" --name "$AZURE_WEBAPP" \
-        --src-path src/DynamicWeb.Serializer/bin/Release/net8.0/DynamicWeb.Serializer.dll \
-        --type static --target-path "site/wwwroot/bin/DynamicWeb.Serializer.dll"
+        --src-path src/Truvio.Commerce.Serializer/bin/Release/net8.0/Truvio.Commerce.Serializer.dll \
+        --type static --target-path "site/wwwroot/bin/Truvio.Commerce.Serializer.dll"
 
     # 2. Sync YAML into the target's Files volume
     - az storage file upload-batch \

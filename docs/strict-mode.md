@@ -181,7 +181,7 @@ Configuration is invalid — ServiceCaches validation failed:
 ```
 
 You need to extend the registry. Open
-`src/DynamicWeb.Serializer/Infrastructure/DwCacheServiceRegistry.cs` and
+`src/Truvio.Commerce.Serializer/Infrastructure/DwCacheServiceRegistry.cs` and
 append an entry to the `Entries` array:
 
 ```csharp

@@ -1,0 +1,51 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>Truvio.Commerce.Serializer</RootNamespace>
+    <AssemblyName>Truvio.Commerce.Serializer</AssemblyName>
+    <AddRazorSupportForMvc>true</AddRazorSupportForMvc>
+    <GenerateEmbeddedFilesManifest>true</GenerateEmbeddedFilesManifest>
+
+    <!-- NuGet package metadata -->
+    <PackageId>Truvio.Commerce.Serializer</PackageId>
+    <Version>0.3.0</Version>
+    <AssemblyVersion>0.3.0.0</AssemblyVersion>
+    <Title>Truvio Commerce Serializer</Title>
+    <Description>Serialize and deserialize Truvio Commerce (Dynamicweb 10) database state to YAML files for version control and environment sync.</Description>
+    <Authors>Truvio Commerce Serializer Contributors</Authors>
+    <PackageProjectUrl>https://github.com/justdynamics/Truvio.Commerce.Serializer</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/justdynamics/Truvio.Commerce.Serializer</RepositoryUrl>
+    <PackageTags>truvio-commerce dynamicweb dw10 addin serializer</PackageTags>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="wwwroot/**/*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Phase 37-06: ConfigLoader._testDefaultValidatorConstructedCallback is marked internal
+         (T-37-06-03 threat model: production code in other assemblies cannot subscribe). The
+         test assembly needs access to the field to prove the default-validator construction
+         path executes — exactly the structural-integration surface the field exists for. -->
+    <InternalsVisibleTo Include="Truvio.Commerce.Serializer.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Dynamicweb" Version="10.23.9" />
+    <PackageReference Include="Dynamicweb.Content.UI" Version="10.23.9" />
+    <PackageReference Include="Dynamicweb.CoreUI.Rendering" Version="10.23.9" />
+    <PackageReference Include="Dynamicweb.Files.UI" Version="10.23.9" />
+    <PackageReference Include="YamlDotNet" Version="13.7.1" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="8.0.1" />
+    <PackageReference Include="Microsoft.Extensions.FileProviders.Embedded" Version="8.0.15" />
+  </ItemGroup>
+
+</Project>

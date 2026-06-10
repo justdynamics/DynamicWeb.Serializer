@@ -1,6 +1,6 @@
 # Swift 2.2 Baseline — Deployment Configuration
 
-**Config file:** `src/DynamicWeb.Serializer/Configuration/swift2.2-baseline.json`
+**Config file:** `src/Truvio.Commerce.Serializer/Configuration/swift2.2-baseline.json`
 **Target:** Azure App Service + SQL Azure, dev → test → QA → prod promotion
 **Status:** v1 — deployment data only. Seed content and env-specific config are
 deliberately out-of-scope (see "Gaps" below).
@@ -9,7 +9,7 @@ deliberately out-of-scope (see "Gaps" below).
 
 ## Purpose
 
-When a customer adopts DynamicWeb Swift 2.2 as their commerce platform, they
+When a customer adopts Truvio Commerce Swift 2.2 as their commerce platform, they
 receive a CMS with hundreds of structural pages, item-type definitions, shop
 setup, payment gateway definitions, country/currency/VAT reference data, and
 the URL-rewriting infrastructure that makes the storefront work. All of that
@@ -101,7 +101,7 @@ serialized with all its fields by default.
 The pre-Phase-40 baseline (`swift2.2-baseline.json` at commit `c5d9a8c~`, deleted
 during Phase 40) carried an explicit empty dict `"excludeFieldsByItemType": {}`.
 The new `ConfigWriter.Save` path omits empty dicts via the `WhenWritingNull` path
-in `src/DynamicWeb.Serializer/Configuration/ConfigWriter.cs` (~lines 35-36), so the
+in `src/Truvio.Commerce.Serializer/Configuration/ConfigWriter.cs` (~lines 35-36), so the
 key disappears from the JSON file the next time the config is saved. The semantic
 behavior — no per-ItemType exclusions — is unchanged. There is nothing to restore.
 
@@ -385,7 +385,7 @@ at end of test session) for the full improvement plan.
 
 ```bash
 # Swap the config into the Swift 2.2 instance
-cp src/DynamicWeb.Serializer/Configuration/swift2.2-baseline.json \
+cp src/Truvio.Commerce.Serializer/Configuration/swift2.2-baseline.json \
    wwwroot/Files/Serializer.config.json
 
 # Trigger serialize via admin UI (Settings → Serializer → Run Serialize)

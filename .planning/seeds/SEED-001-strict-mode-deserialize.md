@@ -53,16 +53,16 @@ any of:
 
 Catch-and-continue sites worth converting:
 
-- `src/DynamicWeb.Serializer/Serialization/ContentDeserializer.cs` — 6 `catch (Exception)` sites
-- `src/DynamicWeb.Serializer/Providers/Content/ContentProvider.cs` — 2 catches
-- `src/DynamicWeb.Serializer/Providers/SerializerOrchestrator.cs` — 2 catches (cache invalidation best-effort, schema sync)
-- `src/DynamicWeb.Serializer/Serialization/PermissionMapper.cs` — permission resolution warnings
-- `src/DynamicWeb.Serializer/Serialization/InternalLinkResolver.cs` — unresolved link warnings
+- `src/Truvio.Commerce.Serializer/Serialization/ContentDeserializer.cs` — 6 `catch (Exception)` sites
+- `src/Truvio.Commerce.Serializer/Providers/Content/ContentProvider.cs` — 2 catches
+- `src/Truvio.Commerce.Serializer/Providers/SerializerOrchestrator.cs` — 2 catches (cache invalidation best-effort, schema sync)
+- `src/Truvio.Commerce.Serializer/Serialization/PermissionMapper.cs` — permission resolution warnings
+- `src/Truvio.Commerce.Serializer/Serialization/InternalLinkResolver.cs` — unresolved link warnings
 
 Related config surface:
 
-- `src/DynamicWeb.Serializer/Configuration/SerializerConfiguration.cs`
-- `src/DynamicWeb.Serializer/AdminUI/Screens/SettingsEditScreen.cs`
+- `src/Truvio.Commerce.Serializer/Configuration/SerializerConfiguration.cs`
+- `src/Truvio.Commerce.Serializer/AdminUI/Screens/SettingsEditScreen.cs`
 
 ## Notes
 

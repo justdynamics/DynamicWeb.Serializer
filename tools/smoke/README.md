@@ -1,9 +1,9 @@
-# DynamicWeb.Serializer Frontend Smoke Tests
+# Truvio.Commerce.Serializer Frontend Smoke Tests
 
 Standalone local-dev tools for post-deserialize frontend verification.
 
 **Author:** 2026-04-21 Phase 38 D-38-13
-**Target:** Any DynamicWeb host reachable via HTTP(S) from the local machine
+**Target:** Any Truvio Commerce host reachable via HTTP(S) from the local machine
 **Source finding:** `.planning/sessions/2026-04-20-e2e-baseline-roundtrip/REPORT.md` - the 2026-04-20 E2E round-trip ad-hoc frontend verification step, now a repeatable tool.
 
 > **LOCAL-DEV ONLY.** These scripts are for local smoke testing only. NEVER deploy to customer sites. The SQL-connection defaults assume localhost + Integrated Security; customer sites use cloud SQL + Key Vault secrets (out of scope for this tool).

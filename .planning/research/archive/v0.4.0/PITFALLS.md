@@ -1,6 +1,6 @@
 # Domain Pitfalls: Full Page Fidelity (v0.4.0)
 
-**Domain:** Expanding page property coverage in DynamicWeb content serializer
+**Domain:** Expanding page property coverage in Truvio Commerce content serializer
 **Researched:** 2026-04-02 (updated with DLL decompilation findings)
 
 ## Critical Pitfalls

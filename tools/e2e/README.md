@@ -12,13 +12,13 @@ smoke-test, and assert preservation. Closes the Phase 38.1 carry-forwards
 - PowerShell 7+ (`pwsh`)
 - SQL Server 2019+ reachable at `localhost\SQLEXPRESS` (or via `-SqlServer`)
 - `sqlcmd` on PATH (ships with SQL Server client tools)
-- DynamicWeb Swift-2.2 and Swift-CleanDB host projects under
+- Truvio Commerce Swift-2.2 and Swift-CleanDB host projects under
   `C:\Projects\Solutions\swift.test.forsync\` (or pass `-SwiftHostPath` /
   `-CleanDbHostPath` to override). Hosts must already be `dotnet build`-able
   (net10.0).
 - `tools/swift2.2.0-20260129-database.zip` — the bacpac source for Swift-2.2.
-- DynamicWeb.Serializer repo on disk; the pipeline runs `dotnet build` for
-  `src/DynamicWeb.Serializer/DynamicWeb.Serializer.csproj` automatically.
+- Truvio.Commerce.Serializer repo on disk; the pipeline runs `dotnet build` for
+  `src/Truvio.Commerce.Serializer/Truvio.Commerce.Serializer.csproj` automatically.
 
 The pipeline auto-installs `sqlpackage` via
 `dotnet tool install --global microsoft.sqlpackage` if not found in the
@@ -47,7 +47,7 @@ pwsh tools/e2e/full-clean-roundtrip.ps1 -SkipBacpacRestore
 | 3  | Unzip bacpac zip + `sqlpackage /Action:Import` -> Swift-2.2          | sqlpackage exit 0 |
 | 4  | (deferred) Administrator password check runs after Step 7 host boot | token auth at Step 7 must return 200 |
 | 5  | Apply cleanup scripts 01..09 on Swift-2.2                            | each script COMMIT, no ABORT/ROLLBACK |
-| 6  | Build + deploy `DynamicWeb.Serializer.dll`                           | md5 matches across source + both hosts |
+| 6  | Build + deploy `Truvio.Commerce.Serializer.dll`                           | md5 matches across source + both hosts |
 | 7  | Start Swift-2.2 host                                                 | `/Admin/` returns 200/301/302/401 within 180s AND token auth returns Administrator token |
 | 8  | Purge CleanDB (`tools/purge-cleandb.sql`)                            | COMMIT, no ROLLBACK |
 | 9  | Apply `cleandb-align-schema.sql`                                     | 10 ALTER or SKIP log lines |
@@ -68,7 +68,7 @@ pwsh tools/e2e/full-clean-roundtrip.ps1 -SkipBacpacRestore
 Each run creates a timestamped directory:
 
 ```
-.planning/phases/38.1-close-phase-38-deferrals/pipeline-runs/<yyyyMMdd-HHmmss>/
+tools/e2e/runs/<yyyyMMdd-HHmmss>/
 ```
 
 Expected contents:

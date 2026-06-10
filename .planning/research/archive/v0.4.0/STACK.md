@@ -1,6 +1,6 @@
 # Technology Stack: Full Page Fidelity
 
-**Project:** DynamicWeb.Serializer v0.4.0 -- Full Page Property Serialization
+**Project:** Truvio.Commerce.Serializer v0.4.0 -- Full Page Property Serialization
 **Researched:** 2026-04-02
 **Confidence:** HIGH (verified against DW 10.23.9 NuGet XML docs + live Swift 2.2 SQL schema)
 

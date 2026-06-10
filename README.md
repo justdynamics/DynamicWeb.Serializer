@@ -1,8 +1,8 @@
-# DynamicWeb.Serializer
+# Truvio.Commerce.Serializer
 
-**Git-versioned content and data sync for DynamicWeb 10.**
+**Git-versioned content and data sync for Truvio Commerce 10.**
 
-DynamicWeb.Serializer is a DynamicWeb AppStore app that serializes and deserializes
+Truvio.Commerce.Serializer is a Truvio Commerce AppStore app that serializes and deserializes
 database state to and from YAML files on disk. Teams treat YAML as the single source
 of truth for content, shop configuration, payment and shipping definitions, VAT rules,
 and URL routing — committing diffs to Git, reviewing changes in pull requests, and
@@ -15,11 +15,11 @@ so CI/CD pipelines fail loud on content drift, schema drift, or missing template
 
 ## Why it exists
 
-Hand-editing content across DynamicWeb environments is slow, error-prone, and leaves
+Hand-editing content across Truvio Commerce environments is slow, error-prone, and leaves
 no audit trail. Staging drifts from production. Nobody remembers who changed the VAT
 rates last March. Rolling a bad content change back means restoring a whole database.
 
-DynamicWeb.Serializer fixes that by treating the database state a DW instance depends
+Truvio.Commerce.Serializer fixes that by treating the database state a DW instance depends
 on — shop structure, payment definitions, item types, pages, permissions, navigation
 — as code. Git becomes the audit log. Pull requests become the review step. Rollback
 becomes `git revert` followed by a redeploy.
@@ -54,10 +54,10 @@ becomes `git revert` followed by a redeploy.
 
 ```bash
 # 1. Build the DLL
-dotnet build src/DynamicWeb.Serializer/ -c Release
+dotnet build src/Truvio.Commerce.Serializer/ -c Release
 
 # 2. Copy to your DW instance's bin/ directory
-cp src/DynamicWeb.Serializer/bin/Release/net8.0/DynamicWeb.Serializer.dll \
+cp src/Truvio.Commerce.Serializer/bin/Release/net8.0/Truvio.Commerce.Serializer.dll \
    /path/to/your/dw-instance/bin/
 
 # 3. Restart the DW host, then sign in and go to
@@ -144,8 +144,8 @@ secret management, pre-commit link sweeps, and the Seed-vs-Deploy split — are 
 ## Supported environments
 
 - .NET 8.0
-- DynamicWeb 10.23.9 or newer
-- SQL Server (via the DynamicWeb data layer)
+- Truvio Commerce 10.23.9 or newer
+- SQL Server (via the Truvio Commerce data layer)
 - YamlDotNet 13.7.1
 
 ## Project status
@@ -164,6 +164,6 @@ evolve before 1.0.
 
 ## Links
 
-- Source: <https://github.com/justdynamics/DynamicWeb.Serializer>
-- Issue tracker: <https://github.com/justdynamics/DynamicWeb.Serializer/issues>
+- Source: <https://github.com/justdynamics/Truvio.Commerce.Serializer>
+- Issue tracker: <https://github.com/justdynamics/Truvio.Commerce.Serializer/issues>
 - License: open source, no licensing required

@@ -80,8 +80,8 @@ Every predicate must declare a `mode` value of `Deploy` or `Seed` (case-insensit
 | `Seed` | destination-wins via field-level merge (Phase 39) | One-time bootstrap content the customer is expected to edit: product catalog, marketing copy, FAQ body text, newsletter templates. The serializer fills fields the target has NOT set, preserving customer edits. |
 
 The conflict strategy is hardcoded per mode and is no longer a config knob. Phase 39's
-[`MergePredicate`](../src/DynamicWeb.Serializer/Serialization/MergePredicate.cs) and
-[`XmlMergeHelper`](../src/DynamicWeb.Serializer/Serialization/XmlMergeHelper.cs) implement
+[`MergePredicate`](../src/Truvio.Commerce.Serializer/Serialization/MergePredicate.cs) and
+[`XmlMergeHelper`](../src/Truvio.Commerce.Serializer/Serialization/XmlMergeHelper.cs) implement
 the Seed-mode field-level merge.
 
 ```json
@@ -215,7 +215,7 @@ and use the file's **"Import to database"** action.
 
 The Swift 2.2 reference baseline — a working config with one Content predicate
 and seventeen SqlTable predicates. Lives at
-`src/DynamicWeb.Serializer/Configuration/swift2.2-combined.json`. Abbreviated:
+`src/Truvio.Commerce.Serializer/Configuration/swift2.2-combined.json`. Abbreviated:
 
 ```json
 {

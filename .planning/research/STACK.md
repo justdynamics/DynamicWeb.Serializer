@@ -1,6 +1,6 @@
 # Technology Stack — Manifest-Driven Deserialize (v0.6.0)
 
-**Project:** DynamicWeb.Serializer
+**Project:** Truvio.Commerce.Serializer
 **Researched:** 2026-05-08
 **Mode:** Project research — STACK only (subsequent milestone, narrow scope)
 **Overall confidence:** HIGH
@@ -228,7 +228,7 @@ generator if needed, without changing runtime behavior).
 
 ### 4. Existing pieces to reuse
 
-Verified via grep across `src/DynamicWeb.Serializer`:
+Verified via grep across `src/Truvio.Commerce.Serializer`:
 
 | Existing piece | Where | How v0.6.0 reuses it |
 |----------------|-------|----------------------|
@@ -300,7 +300,7 @@ This matches the project's stated no-backcompat policy.
 **Nothing to install.** All capabilities ship in-box with .NET 8.0:
 
 ```xml
-<!-- DynamicWeb.Serializer.csproj — NO new PackageReference entries -->
+<!-- Truvio.Commerce.Serializer.csproj — NO new PackageReference entries -->
 <TargetFramework>net8.0</TargetFramework>
 ```
 
@@ -327,13 +327,13 @@ on `<Version>` and `<AssemblyVersion>`, which is unrelated to this stack researc
 - [Handle unmapped members during deserialization — Microsoft Learn](https://learn.microsoft.com/en-us/dotnet/standard/serialization/system-text-json/missing-members) — HIGH
 - [`JsonPolymorphicAttribute` API ref](https://learn.microsoft.com/en-us/dotnet/api/system.text.json.serialization.jsonpolymorphicattribute) — HIGH
 - [`JsonUnknownDerivedTypeHandling` enum](https://learn.microsoft.com/en-us/dotnet/api/system.text.json.serialization.jsonunknownderivedtypehandling) — HIGH
-- Local files (verified): `src/DynamicWeb.Serializer/Infrastructure/ManifestWriter.cs`,
-  `src/DynamicWeb.Serializer/Infrastructure/ManifestCleaner.cs`,
-  `src/DynamicWeb.Serializer/Models/ProviderPredicateDefinition.cs`,
-  `src/DynamicWeb.Serializer/Configuration/ConfigLoader.cs`,
-  `src/DynamicWeb.Serializer/Configuration/ConfigWriter.cs`,
-  `src/DynamicWeb.Serializer/Configuration/ConflictStrategy.cs`,
-  `src/DynamicWeb.Serializer/Providers/SerializerOrchestrator.cs`,
-  `src/DynamicWeb.Serializer/Providers/SerializationProviderBase.cs`,
-  `src/DynamicWeb.Serializer/Providers/ISerializationProvider.cs`,
-  `src/DynamicWeb.Serializer/Providers/SerializeResult.cs` — HIGH
+- Local files (verified): `src/Truvio.Commerce.Serializer/Infrastructure/ManifestWriter.cs`,
+  `src/Truvio.Commerce.Serializer/Infrastructure/ManifestCleaner.cs`,
+  `src/Truvio.Commerce.Serializer/Models/ProviderPredicateDefinition.cs`,
+  `src/Truvio.Commerce.Serializer/Configuration/ConfigLoader.cs`,
+  `src/Truvio.Commerce.Serializer/Configuration/ConfigWriter.cs`,
+  `src/Truvio.Commerce.Serializer/Configuration/ConflictStrategy.cs`,
+  `src/Truvio.Commerce.Serializer/Providers/SerializerOrchestrator.cs`,
+  `src/Truvio.Commerce.Serializer/Providers/SerializationProviderBase.cs`,
+  `src/Truvio.Commerce.Serializer/Providers/ISerializationProvider.cs`,
+  `src/Truvio.Commerce.Serializer/Providers/SerializeResult.cs` — HIGH

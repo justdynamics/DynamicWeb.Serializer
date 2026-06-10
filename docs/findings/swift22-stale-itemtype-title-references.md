@@ -127,4 +127,4 @@ Expected output on a clean Swift v2 install: the 7 XML filenames listed above.
 
 ## Contact
 
-Reported by the DynamicWeb.Serializer baseline round-trip test harness (strict-mode deserialization). Standalone reproducer included above does not require the serializer — it is an XML-only check of the shipped Swift v2 templates.
+Reported by the Truvio.Commerce.Serializer baseline round-trip test harness (strict-mode deserialization). Standalone reproducer included above does not require the serializer — it is an XML-only check of the shipped Swift v2 templates.

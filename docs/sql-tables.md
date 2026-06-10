@@ -145,7 +145,7 @@ Clause: AccessUserUsrName = 'admin'
 - No function calls. `LOWER(AccessUserUserName) = 'admin'` is rejected
   (`LOWER` is not an allowed identifier).
 
-Source: `src/DynamicWeb.Serializer/Configuration/SqlWhereClauseValidator.cs`.
+Source: `src/Truvio.Commerce.Serializer/Configuration/SqlWhereClauseValidator.cs`.
 
 ## includeFields / excludeFields
 
