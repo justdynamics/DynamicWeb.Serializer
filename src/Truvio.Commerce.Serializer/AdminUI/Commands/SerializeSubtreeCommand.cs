@@ -56,8 +56,10 @@ public sealed class SerializeSubtreeCommand : CommandBase
                     }
                 };
 
-                // 4. Run serialization (reuses existing ContentSerializer -- ACT-08)
-                var serializer = new ContentSerializer(tempConfig);
+                // 4. Run serialization (reuses existing ContentSerializer -- ACT-08).
+                // lenientLinkSweep: references out of the exported subtree are expected for
+                // ad-hoc exports — they resolve against the target DB at import time.
+                var serializer = new ContentSerializer(tempConfig, lenientLinkSweep: true);
                 serializer.Serialize();
 
                 // 5. Create zip from the serialized output (per D-01: YAML files in mirror-tree layout)
@@ -117,7 +119,7 @@ public sealed class SerializeSubtreeCommand : CommandBase
     /// So for a page at /CustomerCenter/SubPage, the path is "/CustomerCenter/SubPage".
     /// A predicate with this path will include this page and all its children.
     /// </summary>
-    private static string BuildContentPath(Page page)
+    internal static string BuildContentPath(Page page)
     {
         var segments = new List<string>();
         var current = page;
