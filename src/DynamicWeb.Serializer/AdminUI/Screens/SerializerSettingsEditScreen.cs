@@ -19,11 +19,7 @@ public sealed class SerializerSettingsEditScreen : EditScreenBase<SerializerSett
         [
             new("Serialize",
             [
-                EditorFor(m => m.OutputDirectory),
-                EditorFor(m => m.LogLevel),
-                EditorFor(m => m.DryRun),
-                EditorFor(m => m.StrictMode),
-                EditorFor(m => m.ConflictStrategy)
+                EditorFor(m => m.OutputDirectory)
             ]),
             new("Information",
             [
@@ -79,43 +75,6 @@ public sealed class SerializerSettingsEditScreen : EditScreenBase<SerializerSett
                         NodeAction = RunCommandAction.For(new SerializerDeserializeCommand { Mode = "seed", IsAdminUiInvocation = true }).WithReloadOnSuccess()
                     }
                 }
-            }
-        };
-    }
-
-    protected override EditorBase? GetEditor(string property)
-    {
-        return property switch
-        {
-            nameof(SerializerSettingsModel.LogLevel) => CreateLogLevelSelect(),
-            nameof(SerializerSettingsModel.ConflictStrategy) => CreateConflictStrategySelect(),
-            _ => null
-        };
-    }
-
-    private static Select CreateLogLevelSelect()
-    {
-        return new Select
-        {
-            SortOrder = OrderBy.Default,
-            Options = new List<ListOption>
-            {
-                new() { Value = "info", Label = "Info" },
-                new() { Value = "debug", Label = "Debug" },
-                new() { Value = "warn", Label = "Warn" },
-                new() { Value = "error", Label = "Error" }
-            }
-        };
-    }
-
-    private static Select CreateConflictStrategySelect()
-    {
-        return new Select
-        {
-            SortOrder = OrderBy.Default,
-            Options = new List<ListOption>
-            {
-                new() { Value = "source-wins", Label = "Source Wins" }
             }
         };
     }

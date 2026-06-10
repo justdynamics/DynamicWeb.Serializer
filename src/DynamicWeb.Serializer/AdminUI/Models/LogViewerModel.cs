@@ -24,9 +24,6 @@ public sealed class LogViewerModel : DataViewModelBase
     [ConfigurableProperty("Timestamp", explanation: "When the operation ran")]
     public string SummaryTimestamp { get; set; } = string.Empty;
 
-    [ConfigurableProperty("Dry Run", explanation: "Whether this was a dry-run operation")]
-    public string SummaryDryRun { get; set; } = string.Empty;
-
     [ConfigurableProperty("Total Created", explanation: "Total items created")]
     public string SummaryTotalCreated { get; set; } = "0";
 
@@ -127,7 +124,6 @@ public sealed class LogViewerModel : DataViewModelBase
         {
             SummaryOperation = summary.Operation;
             SummaryTimestamp = summary.Timestamp.ToString("yyyy-MM-dd HH:mm:ss");
-            SummaryDryRun = summary.DryRun ? "Yes" : "No";
             SummaryTotalCreated = summary.TotalCreated.ToString();
             SummaryTotalUpdated = summary.TotalUpdated.ToString();
             SummaryTotalSkipped = summary.TotalSkipped.ToString();

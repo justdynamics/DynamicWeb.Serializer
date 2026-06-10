@@ -42,15 +42,9 @@ public sealed class SaveSerializerSettingsCommand : CommandBase<SerializerSettin
 
             var existingConfig = ConfigLoader.Load(configPath);
 
-            // Phase 40 D-02: ConflictStrategy is no longer a config knob — it's hardcoded per mode
-            // in SerializerConfiguration.GetConflictStrategyForMode. The settings model still
-            // exposes the field for UI compat but the value is dropped on save.
             var updatedConfig = existingConfig with
             {
-                OutputDirectory = Model.OutputDirectory,
-                LogLevel = Model.LogLevel,
-                DryRun = Model.DryRun,
-                StrictMode = Model.StrictMode
+                OutputDirectory = Model.OutputDirectory
             };
 
             ConfigWriter.Save(updatedConfig, configPath);

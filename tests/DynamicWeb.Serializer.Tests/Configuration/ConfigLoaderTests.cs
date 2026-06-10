@@ -62,7 +62,6 @@ public class ConfigLoaderTests : ConfigLoaderValidatorFixtureBase
         var config = ConfigLoader.Load(path);
 
         Assert.Equal("/serialization", config.OutputDirectory);
-        Assert.Equal("info", config.LogLevel);
         Assert.Single(config.Predicates);
         Assert.Equal("Customer Center", config.Predicates[0].Name);
         Assert.Equal(DeploymentMode.Deploy, config.Predicates[0].Mode);
@@ -94,29 +93,6 @@ public class ConfigLoaderTests : ConfigLoaderValidatorFixtureBase
 
         Assert.NotNull(config.Predicates[0].Excludes);
         Assert.Empty(config.Predicates[0].Excludes);
-    }
-
-    [Fact]
-    public void Load_NoLogLevel_DefaultsToInfo()
-    {
-        var json = """
-            {
-              "outputDirectory": "/serialization",
-              "predicates": [
-                {
-                  "name": "Customer Center",
-                  "mode": "Deploy",
-                  "path": "/Customer Center",
-                  "areaId": 1
-                }
-              ]
-            }
-            """;
-        var path = WriteConfigFile(json);
-
-        var config = ConfigLoader.Load(path);
-
-        Assert.Equal("info", config.LogLevel);
     }
 
     // -------------------------------------------------------------------------
@@ -334,58 +310,6 @@ public class ConfigLoaderTests : ConfigLoaderValidatorFixtureBase
 
         var errorOutput = errorCapture.ToString();
         Assert.DoesNotContain(existingDir, errorOutput);
-    }
-
-    // -------------------------------------------------------------------------
-    // DryRun field
-    // -------------------------------------------------------------------------
-
-    [Fact]
-    public void Load_ConfigWithoutDryRun_DefaultsToFalse()
-    {
-        var json = """
-            {
-              "outputDirectory": "/serialization",
-              "logLevel": "info",
-              "predicates": [
-                {
-                  "name": "Test",
-                  "mode": "Deploy",
-                  "path": "/Test",
-                  "areaId": 1
-                }
-              ]
-            }
-            """;
-        var path = WriteConfigFile(json);
-
-        var config = ConfigLoader.Load(path);
-
-        Assert.False(config.DryRun);
-    }
-
-    [Fact]
-    public void Load_ConfigWithDryRunTrue_ReturnsDryRunTrue()
-    {
-        var json = """
-            {
-              "outputDirectory": "/serialization",
-              "dryRun": true,
-              "predicates": [
-                {
-                  "name": "Test",
-                  "mode": "Deploy",
-                  "path": "/Test",
-                  "areaId": 1
-                }
-              ]
-            }
-            """;
-        var path = WriteConfigFile(json);
-
-        var config = ConfigLoader.Load(path);
-
-        Assert.True(config.DryRun);
     }
 
     // -------------------------------------------------------------------------
@@ -1070,50 +994,6 @@ public class ConfigLoaderTests : ConfigLoaderValidatorFixtureBase
         Assert.Contains("predicates 'BadSeed'", ex.Message);
         Assert.Contains("Nonexistent.DeployCache", ex.Message);
         Assert.Contains("Nonexistent.SeedCache", ex.Message);
-    }
-
-    [Fact]
-    [Trait("Category", "Phase37-04")]
-    public void Load_StrictModeTrue_RoundTrips()
-    {
-        var json = """
-            {
-              "outputDirectory": "/serialization",
-              "strictMode": true
-            }
-            """;
-        var path = WriteConfigFile(json);
-        var config = ConfigLoader.Load(path);
-        Assert.Equal(true, config.StrictMode);
-    }
-
-    [Fact]
-    [Trait("Category", "Phase37-04")]
-    public void Load_StrictModeFalse_RoundTrips()
-    {
-        var json = """
-            {
-              "outputDirectory": "/serialization",
-              "strictMode": false
-            }
-            """;
-        var path = WriteConfigFile(json);
-        var config = ConfigLoader.Load(path);
-        Assert.Equal(false, config.StrictMode);
-    }
-
-    [Fact]
-    [Trait("Category", "Phase37-04")]
-    public void Load_StrictModeOmitted_NullsOut()
-    {
-        var json = """
-            {
-              "outputDirectory": "/serialization"
-            }
-            """;
-        var path = WriteConfigFile(json);
-        var config = ConfigLoader.Load(path);
-        Assert.Null(config.StrictMode);
     }
 
     [Fact]

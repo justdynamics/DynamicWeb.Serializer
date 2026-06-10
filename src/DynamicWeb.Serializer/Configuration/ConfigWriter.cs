@@ -27,9 +27,6 @@ public static class ConfigWriter
         var dto = new PersistedConfiguration
         {
             OutputDirectory = config.OutputDirectory,
-            LogLevel = config.LogLevel,
-            DryRun = config.DryRun,
-            StrictMode = config.StrictMode,
             DeployOutputSubfolder = config.DeployOutputSubfolder,
             SeedOutputSubfolder = config.SeedOutputSubfolder,
             ExcludeFieldsByItemType = config.ExcludeFieldsByItemType.Count > 0 ? config.ExcludeFieldsByItemType : null,
@@ -47,9 +44,6 @@ public static class ConfigWriter
     private sealed class PersistedConfiguration
     {
         public string OutputDirectory { get; init; } = "";
-        public string LogLevel { get; init; } = "info";
-        public bool DryRun { get; init; }
-        public bool? StrictMode { get; init; }
         public string DeployOutputSubfolder { get; init; } = "deploy";
         public string SeedOutputSubfolder { get; init; } = "seed";
         public Dictionary<string, List<string>>? ExcludeFieldsByItemType { get; init; }

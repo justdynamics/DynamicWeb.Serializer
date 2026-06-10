@@ -97,7 +97,7 @@ public sealed class SerializerDeserializeCommand : CommandBase
         {
             var configPath = ConfigPathResolver.FindConfigFile();
             if (configPath == null)
-                return new() { Status = CommandResult.ResultType.Error, Message = "Serializer.config.json not found (also checked ContentSync.config.json)" };
+                return new() { Status = CommandResult.ResultType.Error, Message = "Serializer.config.json not found" };
 
             // Phase 43 / DESER-04: config-free deserialize path. Predicates are no longer
             // consulted; the orchestrator reads the manifest from disk and dispatches per-entry.
@@ -138,11 +138,6 @@ public sealed class SerializerDeserializeCommand : CommandBase
                 var strict = StrictModeResolver.Resolve(entryPoint, configValue: null, requestValue: StrictMode);
                 Log($"=== Strict mode: {strict} (entry-point: {entryPoint}) ===");
 
-                // Phase 43 / DESER-05 final: emit a one-time WARNING when the on-disk config still
-                // carries the legacy strictMode setting. Route through the same log channel as
-                // everything else; once-per-run is naturally enforced by command-per-request lifecycle.
-                StrictModeDeprecationWarning.EmitIfLegacyValueSet(configPath, Log);
-
                 var escalator = new StrictModeEscalator(strict, Log);
 
                 // Phase 43 / DESER-01: orchestrator reads the manifest itself; no predicates parameter.
@@ -165,7 +160,6 @@ public sealed class SerializerDeserializeCommand : CommandBase
                 {
                     Operation = "Deserialize",
                     Timestamp = DateTime.UtcNow,
-                    DryRun = false,
                     Predicates = result.EntryOutcomes
                         .Where(o => o.EntryId != EntryOutcome.RunLevelEntryId)  // Phase 44 / IN-06
                         .Select(o => new PredicateSummary
@@ -209,7 +203,6 @@ public sealed class SerializerDeserializeCommand : CommandBase
                     {
                         Operation = "Deserialize",
                         Timestamp = DateTime.UtcNow,
-                        DryRun = false,
                         Predicates = new List<PredicateSummary>(),
                         Errors = new List<string> { ex.Message }
                     };

@@ -9,12 +9,7 @@ public static class ConfigPathResolver
         Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "wwwroot", "Files", "Serializer.config.json"),
         Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "Files", "Serializer.config.json"),
         Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Serializer.config.json"),
-        Path.Combine(Directory.GetCurrentDirectory(), "Serializer.config.json"),
-        // Backward compat: check old name as fallback
-        Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "wwwroot", "Files", "ContentSync.config.json"),
-        Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "Files", "ContentSync.config.json"),
-        Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ContentSync.config.json"),
-        Path.Combine(Directory.GetCurrentDirectory(), "ContentSync.config.json")
+        Path.Combine(Directory.GetCurrentDirectory(), "Serializer.config.json")
     };
 
     /// <summary>
@@ -57,8 +52,6 @@ public static class ConfigPathResolver
         var defaultConfig = new SerializerConfiguration
         {
             OutputDirectory = @"\System\Serializer",
-            LogLevel = "info",
-            DryRun = false,
             Predicates = new List<ProviderPredicateDefinition>
             {
                 new() { Name = "Default", Mode = DeploymentMode.Deploy, ProviderType = "Content", Path = "/", AreaId = 1 }

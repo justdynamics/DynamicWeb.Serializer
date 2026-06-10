@@ -4,7 +4,6 @@ public record LogFileSummary
 {
     public string Operation { get; init; } = "";
     public DateTime Timestamp { get; init; }
-    public bool DryRun { get; init; }
     public List<PredicateSummary> Predicates { get; init; } = new();
     public int TotalCreated { get; init; }
     public int TotalUpdated { get; init; }

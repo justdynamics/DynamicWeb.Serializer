@@ -38,8 +38,6 @@ public class PredicateCommandTests : ConfigLoaderValidatorFixtureBase
         var config = new SerializerConfiguration
         {
             OutputDirectory = @"\System\Serializer",
-            LogLevel = "info",
-            DryRun = false,
             Predicates = predicates ?? new List<ProviderPredicateDefinition>
             {
                 new() { Name = "Default", Mode = DeploymentMode.Deploy, ProviderType = "Content", Path = "/", AreaId = 1, PageId = 10 }

@@ -41,8 +41,6 @@ public class SaveSerializerSettingsCommandTests : ConfigLoaderValidatorFixtureBa
         var config = new SerializerConfiguration
         {
             OutputDirectory = @"\System\Serializer",
-            LogLevel = "info",
-            DryRun = false,
             Predicates = new List<ProviderPredicateDefinition>
             {
                 new() { Name = "Default", Mode = DeploymentMode.Deploy, ProviderType = "Content", Path = "/", AreaId = 1 }
@@ -68,10 +66,7 @@ public class SaveSerializerSettingsCommandTests : ConfigLoaderValidatorFixtureBa
         {
             Model = new SerializerSettingsModel
             {
-                OutputDirectory = "",
-                LogLevel = "info",
-                DryRun = false,
-                ConflictStrategy = "source-wins"
+                OutputDirectory = ""
             }
         };
 
@@ -88,10 +83,7 @@ public class SaveSerializerSettingsCommandTests : ConfigLoaderValidatorFixtureBa
         {
             Model = new SerializerSettingsModel
             {
-                OutputDirectory = "   ",
-                LogLevel = "info",
-                DryRun = false,
-                ConflictStrategy = "source-wins"
+                OutputDirectory = "   "
             }
         };
 
@@ -107,10 +99,7 @@ public class SaveSerializerSettingsCommandTests : ConfigLoaderValidatorFixtureBa
         {
             Model = new SerializerSettingsModel
             {
-                OutputDirectory = "invalid|path*with?chars",
-                LogLevel = "info",
-                DryRun = false,
-                ConflictStrategy = "source-wins"
+                OutputDirectory = "invalid|path*with?chars"
             }
         };
 
@@ -120,7 +109,7 @@ public class SaveSerializerSettingsCommandTests : ConfigLoaderValidatorFixtureBa
     }
 
     [Fact]
-    public void Handle_ValidModel_MapsAllFieldsToConfig()
+    public void Handle_ValidModel_MapsOutputDirectoryToConfig()
     {
         // Create the output directory and seed config
         Directory.CreateDirectory(_outputDir);
@@ -128,29 +117,21 @@ public class SaveSerializerSettingsCommandTests : ConfigLoaderValidatorFixtureBa
 
         var model = new SerializerSettingsModel
         {
-            OutputDirectory = @"\System\Serializer",
-            LogLevel = "debug",
-            DryRun = true,
-            ConflictStrategy = "source-wins"
+            OutputDirectory = @"\System\Serializer"
         };
 
         // Simulate what the command does: load existing, merge model, save
         var existingConfig = ConfigLoader.Load(_configPath);
 
-        // Phase 40 D-02: ConflictStrategy is no longer a config knob — saved value is ignored.
         var updatedConfig = existingConfig with
         {
-            OutputDirectory = model.OutputDirectory,
-            LogLevel = model.LogLevel,
-            DryRun = model.DryRun
+            OutputDirectory = model.OutputDirectory
         };
 
         ConfigWriter.Save(updatedConfig, _configPath);
 
         var reloaded = ConfigLoader.Load(_configPath);
         Assert.Equal(@"\System\Serializer", reloaded.OutputDirectory);
-        Assert.Equal("debug", reloaded.LogLevel);
-        Assert.True(reloaded.DryRun);
         Assert.Equal(ConflictStrategy.SourceWins, reloaded.GetConflictStrategyForMode(DeploymentMode.Deploy));
         Assert.Single(reloaded.Predicates);
     }
@@ -168,8 +149,6 @@ public class SaveSerializerSettingsCommandTests : ConfigLoaderValidatorFixtureBa
         var seedConfig = new SerializerConfiguration
         {
             OutputDirectory = @"\System\Serializer",
-            LogLevel = "info",
-            DryRun = false,
             Predicates = new List<ProviderPredicateDefinition>
             {
                 new() { Name = "DeployA", Mode = DeploymentMode.Deploy, ProviderType = "Content", Path = "/d", AreaId = 1 },
@@ -179,20 +158,15 @@ public class SaveSerializerSettingsCommandTests : ConfigLoaderValidatorFixtureBa
         };
         ConfigWriter.Save(seedConfig, _configPath);
 
-        // Settings-save should NOT clobber predicates; it only touches OutputDirectory / LogLevel / DryRun.
+        // Settings-save should NOT clobber predicates; it only touches OutputDirectory.
         var existingConfig = ConfigLoader.Load(_configPath);
         var model = new SerializerSettingsModel
         {
-            OutputDirectory = @"\System\Serializer",
-            LogLevel = "debug",
-            DryRun = true,
-            ConflictStrategy = "source-wins"
+            OutputDirectory = @"\System\Serializer"
         };
         var updated = existingConfig with
         {
-            OutputDirectory = model.OutputDirectory,
-            LogLevel = model.LogLevel,
-            DryRun = model.DryRun
+            OutputDirectory = model.OutputDirectory
         };
         ConfigWriter.Save(updated, _configPath);
 
@@ -204,7 +178,5 @@ public class SaveSerializerSettingsCommandTests : ConfigLoaderValidatorFixtureBa
         Assert.Equal(DeploymentMode.Seed, reloaded.Predicates[1].Mode);
         Assert.Equal("SeedB", reloaded.Predicates[2].Name);
         Assert.Equal(DeploymentMode.Seed, reloaded.Predicates[2].Mode);
-        Assert.True(reloaded.DryRun);
-        Assert.Equal("debug", reloaded.LogLevel);
     }
 }

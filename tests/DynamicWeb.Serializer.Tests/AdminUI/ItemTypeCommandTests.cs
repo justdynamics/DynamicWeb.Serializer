@@ -31,8 +31,6 @@ public class ItemTypeCommandTests : IDisposable
         var config = new SerializerConfiguration
         {
             OutputDirectory = @"\System\Serializer",
-            LogLevel = "info",
-            DryRun = false,
             Predicates = new List<ProviderPredicateDefinition>
             {
                 new() { Name = "Default", Mode = DeploymentMode.Deploy, ProviderType = "Content", Path = "/", AreaId = 1 }

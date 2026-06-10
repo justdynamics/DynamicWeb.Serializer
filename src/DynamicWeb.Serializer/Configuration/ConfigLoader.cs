@@ -109,9 +109,6 @@ public static class ConfigLoader
         var config = new SerializerConfiguration
         {
             OutputDirectory = raw.OutputDirectory!,
-            LogLevel = string.IsNullOrWhiteSpace(raw.LogLevel) ? "info" : raw.LogLevel,
-            DryRun = raw.DryRun ?? false,
-            StrictMode = raw.StrictMode,
             DeployOutputSubfolder = string.IsNullOrEmpty(raw.DeployOutputSubfolder) ? "deploy" : raw.DeployOutputSubfolder!,
             SeedOutputSubfolder = string.IsNullOrEmpty(raw.SeedOutputSubfolder) ? "seed" : raw.SeedOutputSubfolder!,
             ExcludeFieldsByItemType = raw.ExcludeFieldsByItemType ?? new Dictionary<string, List<string>>(),
@@ -348,11 +345,6 @@ public static class ConfigLoader
     private sealed class RawSerializerConfiguration
     {
         public string? OutputDirectory { get; set; }
-        public string? LogLevel { get; set; }
-        public bool? DryRun { get; set; }
-
-        /// <summary>Phase 37-04 STRICT-01: nullable → entry-point default when omitted.</summary>
-        public bool? StrictMode { get; set; }
 
         // Phase 40 D-02: top-level subfolder names + flat exclusion dictionaries.
         public string? DeployOutputSubfolder { get; set; }

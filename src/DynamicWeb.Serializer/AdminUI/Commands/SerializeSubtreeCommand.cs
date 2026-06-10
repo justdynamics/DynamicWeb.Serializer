@@ -42,8 +42,6 @@ public sealed class SerializeSubtreeCommand : CommandBase
                 var tempConfig = new SerializerConfiguration
                 {
                     OutputDirectory = tempDir,
-                    LogLevel = "info",
-                    DryRun = false,
                     Predicates = new List<ProviderPredicateDefinition>
                     {
                         new ProviderPredicateDefinition

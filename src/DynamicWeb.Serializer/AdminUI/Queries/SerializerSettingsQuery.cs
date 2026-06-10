@@ -27,10 +27,6 @@ public sealed class SerializerSettingsQuery : DataQueryModelBase<SerializerSetti
         return new SerializerSettingsModel
         {
             OutputDirectory = config.OutputDirectory,
-            LogLevel = config.LogLevel,
-            DryRun = config.DryRun,
-            StrictMode = config.StrictMode,
-            ConflictStrategy = "source-wins", // hardcoded; field is read-only in v0.5.x per D-02
             ConfigFilePath = relativePath,
             PredicatesSummary = (deployCount + seedCount) == 0
                 ? "No predicates configured. Nothing will be synced."

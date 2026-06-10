@@ -34,8 +34,6 @@ public class ConfigWriterTests : ConfigLoaderValidatorFixtureBase
     private SerializerConfiguration CreateTestConfig() => new()
     {
         OutputDirectory = "/serialization",
-        LogLevel = "debug",
-        DryRun = true,
         Predicates = new List<ProviderPredicateDefinition>
         {
             new()
@@ -60,7 +58,6 @@ public class ConfigWriterTests : ConfigLoaderValidatorFixtureBase
         var loaded = ConfigLoader.Load(filePath);
 
         Assert.Equal(config.OutputDirectory, loaded.OutputDirectory);
-        Assert.Equal(config.LogLevel, loaded.LogLevel);
         Assert.Equal(config.Predicates.Count, loaded.Predicates.Count);
         Assert.Equal(config.Predicates[0].Name, loaded.Predicates[0].Name);
         Assert.Equal(config.Predicates[0].Path, loaded.Predicates[0].Path);
@@ -135,30 +132,6 @@ public class ConfigWriterTests : ConfigLoaderValidatorFixtureBase
         Assert.Equal(2, loaded.Predicates[0].Excludes.Count);
         Assert.Equal("/Test/Archive", loaded.Predicates[0].Excludes[0]);
         Assert.Equal("/Test/Temp", loaded.Predicates[0].Excludes[1]);
-    }
-
-    [Fact]
-    public void Save_WritesNewFields_JsonContainsDryRun()
-    {
-        var config = CreateTestConfig();
-        var filePath = Path.Combine(_tempDir, "newfields.json");
-
-        ConfigWriter.Save(config, filePath);
-        var json = File.ReadAllText(filePath);
-
-        Assert.Contains("\"dryRun\": true", json);
-    }
-
-    [Fact]
-    public void Save_RoundTrip_PreservesNewFields()
-    {
-        var config = CreateTestConfig();
-        var filePath = Path.Combine(_tempDir, "roundtrip_new.json");
-
-        ConfigWriter.Save(config, filePath);
-        var loaded = ConfigLoader.Load(filePath);
-
-        Assert.True(loaded.DryRun);
     }
 
     // -------------------------------------------------------------------------

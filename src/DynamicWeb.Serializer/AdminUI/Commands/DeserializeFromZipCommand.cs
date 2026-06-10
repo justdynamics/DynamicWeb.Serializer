@@ -142,7 +142,6 @@ public sealed class DeserializeFromZipCommand : CommandBase<DeserializeFromZipMo
             {
                 Operation = "ZipImport",
                 Timestamp = DateTime.UtcNow,
-                DryRun = false,
                 Predicates = result.EntryOutcomes
                     .Where(o => o.EntryId != EntryOutcome.RunLevelEntryId)  // Phase 44 / IN-06: filter run-level synthesis
                     .Select(o => new PredicateSummary

@@ -72,7 +72,7 @@ public sealed class SerializerSerializeCommand : CommandBase
         {
             var configPath = ConfigPathResolver.FindConfigFile();
             if (configPath == null)
-                return new() { Status = CommandResult.ResultType.Error, Message = "Serializer.config.json not found (also checked ContentSync.config.json)" };
+                return new() { Status = CommandResult.ResultType.Error, Message = "Serializer.config.json not found" };
 
             var config = ConfigLoader.Load(configPath);
 
@@ -120,7 +120,6 @@ public sealed class SerializerSerializeCommand : CommandBase
             {
                 Operation = "Serialize",
                 Timestamp = DateTime.UtcNow,
-                DryRun = false,
                 Predicates = result.SerializeResults.Select(r => new PredicateSummary
                 {
                     Name = r.TableName,

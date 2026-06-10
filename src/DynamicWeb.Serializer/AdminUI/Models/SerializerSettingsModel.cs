@@ -9,18 +9,6 @@ public sealed class SerializerSettingsModel : DataViewModelBase
     [Required(ErrorMessage = "Output Directory is required")]
     public string OutputDirectory { get; set; } = string.Empty;
 
-    [ConfigurableProperty("Log Level", explanation: "Logging verbosity")]
-    public string LogLevel { get; set; } = "info";
-
-    [ConfigurableProperty("Dry Run", explanation: "When enabled, sync operations log what would happen without making changes")]
-    public bool DryRun { get; set; } = false;
-
-    [ConfigurableProperty("Strict Mode", explanation: "When enabled, any WARNING emitted during deserialize (unresolvable link, missing template, unresolvable cache name, permission fallback, schema-drift drop, FK orphan) fails the run with a non-zero exit. Leave unset to use the entry-point default: ON for API/CLI (CI/CD target), OFF for admin UI (interactive).")]
-    public bool? StrictMode { get; set; }
-
-    [ConfigurableProperty("Conflict Strategy", explanation: "Read-only — Deploy uses source-wins, Seed uses field-level merge (Phase 39). This setting is ignored on save in v0.5.x; kept for backward UI compatibility only.")]
-    public string ConflictStrategy { get; set; } = "source-wins";
-
     [ConfigurableProperty("Config File", explanation: "Location of the configuration file (relative to wwwroot). Settings and predicates are stored here. You can also edit this file manually.")]
     public string ConfigFilePath { get; set; } = string.Empty;
 

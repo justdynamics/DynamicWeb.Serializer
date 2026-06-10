@@ -47,7 +47,6 @@ public sealed class LogViewerScreen : EditScreenBase<LogViewerModel>
             [
                 EditorFor(m => m.SummaryOperation),
                 EditorFor(m => m.SummaryTimestamp),
-                EditorFor(m => m.SummaryDryRun),
                 EditorFor(m => m.SummaryTotalCreated),
                 EditorFor(m => m.SummaryTotalUpdated),
                 EditorFor(m => m.SummaryTotalSkipped),
