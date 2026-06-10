@@ -613,13 +613,18 @@ if ($tgtCount -ne 2051) {
     throw "CleanDB EcomProducts expected 2051, got $tgtCount (C.1 preservation violated — deserialize dropped rows)"
 }
 
-# ----- Step 18: SHOP19 YAML should not exist ----------------------------------
-Write-Step 'Step 18: Orphan YAML absence assertion (SHOP19)'
-$orphanYaml = Join-Path $script:repoRoot 'baselines/Swift2.2/_sql/EcomShopGroupRelation/GROUP253$$SHOP19.yml'
-if (Test-Path $orphanYaml) {
-    throw "SHOP19 orphan YAML still present at $orphanYaml — cleanup script 06 did not take effect, or baselines/ is stale"
-}
-Write-Host '  SHOP19 YAML absent — OK'
+# ----- Step 18: Exclusion contract assertions ----------------------------------
+# The starter config excludes /Posts from deploy and ships it via the seed predicate.
+# Assert: deploy YAML has no Posts subtree, seed YAML has it, and the seed pass landed
+# the Posts pages on target.
+Write-Step 'Step 18: Exclusion contract (/Posts deploy-excluded, seed-shipped)'
+$deployPosts = Get-ChildItem -Path (Join-Path $SwiftHostPath 'wwwroot/Files/System/Serializer/SerializeRoot/deploy/_content') -Recurse -Directory -Filter 'Posts' -ErrorAction SilentlyContinue
+$seedPosts   = Get-ChildItem -Path (Join-Path $SwiftHostPath 'wwwroot/Files/System/Serializer/SerializeRoot/seed/_content')   -Recurse -Directory -Filter 'Posts' -ErrorAction SilentlyContinue
+if ($deployPosts) { throw "Exclusion violated: Posts subtree present in DEPLOY YAML at $($deployPosts[0].FullName)" }
+if (-not $seedPosts) { throw 'Seed YAML does not contain the Posts subtree — seed Content serialization regressed' }
+$tgtPosts = Invoke-Sqlcmd-Scalar -Server $SqlServer -Database $CleanDb -Query "SELECT COUNT(*) FROM Page WHERE PageMenuText = 'Posts'"
+if ($tgtPosts -lt 1) { throw 'Posts root page missing on target — seed deserialize did not land the excluded subtree' }
+Write-Host "  Exclusion contract OK: deploy YAML clean, seed ships Posts, target has Posts root ($tgtPosts)"
 
 # ----- Step 19: Stop both hosts ----------------------------------------------
 Write-Step 'Step 19: Stop both DW hosts'
