@@ -1,7 +1,8 @@
 -- Purge Swift-CleanDB for a fresh Deploy+Seed round-trip test (2026-04-20).
 -- Iterates all ItemType_* tables via INFORMATION_SCHEMA then wipes core Content + Ecom.
 
-USE [Swift-CleanDB];
+-- Database is selected by the caller (sqlcmd -d) - a hardcoded USE here silently
+-- redirected every purge to the legacy Swift-CleanDB regardless of the target (2026-06-11).
 SET NOCOUNT ON;
 
 BEGIN TRAN;
@@ -75,3 +76,4 @@ UNION ALL SELECT 'EcomShops',     COUNT(*) FROM [EcomShops]
 UNION ALL SELECT 'EcomCountries', COUNT(*) FROM [EcomCountries]
 UNION ALL SELECT 'EcomProducts',  COUNT(*) FROM [EcomProducts]
 UNION ALL SELECT 'UrlPath',       COUNT(*) FROM [UrlPath];
+
