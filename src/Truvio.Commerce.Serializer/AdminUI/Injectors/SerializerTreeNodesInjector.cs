@@ -33,9 +33,9 @@ public sealed class SerializerTreeNodesInjector : ScreenInjector<TreeNodesScreen
         if (!content.TryGet<TreeNodes>(out var tree) || tree is null)
             return;
 
-        var evaluator = TreeNodeDecorator.TryCreateEvaluator();
+        var evaluators = TreeNodeDecorator.TryCreateEvaluators();
         foreach (var node in tree.Nodes)
-            TreeNodeDecorator.Decorate(node, evaluator);
+            TreeNodeDecorator.Decorate(node, evaluators);
     }
 }
 
@@ -53,10 +53,10 @@ public sealed class SerializerTreeInjector : ScreenInjector<TreeScreen>
         if (!content.TryGet<Dynamicweb.CoreUI.Navigation.Tree>(out var tree) || tree is null)
             return;
 
-        var evaluator = TreeNodeDecorator.TryCreateEvaluator();
+        var evaluators = TreeNodeDecorator.TryCreateEvaluators();
         foreach (var section in tree.Sections)
             foreach (var node in section.Nodes)
-                TreeNodeDecorator.Decorate(node, evaluator);
+                TreeNodeDecorator.Decorate(node, evaluators);
     }
 }
 
@@ -69,7 +69,10 @@ internal static class TreeNodeDecorator
         => path is not null
            && string.Equals(path.First, typeof(ContentArea).FullName, StringComparison.Ordinal);
 
-    public static void Decorate(NavigationNode node, ContentCoverageEvaluator? evaluator)
+    /// <summary>Per-mode coverage evaluators for tree annotations.</summary>
+    internal sealed record CoverageEvaluators(ContentCoverageEvaluator? Deploy, ContentCoverageEvaluator? Seed);
+
+    public static void Decorate(NavigationNode node, CoverageEvaluators? evaluators)
     {
         if (int.TryParse(node.Id, out var pageId) && pageId > 0)
         {
@@ -97,19 +100,31 @@ internal static class TreeNodeDecorator
                     ]
                 });
 
-                if (evaluator is not null)
+                if (evaluators is not null)
                 {
                     // Language-layer pages are matched in their master's path space — predicate
                     // paths are authored against the master area (same rule as serialize time).
                     var checkPath = GetPredicateCheckPath(page);
-                    var result = evaluator.Evaluate(checkPath, page.AreaId);
-                    if (result.Coverage != ContentCoverage.None)
+
+                    var deploy = evaluators.Deploy?.Evaluate(checkPath, page.AreaId);
+                    if (deploy is not null && deploy.Coverage != ContentCoverage.None)
                     {
                         node.Annotations.Add(new ActionNode
                         {
-                            Name = result.Explanation,
-                            Icon = result.Coverage == ContentCoverage.Full ? Icon.Sync : Icon.SyncSlash,
+                            Name = deploy.Explanation,
+                            Icon = deploy.Coverage == ContentCoverage.Full ? Icon.Sync : Icon.SyncSlash,
                             Sort = 200
+                        });
+                    }
+
+                    var seed = evaluators.Seed?.Evaluate(checkPath, page.AreaId);
+                    if (seed is not null && seed.Coverage != ContentCoverage.None)
+                    {
+                        node.Annotations.Add(new ActionNode
+                        {
+                            Name = $"{seed.Explanation} (seed fills empty fields once; edits on this environment are preserved)",
+                            Icon = Icon.Flower,
+                            Sort = 210
                         });
                     }
                 }
@@ -118,15 +133,15 @@ internal static class TreeNodeDecorator
 
         // OpenTo deep-links and section loads can deliver pre-expanded children.
         foreach (var child in node.Nodes)
-            Decorate(child, evaluator);
+            Decorate(child, evaluators);
     }
 
     /// <summary>
-    /// Builds the coverage evaluator from the deploy-mode Content predicates, expanded for
+    /// Builds per-mode coverage evaluators from the Content predicates, expanded for
     /// language layers (so language-area pages report coverage like their masters).
-    /// Built once per tree render; null when no config / no deploy Content predicates exist.
+    /// Built once per tree render; null when no config / no Content predicates exist.
     /// </summary>
-    public static ContentCoverageEvaluator? TryCreateEvaluator()
+    internal static CoverageEvaluators? TryCreateEvaluators()
     {
         try
         {
@@ -134,17 +149,26 @@ internal static class TreeNodeDecorator
             if (configPath == null)
                 return null;
 
-            var predicates = ConfigLoader.Load(configPath).Predicates
-                .Where(p => p.Mode == DeploymentMode.Deploy
-                    && string.Equals(p.ProviderType, "Content", StringComparison.OrdinalIgnoreCase))
+            var contentPredicates = ConfigLoader.Load(configPath).Predicates
+                .Where(p => string.Equals(p.ProviderType, "Content", StringComparison.OrdinalIgnoreCase))
                 .ToList();
 
-            if (predicates.Count == 0)
+            if (contentPredicates.Count == 0)
                 return null;
 
-            var expanded = LanguageLayerExpander.Expand(
-                predicates, LanguageLayerExpander.GetLanguageAreaIdsFromDw);
-            return new ContentCoverageEvaluator(expanded);
+            ContentCoverageEvaluator? Build(DeploymentMode mode, string word)
+            {
+                var modePredicates = contentPredicates.Where(p => p.Mode == mode).ToList();
+                if (modePredicates.Count == 0)
+                    return null;
+                var expanded = LanguageLayerExpander.Expand(
+                    modePredicates, LanguageLayerExpander.GetLanguageAreaIdsFromDw);
+                return new ContentCoverageEvaluator(expanded, word);
+            }
+
+            var deploy = Build(DeploymentMode.Deploy, "deploy");
+            var seed = Build(DeploymentMode.Seed, "seed");
+            return deploy is null && seed is null ? null : new CoverageEvaluators(deploy, seed);
         }
         catch
         {

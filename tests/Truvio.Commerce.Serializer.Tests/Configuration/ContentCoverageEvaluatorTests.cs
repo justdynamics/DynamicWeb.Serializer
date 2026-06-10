@@ -168,6 +168,21 @@ public class ContentCoverageEvaluatorTests
     }
 
     [Fact]
+    public void SeedModeWord_AppearsInExplanations()
+    {
+        var evaluator = new ContentCoverageEvaluator(
+            new[] { Predicate("starter-posts", path: "/Posts") }, modeWord: "seed");
+
+        var full = evaluator.Evaluate("/Posts", 3);
+        Assert.Equal(ContentCoverage.Full, full.Coverage);
+        Assert.Contains("Managed at seed by 'starter-posts'", full.Explanation);
+
+        var ancestor = evaluator.Evaluate("/", 3);
+        Assert.Equal(ContentCoverage.Partial, ancestor.Coverage);
+        Assert.Contains("seed-managed subtree", ancestor.Explanation);
+    }
+
+    [Fact]
     public void MultiplePredicates_ExplanationNamesAllIncluding()
     {
         var evaluator = new ContentCoverageEvaluator(new[]

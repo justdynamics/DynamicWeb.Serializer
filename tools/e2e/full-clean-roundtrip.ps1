@@ -329,9 +329,11 @@ Write-Step "Pipeline start — $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
 $pipelineStartUtc = (Get-Date).ToUniversalTime()
 
 # ----- Step 1: Stop both hosts ------------------------------------------------
-Write-Step 'Step 1: Stop any running DW hosts (ports 54035 + 58217)'
-Stop-HostOnPort -Port 54035 -Label 'Swift-2.2'
-Stop-HostOnPort -Port 58217 -Label 'CleanDB'
+$swiftPort = ([Uri]$SwiftHostUrl).Port
+$cleanPort = ([Uri]$CleanDbHostUrl).Port
+Write-Step "Step 1: Stop any running DW hosts (ports $swiftPort + $cleanPort)"
+Stop-HostOnPort -Port $swiftPort -Label 'source'
+Stop-HostOnPort -Port $cleanPort -Label 'target'
 
 # ----- Step 2: Detect/install sqlpackage --------------------------------------
 Write-Step 'Step 2: Detect/install sqlpackage.exe'
@@ -595,8 +597,8 @@ Write-Host '  SHOP19 YAML absent — OK'
 
 # ----- Step 19: Stop both hosts ----------------------------------------------
 Write-Step 'Step 19: Stop both DW hosts'
-Stop-HostOnPort -Port 54035 -Label 'Swift-2.2'
-Stop-HostOnPort -Port 58217 -Label 'CleanDB'
+Stop-HostOnPort -Port $swiftPort -Label 'source'
+Stop-HostOnPort -Port $cleanPort -Label 'target'
 
 # ----- Step 20: Summary -------------------------------------------------------
 Write-Step 'PIPELINE PASSED — all gates met'

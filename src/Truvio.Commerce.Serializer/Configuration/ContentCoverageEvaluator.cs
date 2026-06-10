@@ -32,13 +32,16 @@ public sealed record ContentCoverageResult(ContentCoverage Coverage, string Expl
 public class ContentCoverageEvaluator
 {
     private readonly List<ProviderPredicateDefinition> _predicates;
+    private readonly string _modeWord;
 
-    /// <param name="deployContentPredicates">
-    /// Deploy-mode Content predicates (already expanded for language layers when applicable).
+    /// <param name="contentPredicates">
+    /// Content predicates of ONE mode (already expanded for language layers when applicable).
     /// </param>
-    public ContentCoverageEvaluator(IEnumerable<ProviderPredicateDefinition> deployContentPredicates)
+    /// <param name="modeWord">Word used in explanations: "deploy" (default) or "seed".</param>
+    public ContentCoverageEvaluator(IEnumerable<ProviderPredicateDefinition> contentPredicates, string modeWord = "deploy")
     {
-        _predicates = deployContentPredicates.ToList();
+        _predicates = contentPredicates.ToList();
+        _modeWord = modeWord;
     }
 
     public ContentCoverageResult Evaluate(string contentPath, int areaId)
@@ -64,10 +67,10 @@ public class ContentCoverageEvaluator
             var names = string.Join("', '", includedBy.Select(p => p.Name));
             if (carvedOut.Count == 0)
                 return new ContentCoverageResult(ContentCoverage.Full,
-                    $"Managed at deploy by '{names}'");
+                    $"Managed at {_modeWord} by '{names}'");
 
             return new ContentCoverageResult(ContentCoverage.Partial,
-                $"Partially managed at deploy by '{names}' — excluded below this page: {string.Join(", ", carvedOut)}");
+                $"Partially managed at {_modeWord} by '{names}' — excluded below this page: {string.Join(", ", carvedOut)}");
         }
 
         // Node itself is not covered. Is a deploy predicate targeting a subtree below it?
@@ -80,7 +83,7 @@ public class ContentCoverageEvaluator
 
         if (managedBelow.Count > 0)
             return new ContentCoverageResult(ContentCoverage.Partial,
-                $"Not managed itself — contains deploy-managed subtree(s): {string.Join(", ", managedBelow)}");
+                $"Not managed itself — contains {_modeWord}-managed subtree(s): {string.Join(", ", managedBelow)}");
 
         return ContentCoverageResult.None;
     }
