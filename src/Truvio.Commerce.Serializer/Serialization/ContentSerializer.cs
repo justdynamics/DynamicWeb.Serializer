@@ -310,7 +310,13 @@ public class ContentSerializer
             var configPath = ConfigPathResolver.FindConfigFile();
             if (configPath != null)
             {
-                contentPredicates = ConfigLoader.Load(configPath).Predicates
+                // Expand includeLanguageLayers predicates the same way the serialize pass does:
+                // a link to a language-layer page ships via the synthetic per-layer predicate,
+                // which exists only after expansion — matching the raw config would leave every
+                // layer-page link fatal.
+                contentPredicates = LanguageLayerExpander.Expand(
+                        ConfigLoader.Load(configPath).Predicates,
+                        LanguageLayerExpander.GetLanguageAreaIdsFromDw)
                     .Where(p => string.Equals(p.ProviderType, "Content", StringComparison.OrdinalIgnoreCase))
                     .ToList();
             }
@@ -326,10 +332,23 @@ public class ContentSerializer
             try
             {
                 var page = Services.Pages.GetPage(u.UnresolvablePageId);
+                if (page is null)
+                {
+                    // The sweeper dual-checks ButtonEditor SelectedValue and #anchors against
+                    // paragraph ids — an id that is no page may be a paragraph on a page that
+                    // ships via a sibling predicate (e.g. a language-layer copy anchoring its
+                    // master's paragraph). Coverage then follows the owning page.
+                    var paragraph = Services.Paragraphs.GetParagraph(u.UnresolvablePageId);
+                    if (paragraph is not null && paragraph.PageID > 0)
+                        page = Services.Pages.GetPage(paragraph.PageID);
+                }
+                // Layer pages are matched in master-path space (synthetic predicates keep the
+                // master's Path), so rebuild the check path via the master chain when present.
                 var match = page is null
                     ? null
                     : contentPredicates.FirstOrDefault(p =>
-                        new ContentPredicate(p).ShouldInclude(ContentPathBuilder.BuildContentPath(page), page.AreaId));
+                        new ContentPredicate(p).ShouldInclude(
+                            GetPredicateCheckPath(page, ContentPathBuilder.BuildContentPath(page)), page.AreaId));
                 if (match is not null)
                     deferred.Add((u, $"'{match.Name}' ({match.Mode})"));
                 else

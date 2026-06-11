@@ -72,6 +72,37 @@ public class ConfigLoaderTests : ConfigLoaderValidatorFixtureBase
     }
 
     [Fact]
+    public void Load_IncludeLanguageLayers_BindsToPredicate()
+    {
+        var json = """
+            {
+              "outputDirectory": "/serialization",
+              "predicates": [
+                {
+                  "name": "Site",
+                  "mode": "Deploy",
+                  "path": "/",
+                  "areaId": 3,
+                  "includeLanguageLayers": true
+                },
+                {
+                  "name": "Posts",
+                  "mode": "Seed",
+                  "path": "/Posts",
+                  "areaId": 3
+                }
+              ]
+            }
+            """;
+        var path = WriteConfigFile(json);
+
+        var config = ConfigLoader.Load(path);
+
+        Assert.True(config.Predicates[0].IncludeLanguageLayers);
+        Assert.False(config.Predicates[1].IncludeLanguageLayers);
+    }
+
+    [Fact]
     public void Load_NullExcludes_DefaultsToEmptyList()
     {
         var json = """

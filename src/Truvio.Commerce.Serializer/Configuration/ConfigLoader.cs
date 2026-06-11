@@ -333,7 +333,8 @@ public static class ConfigLoader
             Where = string.IsNullOrWhiteSpace(raw.Where) ? null : raw.Where,
             IncludeFields = raw.IncludeFields ?? new List<string>(),
             ResolveLinksInColumns = raw.ResolveLinksInColumns ?? new List<string>(),
-            AcknowledgedOrphanPageIds = raw.AcknowledgedOrphanPageIds ?? new List<int>()
+            AcknowledgedOrphanPageIds = raw.AcknowledgedOrphanPageIds ?? new List<int>(),
+            IncludeLanguageLayers = raw.IncludeLanguageLayers
         };
     }
 
@@ -388,5 +389,6 @@ public static class ConfigLoader
         public List<string>? IncludeFields { get; set; }
         public List<string>? ResolveLinksInColumns { get; set; }
         public List<int>? AcknowledgedOrphanPageIds { get; set; }
+        public bool IncludeLanguageLayers { get; set; }
     }
 }
