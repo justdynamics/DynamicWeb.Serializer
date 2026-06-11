@@ -57,6 +57,33 @@ becomes `git revert` followed by a redeploy.
 
 ## Quick start
 
+### From a release (no build, no source environment)
+
+Every [GitHub release](https://github.com/justdynamics/Truvio.Commerce.Serializer/releases)
+ships two assets so you can start a Swift solution **from YAML alone**:
+
+- `Truvio.Commerce.Serializer.<version>.nupkg` — the app (also in the DW10 app store
+  under *Available apps*).
+- `Truvio.Commerce.Serializer-SwiftYaml-<version>.zip` — the verified Swift 2.2 content
+  baseline: deploy YAML (site structure + framework tables) and seed YAML (starter blog
+  posts + catalog), plus the starter `Serializer.config.json`.
+
+```text
+1. Install the app on a DW10 host that has the Swift Files folder (templates/designs).
+2. Unzip:  Serializer.config.json  ->  wwwroot/Files/
+           SerializeRoot/          ->  wwwroot/Files/System/Serializer/SerializeRoot/
+3. On a blank database, run deploy then seed:
+   POST /Admin/Api/SerializerDeserialize?mode=deploy
+   POST /Admin/Api/SerializerDeserialize?mode=seed
+4. Commit the YAML to your repo and manage deploy/seed content in your git flow
+   from day one: serialize where you author, deserialize everywhere else.
+```
+
+The zip's `INSTALL.txt` has the step-by-step details (including the one schema note for
+databases that never saw a Swift import).
+
+### From source
+
 ```bash
 # 1. Build the DLL
 dotnet build src/Truvio.Commerce.Serializer/ -c Release
