@@ -1,0 +1,49 @@
+name: Publish to NuGet.org
+
+# Publishes via NuGet Trusted Publishing (OIDC) — no long-lived API key stored in the repo.
+# https://learn.microsoft.com/en-us/nuget/nuget-org/trusted-publishing
+#
+# One-time setup on nuget.org (profile -> Trusted Publishing -> Create):
+#   Repository owner: justdynamics
+#   Repository:       Truvio.Commerce.Serializer
+#   Workflow file:    publish.yml
+# and a repository secret NUGET_USER holding the nuget.org profile name that owns the policy.
+#
+# Release flow: bump <Version> in the csproj, then push a matching tag (e.g. v0.6.3-beta).
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: windows-latest
+    permissions:
+      contents: read
+      id-token: write # required for OIDC token exchange with nuget.org
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      # Unit tests only — the IntegrationTests project needs a live Dynamicweb host + SQL database.
+      - name: Test
+        run: dotnet test tests/Truvio.Commerce.Serializer.Tests --configuration Release
+
+      - name: Pack
+        run: dotnet pack src/Truvio.Commerce.Serializer/Truvio.Commerce.Serializer.csproj --configuration Release --output artifacts
+
+      # Exchanges the GitHub OIDC token for a short-lived nuget.org API key.
+      - name: NuGet login (trusted publishing)
+        id: login
+        uses: NuGet/login@v1
+        with:
+          user: ${{ secrets.NUGET_USER }}
+
+      - name: Push
+        run: dotnet nuget push artifacts\*.nupkg --api-key ${{ steps.login.outputs.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
