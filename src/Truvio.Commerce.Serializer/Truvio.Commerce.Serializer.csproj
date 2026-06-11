@@ -12,12 +12,16 @@
     <!-- NuGet package metadata -->
     <PackageId>Truvio.Commerce.Serializer</PackageId>
     <!-- Prerelease suffix renders as the BETA flag in the DW10 admin "Available apps" list -->
-    <Version>0.6.3-beta</Version>
-    <AssemblyVersion>0.6.3.0</AssemblyVersion>
+    <Version>0.6.4-beta</Version>
+    <AssemblyVersion>0.6.4.0</AssemblyVersion>
     <Title>Truvio Commerce Serializer</Title>
     <Description>Serialize and deserialize Truvio Commerce (Dynamicweb 10) database state to YAML files for version control and environment sync.</Description>
-    <Authors>Truvio Commerce Serializer Contributors</Authors>
+    <Authors>JustDynamics</Authors>
+    <Company>JustDynamics</Company>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <!-- Shown in the DW10 admin "Available apps" list: NuGetAddinProvider maps the package's
+         IconUrl (served by nuget.org from this embedded icon) onto AddinInfo.Image. -->
+    <PackageIcon>icon.png</PackageIcon>
     <PackageProjectUrl>https://github.com/justdynamics/Truvio.Commerce.Serializer</PackageProjectUrl>
     <RepositoryUrl>https://github.com/justdynamics/Truvio.Commerce.Serializer</RepositoryUrl>
     <!-- "dynamicweb-app-store" + "Addin" + "dw10" are required by the DW10 admin app-store
@@ -33,12 +37,16 @@
          apply it (with a chosen areaId) without any file having to exist on disk first. -->
     <EmbeddedResource Include="Configuration\swift-starter.json" />
     <!-- Ship the Swift starter into the host's Files/System/Serializer/ on app-store install.
-         Legacy content\ packaging is required: modern contentFiles\ are NOT copied into a DW
-         host's /Files (see doc.dynamicweb.com forum: locally-installing-nuget-package). The
-         .example suffix keeps ConfigPathResolver from ever picking it up as the live config —
-         users copy/rename it (or upload their own) to activate it. -->
+         DW10's NuGetAddinProvider extracts ONLY the package's top-level Files\ folder into the
+         live archive (archive.GetFiles("Files") -> SystemInformation.MapPath("/Files"), leading
+         "Files/" stripped) — content\ items land in the addin folder, NOT in /Files. The
+         content\ copy stays for legacy/manual installs (doc.dynamicweb.com forum:
+         locally-installing-nuget-package). The .example suffix keeps ConfigPathResolver from
+         ever picking it up as the live config — users copy/rename it (or upload their own,
+         or use the settings screen's Get-started action) to activate it. -->
     <Content Update="Configuration\swift-starter.json" Pack="true"
-             PackagePath="content\Files\System\Serializer\swift-starter.example.json" />
+             PackagePath="Files\System\Serializer\swift-starter.example.json;content\Files\System\Serializer\swift-starter.example.json" />
+    <None Include="icon.png" Pack="true" PackagePath="\" />
   </ItemGroup>
 
   <ItemGroup>

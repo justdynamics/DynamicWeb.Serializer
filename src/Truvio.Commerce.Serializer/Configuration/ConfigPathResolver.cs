@@ -18,13 +18,49 @@ public static class ConfigPathResolver
 {
     public const string FileName = "Serializer.config.json";
 
-    private static readonly string[] CandidatePaths =
+    private static readonly string[] HeuristicCandidatePaths =
     {
         Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..", "wwwroot", "Files", "System", "Serializer", FileName),
         Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "Files", "System", "Serializer", FileName),
         Path.Combine(AppDomain.CurrentDomain.BaseDirectory, FileName),
         Path.Combine(Directory.GetCurrentDirectory(), FileName)
     };
+
+    /// <summary>
+    /// Physical root of the live DW Files archive via <c>SystemInformation.MapPath("/Files")</c>.
+    /// This is the authoritative answer on any real host — cloud environments map /Files to a
+    /// storage path that has no relationship to BaseDirectory or the working directory, and the
+    /// mapped folder is not necessarily NAMED "Files". Null when the DW runtime isn't available
+    /// (unit tests, bare processes) or the mapped directory doesn't exist.
+    /// </summary>
+    internal static string? TryGetDwFilesRoot()
+    {
+        try
+        {
+            var mapped = Dynamicweb.Core.SystemInformation.MapPath("/Files");
+            return !string.IsNullOrWhiteSpace(mapped) && Directory.Exists(mapped)
+                ? Path.GetFullPath(mapped)
+                : null;
+        }
+        catch
+        {
+            // DependencyResolver not initialized — no DW runtime in this process.
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// All candidate config locations, most authoritative first: the DW-mapped Files archive
+    /// (live hosts, incl. cloud), then the directory-layout heuristics (tests, bare processes).
+    /// </summary>
+    private static IEnumerable<string> GetCandidatePaths()
+    {
+        if (TryGetDwFilesRoot() is string dwRoot)
+            yield return Path.Combine(dwRoot, "System", "Serializer", FileName);
+
+        foreach (var path in HeuristicCandidatePaths)
+            yield return path;
+    }
 
     /// <summary>
     /// Test-only override, per-async-flow. When non-null, <see cref="FindConfigFile"/> returns this
@@ -40,24 +76,28 @@ public static class ConfigPathResolver
     }
 
     /// <summary>
-    /// Where a NEW config is created. Prefers the candidate whose Files root actually
-    /// exists on disk: on a live host the base-directory candidate points into bin\
-    /// (AppDomain base = bin\Debug\net10.0\), while the working-directory candidate is the
-    /// real wwwroot — creating the config in bin\ would shadow-resolve forever after.
-    /// Falls back to the first candidate when no Files root exists (tests, bare processes).
+    /// Where a NEW config is created. The DW-mapped Files archive wins when available;
+    /// otherwise prefers the heuristic candidate whose Files root actually exists on disk:
+    /// the base-directory candidate points into bin\ (AppDomain base = bin\Debug\net10.0\),
+    /// while the working-directory candidate is the real wwwroot — creating the config in
+    /// bin\ would shadow-resolve forever after. Falls back to the first candidate when no
+    /// Files root exists (tests, bare processes).
     /// </summary>
     public static string DefaultPath
     {
         get
         {
-            foreach (var candidate in CandidatePaths)
+            if (TryGetDwFilesRoot() is string dwRoot)
+                return Path.GetFullPath(Path.Combine(dwRoot, "System", "Serializer", FileName));
+
+            foreach (var candidate in HeuristicCandidatePaths)
             {
                 var filesRoot = GetFilesRoot(candidate);
                 if (string.Equals(Path.GetFileName(filesRoot), "Files", StringComparison.OrdinalIgnoreCase)
                     && Directory.Exists(filesRoot))
                     return Path.GetFullPath(candidate);
             }
-            return Path.GetFullPath(CandidatePaths[0]);
+            return Path.GetFullPath(HeuristicCandidatePaths[0]);
         }
     }
 
@@ -67,7 +107,7 @@ public static class ConfigPathResolver
         if (overridePath != null)
             return File.Exists(overridePath) ? Path.GetFullPath(overridePath) : null;
 
-        foreach (var path in CandidatePaths)
+        foreach (var path in GetCandidatePaths())
         {
             if (File.Exists(path))
                 return Path.GetFullPath(path);
@@ -77,16 +117,23 @@ public static class ConfigPathResolver
     }
 
     /// <summary>
-    /// Physical Files root for a resolved config path: the nearest ancestor directory named
-    /// <c>Files</c>. With the config inside <c>Files/System/Serializer/</c> the file's own
-    /// directory is no longer the Files root, so every call site that derives system paths
-    /// from the config location goes through this instead of <c>Path.GetDirectoryName</c>.
-    /// Falls back to the config's own directory when no <c>Files</c> ancestor exists
-    /// (test overrides in temp dirs, bare base-directory fallback candidates).
+    /// Physical Files root for a resolved config path. The DW-mapped archive root wins when
+    /// the config lives under it (cloud hosts map /Files to a folder that is not necessarily
+    /// named "Files"); otherwise the nearest ancestor directory named <c>Files</c>. With the
+    /// config inside <c>Files/System/Serializer/</c> the file's own directory is no longer
+    /// the Files root, so every call site that derives system paths from the config location
+    /// goes through this instead of <c>Path.GetDirectoryName</c>. Falls back to the config's
+    /// own directory when neither applies (test overrides in temp dirs, bare base-directory
+    /// fallback candidates).
     /// </summary>
     public static string GetFilesRoot(string configPath)
     {
-        var configDir = new DirectoryInfo(Path.GetDirectoryName(Path.GetFullPath(configPath))!);
+        var fullConfigPath = Path.GetFullPath(configPath);
+        if (TryGetDwFilesRoot() is string dwRoot
+            && fullConfigPath.StartsWith(dwRoot + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
+            return dwRoot;
+
+        var configDir = new DirectoryInfo(Path.GetDirectoryName(fullConfigPath)!);
         for (var dir = configDir; dir is not null; dir = dir.Parent)
         {
             if (string.Equals(dir.Name, "Files", StringComparison.OrdinalIgnoreCase))

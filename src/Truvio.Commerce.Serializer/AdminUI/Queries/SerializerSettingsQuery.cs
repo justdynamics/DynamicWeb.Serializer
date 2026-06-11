@@ -15,7 +15,10 @@ public sealed class SerializerSettingsQuery : DataQueryModelBase<SerializerSetti
     {
         var configPath = ConfigPathResolver.FindConfigFile();
         if (configPath == null)
+        {
+            EnsureSerializerFolderWithStarterExample();
             return new SerializerSettingsModel { NeedsSetup = true };
+        }
 
         var config = ConfigLoader.Load(configPath);
 
@@ -47,6 +50,31 @@ public sealed class SerializerSettingsQuery : DataQueryModelBase<SerializerSetti
             CoverageSummary = BuildCoverageSummary(config),
             NeedsSetup = config.Predicates.Count == 0
         };
+    }
+
+    /// <summary>
+    /// First-open self-initialization on an environment without a configuration: create
+    /// Files/System/Serializer/ and drop the embedded Swift starter as
+    /// swift-starter.example.json so the folder is visible in the file manager with a
+    /// ready-to-copy example. The .example suffix keeps ConfigPathResolver from picking it
+    /// up as the live config. Best-effort — a read-only Files area never breaks the screen.
+    /// The nupkg also ships this file via its Files/ folder for app-store installs; this
+    /// covers installs where that extraction doesn't happen (e.g. assembly-only deploys).
+    /// </summary>
+    private static void EnsureSerializerFolderWithStarterExample()
+    {
+        try
+        {
+            var dir = Path.GetDirectoryName(ConfigPathResolver.DefaultPath)!;
+            Directory.CreateDirectory(dir);
+            var examplePath = Path.Combine(dir, "swift-starter.example.json");
+            if (!File.Exists(examplePath))
+                File.WriteAllText(examplePath, Commands.ApplySwiftStarterCommand.ReadEmbeddedStarter());
+        }
+        catch
+        {
+            // Best-effort; the Get-started actions work without the example on disk.
+        }
     }
 
     /// <summary>
