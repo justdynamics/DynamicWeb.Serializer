@@ -1,7 +1,0 @@
-[13:31:46] Run directory: C:\VibeCode\Truvio.Commerce.Serializer\src\Truvio.Commerce.Serializer\Configuration\tools\e2e\runs\20260611-133146
-[13:31:46] Pipeline start — 2026-06-11 13:31:46
-[13:31:46] Step 1: Stop any running DW hosts (ports 56100 + 56200)
-[13:31:47] Step 2: Detect/install sqlpackage.exe
-[13:31:47] Step 3: Restore Swift-2.2 from bacpac
-[13:31:47] Step 4: Defer Administrator password check until host is up (see Step 7 readiness)
-[13:31:47] Step 5: Apply cleanup scripts 01..09 against Swift-2.2
