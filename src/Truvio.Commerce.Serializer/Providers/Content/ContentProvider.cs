@@ -73,19 +73,20 @@ public class ContentProvider : ISerializationProvider
 
             var config = BuildSerializerConfiguration(predicate, contentDir,
                 excludeFieldsByItemType, excludeXmlElementsByType);
-            var serializer = new ContentSerializer(config, log: log);
+            var store = new Infrastructure.FileSystemStore();
+            var serializer = new ContentSerializer(config, store, log: log);
             serializer.Serialize();
 
-            // Track written files for the per-mode manifest (Phase 37-01 Task 2).
-            // ContentSerializer writes its tree exclusively under contentDir/_content — enumerating
-            // *.yml after the run captures everything emitted by the current predicate run. The
-            // manifest is per-mode so emissions from parallel predicates into the same mode folder
-            // all aggregate up into the OrchestratorResult pool.
-            var writtenFiles = Directory.Exists(contentDir)
-                ? Directory.GetFiles(contentDir, "*.yml", SearchOption.AllDirectories)
-                    .Select(Path.GetFullPath)
-                    .ToList()
-                : new List<string>();
+            // Track THIS predicate run's written files for the per-mode manifest. The store
+            // records exactly what it wrote — enumerating the shared _content directory
+            // instead made every later predicate's manifest entry absorb all earlier
+            // predicates' files (per-entry deserialize pruning then re-processed siblings).
+            // templates.manifest.yml is run-level (rewritten by every Content pass) and is
+            // included so the manifest cleaner never treats it as stale.
+            var writtenFiles = new List<string>(store.WrittenFiles);
+            var templatesManifest = Path.Combine(contentDir, Infrastructure.TemplateAssetManifest.ManifestFileName);
+            if (File.Exists(templatesManifest))
+                writtenFiles.Add(Path.GetFullPath(templatesManifest));
 
             return new SerializeResult
             {

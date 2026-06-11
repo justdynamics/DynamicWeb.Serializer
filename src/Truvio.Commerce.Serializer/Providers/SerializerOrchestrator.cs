@@ -420,6 +420,13 @@ public class SerializerOrchestrator
             }
         }
 
+        // v2 split: area ITEM fields are deploy-owned but may reference pages that only
+        // arrive in the SEED pass (chrome bindings, legal-page links) — the deploy pass
+        // leaves those as source ids. Now that both modes' pages are on target, finalize
+        // them by re-writing from the deploy YAML and resolving with the complete map.
+        if (!isDryRun && mode == DeploymentMode.Seed && providerFilter is null)
+            FinalizeDeployAreaLinks(modeRoot, wrappedLog);
+
         // Phase 37-04 STRICT-01: end-of-run gate. CONTEXT line 99-100 — strict-mode
         // CumulativeStrictModeException is routed into both the run-level errors list AND
         // a synthetic RunLevelError EntryOutcome so HasErrors aggregates from EntryOutcomes.
@@ -439,6 +446,77 @@ public class SerializerOrchestrator
             EntryOutcomes = entryOutcomes,
             Errors = errors
         };
+    }
+
+    /// <summary>
+    /// Locates the sibling DEPLOY mode root next to the seed mode root and finalizes the
+    /// area item links of every whole-area deploy Content entry (see
+    /// <see cref="Serialization.ContentDeserializer.FinalizeAreaItemLinks"/>). Best-effort:
+    /// absent sibling roots / manifests are skipped silently (single-mode setups).
+    /// </summary>
+    private void FinalizeDeployAreaLinks(string seedModeRoot, Action<string> log)
+    {
+        try
+        {
+            var serializeRoot = Path.GetDirectoryName(
+                Path.GetFullPath(seedModeRoot).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
+            if (serializeRoot is null || !Directory.Exists(serializeRoot))
+                return;
+
+            foreach (var siblingRoot in Directory.GetDirectories(serializeRoot))
+            {
+                if (string.Equals(Path.GetFullPath(siblingRoot), Path.GetFullPath(seedModeRoot), StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                var manifest = _manifestWriter.Read(siblingRoot, Path.GetFileName(siblingRoot));
+                if (manifest is null)
+                    continue;
+
+                var contentDir = Path.Combine(siblingRoot, "_content");
+                if (!Directory.Exists(contentDir))
+                    continue;
+
+                foreach (var entry in manifest.Entries.OfType<ContentEntry>())
+                {
+                    var deserializer = new Serialization.ContentDeserializer(
+                        entry, contentDir, log: log,
+                        excludeFieldsByItemType: manifest.ExcludeFieldsByItemType.Count > 0
+                            ? manifest.ExcludeFieldsByItemType
+                            : null);
+                    deserializer.FinalizeAreaItemLinks();
+                }
+            }
+
+            // Deferred PAGE/paragraph link occurrences recorded by any pass (either mode
+            // root) are finalized now that every page is on target. The cross-mode map is
+            // guid-anchored: every YAML page of every mode root, resolved to its target id.
+            var store = new Infrastructure.FileSystemStore();
+            var allYamlPages = new List<Models.SerializedPage>();
+            foreach (var modeRoot in Directory.GetDirectories(serializeRoot))
+            {
+                var contentDir = Path.Combine(modeRoot, "_content");
+                if (!Directory.Exists(contentDir)) continue;
+                foreach (var areaDir in Directory.GetDirectories(contentDir))
+                {
+                    if (!File.Exists(Path.Combine(areaDir, "area.yml"))) continue;
+                    try { allYamlPages.AddRange(store.ReadTree(contentDir, Path.GetFileName(areaDir)).Pages); }
+                    catch { /* best-effort */ }
+                }
+            }
+            var guidCache = new Dictionary<Guid, int>();
+            foreach (var dwArea in Dynamicweb.Content.Services.Areas.GetAreas())
+                foreach (var page in Dynamicweb.Content.Services.Pages.GetPagesByAreaID(dwArea.ID))
+                    if (page.UniqueId != Guid.Empty)
+                        guidCache.TryAdd(page.UniqueId, page.ID);
+            var crossModeMap = InternalLinkResolver.BuildSourceToTargetMap(allYamlPages, guidCache);
+
+            foreach (var modeRoot in Directory.GetDirectories(serializeRoot))
+                Serialization.DeferredLinkLedger.Finalize(modeRoot, crossModeMap, log);
+        }
+        catch (Exception ex)
+        {
+            log($"WARNING: deploy area link finalization failed: {ex.Message}");
+        }
     }
 
     /// <summary>

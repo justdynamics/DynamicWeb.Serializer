@@ -141,4 +141,29 @@ public class ContentPredicateTests
         Assert.False(set.ShouldInclude("/Customer Center/Archive", 1));
         Assert.True(set.ShouldInclude("/Customer Center/Products", 1));
     }
+
+    // -------------------------------------------------------------------------
+    // Deep-rooted predicates: ancestor pass-through (ContentSerializer)
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public void IsAncestorOfPredicateRoot_AncestorChain_True()
+    {
+        var deep = new Truvio.Commerce.Serializer.Models.ProviderPredicateDefinition
+        {
+            Name = "help", ProviderType = "Content", AreaId = 3,
+            Path = "/Navigation/Footer Navigation/Help and info"
+        };
+
+        Assert.True(Truvio.Commerce.Serializer.Serialization.ContentSerializer.IsAncestorOfPredicateRoot("/Navigation", deep));
+        Assert.True(Truvio.Commerce.Serializer.Serialization.ContentSerializer.IsAncestorOfPredicateRoot("/Navigation/Footer Navigation", deep));
+        // The root itself and pages inside it are INCLUDED, not ancestors.
+        Assert.False(Truvio.Commerce.Serializer.Serialization.ContentSerializer.IsAncestorOfPredicateRoot("/Navigation/Footer Navigation/Help and info", deep));
+        Assert.False(Truvio.Commerce.Serializer.Serialization.ContentSerializer.IsAncestorOfPredicateRoot("/Navigation/Footer Navigation/Help and info/Delivery", deep));
+        // Unrelated siblings are not ancestors.
+        Assert.False(Truvio.Commerce.Serializer.Serialization.ContentSerializer.IsAncestorOfPredicateRoot("/Shop", deep));
+        // Root-path predicates never have ancestors.
+        var root = deep with { Path = "/" };
+        Assert.False(Truvio.Commerce.Serializer.Serialization.ContentSerializer.IsAncestorOfPredicateRoot("/Navigation", root));
+    }
 }

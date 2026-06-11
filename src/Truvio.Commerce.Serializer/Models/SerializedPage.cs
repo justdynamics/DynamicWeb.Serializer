@@ -20,6 +20,24 @@ public record SerializedPage
     /// silently renamed on the first post-write save unless this flag is preserved.
     /// </summary>
     public bool IsTemplate { get; init; }
+    /// <summary>
+    /// Ancestor pass-through for deep-rooted predicates (path more than one level below the
+    /// area root, e.g. "/Navigation/Footer Navigation/Help and info"): the page is NOT part
+    /// of the predicate's content — it is emitted scalars-only (no grid rows, paragraphs or
+    /// permissions) so the YAML directory nesting can carry the subtree's parentage. On
+    /// target, a stub that already exists is never link-resolved (its fields were written
+    /// and resolved by the owning predicate's pass).
+    /// </summary>
+    public bool IsStructuralStub { get; init; }
+    /// <summary>
+    /// Read-time only (never persisted): the page.yml path relative to the mode root in
+    /// manifest-file format ("_content/&lt;Area&gt;/.../page.yml"). Set by FileSystemStore so
+    /// the deserializer can prune the merged on-disk area tree down to ONE manifest entry's
+    /// files — multiple predicates of the same mode share the area directory, and without
+    /// pruning every entry re-deserializes (and re-link-resolves) every sibling's content.
+    /// </summary>
+    [YamlDotNet.Serialization.YamlIgnore]
+    public string? SourceFile { get; init; }
     public string? TreeSection { get; init; }
     public string? NavigationTag { get; init; }
     public string? ShortCut { get; init; }

@@ -90,10 +90,23 @@ public class InternalLinkResolver
 
         // Handle raw numeric page IDs (e.g., LinkEditor stores "121" instead of "Default.aspx?ID=121")
         // Only match if the ENTIRE string is a pure number that exists in our source-to-target map
-        if (int.TryParse(fieldValue.Trim(), out var rawPageId) && _sourceToTargetPageIds.TryGetValue(rawPageId, out var rawTargetId))
+        if (int.TryParse(fieldValue.Trim(), out var rawPageId))
         {
-            _resolvedCount++;
-            return rawTargetId.ToString();
+            if (_sourceToTargetPageIds.TryGetValue(rawPageId, out var rawTargetId))
+            {
+                _resolvedCount++;
+                return rawTargetId.ToString();
+            }
+            // Raw numeric pointing at a sibling-mode page that is not on target yet: defer
+            // with bookkeeping (these were previously left behind SILENTLY — e.g. the area's
+            // HeaderDesktop binding when the chrome ships via seed).
+            if (_deferredSourcePageIds?.Contains(rawPageId) == true)
+            {
+                _log?.Invoke($"  Link deferred: page ID {rawPageId} (raw numeric) ships via another pass in this run");
+                _deferredCount++;
+                RecordDeferred(rawPageId);
+                return fieldValue;
+            }
         }
 
         // Also resolve "SelectedValue": "NNN" in ButtonEditor JSON
@@ -135,8 +148,9 @@ public class InternalLinkResolver
             }
             else if (_deferredSourcePageIds?.Contains(sourcePageId) == true)
             {
-                _log?.Invoke($"  Link deferred: page ID {sourcePageId} ships via another mode in this run — rewritten during that mode's pass");
+                _log?.Invoke($"  Link deferred: page ID {sourcePageId} ships via another pass in this run — finalized at the end of the seed run");
                 _deferredCount++;
+                RecordDeferred(sourcePageId);
                 return match.Value;
             }
             else if (_acknowledgedSourcePageIds?.Contains(sourcePageId) == true)
@@ -178,6 +192,23 @@ public class InternalLinkResolver
 
     /// <summary>Links left unchanged because their target ships via a sibling mode in the same run.</summary>
     public int DeferredCount => _deferredCount;
+
+    /// <summary>
+    /// Field locator for deferral bookkeeping. When set, every deferred link is recorded in
+    /// <see cref="DeferredRecords"/> as (locator, sourceId) so an end-of-run pass can rewrite
+    /// EXACTLY those occurrences once the deferred pages exist on target — without rescanning
+    /// (and misinterpreting) fields that already hold rewritten target ids.
+    /// </summary>
+    public string? CurrentLocator { get; set; }
+
+    /// <summary>Deferred link occurrences recorded while <see cref="CurrentLocator"/> was set.</summary>
+    public List<DeferredLinkRecord> DeferredRecords { get; } = new();
+
+    private void RecordDeferred(int sourcePageId)
+    {
+        if (CurrentLocator is not null)
+            DeferredRecords.Add(new DeferredLinkRecord(CurrentLocator, sourcePageId));
+    }
 
     /// <summary>
     /// Builds a source-to-target paragraph ID mapping by recursively walking

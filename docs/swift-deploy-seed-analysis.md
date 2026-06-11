@@ -1,7 +1,9 @@
 # Swift content: deploy/seed analysis
 
-Status: **proposal** (2026-06-11). The shipped `swift-starter.json` uses a coarse split —
-deploy = the whole site except `/Posts`, seed = `/Posts` + catalog. This document analyses
+Status: **implemented** (2026-06-11) — `swift-starter.json` ships the v2 split below, the
+E2E pipeline asserts the full seed-subtree contract, and the round-trip is verified.
+Originally written against the coarse 0.6.1 split (deploy = everything but `/Posts`).
+This document analyses
 every content item in the Swift 2.2 baseline and assigns each an underpinned deploy/seed
 decision. The headline change: **the coarse split puts the Home page under deploy, so a
 re-deploy overwrites the customer's homepage edits.** That is wrong for how Swift projects
@@ -99,8 +101,8 @@ Page counts and paragraph counts (¶) from the verified Swift 2.2 baseline (Area
 | Subtree | Decision | Rationale |
 |---|---|---|
 | **System emails** (Order confirmation 30¶, Welcome, Back in stock, Form receipts) | **Deploy** | Transactional templates wired into checkout/user-management/stock-notification settings. Environment-specific bits (sender, recipient) are already carved out at field level (`excludeXmlElementsByType`). Copy edits by customers exist but transactional correctness and propagation win. |
-| **Newsletter Emails** (Swift Newsletters Light/Dark example campaigns, Sale 22¶, Announcement 31¶) | **Seed** | Example campaigns the customer duplicates and rewrites — classic starter material. |
-| └ **Unsubscribe confirmation page** | **Deploy** | Wired into the newsletter unsubscribe flow; excluded from the seed subtree. |
+| **Newsletter Emails** root + **Unsubscribe confirmation page** | **Deploy** | The folder scaffold and the unsubscribe page are wired into the newsletter flow. |
+| └ **Swift Newsletters - Light / - Dark** (example campaigns, Sale 22¶, Announcement 31¶) | **Seed** | Example campaigns the customer duplicates and rewrites — classic starter material. Carving at the folder level (not the root) keeps the unsubscribe page in deploy; an earlier draft excluded the whole root and would have shipped it nowhere. |
 
 ### Presets section
 
@@ -124,7 +126,8 @@ tables deploy, catalog seeds).
     "/Navigation/Secondary Navigation/Find dealers",
     "/Navigation/Footer Navigation/About the shop",
     "/Navigation/Footer Navigation/Help and info",
-    "/Newsletter Emails"
+    "/Newsletter Emails/Swift Newsletters - Light",
+    "/Newsletter Emails/Swift Newsletters - Dark"
   ] }
 
 // Seed — Content (one predicate per customer-owned subtree)
@@ -136,8 +139,8 @@ tables deploy, catalog seeds).
 { "name": "Find dealers",        "path": "/Navigation/Secondary Navigation/Find dealers" }
 { "name": "Footer: about the shop", "path": "/Navigation/Footer Navigation/About the shop" }
 { "name": "Footer: help and info",  "path": "/Navigation/Footer Navigation/Help and info" }
-{ "name": "Newsletter examples", "path": "/Newsletter Emails",
-  "excludes": ["/Newsletter Emails/Unsubscribe confirmation page"] }
+{ "name": "Newsletter examples (light)", "path": "/Newsletter Emails/Swift Newsletters - Light" }
+{ "name": "Newsletter examples (dark)",  "path": "/Newsletter Emails/Swift Newsletters - Dark" }
 // (all seed Content predicates: mode=Seed, areaId=3, includeLanguageLayers=true,
 //  same acknowledgedOrphanPageIds list as today)
 ```

@@ -620,17 +620,44 @@ if ($tgtCount -ne 2051) {
 }
 
 # ----- Step 18: Exclusion contract assertions ----------------------------------
-# The starter config excludes /Posts from deploy and ships it via the seed predicate.
-# Assert: deploy YAML has no Posts subtree, seed YAML has it, and the seed pass landed
-# the Posts pages on target.
-Write-Step 'Step 18: Exclusion contract (/Posts deploy-excluded, seed-shipped)'
-$deployPosts = Get-ChildItem -Path (Join-Path $SwiftHostPath 'wwwroot/Files/System/Serializer/SerializeRoot/deploy/_content') -Recurse -Directory -Filter 'Posts' -ErrorAction SilentlyContinue
-$seedPosts   = Get-ChildItem -Path (Join-Path $SwiftHostPath 'wwwroot/Files/System/Serializer/SerializeRoot/seed/_content')   -Recurse -Directory -Filter 'Posts' -ErrorAction SilentlyContinue
-if ($deployPosts) { throw "Exclusion violated: Posts subtree present in DEPLOY YAML at $($deployPosts[0].FullName)" }
-if (-not $seedPosts) { throw 'Seed YAML does not contain the Posts subtree — seed Content serialization regressed' }
-$tgtPosts = Invoke-Sqlcmd-Scalar -Server $SqlServer -Database $CleanDb -Query "SELECT COUNT(*) FROM Page WHERE PageMenuText = 'Posts'"
-if ($tgtPosts -lt 1) { throw 'Posts root page missing on target — seed deserialize did not land the excluded subtree' }
-Write-Host "  Exclusion contract OK: deploy YAML clean, seed ships Posts, target has Posts root ($tgtPosts)"
+# v2 split: every customer-owned subtree is carved out of the deploy predicate and ships
+# via its own seed predicate. Assert per subtree (relative dirs under the MASTER area dir
+# 'Swift 2' — layer dirs use translated menu texts and are covered by Step 19's whole-area
+# comparison): absent from deploy YAML, present in seed YAML. Then assert the seed pass
+# landed the roots on target, and the unsubscribe page (deploy-owned inside an otherwise
+# seeded folder) is present in DEPLOY yaml — the carve-at-folder-level guard.
+Write-Step 'Step 18: Exclusion contract (v2 seed subtrees deploy-excluded, seed-shipped)'
+$masterDeploy = Join-Path $SwiftHostPath 'wwwroot/Files/System/Serializer/SerializeRoot/deploy/_content/Swift 2'
+$masterSeed   = Join-Path $SwiftHostPath 'wwwroot/Files/System/Serializer/SerializeRoot/seed/_content/Swift 2'
+# Relative directory per seed subtree ('/' in menu texts is sanitized to '_' on disk)
+$seedSubtrees = @(
+    'Home',
+    'Home Machines',
+    'About',
+    'Posts',
+    'Header _ Footer',
+    'Navigation/Secondary Navigation/Find dealers',
+    'Navigation/Footer Navigation/About the shop',
+    'Navigation/Footer Navigation/Help and info',
+    'Newsletter Emails/Swift Newsletters - Light',
+    'Newsletter Emails/Swift Newsletters - Dark'
+)
+foreach ($subtree in $seedSubtrees) {
+    if (Test-Path (Join-Path $masterDeploy $subtree)) {
+        throw "Exclusion violated: seed subtree '$subtree' present in DEPLOY YAML"
+    }
+    if (-not (Test-Path (Join-Path $masterSeed $subtree))) {
+        throw "Seed YAML missing subtree '$subtree' — seed Content serialization incomplete"
+    }
+}
+if (-not (Test-Path (Join-Path $masterDeploy 'Newsletter Emails/Unsubscribe confirmation page'))) {
+    throw 'Unsubscribe confirmation page missing from DEPLOY YAML — the folder-level newsletter carve-out regressed (page would ship nowhere)'
+}
+foreach ($menu in @('Home', 'About', 'Posts', 'Find dealers', 'Desktop Header')) {
+    $n = Invoke-Sqlcmd-Scalar -Server $SqlServer -Database $CleanDb -Query "SELECT COUNT(*) FROM Page p JOIN Area a ON a.AreaID = p.PageAreaID WHERE a.AreaMasterAreaId = 0 AND p.PageMenuText = '$menu'"
+    if ($n -lt 1) { throw "Seed-shipped page '$menu' missing on target master area" }
+}
+Write-Host "  Exclusion contract OK: $($seedSubtrees.Count) seed subtrees deploy-excluded + seed-shipped + landed; unsubscribe page stays deploy"
 
 # ----- Step 19: Language-layer round-trip contract -----------------------------
 # Auto-detected: every area on the source with AreaMasterAreaId > 0 is a language
@@ -649,9 +676,10 @@ if ($layerIds.Count -eq 0) {
     $deployManifest = Get-Content $deployManifestPath -Raw | ConvertFrom-Json
     foreach ($layerId in $layerIds) {
         $masterId = Invoke-Sqlcmd-Scalar -Server $SqlServer -Database $SwiftDb -Query "SELECT AreaMasterAreaId FROM Area WHERE AreaID = $layerId"
-        $entry = $deployManifest.entries | Where-Object { $_.entryId -eq "content/area-$layerId" }
+        # v2: one entry per Content predicate (entryId carries the path suffix) — match by areaId.
+        $entry = $deployManifest.entries | Where-Object { $_.providerType -eq 'Content' -and $_.areaId -eq $layerId } | Select-Object -First 1
         if (-not $entry) {
-            throw "Layer area ${layerId}: no content/area-$layerId entry in deploy manifest — includeLanguageLayers expansion did not serialize the layer"
+            throw "Layer area ${layerId}: no Content entry for the layer in deploy manifest — includeLanguageLayers expansion did not serialize the layer"
         }
         $tgtMaster = Invoke-Sqlcmd-Scalar -Server $SqlServer -Database $CleanDb -Query "SELECT ISNULL((SELECT AreaMasterAreaId FROM Area WHERE AreaID = $layerId), -1)"
         if ($tgtMaster -ne $masterId) {

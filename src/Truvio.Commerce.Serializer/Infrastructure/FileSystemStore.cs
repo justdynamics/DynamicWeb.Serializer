@@ -154,15 +154,24 @@ public class FileSystemStore : IContentStore
             if (!File.Exists(pageYmlPath))
                 continue;
 
-            pages.Add(ReadPage(subdir));
+            pages.Add(ReadPage(subdir, rootDirectory));
         }
 
         return area with { Pages = pages };
     }
 
-    private SerializedPage ReadPage(string pageDirectory)
+    private SerializedPage ReadPage(string pageDirectory, string? contentRoot = null)
     {
         var page = ReadYamlFile<SerializedPage>(Path.Combine(pageDirectory, "page.yml"));
+
+        // Tag with the manifest-format file key so the deserializer can prune the merged
+        // area tree to one entry's files. contentRoot is the _content directory; manifest
+        // keys are mode-root-relative with forward slashes ("_content/<Area>/.../page.yml").
+        if (contentRoot is not null)
+        {
+            var rel = Path.GetRelativePath(contentRoot, pageDirectory).Replace('\\', '/');
+            page = page with { SourceFile = $"_content/{rel}/page.yml" };
+        }
 
         // Find grid row subdirectories (those containing grid-row.yml)
         var gridRows = new List<SerializedGridRow>();
@@ -205,7 +214,7 @@ public class FileSystemStore : IContentStore
             else if (File.Exists(Path.Combine(pageSubdir, "page.yml")))
             {
                 // Child page subfolder — recurse
-                childPages.Add(ReadPage(pageSubdir));
+                childPages.Add(ReadPage(pageSubdir, contentRoot));
             }
         }
 
@@ -290,6 +299,14 @@ public class FileSystemStore : IContentStore
     private static Dictionary<string, object> SortFields(Dictionary<string, object> fields)
         => new(fields.OrderBy(kv => kv.Key, StringComparer.Ordinal));
 
+    /// <summary>
+    /// Absolute paths of every YAML file this store instance has written. Manifest entries
+    /// must carry the files of THEIR OWN serialize pass — enumerating the shared mode
+    /// directory instead made every later predicate's entry absorb all earlier predicates'
+    /// files, which broke per-entry tree pruning at deserialize.
+    /// </summary>
+    public List<string> WrittenFiles { get; } = new();
+
     private void WriteYamlFile(string path, object value, bool omitEmptyCollections = false)
     {
         // Check full file path length
@@ -301,6 +318,7 @@ public class FileSystemStore : IContentStore
         var serializer = omitEmptyCollections ? _fileSerializer : _serializer;
         var yaml = serializer.Serialize(value);
         File.WriteAllText(path, yaml, System.Text.Encoding.UTF8);
+        WrittenFiles.Add(Path.GetFullPath(path));
     }
 
     private T ReadYamlFile<T>(string path)

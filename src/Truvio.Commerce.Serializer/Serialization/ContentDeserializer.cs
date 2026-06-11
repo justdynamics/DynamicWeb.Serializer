@@ -176,6 +176,25 @@ public class ContentDeserializer
             : Services.Areas.GetArea(_entry.AreaId)?.Name;
         var area = _store.ReadTree(_contentRoot, areaName);
 
+        // Multiple predicates of the same mode share one on-disk area directory; the read
+        // tree is the MERGED union of all their files. Prune to THIS entry's manifest files
+        // — without it every entry re-deserializes (and re-link-resolves) every sibling
+        // entry's content: thousands of phantom merge-updates, and already-rewritten target
+        // ids reinterpreted as source ids in the link pass.
+        if (_entry.Files.Count > 0)
+        {
+            var entryFiles = new HashSet<string>(_entry.Files, StringComparer.OrdinalIgnoreCase);
+            area = area with { Pages = PruneToEntryFiles(area.Pages, entryFiles) };
+        }
+
+        // Snapshot pages that exist BEFORE this entry writes. Structural-stub ancestors
+        // (deep-rooted predicates) that already exist were written and link-resolved by
+        // the predicate that owns them — they must not be re-resolved by this entry.
+        var preExistingPageGuids = new HashSet<Guid>(
+            Services.Pages.GetPagesByAreaID(_entry.AreaId)
+                .Where(p => p.UniqueId != Guid.Empty)
+                .Select(p => p.UniqueId));
+
         var result = DeserializePredicate(_entry, area, globalPageGuidCache, allAreaPages);
         int totalCreated = result.Created;
         int totalUpdated = result.Updated;
@@ -214,6 +233,11 @@ public class ContentDeserializer
             if (siblingPages.Count > 0)
                 allYamlPages.AddRange(siblingPages);
 
+            // Same-mode predicates that run AFTER this entry are sibling passes too: their
+            // YAML pages are in allYamlPages but not yet on target. Defer links to them —
+            // the end-of-seed-run ledger finalization rewrites the recorded occurrences.
+            var sameModeLaterPages = allYamlPages;
+
             // Build GUID cache from ALL areas in the target DB
             foreach (var masterArea in Services.Areas.GetAreas())
             {
@@ -228,6 +252,7 @@ public class ContentDeserializer
             // Sibling pages not yet on target = deferred link targets for this pass.
             var deferredIds = new HashSet<int>();
             CollectSourcePageIds(siblingPages, deferredIds);
+            CollectSourcePageIds(sameModeLaterPages, deferredIds);
             deferredIds.ExceptWith(crossAreaMap.Keys);
             if (deferredIds.Count > 0)
                 Log($"Sibling-mode link targets not yet on target (deferred to their own pass): {deferredIds.Count}");
@@ -255,13 +280,21 @@ public class ContentDeserializer
             // wrong page (surfaced by the multi-entry-per-area language-layer E2E).
             // Area-level item fields follow the same ownership rule as their write.
             var entryTargetPageIds = new HashSet<int>();
-            CollectEntryTargetPageIds(allAreaPages, globalPageGuidCache, entryTargetPageIds);
+            CollectEntryTargetPageIds(allAreaPages, globalPageGuidCache, entryTargetPageIds, preExistingPageGuids);
             var entryOwnsAreaState = _entry.PageId == 0 && (_entry.Path == "/" || _entry.Path.Length == 0);
             ResolveLinksInArea(_entry.AreaId, resolver, entryTargetPageIds, entryOwnsAreaState);
 
             var (resolved, unresolved, paraResolved, paraUnresolved) = resolver.GetStats();
             if (resolved > 0 || unresolved > 0 || resolver.DeferredCount > 0)
                 Log($"Link resolution: {resolved} page links resolved, {unresolved} unresolvable, {resolver.DeferredCount} deferred to sibling mode; {paraResolved} paragraph anchors resolved, {paraUnresolved} unresolvable");
+
+            // Persist deferred-link occurrences for end-of-seed-run finalization.
+            if (resolver.DeferredRecords.Count > 0)
+            {
+                var modeRoot = Path.GetDirectoryName(_contentRoot.TrimEnd('/', '\\'));
+                if (modeRoot is not null)
+                    DeferredLinkLedger.Append(modeRoot, resolver.DeferredRecords);
+            }
 
             // Multi-language: restore master links (Page.MasterPageId/MasterType,
             // Paragraph.MasterParagraphID/GlobalRecordPageID) from the GUID references the
@@ -331,21 +364,114 @@ public class ContentDeserializer
     }
 
     /// <summary>
+    /// End-of-seed-run finalization for a DEPLOY Content entry's area ITEM fields.
+    /// Area item fields are deploy-owned but may reference pages that arrive in the seed
+    /// pass (header/footer bindings, legal-page links): at deploy time those links cannot
+    /// resolve and are left as source ids. Once every mode's pages are on target, this
+    /// re-writes the fields from the deploy YAML (fresh SOURCE ids — a deterministic input,
+    /// so no risk of reinterpreting already-rewritten target ids) and resolves them against
+    /// the complete cross-mode map. Construct with the DEPLOY entry + the DEPLOY _content root.
+    /// </summary>
+    public void FinalizeAreaItemLinks()
+    {
+        try
+        {
+            var ownsAreaState = _entry.PageId == 0 && (_entry.Path == "/" || _entry.Path.Length == 0);
+            if (!ownsAreaState)
+                return;
+
+            var targetArea = Services.Areas.GetArea(_entry.AreaId);
+            if (targetArea is null || string.IsNullOrEmpty(targetArea.ItemType) || string.IsNullOrEmpty(targetArea.ItemId))
+                return;
+
+            var areaName = !string.IsNullOrEmpty(_entry.AreaName) ? _entry.AreaName : targetArea.Name;
+            var area = _store.ReadTree(_contentRoot, areaName);
+            if (string.IsNullOrEmpty(area.ItemType) || area.ItemFields.Count == 0)
+                return;
+
+            // Same exclusion semantics as the AREA-01 write this finalization repeats.
+            var entryExclude = _entry.ExcludeFields.Count > 0
+                ? new HashSet<string>(_entry.ExcludeFields, StringComparer.OrdinalIgnoreCase)
+                : null;
+            IReadOnlySet<string>? effectiveExclude = _excludeFieldsByItemType is { Count: > 0 }
+                ? ExclusionMerger.MergeFieldExclusions(
+                    entryExclude?.ToList() ?? new List<string>(), _excludeFieldsByItemType, area.ItemType)
+                : entryExclude;
+            SaveItemFields(area.ItemType, targetArea.ItemId, area.ItemFields, effectiveExclude);
+
+            // Cross-mode map: every YAML page (this mode + siblings) resolved to target by guid.
+            var allYamlPages = new List<SerializedPage>();
+            foreach (var areaDir in Directory.GetDirectories(_contentRoot))
+            {
+                if (!File.Exists(Path.Combine(areaDir, "area.yml"))) continue;
+                try { allYamlPages.AddRange(_store.ReadTree(_contentRoot, Path.GetFileName(areaDir)).Pages); }
+                catch { /* best-effort */ }
+            }
+            allYamlPages.AddRange(ReadSiblingModePages());
+
+            var allGuidCache = new Dictionary<Guid, int>();
+            foreach (var dwArea in Services.Areas.GetAreas())
+                foreach (var page in Services.Pages.GetPagesByAreaID(dwArea.ID))
+                    if (page.UniqueId != Guid.Empty)
+                        allGuidCache.TryAdd(page.UniqueId, page.ID);
+
+            var map = InternalLinkResolver.BuildSourceToTargetMap(allYamlPages, allGuidCache);
+            var acknowledged = _entry.AcknowledgedOrphanPageIds.Count > 0
+                ? new HashSet<int>(_entry.AcknowledgedOrphanPageIds)
+                : null;
+            var resolver = new InternalLinkResolver(map, _log, acknowledgedSourcePageIds: acknowledged);
+            ResolveLinksInItemFields(area.ItemType, targetArea.ItemId, resolver);
+
+            var (resolved, unresolved, _, _) = resolver.GetStats();
+            Log($"Area link finalization: area {_entry.AreaId} item fields re-resolved ({resolved} resolved, {unresolved} unresolvable).");
+        }
+        catch (Exception ex)
+        {
+            Log($"WARNING: Area link finalization failed for area {_entry.AreaId}: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Keeps only pages whose page.yml belongs to the given manifest-entry file set, plus
+    /// any page with kept descendants (parent chain must survive so attachment works).
+    /// Pages outside the entry are dropped entirely — they belong to sibling entries.
+    /// </summary>
+    private static List<SerializedPage> PruneToEntryFiles(List<SerializedPage> pages, HashSet<string> entryFiles)
+    {
+        var kept = new List<SerializedPage>();
+        foreach (var page in pages)
+        {
+            var children = PruneToEntryFiles(page.Children, entryFiles);
+            var selfIncluded = page.SourceFile is not null && entryFiles.Contains(page.SourceFile);
+            if (selfIncluded || children.Count > 0)
+                kept.Add(page with { Children = children });
+        }
+        return kept;
+    }
+
+    /// <summary>
     /// Maps this entry's YAML pages (recursively) to their TARGET page ids via the GUID
     /// cache. The result is the exact set of pages the entry wrote — the only pages whose
-    /// fields still carry source ids and may be link-resolved.
+    /// fields still carry source ids and may be link-resolved. Structural-stub ancestors
+    /// that PRE-EXISTED this entry are skipped (their fields were written and resolved by
+    /// the predicate that owns them — re-resolving would reinterpret target ids as source
+    /// ids); stubs this entry CREATED (e.g. seed-only onto a blank database) do resolve.
     /// </summary>
     private static void CollectEntryTargetPageIds(
         List<SerializedPage> pages,
         Dictionary<Guid, int> pageGuidCache,
-        HashSet<int> targetIds)
+        HashSet<int> targetIds,
+        HashSet<Guid>? preExistingPageGuids = null)
     {
         foreach (var page in pages)
         {
-            if (pageGuidCache.TryGetValue(page.PageUniqueId, out var targetId))
+            var preExistingStub = page.IsStructuralStub
+                && preExistingPageGuids is not null
+                && preExistingPageGuids.Contains(page.PageUniqueId);
+            if (!preExistingStub && pageGuidCache.TryGetValue(page.PageUniqueId, out var targetId))
                 targetIds.Add(targetId);
             if (page.Children.Count > 0)
-                CollectEntryTargetPageIds(page.Children, pageGuidCache, targetIds);
+                CollectEntryTargetPageIds(page.Children, pageGuidCache, targetIds, preExistingPageGuids);
         }
     }
 
@@ -1972,7 +2098,9 @@ public class ContentDeserializer
             bool pageNeedsResave = false;
             if (!string.IsNullOrEmpty(page.ShortCut))
             {
+                resolver.CurrentLocator = $"shortcut|{page.ID}";
                 var resolved = resolver.ResolveLinks(page.ShortCut);
+                resolver.CurrentLocator = null;
                 if (resolved != page.ShortCut)
                 {
                     page.ShortCut = resolved;
@@ -1983,7 +2111,9 @@ public class ContentDeserializer
             // Resolve NavigationSettings.ProductPage link (ECOM-02)
             if (page.NavigationSettings?.ProductPage != null)
             {
+                resolver.CurrentLocator = $"navsettings|{page.ID}";
                 var resolved = resolver.ResolveLinks(page.NavigationSettings.ProductPage);
+                resolver.CurrentLocator = null;
                 if (resolved != page.NavigationSettings.ProductPage)
                 {
                     page.NavigationSettings.ProductPage = resolved;
@@ -2004,7 +2134,9 @@ public class ContentDeserializer
                 // UserAuthentication's <RedirectToSpecificPage>Default.aspx?Id=NNN</...>).
                 if (!string.IsNullOrEmpty(para.ModuleSettings))
                 {
+                    resolver.CurrentLocator = $"modulesettings|{para.ID}";
                     var resolvedSettings = resolver.ResolveLinks(para.ModuleSettings);
+                    resolver.CurrentLocator = null;
                     if (resolvedSettings != para.ModuleSettings)
                     {
                         para.ModuleSettings = resolvedSettings ?? string.Empty;
@@ -2034,7 +2166,9 @@ public class ContentDeserializer
         {
             if (kvp.Value is string strValue && strValue.Length > 0)
             {
+                resolver.CurrentLocator = $"item|{itemType}|{itemId}|{kvp.Key}";
                 var resolved = resolver.ResolveLinks(strValue);
+                resolver.CurrentLocator = null;
                 if (resolved != strValue)
                 {
                     updatedFields[kvp.Key] = resolved;
@@ -2083,7 +2217,9 @@ public class ContentDeserializer
         {
             if (kvp.Value is string strValue && strValue.Length > 0)
             {
+                resolver.CurrentLocator = $"propitem|{page.ID}|{kvp.Key}";
                 var resolved = resolver.ResolveLinks(strValue);
+                resolver.CurrentLocator = null;
                 if (resolved != strValue)
                 {
                     updatedFields[kvp.Key] = resolved;

@@ -239,6 +239,30 @@ public class ContentSerializer
         var checkPath = GetPredicateCheckPath(page, contentPath);
         if (!_predicateSet.ShouldInclude(checkPath, predicate.AreaId))
         {
+            // Deep-rooted predicate: this page is an ANCESTOR of the predicate's root
+            // (e.g. "/Navigation" above "/Navigation/Footer Navigation/Help and info").
+            // Without pass-through the walk would prune here and the subtree would
+            // silently serialize NOTHING. Emit a structural stub — scalars only — and
+            // keep walking; branches with no included descendants are dropped.
+            if (IsAncestorOfPredicateRoot(checkPath, predicate))
+            {
+                var stubChildren = new List<SerializedPage>();
+                foreach (var child in Services.Pages.GetPagesByParentID(page.ID).OrderBy(c => c.Sort))
+                {
+                    var stubChild = SerializePage(child, predicate, contentPath + "/" + child.MenuText, excludeFields, excludeXmlElements);
+                    if (stubChild != null)
+                        stubChildren.Add(stubChild);
+                }
+                if (stubChildren.Count == 0)
+                    return null;
+
+                Log($"  Ancestor pass-through: '{checkPath}' (page ID={page.ID}) — structural stub above predicate root '{predicate.Path}'");
+                return _mapper.MapPage(page, new List<SerializedGridRow>(), stubChildren,
+                        new List<SerializedPermission>(), excludeFields, excludeXmlElements,
+                        _configuration.ExcludeFieldsByItemType, _configuration.ExcludeXmlElementsByType)
+                    with { IsStructuralStub = true };
+            }
+
             Log($"  Predicate excluded: '{checkPath}'");
             return null;
         }
@@ -361,6 +385,15 @@ public class ContentSerializer
         }
         return (deferred, trulyFatal);
     }
+
+    /// <summary>
+    /// True when the predicate's root path lies strictly below this page's path — the page
+    /// is on the ancestor chain of a deep-rooted predicate and must pass the walk through.
+    /// </summary>
+    internal static bool IsAncestorOfPredicateRoot(string checkPath, ProviderPredicateDefinition predicate)
+        => predicate.Path != "/"
+           && !string.Equals(checkPath, predicate.Path, StringComparison.OrdinalIgnoreCase)
+           && ContentPredicate.IsUnderPath(predicate.Path, checkPath);
 
     /// <summary>
     /// Predicate paths are authored in the master area's path space. For a language-layer page
