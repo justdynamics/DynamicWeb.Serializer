@@ -304,6 +304,35 @@ public class MultiLanguageTests
     }
 
     [Fact]
+    public void FileSystemStore_RoundTripsIsTemplate()
+    {
+        // DW renames any non-template page to its item Title on save — preset pages
+        // (IsTemplate) keep a diverging menu text only if the flag survives the round-trip.
+        var area = new SerializedArea
+        {
+            AreaId = Guid.NewGuid(),
+            Name = "Presets",
+            SortOrder = 1,
+            Pages = new List<SerializedPage> { Page(Guid.NewGuid()) with { IsTemplate = true } }
+        };
+
+        var dir = Path.Combine(Path.GetTempPath(), "SerializerTests", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(dir);
+        try
+        {
+            var store = new FileSystemStore();
+            store.WriteTree(area, dir);
+            var roundTripped = store.ReadTree(dir, "Presets");
+
+            Assert.True(Assert.Single(roundTripped.Pages).IsTemplate);
+        }
+        finally
+        {
+            try { Directory.Delete(dir, recursive: true); } catch { }
+        }
+    }
+
+    [Fact]
     public void FileSystemStore_PageWithoutMasterLink_RoundTripsAsNull()
     {
         var area = new SerializedArea

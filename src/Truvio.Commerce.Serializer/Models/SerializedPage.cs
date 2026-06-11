@@ -13,6 +13,13 @@ public record SerializedPage
     public string? Layout { get; init; }
     public bool LayoutApplyToSubPages { get; init; }
     public bool IsFolder { get; init; }
+    /// <summary>
+    /// DW page-preset/template flag. Must round-trip: DW's SavePage forces
+    /// MenuText = item Title for every NON-template page, so a preset whose menu text
+    /// diverges from its item Title (e.g. Swift's "Home preset" with Title "Home") gets
+    /// silently renamed on the first post-write save unless this flag is preserved.
+    /// </summary>
+    public bool IsTemplate { get; init; }
     public string? TreeSection { get; init; }
     public string? NavigationTag { get; init; }
     public string? ShortCut { get; init; }

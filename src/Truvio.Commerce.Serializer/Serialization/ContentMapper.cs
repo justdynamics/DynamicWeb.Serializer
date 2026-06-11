@@ -109,6 +109,7 @@ public class ContentMapper
             Layout = page.LayoutTemplate,
             LayoutApplyToSubPages = page.LayoutApplyToSubPages,
             IsFolder = page.IsFolder,
+            IsTemplate = page.IsTemplate,
             TreeSection = page.TreeSection,
             NavigationTag = page.NavigationTag,
             ShortCut = page.ShortCut,

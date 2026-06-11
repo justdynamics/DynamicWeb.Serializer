@@ -165,8 +165,15 @@ public class ContentDeserializer
 
         // Phase 44 / D-04: a single ContentEntry drives a single area subtree write.
         // The orchestrator's per-entry switch dispatches one invocation per Content entry.
-        var dwArea = Services.Areas.GetArea(_entry.AreaId);
-        var areaName = dwArea?.Name;
+        // The entry's AreaName is the authoritative pointer to its YAML directory — it was
+        // written together with the tree. Resolving via the live area instead breaks on a
+        // blank target: GetArea() is null there and ReadTree(null) silently grabs the FIRST
+        // area directory, so every entry deserializes the same tree (multi-area regression
+        // found by the language-layer E2E). Live lookup stays as fallback for pre-AreaName
+        // manifests only.
+        var areaName = !string.IsNullOrEmpty(_entry.AreaName)
+            ? _entry.AreaName
+            : Services.Areas.GetArea(_entry.AreaId)?.Name;
         var area = _store.ReadTree(_contentRoot, areaName);
 
         var result = DeserializePredicate(_entry, area, globalPageGuidCache, allAreaPages);
@@ -241,7 +248,16 @@ public class ContentDeserializer
                 sourceToTargetParagraphIds: paragraphMap,
                 deferredSourcePageIds: deferredIds.Count > 0 ? deferredIds : null,
                 acknowledgedSourcePageIds: acknowledgedIds);
-            ResolveLinksInArea(_entry.AreaId, resolver);
+            // Resolve ONLY the pages this entry wrote (their fields still hold source ids).
+            // Re-scanning the whole area re-interprets links a previous entry or mode already
+            // rewrote: the target ids in those links collide with unrelated source ids — at
+            // best spurious strict-mode warnings, at worst a silent double-rewrite to the
+            // wrong page (surfaced by the multi-entry-per-area language-layer E2E).
+            // Area-level item fields follow the same ownership rule as their write.
+            var entryTargetPageIds = new HashSet<int>();
+            CollectEntryTargetPageIds(allAreaPages, globalPageGuidCache, entryTargetPageIds);
+            var entryOwnsAreaState = _entry.PageId == 0 && (_entry.Path == "/" || _entry.Path.Length == 0);
+            ResolveLinksInArea(_entry.AreaId, resolver, entryTargetPageIds, entryOwnsAreaState);
 
             var (resolved, unresolved, paraResolved, paraUnresolved) = resolver.GetStats();
             if (resolved > 0 || unresolved > 0 || resolver.DeferredCount > 0)
@@ -312,6 +328,25 @@ public class ContentDeserializer
         }
         catch { /* best-effort — sibling awareness must never break the run */ }
         return result;
+    }
+
+    /// <summary>
+    /// Maps this entry's YAML pages (recursively) to their TARGET page ids via the GUID
+    /// cache. The result is the exact set of pages the entry wrote — the only pages whose
+    /// fields still carry source ids and may be link-resolved.
+    /// </summary>
+    private static void CollectEntryTargetPageIds(
+        List<SerializedPage> pages,
+        Dictionary<Guid, int> pageGuidCache,
+        HashSet<int> targetIds)
+    {
+        foreach (var page in pages)
+        {
+            if (pageGuidCache.TryGetValue(page.PageUniqueId, out var targetId))
+                targetIds.Add(targetId);
+            if (page.Children.Count > 0)
+                CollectEntryTargetPageIds(page.Children, pageGuidCache, targetIds);
+        }
     }
 
     private static void CollectSourcePageIds(List<SerializedPage> pages, HashSet<int> ids)
@@ -432,8 +467,15 @@ public class ContentDeserializer
                 : null
         };
 
+        // Area-level state (properties + area ItemType fields) belongs to the whole-area
+        // entry. A partial-path entry (e.g. seed '/Posts' after deploy '/') re-writing it
+        // would at best merge-skip and at worst clobber the owning entry's already
+        // link-resolved values — and the later re-resolution of those fields would
+        // re-interpret rewritten TARGET ids as source ids.
+        var ownsAreaState = entry.PageId == 0 && (entry.Path == "/" || entry.Path.Length == 0);
+
         // Write full area properties (AREA-04)
-        if (area.Properties.Count > 0 && !_isDryRun)
+        if (ownsAreaState && area.Properties.Count > 0 && !_isDryRun)
         {
             Log($"Writing {area.Properties.Count} area properties for area ID={entry.AreaId}");
             var areaPropsExclude = ctx.ExcludeFieldsByItemType != null && !string.IsNullOrEmpty(area.ItemType)
@@ -450,7 +492,7 @@ public class ContentDeserializer
         }
 
         // Save area-level ItemType fields (AREA-01)
-        if (!string.IsNullOrEmpty(area.ItemType) && area.ItemFields.Count > 0 && !_isDryRun)
+        if (ownsAreaState && !string.IsNullOrEmpty(area.ItemType) && area.ItemFields.Count > 0 && !_isDryRun)
         {
             var targetAreaItemId = targetArea.ItemId;
 
@@ -460,7 +502,8 @@ public class ContentDeserializer
                 try
                 {
                     var item = new Dynamicweb.Content.Items.Item(area.ItemType);
-                    Services.Items.SaveItem(item);
+                    using (var itemContext = new Dynamicweb.Content.Items.ItemContext())
+                        item.Save(itemContext);
                     targetAreaItemId = item.Id;
                     targetArea.ItemId = targetAreaItemId;
                     targetArea.ItemType = area.ItemType;
@@ -752,11 +795,12 @@ public class ContentDeserializer
             page.LayoutTemplate = dto.Layout ?? string.Empty;
             page.LayoutApplyToSubPages = dto.LayoutApplyToSubPages;
             page.IsFolder = dto.IsFolder;
+            page.IsTemplate = dto.IsTemplate;
             page.TreeSection = dto.TreeSection ?? string.Empty;
             ApplyPageProperties(page, dto);
             // Do NOT set page.ID — leave 0 for insert path (Pitfall 4)
 
-            var saved = Services.Pages.SavePage(page);
+            var saved = Services.Pages.SavePage(page, skipLanguages: true);
             ctx.PageGuidCache[dto.PageUniqueId] = saved.ID;
 
             // Apply ItemType fields via ItemService (page.Item[key] = value does not persist)
@@ -777,7 +821,7 @@ public class ContentDeserializer
                 {
                     Log($"  Re-applying LayoutTemplate: '{refetched.LayoutTemplate}' -> '{dto.Layout}'");
                     refetched.LayoutTemplate = dto.Layout;
-                    Services.Pages.SavePage(refetched);
+                    Services.Pages.SavePage(refetched, skipLanguages: true);
                 }
 
                 // Apply PropertyItem fields (e.g. Icon, SubmenuType)
@@ -828,7 +872,7 @@ public class ContentDeserializer
                 filled += MergePageScalars(existingPage, dto, ref left);
                 filled += ApplyPagePropertiesWithMerge(existingPage, dto, ref left);
 
-                Services.Pages.SavePage(existingPage);
+                Services.Pages.SavePage(existingPage, skipLanguages: true);
 
                 // D-02 / D-03: field-level merge for ItemFields + PropertyItem fields.
                 filled += MergeItemFields(existingPage.ItemType, existingPage.ItemId, dto.Fields, seedExclude, ref left);
@@ -865,10 +909,11 @@ public class ContentDeserializer
             existingPage.LayoutTemplate = dto.Layout ?? string.Empty;
             existingPage.LayoutApplyToSubPages = dto.LayoutApplyToSubPages;
             existingPage.IsFolder = dto.IsFolder;
+            existingPage.IsTemplate = dto.IsTemplate;
             existingPage.TreeSection = dto.TreeSection ?? string.Empty;
             ApplyPageProperties(existingPage, dto);
 
-            Services.Pages.SavePage(existingPage);
+            Services.Pages.SavePage(existingPage, skipLanguages: true);
 
             // Apply ItemType fields via ItemService (source-wins)
             var updatePageExclude = ctx.ExcludeFieldsByItemType != null
@@ -975,7 +1020,8 @@ public class ContentDeserializer
                 try
                 {
                     var item = new Dynamicweb.Content.Items.Item(dto.ItemType);
-                    Services.Items.SaveItem(item);
+                    using (var itemContext = new Dynamicweb.Content.Items.ItemContext())
+                        item.Save(itemContext);
                     Log($"  GridRow Item created: type={dto.ItemType}, id={item.Id}");
                     saved.ItemId = item.Id;
                     Services.Grids.SaveGridRow(saved);
@@ -1266,7 +1312,8 @@ public class ContentDeserializer
             return;
 
         propItem.DeserializeFrom(contentFields);
-        propItem.Save();
+        using (var propItemContext = new Dynamicweb.Content.Items.ItemContext())
+            propItem.Save(propItemContext);
     }
 
     // -------------------------------------------------------------------------
@@ -1339,7 +1386,8 @@ public class ContentDeserializer
             return;
 
         itemEntry.DeserializeFrom(contentFields);
-        itemEntry.Save();
+        using (var itemSaveContext = new Dynamicweb.Content.Items.ItemContext())
+            itemEntry.Save(itemSaveContext);
     }
 
     // -------------------------------------------------------------------------
@@ -1616,7 +1664,8 @@ public class ContentDeserializer
         if (filled == 0) return 0;
 
         itemEntry.DeserializeFrom(currentDict);
-        itemEntry.Save();
+        using (var itemSaveContext = new Dynamicweb.Content.Items.ItemContext())
+            itemEntry.Save(itemSaveContext);
         return filled;
     }
 
@@ -1669,7 +1718,8 @@ public class ContentDeserializer
         if (filled == 0) return 0;
 
         propItem.DeserializeFrom(currentDict);
-        propItem.Save();
+        using (var propItemContext = new Dynamicweb.Content.Items.ItemContext())
+            propItem.Save(propItemContext);
         return filled;
     }
 
@@ -1788,7 +1838,7 @@ public class ContentDeserializer
                 }
                 if (needsSave)
                 {
-                    Services.Pages.SavePage(page);
+                    Services.Pages.SavePage(page, skipLanguages: true);
                     pagesLinked++;
                 }
             }
@@ -1894,17 +1944,22 @@ public class ContentDeserializer
     // Phase 2: Internal link resolution
     // -------------------------------------------------------------------------
 
-    private void ResolveLinksInArea(int areaId, InternalLinkResolver resolver)
+    private void ResolveLinksInArea(int areaId, InternalLinkResolver resolver, HashSet<int>? onlyTargetPageIds = null, bool resolveAreaItemFields = true)
     {
-        // Resolve internal links in area-level ItemType fields (AREA-02)
+        // Resolve internal links in area-level ItemType fields (AREA-02) — only for the
+        // entry that owns (and just wrote) the area state; see DeserializePredicate.
         var targetArea = Services.Areas.GetArea(areaId);
-        if (targetArea != null && !string.IsNullOrEmpty(targetArea.ItemType) && !string.IsNullOrEmpty(targetArea.ItemId))
+        if (resolveAreaItemFields && targetArea != null && !string.IsNullOrEmpty(targetArea.ItemType) && !string.IsNullOrEmpty(targetArea.ItemId))
         {
             ResolveLinksInItemFields(targetArea.ItemType, targetArea.ItemId, resolver);
         }
 
-        // Re-read all pages in the area and scan their item fields for internal links
-        var allPages = Services.Pages.GetPagesByAreaID(areaId);
+        // Re-read the area's pages and scan their item fields for internal links.
+        // onlyTargetPageIds restricts the pass to pages the current entry wrote — pages
+        // written by earlier entries/modes already hold rewritten TARGET ids and must not
+        // be re-interpreted as source ids.
+        var allPages = Services.Pages.GetPagesByAreaID(areaId)
+            .Where(p => onlyTargetPageIds is null || onlyTargetPageIds.Contains(p.ID));
         foreach (var page in allPages)
         {
             // Resolve item fields (link fields, button fields, rich text HTML)
@@ -1937,7 +1992,7 @@ public class ContentDeserializer
             }
 
             if (pageNeedsResave)
-                Services.Pages.SavePage(page);
+                Services.Pages.SavePage(page, skipLanguages: true);
 
             // Resolve paragraph item fields
             var paragraphs = Services.Paragraphs.GetParagraphsByPageId(page.ID);
@@ -2004,7 +2059,8 @@ public class ContentDeserializer
                 return;
             }
             item.DeserializeFrom(updatedFields);
-            item.Save();
+            using (var itemSaveContext = new Dynamicweb.Content.Items.ItemContext())
+                item.Save(itemSaveContext);
         }
     }
 
@@ -2052,7 +2108,8 @@ public class ContentDeserializer
                 return;
             }
             propItem.DeserializeFrom(updatedFields);
-            propItem.Save();
+            using (var propItemContext = new Dynamicweb.Content.Items.ItemContext())
+            propItem.Save(propItemContext);
         }
     }
 
