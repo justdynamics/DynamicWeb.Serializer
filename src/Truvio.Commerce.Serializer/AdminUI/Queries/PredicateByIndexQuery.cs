@@ -35,18 +35,20 @@ public sealed class PredicateByIndexQuery : DataQueryIdentifiableModelBase<Predi
             AreaId = pred.AreaId,
             PageId = pred.PageId,
             IncludeLanguageLayers = pred.IncludeLanguageLayers,
-            Excludes = string.Join("\n", pred.Excludes),
+            // List-typed (SelectMultiDual-bound) properties hydrate as copies; Textarea-bound
+            // multi-value properties (ServiceCaches, ExcludeXmlElements) stay newline-joined.
+            Excludes = pred.Excludes.ToList(),
             Table = pred.Table ?? string.Empty,
             NameColumn = pred.NameColumn ?? string.Empty,
             CompareColumns = pred.CompareColumns ?? string.Empty,
             ServiceCaches = string.Join("\n", pred.ServiceCaches),
-            ExcludeFields = string.Join("\n", pred.ExcludeFields),
-            XmlColumns = string.Join("\n", pred.XmlColumns),
+            ExcludeFields = pred.ExcludeFields.ToList(),
+            XmlColumns = pred.XmlColumns.ToList(),
             ExcludeXmlElements = string.Join("\n", pred.ExcludeXmlElements),
-            ExcludeAreaColumns = string.Join("\n", pred.ExcludeAreaColumns),
+            ExcludeAreaColumns = pred.ExcludeAreaColumns.ToList(),
             WhereClause = pred.Where ?? string.Empty,
-            IncludeFields = string.Join("\n", pred.IncludeFields),
-            ResolveLinksInColumns = string.Join("\n", pred.ResolveLinksInColumns)
+            IncludeFields = pred.IncludeFields.ToList(),
+            ResolveLinksInColumns = pred.ResolveLinksInColumns.ToList()
         };
     }
 }

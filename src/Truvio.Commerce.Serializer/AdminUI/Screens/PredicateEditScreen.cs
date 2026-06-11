@@ -115,14 +115,8 @@ public sealed class PredicateEditScreen : EditScreenBase<PredicateEditModel>
                 "Exclude Fields",
                 "Select ItemType / PropertyItem field systemNames to exclude from serialization. " +
                 "Applies to every page, paragraph, and area ItemType reached by this predicate."),
-        nameof(PredicateEditModel.XmlColumns) => Model?.ProviderType == "SqlTable"
-            ? CreateColumnSelectMultiDual(Model?.Table, Model?.XmlColumns,
-                "XML Columns", "Select columns containing XML to pretty-print in YAML.")
-            : new Textarea
-            {
-                Label = "XML Columns",
-                Explanation = "One column name per line. SQL table columns containing XML to pretty-print in YAML."
-            },
+        nameof(PredicateEditModel.XmlColumns) => CreateColumnSelectMultiDual(Model?.Table, Model?.XmlColumns,
+            "XML Columns", "Select columns containing XML to pretty-print in YAML."),
         nameof(PredicateEditModel.ExcludeXmlElements) => new Textarea
         {
             Label = "Exclude XML Elements",
@@ -138,27 +132,15 @@ public sealed class PredicateEditScreen : EditScreenBase<PredicateEditModel>
             Explanation = "SQL WHERE clause applied at serialize. Identifiers must exist in the table schema. "
                          + "No semicolons, comments, or subqueries. Example: AccessUserType = 2 AND AccessUserUserName IN ('Admin','Editors')"
         },
-        nameof(PredicateEditModel.IncludeFields) => Model?.ProviderType == "SqlTable"
-            ? CreateColumnSelectMultiDual(Model?.Table, Model?.IncludeFields,
-                "Include Fields",
-                "Columns that stay in serialized output even if auto-excluded by the runtime-exclusion registry.")
-            : new Textarea
-            {
-                Label = "Include Fields",
-                Explanation = "One column per line. Columns kept even if auto-excluded by the runtime-exclusion registry."
-            },
+        nameof(PredicateEditModel.IncludeFields) => CreateColumnSelectMultiDual(Model?.Table, Model?.IncludeFields,
+            "Include Fields",
+            "Columns that stay in serialized output even if auto-excluded by the runtime-exclusion registry."),
         // Phase 37-05: SqlTable cross-environment link resolution opt-in (LINK-02).
-        nameof(PredicateEditModel.ResolveLinksInColumns) => Model?.ProviderType == "SqlTable"
-            ? CreateColumnSelectMultiDual(Model?.Table, Model?.ResolveLinksInColumns,
-                "Resolve Links In Columns",
-                "Columns whose string values contain Default.aspx?ID=N references. At deserialize, " +
-                "source page IDs are rewritten to target page IDs using the cross-environment map. " +
-                "Example: UrlPathRedirect")
-            : new Textarea
-            {
-                Label = "Resolve Links In Columns",
-                Explanation = "One column per line. SqlTable only."
-            },
+        nameof(PredicateEditModel.ResolveLinksInColumns) => CreateColumnSelectMultiDual(Model?.Table, Model?.ResolveLinksInColumns,
+            "Resolve Links In Columns",
+            "Columns whose string values contain Default.aspx?ID=N references. At deserialize, " +
+            "source page IDs are rewritten to target page IDs using the cross-environment map. " +
+            "Example: UrlPathRedirect"),
         _ => null
     };
 
@@ -167,8 +149,11 @@ public sealed class PredicateEditScreen : EditScreenBase<PredicateEditModel>
     /// mistyped path silently excludes nothing, so the options come from walking the live
     /// page tree. Saved paths that no longer match a live page are merged into the option
     /// set so they stay visible (and removable) rather than vanishing on next edit.
+    /// Value is NOT set here: EditScreenBase.BuildEditor binds the editor's Value from the
+    /// model property (List&lt;string&gt;) after GetEditor returns — anything assigned here
+    /// is overwritten with the raw model value (ItemTypeEditScreen precedent).
     /// </summary>
-    private SelectMultiDual CreateContentPathSelectMultiDual(int? areaId, string? currentValue)
+    private SelectMultiDual CreateContentPathSelectMultiDual(int? areaId, List<string>? currentValues)
     {
         var editor = new SelectMultiDual
         {
@@ -194,23 +179,25 @@ public sealed class PredicateEditScreen : EditScreenBase<PredicateEditModel>
             editor.Explanation = $"Could not read the area's pages: {ex.Message}";
         }
 
-        var selected = (currentValue ?? string.Empty)
-            .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
-            .Select(v => v.Trim())
-            .Where(v => v.Length > 0)
-            .ToArray();
-        foreach (var s in selected)
+        foreach (var s in NonEmpty(currentValues))
             paths.Add(s);
 
         editor.Options = paths
             .Select(p => new ListOption { Value = p, Label = p })
             .ToList();
 
-        if (selected.Length > 0)
-            editor.Value = selected;
-
         return editor;
     }
+
+    /// <summary>
+    /// Non-empty entries of a saved multi-value list, NOT trimmed: the framework binds the
+    /// raw model values as the editor's Value, so merged options must match them verbatim
+    /// or the saved entry renders as unselected.
+    /// </summary>
+    private static List<string> NonEmpty(List<string>? values) =>
+        (values ?? new List<string>())
+            .Where(v => !string.IsNullOrWhiteSpace(v))
+            .ToList();
 
     private static void CollectContentPaths(Dynamicweb.Content.Page page, string path, SortedSet<string> paths)
     {
@@ -219,7 +206,7 @@ public sealed class PredicateEditScreen : EditScreenBase<PredicateEditModel>
             CollectContentPaths(child, path + "/" + child.MenuText, paths);
     }
 
-    private SelectMultiDual CreateColumnSelectMultiDual(string? tableName, string? currentValue, string label, string explanation)
+    private SelectMultiDual CreateColumnSelectMultiDual(string? tableName, List<string>? currentValues, string label, string explanation)
     {
         var editor = new SelectMultiDual
         {
@@ -252,20 +239,16 @@ public sealed class PredicateEditScreen : EditScreenBase<PredicateEditModel>
                 return editor;
             }
 
-            editor.Options = columnTypes.Keys
-                .OrderBy(c => c, StringComparer.OrdinalIgnoreCase)
+            // Saved values that are no longer live columns stay visible (and removable):
+            // merge them into the options. Value itself is bound from the model property
+            // by EditScreenBase.BuildEditor after GetEditor returns.
+            var columns = new SortedSet<string>(columnTypes.Keys, StringComparer.OrdinalIgnoreCase);
+            foreach (var s in NonEmpty(currentValues))
+                columns.Add(s);
+
+            editor.Options = columns
                 .Select(c => new ListOption { Value = c, Label = c })
                 .ToList();
-
-            // SelectMultiDual.Value is object? — use .ToArray() per ScreenPresetEditScreen pattern
-            var selected = (currentValue ?? string.Empty)
-                .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
-                .Select(v => v.Trim())
-                .Where(v => v.Length > 0)
-                .ToArray();
-
-            if (selected.Length > 0)
-                editor.Value = selected;
         }
         catch (Exception ex)
         {
@@ -275,7 +258,7 @@ public sealed class PredicateEditScreen : EditScreenBase<PredicateEditModel>
         return editor;
     }
 
-    private SelectMultiDual CreateAreaColumnSelectMultiDual(int? areaId, string? currentValue, string label, string explanation)
+    private SelectMultiDual CreateAreaColumnSelectMultiDual(int? areaId, List<string>? currentValues, string label, string explanation)
     {
         var editor = new SelectMultiDual
         {
@@ -306,20 +289,15 @@ public sealed class PredicateEditScreen : EditScreenBase<PredicateEditModel>
                 "AreaID", "AreaName", "AreaSort", "AreaItemType", "AreaItemId", "AreaUniqueId"
             };
 
-            editor.Options = columnTypes.Keys
-                .Where(c => !dtoColumns.Contains(c))
-                .OrderBy(c => c, StringComparer.OrdinalIgnoreCase)
+            var columns = new SortedSet<string>(
+                columnTypes.Keys.Where(c => !dtoColumns.Contains(c)),
+                StringComparer.OrdinalIgnoreCase);
+            foreach (var s in NonEmpty(currentValues))
+                columns.Add(s);
+
+            editor.Options = columns
                 .Select(c => new ListOption { Value = c, Label = c })
                 .ToList();
-
-            var selected = (currentValue ?? string.Empty)
-                .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
-                .Select(v => v.Trim())
-                .Where(v => v.Length > 0)
-                .ToArray();
-
-            if (selected.Length > 0)
-                editor.Value = selected;
         }
         catch (Exception ex)
         {
@@ -335,7 +313,7 @@ public sealed class PredicateEditScreen : EditScreenBase<PredicateEditModel>
     /// and area-level ItemTypes — a Content predicate can reach any of them — so a single
     /// dropdown covers the full field surface a user may want to exclude.
     /// </summary>
-    private SelectMultiDual CreateItemTypeFieldSelectMultiDual(string? currentValue, string label, string explanation)
+    private SelectMultiDual CreateItemTypeFieldSelectMultiDual(List<string>? currentValues, string label, string explanation)
     {
         var editor = new SelectMultiDual
         {
@@ -373,20 +351,14 @@ public sealed class PredicateEditScreen : EditScreenBase<PredicateEditModel>
                 }
             }
 
+            // Merge saved values so they stay visible even when no longer live field names.
+            // Value itself is bound from the model property by EditScreenBase.BuildEditor.
+            foreach (var s in NonEmpty(currentValues))
+                fieldNames.Add(s);
+
             editor.Options = fieldNames
                 .Select(f => new ListOption { Value = f, Label = f })
                 .ToList();
-
-            // SelectMultiDual.Value matches ScreenPresetEditScreen / CreateColumnSelectMultiDual
-            // pattern: splits newline-separated current value into a string[] for the Value.
-            var selected = (currentValue ?? string.Empty)
-                .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
-                .Select(v => v.Trim())
-                .Where(v => v.Length > 0)
-                .ToArray();
-
-            if (selected.Length > 0)
-                editor.Value = selected;
         }
         catch (Exception ex)
         {

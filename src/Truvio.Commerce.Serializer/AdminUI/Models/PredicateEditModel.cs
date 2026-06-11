@@ -42,8 +42,15 @@ public sealed class PredicateEditModel : DataViewModelBase, IIdentifiable
         explanation: "Content only. Also serialize the language-layer areas of this (master) area. Language pages are matched against this predicate's path via their master page.")]
     public bool IncludeLanguageLayers { get; set; }
 
-    [ConfigurableProperty("Excludes", explanation: "One path per line. Pages under these paths will be excluded from sync.")]
-    public string Excludes { get; set; } = string.Empty;
+    // The six multi-value properties below are List&lt;string&gt;-typed because they bind to
+    // SelectMultiDual editors. EditScreenBase.BuildEditor copies the RAW model property into
+    // the editor's Value after GetEditor returns — a newline-joined string never matches the
+    // option values, so saved selections silently render as unselected (ItemTypeEditModel.
+    // ExcludedFields is the proven precedent). Textarea-bound multi-value properties
+    // (ServiceCaches, ExcludeXmlElements) stay newline-joined strings.
+
+    [ConfigurableProperty("Excludes", explanation: "Pages under these paths will be excluded from sync.")]
+    public List<string> Excludes { get; set; } = new();
 
     [ConfigurableProperty("Table", explanation: "SQL table name (e.g., EcomOrderFlow)")]
     public string Table { get; set; } = string.Empty;
@@ -57,27 +64,27 @@ public sealed class PredicateEditModel : DataViewModelBase, IIdentifiable
     [ConfigurableProperty("Service Caches", explanation: "One fully-qualified DW cache type per line. Cleared after deserialization.")]
     public string ServiceCaches { get; set; } = string.Empty;
 
-    [ConfigurableProperty("Exclude Fields", explanation: "One field name per line. These fields will be omitted from serialization.")]
-    public string ExcludeFields { get; set; } = string.Empty;
+    [ConfigurableProperty("Exclude Fields", explanation: "These fields will be omitted from serialization.")]
+    public List<string> ExcludeFields { get; set; } = new();
 
-    [ConfigurableProperty("XML Columns", explanation: "One column name per line. These SQL table columns contain XML that should be pretty-printed.")]
-    public string XmlColumns { get; set; } = string.Empty;
+    [ConfigurableProperty("XML Columns", explanation: "SQL table columns containing XML that should be pretty-printed.")]
+    public List<string> XmlColumns { get; set; } = new();
 
     [ConfigurableProperty("Exclude XML Elements", explanation: "One XML element name per line. These elements will be stripped from embedded XML blobs.")]
     public string ExcludeXmlElements { get; set; } = string.Empty;
 
     [ConfigurableProperty("Exclude Area Columns", explanation: "Area table columns to exclude from serialization.")]
-    public string ExcludeAreaColumns { get; set; } = string.Empty;
+    public List<string> ExcludeAreaColumns { get; set; } = new();
 
     [ConfigurableProperty("Where Clause",
         explanation: "SqlTable only. SQL WHERE clause applied at serialize. Identifiers must exist in the target table schema. No semicolons, SQL comments, or subqueries. Example: AccessUserType = 2 AND AccessUserUserName IN ('Admin','Editors')")]
     public string WhereClause { get; set; } = string.Empty;
 
     [ConfigurableProperty("Include Fields",
-        explanation: "SqlTable only. Columns kept in serialization output even if they would be auto-excluded by the runtime-exclusion registry. One per line.")]
-    public string IncludeFields { get; set; } = string.Empty;
+        explanation: "SqlTable only. Columns kept in serialization output even if they would be auto-excluded by the runtime-exclusion registry.")]
+    public List<string> IncludeFields { get; set; } = new();
 
     [ConfigurableProperty("Resolve Links In Columns",
-        explanation: "SqlTable only. Column names (one per line) whose string values contain Default.aspx?ID=N references to DW pages. At deserialize, the source page ID is rewritten to the target page ID using the cross-environment map built from the Content predicates in this run. Example: UrlPathRedirect")]
-    public string ResolveLinksInColumns { get; set; } = string.Empty;
+        explanation: "SqlTable only. Columns whose string values contain Default.aspx?ID=N references to DW pages. At deserialize, the source page ID is rewritten to the target page ID using the cross-environment map built from the Content predicates in this run. Example: UrlPathRedirect")]
+    public List<string> ResolveLinksInColumns { get; set; } = new();
 }

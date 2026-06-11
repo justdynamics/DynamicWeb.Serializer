@@ -88,12 +88,9 @@ public sealed class SavePredicateCommand : CommandBase<PredicateEditModel>
             if (duplicateIndex >= 0 && duplicateIndex != Model.Index)
                 return new() { Status = CommandResult.ResultType.Invalid, Message = $"A predicate with the name '{Model.Name}' already exists (duplicate)" };
 
-            // Parse shared filtering fields (apply to both Content and SqlTable)
-            var excludeFields = (Model.ExcludeFields ?? string.Empty)
-                .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
-                .Select(e => e.Trim())
-                .Where(e => e.Length > 0)
-                .ToList();
+            // Shared filtering fields (apply to both Content and SqlTable). SelectMultiDual-bound
+            // properties arrive as List<string>; Textarea-bound ones as newline-joined strings.
+            var excludeFields = Sanitize(Model.ExcludeFields);
 
             var excludeXmlElements = (Model.ExcludeXmlElements ?? string.Empty)
                 .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
@@ -101,31 +98,15 @@ public sealed class SavePredicateCommand : CommandBase<PredicateEditModel>
                 .Where(e => e.Length > 0)
                 .ToList();
 
-            var xmlColumns = (Model.XmlColumns ?? string.Empty)
-                .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
-                .Select(e => e.Trim())
-                .Where(e => e.Length > 0)
-                .ToList();
+            var xmlColumns = Sanitize(Model.XmlColumns);
 
-            var excludeAreaColumns = (Model.ExcludeAreaColumns ?? string.Empty)
-                .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
-                .Select(e => e.Trim())
-                .Where(e => e.Length > 0)
-                .ToList();
+            var excludeAreaColumns = Sanitize(Model.ExcludeAreaColumns);
 
-            // Phase 37-03: parse runtime-exclude opt-in list (SqlTable only, ignored for Content).
-            var includeFields = (Model.IncludeFields ?? string.Empty)
-                .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
-                .Select(e => e.Trim())
-                .Where(e => e.Length > 0)
-                .ToList();
+            // Phase 37-03: runtime-exclude opt-in list (SqlTable only, ignored for Content).
+            var includeFields = Sanitize(Model.IncludeFields);
 
-            // Phase 37-05 / LINK-02: parse SqlTable link-resolution column opt-in.
-            var resolveLinksInColumns = (Model.ResolveLinksInColumns ?? string.Empty)
-                .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
-                .Select(e => e.Trim())
-                .Where(e => e.Length > 0)
-                .ToList();
+            // Phase 37-05 / LINK-02: SqlTable link-resolution column opt-in.
+            var resolveLinksInColumns = Sanitize(Model.ResolveLinksInColumns);
 
             // Build predicate based on provider type
             ProviderPredicateDefinition predicate;
@@ -158,12 +139,7 @@ public sealed class SavePredicateCommand : CommandBase<PredicateEditModel>
                     }
                 }
 
-                // Split excludes: handle \r\n and \n, trim, remove empties
-                var excludes = (Model.Excludes ?? string.Empty)
-                    .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
-                    .Select(e => e.Trim())
-                    .Where(e => e.Length > 0)
-                    .ToList();
+                var excludes = Sanitize(Model.Excludes);
 
                 predicate = new ProviderPredicateDefinition
                 {
@@ -245,6 +221,13 @@ public sealed class SavePredicateCommand : CommandBase<PredicateEditModel>
             return new() { Status = CommandResult.ResultType.Error, Message = ex.Message };
         }
     }
+
+    /// <summary>Trim entries and drop blanks from a SelectMultiDual-bound list.</summary>
+    private static List<string> Sanitize(List<string>? values) =>
+        (values ?? new List<string>())
+            .Select(v => v?.Trim() ?? string.Empty)
+            .Where(v => v.Length > 0)
+            .ToList();
 
     /// <summary>
     /// Phase 41 D-13 + threat T-41-01: parse the string-typed Model.Mode into the DeploymentMode

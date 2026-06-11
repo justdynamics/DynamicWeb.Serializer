@@ -152,7 +152,7 @@ public class PredicateCommandTests : ConfigLoaderValidatorFixtureBase
                 ProviderType = "Content",
                 AreaId = 2,
                 PageId = 20,
-                Excludes = "path1\r\npath2\n\npath3"
+                Excludes = new() { " path1 ", "path2", "", "path3" }
             }
         };
 
@@ -188,7 +188,7 @@ public class PredicateCommandTests : ConfigLoaderValidatorFixtureBase
                 ProviderType = "Content",
                 AreaId = 3,
                 PageId = 30,
-                Excludes = ""
+                Excludes = new()
             }
         };
 
@@ -302,7 +302,7 @@ public class PredicateCommandTests : ConfigLoaderValidatorFixtureBase
                 ProviderType = "Content",
                 AreaId = 1,
                 PageId = 10,
-                Excludes = "/excluded"
+                Excludes = new() { "/excluded" }
             }
         };
 
@@ -417,7 +417,7 @@ public class PredicateCommandTests : ConfigLoaderValidatorFixtureBase
                 ProviderType = "Content",
                 AreaId = 1,
                 PageId = 10,
-                ExcludeFields = "PageNavigationTag\r\nAreaDomain",
+                ExcludeFields = new() { "PageNavigationTag", "AreaDomain" },
                 ExcludeXmlElements = "sort\npagesize"
             }
         };
@@ -450,8 +450,8 @@ public class PredicateCommandTests : ConfigLoaderValidatorFixtureBase
                 Name = "SqlTable Filtering",
                 ProviderType = "SqlTable",
                 Table = "EcomOrderFlow",
-                ExcludeFields = "LastModified",
-                XmlColumns = "ShippingXml\nSettingsXml",
+                ExcludeFields = new() { "LastModified" },
+                XmlColumns = new() { "ShippingXml", "SettingsXml" },
                 ExcludeXmlElements = "cache"
             }
         };
@@ -485,7 +485,7 @@ public class PredicateCommandTests : ConfigLoaderValidatorFixtureBase
                 ProviderType = "Content",
                 AreaId = 1,
                 PageId = 10,
-                XmlColumns = "SomeColumn"
+                XmlColumns = new() { "SomeColumn" }
             }
         };
 
@@ -515,7 +515,7 @@ public class PredicateCommandTests : ConfigLoaderValidatorFixtureBase
                 Name = "ExcludeFields RT",
                 ProviderType = "SqlTable",
                 Table = "EcomOrderFlow",
-                ExcludeFields = "OrderFlowID\nOrderFlowName\nOrderFlowOrderStateID"
+                ExcludeFields = new() { "OrderFlowID", "OrderFlowName", "OrderFlowOrderStateID" }
             }
         };
 
@@ -544,7 +544,7 @@ public class PredicateCommandTests : ConfigLoaderValidatorFixtureBase
                 Name = "XmlColumns RT",
                 ProviderType = "SqlTable",
                 Table = "EcomOrderFlow",
-                XmlColumns = "SettingsXml\nConfigXml"
+                XmlColumns = new() { "SettingsXml", "ConfigXml" }
             }
         };
 
@@ -572,8 +572,8 @@ public class PredicateCommandTests : ConfigLoaderValidatorFixtureBase
                 Name = "Empty Filtering",
                 ProviderType = "SqlTable",
                 Table = "EcomOrderFlow",
-                ExcludeFields = "",
-                XmlColumns = ""
+                ExcludeFields = new(),
+                XmlColumns = new()
             }
         };
 
@@ -610,7 +610,7 @@ public class PredicateCommandTests : ConfigLoaderValidatorFixtureBase
                 Name = "Updatable",
                 ProviderType = "SqlTable",
                 Table = "EcomOrderFlow",
-                ExcludeFields = "Col1\nCol2\nCol3"
+                ExcludeFields = new() { "Col1", "Col2", "Col3" }
             }
         };
 
@@ -640,7 +640,7 @@ public class PredicateCommandTests : ConfigLoaderValidatorFixtureBase
                 ProviderType = "Content",
                 AreaId = 1,
                 PageId = 10,
-                ExcludeFields = "Field1\r\nField2"
+                ExcludeFields = new() { "Field1", "Field2" }
             }
         };
 
@@ -832,7 +832,7 @@ public class PredicateCommandTests : ConfigLoaderValidatorFixtureBase
                 ProviderType = "SqlTable",
                 Table = "AccessUser",
                 WhereClause = "AccessUserType = 2 AND AccessUserUserName IN ('Admin','Editors')",
-                IncludeFields = "AccessUserHostingName"
+                IncludeFields = new() { "AccessUserHostingName" }
             }
         };
 
@@ -919,7 +919,7 @@ public class PredicateCommandTests : ConfigLoaderValidatorFixtureBase
                 Name = "BadInclude",
                 ProviderType = "SqlTable",
                 Table = "AccessUser",
-                IncludeFields = "NonexistentColumn"
+                IncludeFields = new() { "NonexistentColumn" }
             }
         };
 
