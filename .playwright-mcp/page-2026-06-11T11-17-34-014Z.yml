@@ -1,0 +1,1492 @@
+- generic [ref=e2]:
+  - navigation [ref=e3]:
+    - link [ref=e4] [cursor=pointer]:
+      - /url: /
+      - img
+      - img [ref=e5]
+    - tablist [ref=e21]:
+      - tab "Insights" [ref=e22] [cursor=pointer]:
+        - generic [ref=e24]: 
+        - generic [ref=e25]: Insights
+      - tab "Content" [selected] [ref=e26] [cursor=pointer]:
+        - generic [ref=e28]: 
+        - generic [ref=e29]: Content
+      - tab "Assets" [ref=e30] [cursor=pointer]:
+        - generic [ref=e32]: 
+        - generic [ref=e33]: Assets
+      - tab "Users" [ref=e34] [cursor=pointer]:
+        - generic [ref=e36]: 
+        - generic [ref=e37]: Users
+      - tab "Products" [ref=e38] [cursor=pointer]:
+        - generic [ref=e40]: 
+        - generic [ref=e41]: Products
+      - tab "Commerce" [ref=e42] [cursor=pointer]:
+        - generic [ref=e44]: 
+        - generic [ref=e45]: Commerce
+      - tab "Email" [ref=e46] [cursor=pointer]:
+        - generic [ref=e48]: 
+        - generic [ref=e49]: Email
+      - tab "Integration" [ref=e50] [cursor=pointer]:
+        - generic [ref=e52]: 
+        - generic [ref=e53]: Integration
+      - tab "Apps" [ref=e54] [cursor=pointer]:
+        - generic [ref=e56]: 
+        - generic [ref=e57]: Apps
+      - tab "Settings" [ref=e58] [cursor=pointer]:
+        - generic [ref=e60]: 
+        - generic [ref=e61]: Settings
+    - list [ref=e62]:
+      - listitem [ref=e63]:
+        - 'button "Version: 10.26.7+5be1855867a5a5b141ada86b027a6b1ca660b088, Loaded: 13:17:20, Build time: 09/06/2026 12:23:20" [ref=e64] [cursor=pointer]':
+          - generic [ref=e65]: 
+        - text:      
+      - listitem [ref=e66]:
+        - button "Expand area" [ref=e67] [cursor=pointer]:
+          - generic [ref=e68]: 
+          - generic [ref=e69]: Expand area
+      - link "Trial license Expires 11-Jul-2026" [ref=e70] [cursor=pointer]:
+        - /url: /Admin/UI/Content/LicenseOverview?Type=License&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+        - generic [ref=e71]: 
+        - generic [ref=e72]:
+          - text: Trial license
+          - generic [ref=e73]: Expires 11-Jul-2026
+  - generic [ref=e74]:
+    - tabpanel [ref=e75]:
+      - generic [ref=e80]:
+        - navigation [ref=e81]:
+          - generic [ref=e82]:
+            - generic [ref=e83]:
+              - generic [ref=e84]: "Search:"
+              - generic [ref=e85]:
+                - searchbox "Search or page id" [ref=e86]
+                - button "Search" [ref=e87] [cursor=pointer]:
+                  - generic [ref=e88]: Search
+                  - generic [ref=e89]: 
+              - button [ref=e90] [cursor=pointer]:
+                - generic [ref=e91]: 
+              - text:    
+              - button [ref=e92] [cursor=pointer]:
+                - generic [ref=e94]: 
+            - generic [ref=e95]:
+              - generic [ref=e99]:
+                - button "Swift 2 en-US" [ref=e100] [cursor=pointer]:
+                  - generic [ref=e101]:
+                    - img [ref=e102]
+                    - generic [ref=e103]: Swift 2
+                    - generic [ref=e104]: en-US
+                - text: 
+              - generic [ref=e105]:
+                - list [ref=e106]:
+                  - listitem [ref=e107]:
+                    - generic [ref=e108]:
+                      - text: 
+                      - heading "Navigation" [level=6] [ref=e110]
+                      - button "New page" [ref=e111] [cursor=pointer]:
+                        - generic [ref=e112]: 
+                      - button [ref=e113] [cursor=pointer]:
+                        - generic [ref=e114]: 
+                      - text:    
+                    - list [ref=e115]:
+                      - listitem [ref=e116]:
+                        - generic [ref=e117]:
+                          - button [disabled]:
+                            - generic: 
+                          - link "Home" [ref=e119] [cursor=pointer]:
+                            - /url: /Admin/UI/Content/PageVisualEdit?Id=6869&IsEmailMarketing=False&Type=GetPageById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                            - generic [ref=e121]: 
+                            - text: Home
+                            - generic "Managed at deploy by 'Site structure and design'" [ref=e123]:
+                              - generic [ref=e124]: 
+                          - generic [ref=e125]:
+                            - 'generic "ID: 6869" [ref=e127]':
+                              - generic [ref=e128]: 
+                            - button [ref=e129] [cursor=pointer]:
+                              - generic [ref=e130]: 
+                            - button "Click for more actions" [ref=e131] [cursor=pointer]:
+                              - generic [ref=e132]: 
+                            - text:               
+                      - listitem [ref=e133]:
+                        - generic [ref=e134]:
+                          - button [disabled]:
+                            - generic: 
+                          - link "Home Machines" [ref=e136] [cursor=pointer]:
+                            - /url: /Admin/UI/Content/PageVisualEdit?Id=4897&IsEmailMarketing=False&Type=GetPageById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                            - generic [ref=e138]: 
+                            - text: Home Machines
+                            - generic [ref=e139]:
+                              - generic "Hidden in menu" [ref=e140]:
+                                - generic [ref=e141]: 
+                              - generic "Managed at deploy by 'Site structure and design'" [ref=e142]:
+                                - generic [ref=e143]: 
+                          - generic [ref=e144]:
+                            - 'generic "ID: 4897" [ref=e146]':
+                              - generic [ref=e147]: 
+                            - button [ref=e148] [cursor=pointer]:
+                              - generic [ref=e149]: 
+                            - button "Click for more actions" [ref=e150] [cursor=pointer]:
+                              - generic [ref=e151]: 
+                            - text:               
+                      - listitem [ref=e152]:
+                        - generic [ref=e153]:
+                          - button "Toggle level" [ref=e154] [cursor=pointer]:
+                            - generic [ref=e155]: 
+                          - link "Shop" [ref=e157] [cursor=pointer]:
+                            - /url: /Admin/UI/Content/PageVisualEdit?Id=5862&IsEmailMarketing=False&Type=GetPageById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                            - generic [ref=e159]: 
+                            - text: Shop
+                            - generic [ref=e160]:
+                              - generic "Ecommerce navigation" [ref=e161]:
+                                - generic [ref=e162]: 
+                              - generic "URL Provider" [ref=e163]:
+                                - generic [ref=e164]: 
+                              - 'generic "Navigation tag: Shop" [ref=e165]':
+                                - generic [ref=e166]: 
+                              - generic "Managed at deploy by 'Site structure and design'" [ref=e167]:
+                                - generic [ref=e168]: 
+                          - generic [ref=e169]:
+                            - 'generic "ID: 5862" [ref=e171]':
+                              - generic [ref=e172]: 
+                            - button [ref=e173] [cursor=pointer]:
+                              - generic [ref=e174]: 
+                            - button "Click for more actions" [ref=e175] [cursor=pointer]:
+                              - generic [ref=e176]: 
+                            - text:              
+                      - listitem [ref=e177]:
+                        - generic [ref=e178]:
+                          - button "Toggle level" [ref=e179] [cursor=pointer]:
+                            - generic [ref=e180]: 
+                          - link "About" [ref=e182] [cursor=pointer]:
+                            - /url: /Admin/UI/Content/PageVisualEdit?Id=107&IsEmailMarketing=False&Type=GetPageById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                            - generic [ref=e184]: 
+                            - text: About
+                            - generic "Managed at deploy by 'Site structure and design'" [ref=e186]:
+                              - generic [ref=e187]: 
+                          - generic [ref=e188]:
+                            - 'generic "ID: 107" [ref=e190]':
+                              - generic [ref=e191]: 
+                            - button [ref=e192] [cursor=pointer]:
+                              - generic [ref=e193]: 
+                            - button "Click for more actions" [ref=e194] [cursor=pointer]:
+                              - generic [ref=e195]: 
+                            - text:               
+                      - listitem [ref=e196]:
+                        - generic [ref=e197]:
+                          - button "Toggle level" [ref=e198] [cursor=pointer]:
+                            - generic [ref=e199]: 
+                          - link "Posts" [ref=e201] [cursor=pointer]:
+                            - /url: /Admin/UI/Content/PageVisualEdit?Id=8345&IsEmailMarketing=False&Type=GetPageById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                            - generic [ref=e203]: 
+                            - text: Posts
+                          - generic [ref=e204]:
+                            - 'generic "ID: 8345" [ref=e206]':
+                              - generic [ref=e207]: 
+                            - button [ref=e208] [cursor=pointer]:
+                              - generic [ref=e209]: 
+                            - button "Click for more actions" [ref=e210] [cursor=pointer]:
+                              - generic [ref=e211]: 
+                            - text:               
+                      - listitem [ref=e212]:
+                        - generic [ref=e213]:
+                          - button "Toggle level" [ref=e214] [cursor=pointer]:
+                            - generic [ref=e215]: 
+                          - link "Navigation" [ref=e217] [cursor=pointer]:
+                            - /url: "#"
+                            - generic [ref=e219]: 
+                            - text: Navigation
+                            - generic [ref=e220]:
+                              - generic "URL ignore for children" [ref=e221]:
+                                - generic [ref=e222]: 
+                              - generic "Managed at deploy by 'Site structure and design'" [ref=e223]:
+                                - generic [ref=e224]: 
+                          - generic [ref=e225]:
+                            - 'generic "ID: 88" [ref=e227]':
+                              - generic [ref=e228]: 
+                            - button [ref=e229] [cursor=pointer]:
+                              - generic [ref=e230]: 
+                            - button "Click for more actions" [ref=e231] [cursor=pointer]:
+                              - generic [ref=e232]: 
+                            - text:             
+                - list [ref=e233]:
+                  - listitem [ref=e234]:
+                    - generic [ref=e235]:
+                      - text: 
+                      - heading "Customer center" [level=6] [ref=e237]
+                      - button "New page" [ref=e238] [cursor=pointer]:
+                        - generic [ref=e239]: 
+                      - button [ref=e240] [cursor=pointer]:
+                        - generic [ref=e241]: 
+                      - text:    
+                    - list [ref=e242]:
+                      - listitem [ref=e243]:
+                        - generic [ref=e244]:
+                          - button "Toggle level" [ref=e245] [cursor=pointer]:
+                            - generic [ref=e246]: 
+                          - link "Sign in" [ref=e248] [cursor=pointer]:
+                            - /url: /Admin/UI/Content/PageVisualEdit?Id=111&IsEmailMarketing=False&Type=GetPageById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                            - generic [ref=e250]: 
+                            - text: Sign in
+                            - generic [ref=e251]:
+                              - generic "Shortcut to another page or file" [ref=e252]:
+                                - generic [ref=e253]: 
+                              - generic "Managed at deploy by 'Site structure and design'" [ref=e254]:
+                                - generic [ref=e255]: 
+                          - generic [ref=e256]:
+                            - 'generic "ID: 111" [ref=e258]':
+                              - generic [ref=e259]: 
+                            - button [ref=e260] [cursor=pointer]:
+                              - generic [ref=e261]: 
+                            - button "Click for more actions" [ref=e262] [cursor=pointer]:
+                              - generic [ref=e263]: 
+                            - text:               
+                      - listitem [ref=e264]:
+                        - generic [ref=e265]:
+                          - button "Toggle level" [ref=e266] [cursor=pointer]:
+                            - generic [ref=e267]: 
+                          - link "Customer center" [ref=e269] [cursor=pointer]:
+                            - /url: "#"
+                            - generic [ref=e271]: 
+                            - text: Customer center
+                            - generic [ref=e272]:
+                              - generic "Has permissions" [ref=e273]:
+                                - generic [ref=e274]: 
+                              - generic "URL ignore for children" [ref=e275]:
+                                - generic [ref=e276]: 
+                              - generic "Managed at deploy by 'Site structure and design'" [ref=e277]:
+                                - generic [ref=e278]: 
+                          - generic [ref=e279]:
+                            - 'generic "ID: 8385" [ref=e281]':
+                              - generic [ref=e282]: 
+                            - button [ref=e283] [cursor=pointer]:
+                              - generic [ref=e284]: 
+                            - button "Click for more actions" [ref=e285] [cursor=pointer]:
+                              - generic [ref=e286]: 
+                            - text:             
+                      - listitem [ref=e287]:
+                        - generic [ref=e288]:
+                          - button "Toggle level" [ref=e289] [cursor=pointer]:
+                            - generic [ref=e290]: 
+                          - link "Shopping cart" [ref=e292] [cursor=pointer]:
+                            - /url: "#"
+                            - generic [ref=e294]: 
+                            - text: Shopping cart
+                            - generic [ref=e295]:
+                              - generic "URL ignore for children" [ref=e296]:
+                                - generic [ref=e297]: 
+                              - generic "Managed at deploy by 'Site structure and design'" [ref=e298]:
+                                - generic [ref=e299]: 
+                          - generic [ref=e300]:
+                            - 'generic "ID: 8421" [ref=e302]':
+                              - generic [ref=e303]: 
+                            - button [ref=e304] [cursor=pointer]:
+                              - generic [ref=e305]: 
+                            - button "Click for more actions" [ref=e306] [cursor=pointer]:
+                              - generic [ref=e307]: 
+                            - text:             
+                - list [ref=e308]:
+                  - listitem [ref=e309]:
+                    - generic [ref=e310]:
+                      - text: 
+                      - heading "Swift Setup" [level=6] [ref=e312]
+                      - button "New page" [ref=e313] [cursor=pointer]:
+                        - generic [ref=e314]: 
+                      - button [ref=e315] [cursor=pointer]:
+                        - generic [ref=e316]: 
+                      - text:    
+                    - list [ref=e317]:
+                      - listitem [ref=e318]:
+                        - generic [ref=e319]:
+                          - button "Toggle level" [ref=e320] [cursor=pointer]:
+                            - generic [ref=e321]: 
+                          - link "Header / Footer" [ref=e323] [cursor=pointer]:
+                            - /url: "#"
+                            - generic [ref=e325]: 
+                            - text: Header / Footer
+                            - generic [ref=e326]:
+                              - generic "URL ignore for children" [ref=e327]:
+                                - generic [ref=e328]: 
+                              - generic "Managed at deploy by 'Site structure and design'" [ref=e329]:
+                                - generic [ref=e330]: 
+                          - generic [ref=e331]:
+                            - 'generic "ID: 6860" [ref=e333]':
+                              - generic [ref=e334]: 
+                            - button [ref=e335] [cursor=pointer]:
+                              - generic [ref=e336]: 
+                            - button "Click for more actions" [ref=e337] [cursor=pointer]:
+                              - generic [ref=e338]: 
+                            - text:             
+                      - listitem [ref=e339]:
+                        - generic [ref=e340]:
+                          - button "Toggle level" [ref=e341] [cursor=pointer]:
+                            - generic [ref=e342]: 
+                          - link "Product Components" [ref=e344] [cursor=pointer]:
+                            - /url: "#"
+                            - generic [ref=e346]: 
+                            - text: Product Components
+                            - generic [ref=e347]:
+                              - generic "URL ignore for children" [ref=e348]:
+                                - generic [ref=e349]: 
+                              - generic "Managed at deploy by 'Site structure and design'" [ref=e350]:
+                                - generic [ref=e351]: 
+                          - generic [ref=e352]:
+                            - 'generic "ID: 5863" [ref=e354]':
+                              - generic [ref=e355]: 
+                            - button [ref=e356] [cursor=pointer]:
+                              - generic [ref=e357]: 
+                            - button "Click for more actions" [ref=e358] [cursor=pointer]:
+                              - generic [ref=e359]: 
+                            - text:             
+                      - listitem [ref=e360]:
+                        - generic [ref=e361]:
+                          - button "Toggle level" [ref=e362] [cursor=pointer]:
+                            - generic [ref=e363]: 
+                          - link "Service Pages" [ref=e365] [cursor=pointer]:
+                            - /url: /Admin/UI/Content/PageEdit?Id=5859&IsEmailMarketing=False&Type=GetPageById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                            - generic [ref=e367]: 
+                            - text: Service Pages
+                            - generic [ref=e368]:
+                              - generic "Hidden in menu" [ref=e369]:
+                                - generic [ref=e370]: 
+                              - generic "Managed at deploy by 'Site structure and design'" [ref=e371]:
+                                - generic [ref=e372]: 
+                          - generic [ref=e373]:
+                            - 'generic "ID: 5859" [ref=e375]':
+                              - generic [ref=e376]: 
+                            - button [ref=e377] [cursor=pointer]:
+                              - generic [ref=e378]: 
+                            - button "Click for more actions" [ref=e379] [cursor=pointer]:
+                              - generic [ref=e380]: 
+                            - text:              
+                      - listitem [ref=e381]:
+                        - generic [ref=e382]:
+                          - button [disabled]:
+                            - generic: 
+                          - link "Search result page" [ref=e384] [cursor=pointer]:
+                            - /url: /Admin/UI/Content/PageVisualEdit?Id=1688&IsEmailMarketing=False&Type=GetPageById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                            - generic [ref=e386]: 
+                            - text: Search result page
+                            - generic [ref=e387]:
+                              - generic "Hidden in menu" [ref=e388]:
+                                - generic [ref=e389]: 
+                              - 'generic "Navigation tag: ContentSearch" [ref=e390]':
+                                - generic [ref=e391]: 
+                              - generic "Managed at deploy by 'Site structure and design'" [ref=e392]:
+                                - generic [ref=e393]: 
+                          - generic [ref=e394]:
+                            - 'generic "ID: 1688" [ref=e396]':
+                              - generic [ref=e397]: 
+                            - button [ref=e398] [cursor=pointer]:
+                              - generic [ref=e399]: 
+                            - button "Click for more actions" [ref=e400] [cursor=pointer]:
+                              - generic [ref=e401]: 
+                            - text:               
+                - list [ref=e402]:
+                  - listitem [ref=e403]:
+                    - generic [ref=e404]:
+                      - text: 
+                      - heading "Emails" [level=6] [ref=e406]
+                      - button "New page" [ref=e407] [cursor=pointer]:
+                        - generic [ref=e408]: 
+                      - button [ref=e409] [cursor=pointer]:
+                        - generic [ref=e410]: 
+                      - text:    
+                    - list [ref=e411]:
+                      - listitem [ref=e412]:
+                        - generic [ref=e413]:
+                          - button "Toggle level" [ref=e414] [cursor=pointer]:
+                            - generic [ref=e415]: 
+                          - link "Newsletter Emails" [ref=e417] [cursor=pointer]:
+                            - /url: "#"
+                            - generic [ref=e419]: 
+                            - text: Newsletter Emails
+                            - generic [ref=e420]:
+                              - generic "URL ignore for children" [ref=e421]:
+                                - generic [ref=e422]: 
+                              - generic "Managed at deploy by 'Site structure and design'" [ref=e423]:
+                                - generic [ref=e424]: 
+                          - generic [ref=e425]:
+                            - 'generic "ID: 7837" [ref=e427]':
+                              - generic [ref=e428]: 
+                            - button [ref=e429] [cursor=pointer]:
+                              - generic [ref=e430]: 
+                            - button "Click for more actions" [ref=e431] [cursor=pointer]:
+                              - generic [ref=e432]: 
+                            - text:             
+                      - listitem [ref=e433]:
+                        - generic [ref=e434]:
+                          - button "Toggle level" [ref=e435] [cursor=pointer]:
+                            - generic [ref=e436]: 
+                          - link "System emails" [ref=e438] [cursor=pointer]:
+                            - /url: "#"
+                            - generic [ref=e440]: 
+                            - text: System emails
+                            - generic [ref=e441]:
+                              - generic "URL ignore for children" [ref=e442]:
+                                - generic [ref=e443]: 
+                              - generic "Managed at deploy by 'Site structure and design'" [ref=e444]:
+                                - generic [ref=e445]: 
+                          - generic [ref=e446]:
+                            - 'generic "ID: 7831" [ref=e448]':
+                              - generic [ref=e449]: 
+                            - button [ref=e450] [cursor=pointer]:
+                              - generic [ref=e451]: 
+                            - button "Click for more actions" [ref=e452] [cursor=pointer]:
+                              - generic [ref=e453]: 
+                            - text:             
+                - list [ref=e454]:
+                  - listitem [ref=e455]:
+                    - generic [ref=e456]:
+                      - text: 
+                      - heading "Presets" [level=6] [ref=e458]
+                    - list [ref=e459]:
+                      - listitem [ref=e460]:
+                        - generic [ref=e461]:
+                          - button "Toggle level" [ref=e462] [cursor=pointer]:
+                            - generic [ref=e463]: 
+                          - link "Page presets" [ref=e465] [cursor=pointer]:
+                            - /url: "#"
+                            - generic [ref=e467]: 
+                            - text: Page presets
+                            - generic [ref=e468]:
+                              - generic "Unpublished" [ref=e469]:
+                                - generic [ref=e470]: 
+                              - generic "Managed at deploy by 'Site structure and design'" [ref=e471]:
+                                - generic [ref=e472]: 
+                          - generic [ref=e473]:
+                            - 'generic "ID: 8379" [ref=e475]':
+                              - generic [ref=e476]: 
+                            - button "Click for more actions" [ref=e477] [cursor=pointer]:
+                              - generic [ref=e478]: 
+                            - text:      
+                - list [ref=e479]:
+                  - listitem [ref=e480]:
+                    - generic [ref=e481]:
+                      - text: 
+                      - heading "Recycle bin" [level=6] [ref=e483]
+                    - list [ref=e484]:
+                      - listitem [ref=e485]:
+                        - generic [ref=e486]:
+                          - button [disabled]:
+                            - generic: 
+                          - link "Pages" [ref=e488] [cursor=pointer]:
+                            - /url: /Admin/UI/Content/RecycleBinList?AreaId=3&EntityType=Page&Type=GetRecycleBins&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                            - generic [ref=e490]: 
+                            - text: Pages
+                      - listitem [ref=e491]:
+                        - generic [ref=e492]:
+                          - button [disabled]:
+                            - generic: 
+                          - link "Grid rows" [ref=e494] [cursor=pointer]:
+                            - /url: /Admin/UI/Content/RecycleBinList?AreaId=3&EntityType=GridRow&Type=GetRecycleBins&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                            - generic [ref=e496]: 
+                            - text: Grid rows
+                      - listitem [ref=e497]:
+                        - generic [ref=e498]:
+                          - button [disabled]:
+                            - generic: 
+                          - link "Paragraphs" [ref=e500] [cursor=pointer]:
+                            - /url: /Admin/UI/Content/RecycleBinList?AreaId=3&EntityType=Paragraph&Type=GetRecycleBins&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                            - generic [ref=e502]: 
+                            - text: Paragraphs
+        - generic [ref=e504]:
+          - generic [ref=e505]:
+            - navigation "breadcrumb" [ref=e507]:
+              - list [ref=e508]:
+                - listitem [ref=e509]:
+                  - link "Content" [ref=e510] [cursor=pointer]:
+                    - /url: /Admin/UI/Content
+                - text:   
+                - listitem [ref=e511]:  ...
+                - listitem [ref=e512]:  Paragraphs
+            - generic [ref=e513]:
+              - button "Visual editor" [ref=e514] [cursor=pointer]:
+                - generic [ref=e515]: 
+                - text: Visual editor
+              - generic [ref=e516]:
+                - button "Languages" [ref=e517] [cursor=pointer]
+                - button "Toggle context menu" [ref=e518] [cursor=pointer]:
+                  - generic [ref=e519]: Toggle context menu
+              - generic [ref=e520]:
+                - button "Actions" [ref=e521] [cursor=pointer]
+                - text:      
+          - generic [ref=e522]:
+            - generic [ref=e524]:
+              - generic [ref=e526]: 
+              - generic [ref=e528]:
+                - generic [ref=e529]: Name
+                - generic [ref=e530]: Home
+              - generic [ref=e532]:
+                - generic [ref=e533]: Created
+                - generic [ref=e534]: 14 Jan 2025 20:55
+              - generic [ref=e536]:
+                - generic [ref=e537]: Edited
+                - generic [ref=e538]: 22 Jan 2026 20:59
+              - generic [ref=e540]:
+                - generic [ref=e541]: Item type
+                - generic [ref=e542]: Swift-v2_Page
+              - generic [ref=e544]:
+                - generic [ref=e545]: Item ID
+                - generic [ref=e546]: "867"
+              - generic [ref=e548]:
+                - generic [ref=e549]: Page ID
+                - generic [ref=e550]: "6869"
+              - generic [ref=e552]:
+                - generic [ref=e553]: Template
+                - generic [ref=e554]: Designs/Swift-v2/Swift-v2_Page.cshtml
+              - generic [ref=e557]: Published
+            - generic [ref=e560]:
+              - toolbar "List actions toolbar" [ref=e561]:
+                - heading "Paragraphs (20)" [level=6] [ref=e563]
+                - button "New row" [ref=e565] [cursor=pointer]:
+                  - generic [ref=e566]: 
+                  - text: New row
+                - generic [ref=e567]: "Search:"
+                - generic [ref=e568]:
+                  - searchbox "Search:" [active] [ref=e569]
+                  - button "Search" [ref=e570] [cursor=pointer]:
+                    - generic [ref=e571]: Search
+                    - generic [ref=e572]: 
+              - table [ref=e574]:
+                - rowgroup [ref=e575]:
+                  - row "Name Content type Published Publication Edited Edited by" [ref=e576]:
+                    - columnheader [ref=e577]
+                    - columnheader [ref=e578]:
+                      - checkbox [ref=e580]
+                    - columnheader [ref=e581]
+                    - columnheader "Name" [ref=e582]
+                    - columnheader [ref=e583]
+                    - columnheader "Content type" [ref=e584]
+                    - columnheader "Published" [ref=e585]
+                    - columnheader "Publication" [ref=e586]
+                    - columnheader "Edited" [ref=e587]
+                    - columnheader "Edited by" [ref=e588]
+                    - columnheader [ref=e589]
+                - rowgroup [ref=e590] [cursor=pointer]:
+                  - row "1 column Open context menu 14 Jan 2025 22:16 11 Jun 2026 13:14 System administrator" [ref=e591]:
+                    - columnheader [ref=e592]
+                    - columnheader [ref=e593]:
+                      - checkbox [ref=e595]
+                    - columnheader [ref=e596]
+                    - columnheader "1 column" [ref=e597]:
+                      - generic "1 column" [ref=e599]
+                    - columnheader "Open context menu" [ref=e600]:
+                      - button [expanded] [ref=e601]:
+                        - generic [ref=e603]: 
+                      - text:        
+                      - button "Open context menu" [ref=e604]:
+                        - generic [ref=e605]: 
+                        - generic [ref=e606]: Open context menu
+                    - columnheader [ref=e607]
+                    - columnheader [ref=e608]:
+                      - checkbox [checked] [ref=e612]
+                    - columnheader "14 Jan 2025 22:16" [ref=e613]
+                    - columnheader "11 Jun 2026 13:14" [ref=e614]
+                    - columnheader "System administrator" [ref=e615]
+                    - columnheader [ref=e616]
+                - rowgroup [ref=e617]:
+                  - row "Select row Swift-v2_Poster 732 Poster 14 Jan 2025 22:17 18 Feb 2025 15:30 System administrator" [ref=e618] [cursor=pointer]:
+                    - cell [ref=e619]
+                    - cell "Select row" [ref=e620]:
+                      - checkbox "Select row" [ref=e622]
+                    - cell [ref=e623]:
+                      - link [ref=e624]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20229&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                        - generic [ref=e625]: 
+                    - cell "Swift-v2_Poster 732" [ref=e626]:
+                      - link "Swift-v2_Poster 732" [ref=e627]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20229&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                        - generic [ref=e628]: Swift-v2_Poster 732
+                    - cell [ref=e629]:    
+                    - cell "Poster" [ref=e630]:
+                      - link "Poster" [ref=e631]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20229&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell [ref=e632]:
+                      - link:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20229&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell "14 Jan 2025 22:17" [ref=e633]:
+                      - link "14 Jan 2025 22:17" [ref=e634]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20229&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell "18 Feb 2025 15:30" [ref=e635]:
+                      - link "18 Feb 2025 15:30" [ref=e636]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20229&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell "System administrator" [ref=e637]:
+                      - link "System administrator" [ref=e638]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20229&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell [ref=e639]
+                - rowgroup [ref=e640] [cursor=pointer]:
+                  - row "1 column Open context menu 14 Jan 2025 20:55 11 Jun 2026 13:14 System administrator" [ref=e641]:
+                    - columnheader [ref=e642]
+                    - columnheader [ref=e643]:
+                      - checkbox [ref=e645]
+                    - columnheader [ref=e646]
+                    - columnheader "1 column" [ref=e647]:
+                      - generic "1 column" [ref=e649]
+                    - columnheader "Open context menu" [ref=e650]:
+                      - button [expanded] [ref=e651]:
+                        - generic [ref=e653]: 
+                      - text:        
+                      - button "Open context menu" [ref=e654]:
+                        - generic [ref=e655]: 
+                        - generic [ref=e656]: Open context menu
+                    - columnheader [ref=e657]
+                    - columnheader [ref=e658]:
+                      - checkbox [checked] [ref=e662]
+                    - columnheader "14 Jan 2025 20:55" [ref=e663]
+                    - columnheader "11 Jun 2026 13:14" [ref=e664]
+                    - columnheader "System administrator" [ref=e665]
+                    - columnheader [ref=e666]
+                - rowgroup [ref=e667]:
+                  - row "Select row Our products Text 14 Jan 2025 20:55 14 Jan 2025 20:55 System administrator" [ref=e668] [cursor=pointer]:
+                    - cell [ref=e669]
+                    - cell "Select row" [ref=e670]:
+                      - checkbox "Select row" [ref=e672]
+                    - cell [ref=e673]:
+                      - link [ref=e674]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20212&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                        - generic [ref=e675]: 
+                    - cell "Our products" [ref=e676]:
+                      - link "Our products" [ref=e677]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20212&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                        - generic [ref=e678]: Our products
+                    - cell [ref=e679]:    
+                    - cell "Text" [ref=e680]:
+                      - link "Text" [ref=e681]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20212&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell [ref=e682]:
+                      - link:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20212&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell "14 Jan 2025 20:55" [ref=e683]:
+                      - link "14 Jan 2025 20:55" [ref=e684]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20212&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell "14 Jan 2025 20:55" [ref=e685]:
+                      - link "14 Jan 2025 20:55" [ref=e686]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20212&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell "System administrator" [ref=e687]:
+                      - link "System administrator" [ref=e688]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20212&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell [ref=e689]
+                - rowgroup [ref=e690] [cursor=pointer]:
+                  - row "1 column Open context menu 14 Jan 2025 20:55 11 Jun 2026 13:14 System administrator" [ref=e691]:
+                    - columnheader [ref=e692]
+                    - columnheader [ref=e693]:
+                      - checkbox [ref=e695]
+                    - columnheader [ref=e696]
+                    - columnheader "1 column" [ref=e697]:
+                      - generic "1 column" [ref=e699]
+                    - columnheader "Open context menu" [ref=e700]:
+                      - button [expanded] [ref=e701]:
+                        - generic [ref=e703]: 
+                      - text:        
+                      - button "Open context menu" [ref=e704]:
+                        - generic [ref=e705]: 
+                        - generic [ref=e706]: Open context menu
+                    - columnheader [ref=e707]
+                    - columnheader [ref=e708]:
+                      - checkbox [checked] [ref=e712]
+                    - columnheader "14 Jan 2025 20:55" [ref=e713]
+                    - columnheader "11 Jun 2026 13:14" [ref=e714]
+                    - columnheader "System administrator" [ref=e715]
+                    - columnheader [ref=e716]
+                - rowgroup [ref=e717]:
+                  - row "Select row Slider Slider 14 Jan 2025 20:55 14 Jan 2025 20:55 System administrator" [ref=e718] [cursor=pointer]:
+                    - cell [ref=e719]
+                    - cell "Select row" [ref=e720]:
+                      - checkbox "Select row" [ref=e722]
+                    - cell [ref=e723]:
+                      - link [ref=e724]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20213&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                        - generic [ref=e725]: 
+                    - cell "Slider" [ref=e726]:
+                      - link "Slider" [ref=e727]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20213&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                        - generic [ref=e728]: Slider
+                    - cell [ref=e729]:    
+                    - cell "Slider" [ref=e730]:
+                      - link "Slider" [ref=e731]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20213&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell [ref=e732]:
+                      - link:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20213&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell "14 Jan 2025 20:55" [ref=e733]:
+                      - link "14 Jan 2025 20:55" [ref=e734]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20213&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell "14 Jan 2025 20:55" [ref=e735]:
+                      - link "14 Jan 2025 20:55" [ref=e736]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20213&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell "System administrator" [ref=e737]:
+                      - link "System administrator" [ref=e738]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20213&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell [ref=e739]
+                - rowgroup [ref=e740] [cursor=pointer]:
+                  - row "2 columns (8/4) Open context menu 23 Jun 2025 11:03 11 Jun 2026 13:14 System administrator" [ref=e741]:
+                    - columnheader [ref=e742]
+                    - columnheader [ref=e743]:
+                      - checkbox [ref=e745]
+                    - columnheader [ref=e746]
+                    - columnheader "2 columns (8/4)" [ref=e747]:
+                      - generic "2 columns (8/4)" [ref=e749]
+                    - columnheader "Open context menu" [ref=e750]:
+                      - button [expanded] [ref=e751]:
+                        - generic [ref=e753]: 
+                      - text:        
+                      - button "Open context menu" [ref=e754]:
+                        - generic [ref=e755]: 
+                        - generic [ref=e756]: Open context menu
+                    - columnheader [ref=e757]
+                    - columnheader [ref=e758]:
+                      - checkbox [checked] [ref=e762]
+                    - columnheader "23 Jun 2025 11:03" [ref=e763]
+                    - columnheader "11 Jun 2026 13:14" [ref=e764]
+                    - columnheader "System administrator" [ref=e765]
+                    - columnheader [ref=e766]
+                - rowgroup [ref=e767]:
+                  - row "Select row Swift-v2_Image 1094 Image 23 Jun 2025 11:04 23 Jun 2025 11:04 System administrator" [ref=e768] [cursor=pointer]:
+                    - cell [ref=e769]
+                    - cell "Select row" [ref=e770]:
+                      - checkbox "Select row" [ref=e772]
+                    - cell [ref=e773]:
+                      - link [ref=e774]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=22097&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                        - generic [ref=e775]: 
+                    - cell "Swift-v2_Image 1094" [ref=e776]:
+                      - link "Swift-v2_Image 1094" [ref=e777]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=22097&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                        - generic [ref=e778]: Swift-v2_Image 1094
+                    - cell [ref=e779]:    
+                    - cell "Image" [ref=e780]:
+                      - link "Image" [ref=e781]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=22097&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell [ref=e782]:
+                      - link:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=22097&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell "23 Jun 2025 11:04" [ref=e783]:
+                      - link "23 Jun 2025 11:04" [ref=e784]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=22097&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell "23 Jun 2025 11:04" [ref=e785]:
+                      - link "23 Jun 2025 11:04" [ref=e786]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=22097&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell "System administrator" [ref=e787]:
+                      - link "System administrator" [ref=e788]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=22097&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell [ref=e789]
+                  - row "Select row Do you want to go faster and further? Text 23 Jun 2025 11:06 23 Jun 2025 11:13 System administrator" [ref=e790] [cursor=pointer]:
+                    - cell [ref=e791]
+                    - cell "Select row" [ref=e792]:
+                      - checkbox "Select row" [ref=e794]
+                    - cell [ref=e795]:
+                      - link [ref=e796]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=22098&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                        - generic [ref=e797]: 
+                    - cell "Do you want to go faster and further?" [ref=e798]:
+                      - link "Do you want to go faster and further?" [ref=e799]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=22098&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                        - generic [ref=e800]: Do you want to go faster and further?
+                    - cell [ref=e801]:    
+                    - cell "Text" [ref=e802]:
+                      - link "Text" [ref=e803]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=22098&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell [ref=e804]:
+                      - link:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=22098&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell "23 Jun 2025 11:06" [ref=e805]:
+                      - link "23 Jun 2025 11:06" [ref=e806]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=22098&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell "23 Jun 2025 11:13" [ref=e807]:
+                      - link "23 Jun 2025 11:13" [ref=e808]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=22098&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell "System administrator" [ref=e809]:
+                      - link "System administrator" [ref=e810]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=22098&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell [ref=e811]
+                - rowgroup [ref=e812] [cursor=pointer]:
+                  - row "1 column Open context menu 14 Jan 2025 20:55 11 Jun 2026 13:14 System administrator" [ref=e813]:
+                    - columnheader [ref=e814]
+                    - columnheader [ref=e815]:
+                      - checkbox [ref=e817]
+                    - columnheader [ref=e818]
+                    - columnheader "1 column" [ref=e819]:
+                      - generic "1 column" [ref=e821]
+                    - columnheader "Open context menu" [ref=e822]:
+                      - button [expanded] [ref=e823]:
+                        - generic [ref=e825]: 
+                      - text:        
+                      - button "Open context menu" [ref=e826]:
+                        - generic [ref=e827]: 
+                        - generic [ref=e828]: Open context menu
+                    - columnheader [ref=e829]
+                    - columnheader [ref=e830]:
+                      - checkbox [checked] [ref=e834]
+                    - columnheader "14 Jan 2025 20:55" [ref=e835]
+                    - columnheader "11 Jun 2026 13:14" [ref=e836]
+                    - columnheader "System administrator" [ref=e837]
+                    - columnheader [ref=e838]
+                - rowgroup [ref=e839]:
+                  - row "Select row The Advantage of Partnering with Us Text 14 Jan 2025 20:55 14 Jan 2025 20:55 System administrator" [ref=e840] [cursor=pointer]:
+                    - cell [ref=e841]
+                    - cell "Select row" [ref=e842]:
+                      - checkbox "Select row" [ref=e844]
+                    - cell [ref=e845]:
+                      - link [ref=e846]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20214&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                        - generic [ref=e847]: 
+                    - cell "The Advantage of Partnering with Us" [ref=e848]:
+                      - link "The Advantage of Partnering with Us" [ref=e849]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20214&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                        - generic [ref=e850]: The Advantage of Partnering with Us
+                    - cell [ref=e851]:    
+                    - cell "Text" [ref=e852]:
+                      - link "Text" [ref=e853]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20214&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell [ref=e854]:
+                      - link:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20214&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell "14 Jan 2025 20:55" [ref=e855]:
+                      - link "14 Jan 2025 20:55" [ref=e856]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20214&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell "14 Jan 2025 20:55" [ref=e857]:
+                      - link "14 Jan 2025 20:55" [ref=e858]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20214&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell "System administrator" [ref=e859]:
+                      - link "System administrator" [ref=e860]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20214&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell [ref=e861]
+                - rowgroup [ref=e862] [cursor=pointer]:
+                  - row "3 columns Open context menu 14 Jan 2025 20:55 11 Jun 2026 13:14 System administrator" [ref=e863]:
+                    - columnheader [ref=e864]
+                    - columnheader [ref=e865]:
+                      - checkbox [ref=e867]
+                    - columnheader [ref=e868]
+                    - columnheader "3 columns" [ref=e869]:
+                      - generic "3 columns" [ref=e871]
+                    - columnheader "Open context menu" [ref=e872]:
+                      - button [expanded] [ref=e873]:
+                        - generic [ref=e875]: 
+                      - text:        
+                      - button "Open context menu" [ref=e876]:
+                        - generic [ref=e877]: 
+                        - generic [ref=e878]: Open context menu
+                    - columnheader [ref=e879]
+                    - columnheader [ref=e880]:
+                      - checkbox [checked] [ref=e884]
+                    - columnheader "14 Jan 2025 20:55" [ref=e885]
+                    - columnheader "11 Jun 2026 13:14" [ref=e886]
+                    - columnheader "System administrator" [ref=e887]
+                    - columnheader [ref=e888]
+                - rowgroup [ref=e889]:
+                  - row "Select row Bulk ordering made easy Feature 14 Jan 2025 20:55 11 Sept 2025 13:32 System administrator" [ref=e890] [cursor=pointer]:
+                    - cell [ref=e891]
+                    - cell "Select row" [ref=e892]:
+                      - checkbox "Select row" [ref=e894]
+                    - cell [ref=e895]:
+                      - link [ref=e896]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20215&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                        - generic [ref=e897]: 
+                    - cell "Bulk ordering made easy" [ref=e898]:
+                      - link "Bulk ordering made easy" [ref=e899]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20215&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                        - generic [ref=e900]: Bulk ordering made easy
+                    - cell [ref=e901]:    
+                    - cell "Feature" [ref=e902]:
+                      - link "Feature" [ref=e903]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20215&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell [ref=e904]:
+                      - link:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20215&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell "14 Jan 2025 20:55" [ref=e905]:
+                      - link "14 Jan 2025 20:55" [ref=e906]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20215&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell "11 Sept 2025 13:32" [ref=e907]:
+                      - link "11 Sept 2025 13:32" [ref=e908]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20215&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell "System administrator" [ref=e909]:
+                      - link "System administrator" [ref=e910]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20215&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell [ref=e911]
+                  - row "Select row Competitive wholesale pricing Feature 14 Jan 2025 20:55 14 Jan 2025 20:55 System administrator" [ref=e912] [cursor=pointer]:
+                    - cell [ref=e913]
+                    - cell "Select row" [ref=e914]:
+                      - checkbox "Select row" [ref=e916]
+                    - cell [ref=e917]:
+                      - link [ref=e918]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20216&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                        - generic [ref=e919]: 
+                    - cell "Competitive wholesale pricing" [ref=e920]:
+                      - link "Competitive wholesale pricing" [ref=e921]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20216&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                        - generic [ref=e922]: Competitive wholesale pricing
+                    - cell [ref=e923]:    
+                    - cell "Feature" [ref=e924]:
+                      - link "Feature" [ref=e925]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20216&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell [ref=e926]:
+                      - link:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20216&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell "14 Jan 2025 20:55" [ref=e927]:
+                      - link "14 Jan 2025 20:55" [ref=e928]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20216&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell "14 Jan 2025 20:55" [ref=e929]:
+                      - link "14 Jan 2025 20:55" [ref=e930]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20216&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell "System administrator" [ref=e931]:
+                      - link "System administrator" [ref=e932]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20216&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell [ref=e933]
+                  - row "Select row Dedicated account support Feature 14 Jan 2025 20:55 14 Jan 2025 20:55 System administrator" [ref=e934] [cursor=pointer]:
+                    - cell [ref=e935]
+                    - cell "Select row" [ref=e936]:
+                      - checkbox "Select row" [ref=e938]
+                    - cell [ref=e939]:
+                      - link [ref=e940]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20217&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                        - generic [ref=e941]: 
+                    - cell "Dedicated account support" [ref=e942]:
+                      - link "Dedicated account support" [ref=e943]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20217&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                        - generic [ref=e944]: Dedicated account support
+                    - cell [ref=e945]:    
+                    - cell "Feature" [ref=e946]:
+                      - link "Feature" [ref=e947]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20217&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell [ref=e948]:
+                      - link:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20217&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell "14 Jan 2025 20:55" [ref=e949]:
+                      - link "14 Jan 2025 20:55" [ref=e950]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20217&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell "14 Jan 2025 20:55" [ref=e951]:
+                      - link "14 Jan 2025 20:55" [ref=e952]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20217&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell "System administrator" [ref=e953]:
+                      - link "System administrator" [ref=e954]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20217&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell [ref=e955]
+                - rowgroup [ref=e956] [cursor=pointer]:
+                  - row "1 column Open context menu 14 Jan 2025 20:55 11 Jun 2026 13:14 System administrator" [ref=e957]:
+                    - columnheader [ref=e958]
+                    - columnheader [ref=e959]:
+                      - checkbox [ref=e961]
+                    - columnheader [ref=e962]
+                    - columnheader "1 column" [ref=e963]:
+                      - generic "1 column" [ref=e965]
+                    - columnheader "Open context menu" [ref=e966]:
+                      - button [expanded] [ref=e967]:
+                        - generic [ref=e969]: 
+                      - text:        
+                      - button "Open context menu" [ref=e970]:
+                        - generic [ref=e971]: 
+                        - generic [ref=e972]: Open context menu
+                    - columnheader [ref=e973]
+                    - columnheader [ref=e974]:
+                      - checkbox [checked] [ref=e978]
+                    - columnheader "14 Jan 2025 20:55" [ref=e979]
+                    - columnheader "11 Jun 2026 13:14" [ref=e980]
+                    - columnheader "System administrator" [ref=e981]
+                    - columnheader [ref=e982]
+                - rowgroup [ref=e983]:
+                  - row "Select row Swift-v2_Image 1067 Image 14 Jan 2025 20:55 14 Jan 2025 20:55 System administrator" [ref=e984] [cursor=pointer]:
+                    - cell [ref=e985]
+                    - cell "Select row" [ref=e986]:
+                      - checkbox "Select row" [ref=e988]
+                    - cell [ref=e989]:
+                      - link [ref=e990]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20218&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                        - generic [ref=e991]: 
+                    - cell "Swift-v2_Image 1067" [ref=e992]:
+                      - link "Swift-v2_Image 1067" [ref=e993]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20218&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                        - generic [ref=e994]: Swift-v2_Image 1067
+                    - cell [ref=e995]:    
+                    - cell "Image" [ref=e996]:
+                      - link "Image" [ref=e997]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20218&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell [ref=e998]:
+                      - link:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20218&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell "14 Jan 2025 20:55" [ref=e999]:
+                      - link "14 Jan 2025 20:55" [ref=e1000]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20218&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell "14 Jan 2025 20:55" [ref=e1001]:
+                      - link "14 Jan 2025 20:55" [ref=e1002]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20218&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell "System administrator" [ref=e1003]:
+                      - link "System administrator" [ref=e1004]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20218&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell [ref=e1005]
+                - rowgroup [ref=e1006] [cursor=pointer]:
+                  - row "1 column Open context menu 14 Jan 2025 20:55 11 Jun 2026 13:14 System administrator" [ref=e1007]:
+                    - columnheader [ref=e1008]
+                    - columnheader [ref=e1009]:
+                      - checkbox [ref=e1011]
+                    - columnheader [ref=e1012]
+                    - columnheader "1 column" [ref=e1013]:
+                      - generic "1 column" [ref=e1015]
+                    - columnheader "Open context menu" [ref=e1016]:
+                      - button [expanded] [ref=e1017]:
+                        - generic [ref=e1019]: 
+                      - text:        
+                      - button "Open context menu" [ref=e1020]:
+                        - generic [ref=e1021]: 
+                        - generic [ref=e1022]: Open context menu
+                    - columnheader [ref=e1023]
+                    - columnheader [ref=e1024]:
+                      - checkbox [checked] [ref=e1028]
+                    - columnheader "14 Jan 2025 20:55" [ref=e1029]
+                    - columnheader "11 Jun 2026 13:14" [ref=e1030]
+                    - columnheader "System administrator" [ref=e1031]
+                    - columnheader [ref=e1032]
+                - rowgroup [ref=e1033]:
+                  - row "Select row Become partner today Text 14 Jan 2025 20:55 14 Jan 2025 20:55 System administrator" [ref=e1034] [cursor=pointer]:
+                    - cell [ref=e1035]
+                    - cell "Select row" [ref=e1036]:
+                      - checkbox "Select row" [ref=e1038]
+                    - cell [ref=e1039]:
+                      - link [ref=e1040]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20220&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                        - generic [ref=e1041]: 
+                    - cell "Become partner today" [ref=e1042]:
+                      - link "Become partner today" [ref=e1043]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20220&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                        - generic [ref=e1044]: Become partner today
+                    - cell [ref=e1045]:    
+                    - cell "Text" [ref=e1046]:
+                      - link "Text" [ref=e1047]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20220&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell [ref=e1048]:
+                      - link:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20220&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell "14 Jan 2025 20:55" [ref=e1049]:
+                      - link "14 Jan 2025 20:55" [ref=e1050]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20220&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell "14 Jan 2025 20:55" [ref=e1051]:
+                      - link "14 Jan 2025 20:55" [ref=e1052]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20220&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell "System administrator" [ref=e1053]:
+                      - link "System administrator" [ref=e1054]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20220&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell [ref=e1055]
+                - rowgroup [ref=e1056] [cursor=pointer]:
+                  - row "3 columns Open context menu 14 Jan 2025 20:55 11 Jun 2026 13:14 System administrator" [ref=e1057]:
+                    - columnheader [ref=e1058]
+                    - columnheader [ref=e1059]:
+                      - checkbox [ref=e1061]
+                    - columnheader [ref=e1062]
+                    - columnheader "3 columns" [ref=e1063]:
+                      - generic "3 columns" [ref=e1065]
+                    - columnheader "Open context menu" [ref=e1066]:
+                      - button [expanded] [ref=e1067]:
+                        - generic [ref=e1069]: 
+                      - text:        
+                      - button "Open context menu" [ref=e1070]:
+                        - generic [ref=e1071]: 
+                        - generic [ref=e1072]: Open context menu
+                    - columnheader [ref=e1073]
+                    - columnheader [ref=e1074]:
+                      - checkbox [checked] [ref=e1078]
+                    - columnheader "14 Jan 2025 20:55" [ref=e1079]
+                    - columnheader "11 Jun 2026 13:14" [ref=e1080]
+                    - columnheader "System administrator" [ref=e1081]
+                    - columnheader [ref=e1082]
+                - rowgroup [ref=e1083]:
+                  - row "Select row Partners Text 14 Jan 2025 20:55 14 Jan 2025 20:55 System administrator" [ref=e1084] [cursor=pointer]:
+                    - cell [ref=e1085]
+                    - cell "Select row" [ref=e1086]:
+                      - checkbox "Select row" [ref=e1088]
+                    - cell [ref=e1089]:
+                      - link [ref=e1090]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20221&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                        - generic [ref=e1091]: 
+                    - cell "Partners" [ref=e1092]:
+                      - link "Partners" [ref=e1093]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20221&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                        - generic [ref=e1094]: Partners
+                    - cell [ref=e1095]:    
+                    - cell "Text" [ref=e1096]:
+                      - link "Text" [ref=e1097]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20221&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell [ref=e1098]:
+                      - link:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20221&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell "14 Jan 2025 20:55" [ref=e1099]:
+                      - link "14 Jan 2025 20:55" [ref=e1100]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20221&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell "14 Jan 2025 20:55" [ref=e1101]:
+                      - link "14 Jan 2025 20:55" [ref=e1102]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20221&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell "System administrator" [ref=e1103]:
+                      - link "System administrator" [ref=e1104]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20221&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell [ref=e1105]
+                  - row "Select row Sales Text 14 Jan 2025 20:55 14 Jan 2025 20:55 System administrator" [ref=e1106] [cursor=pointer]:
+                    - cell [ref=e1107]
+                    - cell "Select row" [ref=e1108]:
+                      - checkbox "Select row" [ref=e1110]
+                    - cell [ref=e1111]:
+                      - link [ref=e1112]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20222&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                        - generic [ref=e1113]: 
+                    - cell "Sales" [ref=e1114]:
+                      - link "Sales" [ref=e1115]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20222&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                        - generic [ref=e1116]: Sales
+                    - cell [ref=e1117]:    
+                    - cell "Text" [ref=e1118]:
+                      - link "Text" [ref=e1119]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20222&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell [ref=e1120]:
+                      - link:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20222&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell "14 Jan 2025 20:55" [ref=e1121]:
+                      - link "14 Jan 2025 20:55" [ref=e1122]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20222&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell "14 Jan 2025 20:55" [ref=e1123]:
+                      - link "14 Jan 2025 20:55" [ref=e1124]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20222&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell "System administrator" [ref=e1125]:
+                      - link "System administrator" [ref=e1126]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20222&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell [ref=e1127]
+                  - row "Select row Feedback Text 14 Jan 2025 20:55 14 Jan 2025 20:55 System administrator" [ref=e1128] [cursor=pointer]:
+                    - cell [ref=e1129]
+                    - cell "Select row" [ref=e1130]:
+                      - checkbox "Select row" [ref=e1132]
+                    - cell [ref=e1133]:
+                      - link [ref=e1134]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20223&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                        - generic [ref=e1135]: 
+                    - cell "Feedback" [ref=e1136]:
+                      - link "Feedback" [ref=e1137]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20223&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                        - generic [ref=e1138]: Feedback
+                    - cell [ref=e1139]:    
+                    - cell "Text" [ref=e1140]:
+                      - link "Text" [ref=e1141]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20223&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell [ref=e1142]:
+                      - link:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20223&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell "14 Jan 2025 20:55" [ref=e1143]:
+                      - link "14 Jan 2025 20:55" [ref=e1144]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20223&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell "14 Jan 2025 20:55" [ref=e1145]:
+                      - link "14 Jan 2025 20:55" [ref=e1146]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20223&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell "System administrator" [ref=e1147]:
+                      - link "System administrator" [ref=e1148]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20223&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell [ref=e1149]
+                - rowgroup [ref=e1150] [cursor=pointer]:
+                  - row "1 column Open context menu 14 Jan 2025 20:55 11 Jun 2026 13:14 System administrator" [ref=e1151]:
+                    - columnheader [ref=e1152]
+                    - columnheader [ref=e1153]:
+                      - checkbox [ref=e1155]
+                    - columnheader [ref=e1156]
+                    - columnheader "1 column" [ref=e1157]:
+                      - generic "1 column" [ref=e1159]
+                    - columnheader "Open context menu" [ref=e1160]:
+                      - button [expanded] [ref=e1161]:
+                        - generic [ref=e1163]: 
+                      - text:        
+                      - button "Open context menu" [ref=e1164]:
+                        - generic [ref=e1165]: 
+                        - generic [ref=e1166]: Open context menu
+                    - columnheader [ref=e1167]
+                    - columnheader [ref=e1168]:
+                      - checkbox [checked] [ref=e1172]
+                    - columnheader "14 Jan 2025 20:55" [ref=e1173]
+                    - columnheader "11 Jun 2026 13:14" [ref=e1174]
+                    - columnheader "System administrator" [ref=e1175]
+                    - columnheader [ref=e1176]
+                - rowgroup [ref=e1177]:
+                  - row "Select row Button Button 14 Jan 2025 20:55 14 Jan 2025 20:55 System administrator" [ref=e1178] [cursor=pointer]:
+                    - cell [ref=e1179]
+                    - cell "Select row" [ref=e1180]:
+                      - checkbox "Select row" [ref=e1182]
+                    - cell [ref=e1183]:
+                      - link [ref=e1184]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20224&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                        - generic [ref=e1185]: 
+                    - cell "Button" [ref=e1186]:
+                      - link "Button" [ref=e1187]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20224&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                        - generic [ref=e1188]: Button
+                    - cell [ref=e1189]:    
+                    - cell "Button" [ref=e1190]:
+                      - link "Button" [ref=e1191]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20224&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell [ref=e1192]:
+                      - link:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20224&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell "14 Jan 2025 20:55" [ref=e1193]:
+                      - link "14 Jan 2025 20:55" [ref=e1194]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20224&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell "14 Jan 2025 20:55" [ref=e1195]:
+                      - link "14 Jan 2025 20:55" [ref=e1196]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20224&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell "System administrator" [ref=e1197]:
+                      - link "System administrator" [ref=e1198]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20224&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell [ref=e1199]
+                - rowgroup [ref=e1200] [cursor=pointer]:
+                  - row "1 column Open context menu 23 Jun 2025 11:18 11 Jun 2026 13:14 System administrator" [ref=e1201]:
+                    - columnheader [ref=e1202]
+                    - columnheader [ref=e1203]:
+                      - checkbox [ref=e1205]
+                    - columnheader [ref=e1206]
+                    - columnheader "1 column" [ref=e1207]:
+                      - generic "1 column" [ref=e1209]
+                    - columnheader "Open context menu" [ref=e1210]:
+                      - button [expanded] [ref=e1211]:
+                        - generic [ref=e1213]: 
+                      - text:        
+                      - button "Open context menu" [ref=e1214]:
+                        - generic [ref=e1215]: 
+                        - generic [ref=e1216]: Open context menu
+                    - columnheader [ref=e1217]
+                    - columnheader [ref=e1218]:
+                      - checkbox [checked] [ref=e1222]
+                    - columnheader "23 Jun 2025 11:18" [ref=e1223]
+                    - columnheader "11 Jun 2026 13:14" [ref=e1224]
+                    - columnheader "System administrator" [ref=e1225]
+                    - columnheader [ref=e1226]
+                - rowgroup [ref=e1227]:
+                  - row "Select row Latest travel guides Text 23 Jun 2025 11:18 01 Jul 2025 10:15 System administrator" [ref=e1228] [cursor=pointer]:
+                    - cell [ref=e1229]
+                    - cell "Select row" [ref=e1230]:
+                      - checkbox "Select row" [ref=e1232]
+                    - cell [ref=e1233]:
+                      - link [ref=e1234]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=22101&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                        - generic [ref=e1235]: 
+                    - cell "Latest travel guides" [ref=e1236]:
+                      - link "Latest travel guides" [ref=e1237]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=22101&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                        - generic [ref=e1238]: Latest travel guides
+                    - cell [ref=e1239]:    
+                    - cell "Text" [ref=e1240]:
+                      - link "Text" [ref=e1241]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=22101&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell [ref=e1242]:
+                      - link:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=22101&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell "23 Jun 2025 11:18" [ref=e1243]:
+                      - link "23 Jun 2025 11:18" [ref=e1244]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=22101&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell "01 Jul 2025 10:15" [ref=e1245]:
+                      - link "01 Jul 2025 10:15" [ref=e1246]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=22101&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell "System administrator" [ref=e1247]:
+                      - link "System administrator" [ref=e1248]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=22101&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell [ref=e1249]
+                - rowgroup [ref=e1250] [cursor=pointer]:
+                  - row "1 column Open context menu 23 Jun 2025 11:11 11 Jun 2026 13:14 System administrator" [ref=e1251]:
+                    - columnheader [ref=e1252]
+                    - columnheader [ref=e1253]:
+                      - checkbox [ref=e1255]
+                    - columnheader [ref=e1256]
+                    - columnheader "1 column" [ref=e1257]:
+                      - generic "1 column" [ref=e1259]
+                    - columnheader "Open context menu" [ref=e1260]:
+                      - button [expanded] [ref=e1261]:
+                        - generic [ref=e1263]: 
+                      - text:        
+                      - button "Open context menu" [ref=e1264]:
+                        - generic [ref=e1265]: 
+                        - generic [ref=e1266]: Open context menu
+                    - columnheader [ref=e1267]
+                    - columnheader [ref=e1268]:
+                      - checkbox [checked] [ref=e1272]
+                    - columnheader "23 Jun 2025 11:11" [ref=e1273]
+                    - columnheader "11 Jun 2026 13:14" [ref=e1274]
+                    - columnheader "System administrator" [ref=e1275]
+                    - columnheader [ref=e1276]
+                - rowgroup [ref=e1277]:
+                  - row "Select row Swift-v2_PostList 2 Post list 23 Jun 2025 11:11 23 Jun 2025 11:11 System administrator" [ref=e1278] [cursor=pointer]:
+                    - cell [ref=e1279]
+                    - cell "Select row" [ref=e1280]:
+                      - checkbox "Select row" [ref=e1282]
+                    - cell [ref=e1283]:
+                      - link [ref=e1284]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=22100&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                        - generic [ref=e1285]: 
+                    - cell "Swift-v2_PostList 2" [ref=e1286]:
+                      - link "Swift-v2_PostList 2" [ref=e1287]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=22100&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                        - generic [ref=e1288]: Swift-v2_PostList 2
+                    - cell [ref=e1289]:    
+                    - cell "Post list" [ref=e1290]:
+                      - link "Post list" [ref=e1291]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=22100&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell [ref=e1292]:
+                      - link:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=22100&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell "23 Jun 2025 11:11" [ref=e1293]:
+                      - link "23 Jun 2025 11:11" [ref=e1294]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=22100&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell "23 Jun 2025 11:11" [ref=e1295]:
+                      - link "23 Jun 2025 11:11" [ref=e1296]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=22100&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell "System administrator" [ref=e1297]:
+                      - link "System administrator" [ref=e1298]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=22100&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell [ref=e1299]
+                - rowgroup [ref=e1300] [cursor=pointer]:
+                  - row "1 column Open context menu 23 Jun 2025 11:52 11 Jun 2026 13:14 System administrator" [ref=e1301]:
+                    - columnheader [ref=e1302]
+                    - columnheader [ref=e1303]:
+                      - checkbox [ref=e1305]
+                    - columnheader [ref=e1306]
+                    - columnheader "1 column" [ref=e1307]:
+                      - generic "1 column" [ref=e1309]
+                    - columnheader "Open context menu" [ref=e1310]:
+                      - button [expanded] [ref=e1311]:
+                        - generic [ref=e1313]: 
+                      - text:        
+                      - button "Open context menu" [ref=e1314]:
+                        - generic [ref=e1315]: 
+                        - generic [ref=e1316]: Open context menu
+                    - columnheader [ref=e1317]
+                    - columnheader [ref=e1318]:
+                      - checkbox [checked] [ref=e1322]
+                    - columnheader "23 Jun 2025 11:52" [ref=e1323]
+                    - columnheader "11 Jun 2026 13:14" [ref=e1324]
+                    - columnheader "System administrator" [ref=e1325]
+                    - columnheader [ref=e1326]
+                - rowgroup [ref=e1327]:
+                  - row "Select row Swift-v2_Button 36 Button 23 Jun 2025 11:53 23 Jun 2025 13:06 System administrator" [ref=e1328] [cursor=pointer]:
+                    - cell [ref=e1329]
+                    - cell "Select row" [ref=e1330]:
+                      - checkbox "Select row" [ref=e1332]
+                    - cell [ref=e1333]:
+                      - link [ref=e1334]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=22102&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                        - generic [ref=e1335]: 
+                    - cell "Swift-v2_Button 36" [ref=e1336]:
+                      - link "Swift-v2_Button 36" [ref=e1337]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=22102&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                        - generic [ref=e1338]: Swift-v2_Button 36
+                    - cell [ref=e1339]:    
+                    - cell "Button" [ref=e1340]:
+                      - link "Button" [ref=e1341]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=22102&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell [ref=e1342]:
+                      - link:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=22102&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell "23 Jun 2025 11:53" [ref=e1343]:
+                      - link "23 Jun 2025 11:53" [ref=e1344]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=22102&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell "23 Jun 2025 13:06" [ref=e1345]:
+                      - link "23 Jun 2025 13:06" [ref=e1346]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=22102&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell "System administrator" [ref=e1347]:
+                      - link "System administrator" [ref=e1348]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=22102&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell [ref=e1349]
+                - rowgroup [ref=e1350] [cursor=pointer]:
+                  - row "1 column Open context menu 23 Jun 2025 11:08 11 Jun 2026 13:14 System administrator" [ref=e1351]:
+                    - columnheader [ref=e1352]
+                    - columnheader [ref=e1353]:
+                      - checkbox [ref=e1355]
+                    - columnheader [ref=e1356]
+                    - columnheader "1 column" [ref=e1357]:
+                      - generic "1 column" [ref=e1359]
+                    - columnheader "Open context menu" [ref=e1360]:
+                      - button [expanded] [ref=e1361]:
+                        - generic [ref=e1363]: 
+                      - text:        
+                      - button "Open context menu" [ref=e1364]:
+                        - generic [ref=e1365]: 
+                        - generic [ref=e1366]: Open context menu
+                    - columnheader [ref=e1367]
+                    - columnheader [ref=e1368]:
+                      - checkbox [checked] [ref=e1372]
+                    - columnheader "23 Jun 2025 11:08" [ref=e1373]
+                    - columnheader "11 Jun 2026 13:14" [ref=e1374]
+                    - columnheader "System administrator" [ref=e1375]
+                    - columnheader [ref=e1376]
+                - rowgroup [ref=e1377]:
+                  - row "Select row Frequently asked questions Text 23 Jun 2025 11:08 23 Jun 2025 11:22 System administrator" [ref=e1378] [cursor=pointer]:
+                    - cell [ref=e1379]
+                    - cell "Select row" [ref=e1380]:
+                      - checkbox "Select row" [ref=e1382]
+                    - cell [ref=e1383]:
+                      - link [ref=e1384]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=22099&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                        - generic [ref=e1385]: 
+                    - cell "Frequently asked questions" [ref=e1386]:
+                      - link "Frequently asked questions" [ref=e1387]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=22099&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                        - generic [ref=e1388]: Frequently asked questions
+                    - cell [ref=e1389]:    
+                    - cell "Text" [ref=e1390]:
+                      - link "Text" [ref=e1391]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=22099&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell [ref=e1392]:
+                      - link:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=22099&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell "23 Jun 2025 11:08" [ref=e1393]:
+                      - link "23 Jun 2025 11:08" [ref=e1394]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=22099&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell "23 Jun 2025 11:22" [ref=e1395]:
+                      - link "23 Jun 2025 11:22" [ref=e1396]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=22099&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell "System administrator" [ref=e1397]:
+                      - link "System administrator" [ref=e1398]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=22099&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell [ref=e1399]
+                - rowgroup [ref=e1400] [cursor=pointer]:
+                  - row "1 column Open context menu 14 Jan 2025 20:55 11 Jun 2026 13:14 System administrator" [ref=e1401]:
+                    - columnheader [ref=e1402]
+                    - columnheader [ref=e1403]:
+                      - checkbox [ref=e1405]
+                    - columnheader [ref=e1406]
+                    - columnheader "1 column" [ref=e1407]:
+                      - generic "1 column" [ref=e1409]
+                    - columnheader "Open context menu" [ref=e1410]:
+                      - button [expanded] [ref=e1411]:
+                        - generic [ref=e1413]: 
+                      - text:        
+                      - button "Open context menu" [ref=e1414]:
+                        - generic [ref=e1415]: 
+                        - generic [ref=e1416]: Open context menu
+                    - columnheader [ref=e1417]
+                    - columnheader [ref=e1418]:
+                      - checkbox [checked] [ref=e1422]
+                    - columnheader "14 Jan 2025 20:55" [ref=e1423]
+                    - columnheader "11 Jun 2026 13:14" [ref=e1424]
+                    - columnheader "System administrator" [ref=e1425]
+                    - columnheader [ref=e1426]
+                - rowgroup [ref=e1427]:
+                  - row "Select row Accordion Accordion 14 Jan 2025 20:55 23 Jun 2025 11:21 System administrator" [ref=e1428] [cursor=pointer]:
+                    - cell [ref=e1429]
+                    - cell "Select row" [ref=e1430]:
+                      - checkbox "Select row" [ref=e1432]
+                    - cell [ref=e1433]:
+                      - link [ref=e1434]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20225&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                        - generic [ref=e1435]: 
+                    - cell "Accordion" [ref=e1436]:
+                      - link "Accordion" [ref=e1437]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20225&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                        - generic [ref=e1438]: Accordion
+                    - cell [ref=e1439]:    
+                    - cell "Accordion" [ref=e1440]:
+                      - link "Accordion" [ref=e1441]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20225&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell [ref=e1442]:
+                      - link:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20225&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell "14 Jan 2025 20:55" [ref=e1443]:
+                      - link "14 Jan 2025 20:55" [ref=e1444]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20225&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell "23 Jun 2025 11:21" [ref=e1445]:
+                      - link "23 Jun 2025 11:21" [ref=e1446]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20225&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell "System administrator" [ref=e1447]:
+                      - link "System administrator" [ref=e1448]:
+                        - /url: /Admin/UI/Content/ParagraphEdit?Id=20225&Type=GetParagraphById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                    - cell [ref=e1449]
+              - toolbar "List pagination toolbar" [ref=e1462]:
+                - generic [ref=e1464]:
+                  - generic [ref=e1465]: Items per page
+                  - button "24" [ref=e1467] [cursor=pointer]
+    - progressbar [ref=e79]

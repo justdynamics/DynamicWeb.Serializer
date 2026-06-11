@@ -5,6 +5,8 @@ using Dynamicweb.CoreUI;
 using Dynamicweb.CoreUI.Displays.Information;
 using Dynamicweb.CoreUI.Layout;
 using Dynamicweb.CoreUI.Screens;
+using Truvio.Commerce.Serializer.Configuration;
+using static Dynamicweb.CoreUI.Displays.Widgets.CardInfo;
 
 namespace Truvio.Commerce.Serializer.AdminUI.Injectors;
 
@@ -17,9 +19,18 @@ namespace Truvio.Commerce.Serializer.AdminUI.Injectors;
 ///   deploy → warning: edits here are overwritten by the next deploy;
 ///   seed   → info: starter content, local edits are preserved.
 ///
-/// Uses <see cref="ScreenLayout.Alert"/>, DW's native screen alert slot. Unlike the tree's
-/// seed icons (config-gated, default off), the editor alerts always show — at the moment of
-/// editing, "will my change survive?" is exactly the question being answered.
+/// Uses <see cref="ScreenLayout.Alert"/>, DW's native screen alert slot. The deploy warning
+/// always shows — at the moment of editing, "will my change survive?" is exactly the
+/// question being answered. The seed info alert is gated by the same showSeedIndicators
+/// setting as the tree's flower icons: with broad seed coverage it would appear on nearly
+/// every editing screen and dull the deploy warning's signal.
+///
+/// Field-level carve-outs (e.g. the cart page's eCom_CartV2 settings) render on their own
+/// line: a clickable chip in the screen's header info bar per carved-out type, opening the
+/// read-only "Stays local" SlideOver with the exact exclusion list. The alert itself stays
+/// a single verdict sentence. Screens that don't ship an info bar of their own (the visual
+/// editor) get one created — an inline exception sentence in the alert would not be
+/// clickable (the Alert component renders a single escaped span).
 /// </summary>
 internal static class ModeAlert
 {
@@ -43,19 +54,31 @@ internal static class ModeAlert
             var deployNames = evaluators.Deploy?.GetManagingPredicateNames(checkPath, page.AreaId);
             if (deployNames is { Count: > 0 })
             {
+                AddCarveOutChips(layout, TreeNodeDecorator.GetFieldCarveOuts(page, evaluators), "stay local");
+                var lastDeployNote = evaluators.LastDeployUtc is DateTime lastDeployUtc
+                    ? $" Last deploy received: {lastDeployUtc.ToLocalTime():dd MMM yyyy HH:mm}."
+                    : "";
+                var driftNote = TreeNodeDecorator.IsEditedSinceLastDeploy(page, evaluators.LastDeployUtc)
+                    ? " This page changed on this environment after that deploy — the next deploy will overwrite those changes."
+                    : "";
                 layout.Alert = new Alert
                 {
                     Type = AlertType.Warning,
                     Icon = Dynamicweb.CoreUI.Icons.Icon.Sync,
                     Value = $"This page is managed at deploy by '{string.Join("', '", deployNames)}'. " +
-                            "Content here is overwritten by the next deploy — make lasting changes in the source environment."
+                            "Content here is overwritten by the next deploy — make lasting changes in the source environment." +
+                            lastDeployNote + driftNote
                 };
                 return;
             }
 
+            if (!evaluators.ShowSeedIndicators)
+                return;
+
             var seedNames = evaluators.Seed?.GetManagingPredicateNames(checkPath, page.AreaId);
             if (seedNames is { Count: > 0 })
             {
+                AddCarveOutChips(layout, TreeNodeDecorator.GetFieldCarveOuts(page, evaluators), "never filled");
                 layout.Alert = new Alert
                 {
                     Type = AlertType.Info,
@@ -70,12 +93,46 @@ internal static class ModeAlert
             // Alerts are best-effort; never break an editing screen over config issues.
         }
     }
+
+    /// <summary>
+    /// Renders carve-outs as clickable chips in the screen's header info bar (one per type,
+    /// e.g. "eCom_CartV2 — 21 settings stay local — view"); clicking opens the read-only
+    /// "Stays local" SlideOver for that type. Screens without an info bar (the visual
+    /// editor) get one created — there is no clickable fallback inside the alert text.
+    /// </summary>
+    private static void AddCarveOutChips(ScreenLayout layout, IReadOnlyList<FieldCarveOut> carveOuts, string verdict)
+    {
+        if (carveOuts.Count == 0)
+            return;
+
+        layout.InfoBar ??= new InfoBar();
+        layout.InfoBar.Information ??= new Dictionary<string, InfoValue>();
+        foreach (var carveOut in carveOuts)
+        {
+            var key = layout.InfoBar.Information.ContainsKey(carveOut.TypeName)
+                ? $"{carveOut.TypeName} (excluded)"
+                : carveOut.TypeName;
+            var noun = carveOut.Kind == CarveOutKind.XmlElements ? "setting" : "field";
+            var text = carveOut.Count == 1
+                ? $"1 {noun} {(verdict == "stay local" ? "stays local" : verdict)} — view"
+                : $"{carveOut.Count} {noun}s {verdict} — view";
+            layout.InfoBar.Information[key] = new InfoValue(text, TreeNodeDecorator.CreateCarveOutNavigation(carveOut));
+        }
+    }
 }
 
 /// <summary>Mode alert on the visual editor (page canvas).</summary>
 public sealed class SerializerVisualEditAlertInjector : ScreenInjector<PageVisualEditScreen>
 {
     public override void OnAfter(PageVisualEditScreen screen, UiComponentBase content)
+        => ModeAlert.Apply(content, screen?.Model?.Id ?? 0);
+}
+
+/// <summary>Mode alert on the page properties editor (General/Layout/SEO/Publication tabs) —
+/// page settings are page state and deploy/seed governs them exactly like paragraph content.</summary>
+public sealed class SerializerPageEditAlertInjector : ScreenInjector<PageEditScreen>
+{
+    public override void OnAfter(PageEditScreen screen, UiComponentBase content)
         => ModeAlert.Apply(content, screen?.Model?.Id ?? 0);
 }
 

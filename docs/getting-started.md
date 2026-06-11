@@ -48,53 +48,41 @@ cp src/Truvio.Commerce.Serializer/bin/Release/net8.0/Truvio.Commerce.Serializer.
 ```
 
 Restart each host. When it comes back up, sign in and confirm the
-`Settings > Database > Serialize` navigation node is present — that's the
+`Settings > Developer > Serialize` navigation node is present — that's the
 serializer's admin UI root.
 
 ## Create a minimal config
 
-The serializer reads its configuration from `Files/Serializer.config.json`
-relative to the DW instance's `Files` directory. The admin UI at
-`Settings > Database > Serialize` reads and writes this file.
+The serializer reads its configuration from
+`Files/System/Serializer/Serializer.config.json` — inside the serializer
+folder, so config and YAML travel together. The admin UI at
+`Settings > Developer > Serialize` reads and writes this file.
 
 For a first round-trip, create the following at
-`/path/to/your-dw-host/Files/Serializer.config.json`:
+`/path/to/your-dw-host/Files/System/Serializer/Serializer.config.json`:
 
 ```json
 {
   "outputDirectory": "Serializer",
-  "logLevel": "info",
-  "dryRun": false,
-  "strictMode": false,
-  "deploy": {
-    "outputSubfolder": "deploy",
-    "conflictStrategy": "source-wins",
-    "predicates": [
-      {
-        "name": "EcomOrderFlow",
-        "providerType": "SqlTable",
-        "table": "EcomOrderFlow",
-        "nameColumn": "OrderFlowName"
-      }
-    ]
-  },
-  "seed": {
-    "outputSubfolder": "seed",
-    "conflictStrategy": "destination-wins",
-    "predicates": []
-  }
+  "predicates": [
+    {
+      "name": "EcomOrderFlow",
+      "mode": "Deploy",
+      "providerType": "SqlTable",
+      "table": "EcomOrderFlow",
+      "nameColumn": "OrderFlowName"
+    }
+  ]
 }
 ```
 
 This picks a single SQL table — `EcomOrderFlow` — as the smallest useful test.
-Drop the same file into the target host's `Files/` directory as well. Both
-hosts need the config to understand which tables participate.
+Drop the same file into the target host's `Files/System/Serializer/` folder as
+well. Both hosts need the config to understand which tables participate.
 
-Restart each host again so the new config is picked up.
-
-`strictMode: false` during initial setup turns on lenient behavior — warnings
-log but don't fail the API call. Flip it to `true` once the round-trip works
-cleanly. See [`strict-mode.md`](strict-mode.md) for what escalates.
+Strict mode is resolved per entry point — API/CLI calls run strict (warnings
+escalate), admin UI actions run lenient. See [`strict-mode.md`](strict-mode.md)
+for what escalates.
 
 ## Serialize from the source
 

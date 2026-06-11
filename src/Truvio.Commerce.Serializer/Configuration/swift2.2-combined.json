@@ -1,7 +1,5 @@
 {
   "outputDirectory": "Serializer",
-  "logLevel": "info",
-  "dryRun": false,
   "deployOutputSubfolder": "deploy",
   "seedOutputSubfolder": "seed",
   "excludeXmlElementsByType": {

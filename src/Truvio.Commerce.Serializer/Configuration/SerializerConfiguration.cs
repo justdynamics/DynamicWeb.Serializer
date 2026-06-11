@@ -47,12 +47,13 @@ public record SerializerConfiguration
     public Dictionary<string, List<string>> ExcludeXmlElementsByType { get; init; } = new();
 
     /// <summary>
-    /// Tree UI: show the seed (flower) annotation on content-tree pages. Off by default —
-    /// broad seed coverage marks nearly every node and drowns out the deploy/partial icons,
-    /// which carry the actionable signal ("edits here are overwritten by the next deploy").
-    /// Deploy annotations and the edit-screen mode alerts are unaffected by this switch.
+    /// Admin UI: show seed indicators — the seed (flower) annotation on content-tree pages
+    /// AND the seed info message on content editing screens. Off by default — broad seed
+    /// coverage marks nearly every node/page and drowns out the deploy warnings, which carry
+    /// the actionable signal ("edits here are overwritten by the next deploy"). Deploy
+    /// annotations and the deploy edit-screen warning are unaffected by this switch.
     /// </summary>
-    public bool ShowSeedTreeIndicators { get; init; } = false;
+    public bool ShowSeedIndicators { get; init; } = false;
 
     // -------------------------------------------------------------------------
     // Phase 40 D-02: SINGLE flat predicate list. Each predicate carries its own .Mode.

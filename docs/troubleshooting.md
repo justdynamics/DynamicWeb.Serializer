@@ -140,15 +140,15 @@ pages that aren't in the baseline. Three resolutions:
 No Deploy predicates configured
 ```
 
-The mode's `predicates` list is empty. Either you're running
-`?mode=seed` when only Deploy has predicates, or the predicate list
+No predicate carries the requested mode. Either you're running
+`?mode=seed` when every predicate is `"mode": "Deploy"`, or the predicate list
 didn't save correctly through the admin UI. Confirm in
-`Files/Serializer.config.json`:
+`Files/System/Serializer/Serializer.config.json`:
 
 ```json
-"deploy": {
-  "predicates": [ ... ]  // must be non-empty
-}
+"predicates": [
+  { "name": "...", "mode": "Deploy", ... }  // at least one with the requested mode
+]
 ```
 
 ## Deserialize-time warnings (under strict mode)

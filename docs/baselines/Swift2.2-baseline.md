@@ -386,24 +386,24 @@ at end of test session) for the full improvement plan.
 ```bash
 # Swap the config into the Swift 2.2 instance
 cp src/Truvio.Commerce.Serializer/Configuration/swift2.2-baseline.json \
-   wwwroot/Files/Serializer.config.json
+   wwwroot/Files/System/Serializer/Serializer.config.json
 
-# Trigger serialize via admin UI (Settings → Serializer → Run Serialize)
+# Trigger serialize via admin UI (Settings → Developer → Serialize → Serialize)
 # Or via API:
 curl -X POST https://localhost:54035/Admin/TokenAuthentication/authenticate \
   -d "{\"username\":\"$DW_ADMIN_USER\",\"password\":\"$DW_ADMIN_PASSWORD\"}"
 # ... then use bearer token to call the serialize endpoint
 ```
 
-Output lands in `wwwroot/Files/Serializer/SerializeRoot/`. Commit that tree
-to the repo under `baselines/Swift2.2/` alongside this config.
+Output lands in `wwwroot/Files/System/Serializer/SerializeRoot/`. Commit that
+tree to the repo under `baselines/Swift2.2/` alongside this config.
 
 ### Deserialize (apply baseline → fresh Azure SQL)
 
 1. Ensure DW schema is in place (run DW installer or schema scripts).
 2. Drop `swift2.2-baseline.json` into the new instance's
-   `wwwroot/Files/Serializer.config.json`.
-3. Copy the baseline YAML tree into `wwwroot/Files/Serializer/SerializeRoot/`.
+   `wwwroot/Files/System/Serializer/Serializer.config.json`.
+3. Copy the baseline YAML tree into `wwwroot/Files/System/Serializer/SerializeRoot/`.
 4. Trigger deserialize via admin UI or API. Watch the log for warnings
    (especially cache-invalidation warnings — see `SerializerOrchestrator.cs:156`
    for the guardrail I added in commit `a3d3140`).

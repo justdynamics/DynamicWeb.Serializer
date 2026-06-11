@@ -1,0 +1,21 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - generic [ref=e4]:
+      - img [ref=e6]
+      - heading "CMS, Marketing, Commerce and PIM in your browser" [level=5] [ref=e23]
+      - img [ref=e25]
+    - generic [ref=e32]:
+      - heading "Sign in" [level=3] [ref=e33]
+      - generic [ref=e34]: Enter credentials to sign in
+      - generic [ref=e35]:
+        - generic [ref=e36]:
+          - textbox "Password" [active] [ref=e38]
+          - link "Forgot password" [ref=e41] [cursor=pointer]:
+            - /url: /Admin/Authentication/ForgotPassword
+          - button "Sign in" [ref=e43] [cursor=pointer]
+        - link "Back to Sign in" [ref=e47] [cursor=pointer]:
+          - /url: /Admin/Authentication/Login
+      - 'generic "InstallationId: 6509801628282b485d4786e1c3666870" [ref=e50]': Dynamicweb Software A/S
+  - generic [ref=e51]:
+    - generic [ref=e52]: © 2026 DynamicWeb Software A/S. All rights reserved
+    - generic [ref=e53]: "License: Trial 10.26.7+5be1855867a5a5b141ada86b027a6b1ca660b088"

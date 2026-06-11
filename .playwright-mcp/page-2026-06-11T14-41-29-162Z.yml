@@ -1,0 +1,606 @@
+- generic [ref=e2]:
+  - navigation [ref=e3]:
+    - link [ref=e4] [cursor=pointer]:
+      - /url: /
+      - img
+      - img [ref=e5]
+    - tablist [ref=e21]:
+      - tab "Insights" [ref=e22] [cursor=pointer]:
+        - generic [ref=e24]: 
+        - generic [ref=e25]: Insights
+      - tab "Content" [selected] [ref=e26] [cursor=pointer]:
+        - generic [ref=e28]: 
+        - generic [ref=e29]: Content
+      - tab "Assets" [ref=e30] [cursor=pointer]:
+        - generic [ref=e32]: 
+        - generic [ref=e33]: Assets
+      - tab "Users" [ref=e34] [cursor=pointer]:
+        - generic [ref=e36]: 
+        - generic [ref=e37]: Users
+      - tab "Products" [ref=e38] [cursor=pointer]:
+        - generic [ref=e40]: 
+        - generic [ref=e41]: Products
+      - tab "Commerce" [ref=e42] [cursor=pointer]:
+        - generic [ref=e44]: 
+        - generic [ref=e45]: Commerce
+      - tab "Email" [ref=e46] [cursor=pointer]:
+        - generic [ref=e48]: 
+        - generic [ref=e49]: Email
+      - tab "Integration" [ref=e50] [cursor=pointer]:
+        - generic [ref=e52]: 
+        - generic [ref=e53]: Integration
+      - tab "Apps" [ref=e54] [cursor=pointer]:
+        - generic [ref=e56]: 
+        - generic [ref=e57]: Apps
+      - tab "Settings" [ref=e58] [cursor=pointer]:
+        - generic [ref=e60]: 
+        - generic [ref=e61]: Settings
+    - list [ref=e62]:
+      - listitem [ref=e63]:
+        - 'button "Version: 10.26.7+5be1855867a5a5b141ada86b027a6b1ca660b088, Loaded: 16:40:25, Build time: 09/06/2026 12:23:20" [ref=e64] [cursor=pointer]':
+          - generic [ref=e65]: 
+        - text:      
+      - listitem [ref=e66]:
+        - button "Expand area" [ref=e67] [cursor=pointer]:
+          - generic [ref=e68]: 
+          - generic [ref=e69]: Expand area
+      - link "Trial license Expires 11-Jul-2026" [ref=e70] [cursor=pointer]:
+        - /url: /Admin/UI/Content/LicenseOverview?Type=License&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+        - generic [ref=e71]: 
+        - generic [ref=e72]:
+          - text: Trial license
+          - generic [ref=e73]: Expires 11-Jul-2026
+  - generic [ref=e74]:
+    - tabpanel [ref=e75]:
+      - generic [ref=e76]:
+        - navigation [ref=e77]:
+          - generic [ref=e86]:
+            - generic [ref=e87]:
+              - generic [ref=e88]: "Search:"
+              - generic [ref=e89]:
+                - searchbox "Search or page id" [ref=e90]
+                - button "Search" [ref=e91] [cursor=pointer]:
+                  - generic [ref=e92]: Search
+                  - generic [ref=e93]: 
+              - button [ref=e94] [cursor=pointer]:
+                - generic [ref=e95]: 
+              - text:    
+              - button [ref=e96] [cursor=pointer]:
+                - generic [ref=e98]: 
+            - generic [ref=e99]:
+              - button "Swift 2 en-US" [ref=e104] [cursor=pointer]:
+                - generic [ref=e105]:
+                  - img [ref=e106]
+                  - generic [ref=e107]: Swift 2
+                  - generic [ref=e108]: en-US
+              - generic [ref=e109]:
+                - list [ref=e110]:
+                  - listitem [ref=e111]:
+                    - generic [ref=e112]:
+                      - text: 
+                      - heading "Navigation" [level=6] [ref=e114]
+                      - button "New page" [ref=e115] [cursor=pointer]:
+                        - generic [ref=e116]: 
+                      - button [ref=e117] [cursor=pointer]:
+                        - generic [ref=e118]: 
+                      - text:    
+                    - list [ref=e119]:
+                      - listitem [ref=e120]:
+                        - generic [ref=e121]:
+                          - button [disabled]:
+                            - generic: 
+                          - link "Home" [ref=e123] [cursor=pointer]:
+                            - /url: /Admin/UI/Content/PageVisualEdit?Id=76&IsEmailMarketing=False&Type=GetPageById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                            - generic [ref=e125]: 
+                            - text: Home
+                          - generic [ref=e126]:
+                            - 'generic "ID: 76" [ref=e128]':
+                              - generic [ref=e129]: 
+                            - button [ref=e130] [cursor=pointer]:
+                              - generic [ref=e131]: 
+                            - button "Click for more actions" [ref=e132] [cursor=pointer]:
+                              - generic [ref=e133]: 
+                            - text:               
+                      - listitem [ref=e134]:
+                        - generic [ref=e135]:
+                          - button [disabled]:
+                            - generic: 
+                          - link "Home Machines" [ref=e137] [cursor=pointer]:
+                            - /url: /Admin/UI/Content/PageVisualEdit?Id=77&IsEmailMarketing=False&Type=GetPageById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                            - generic [ref=e139]: 
+                            - text: Home Machines
+                            - generic "Hidden in menu" [ref=e141]:
+                              - generic [ref=e142]: 
+                          - generic [ref=e143]:
+                            - 'generic "ID: 77" [ref=e145]':
+                              - generic [ref=e146]: 
+                            - button [ref=e147] [cursor=pointer]:
+                              - generic [ref=e148]: 
+                            - button "Click for more actions" [ref=e149] [cursor=pointer]:
+                              - generic [ref=e150]: 
+                            - text:               
+                      - listitem [ref=e151]:
+                        - generic [ref=e152]:
+                          - button "Toggle level" [ref=e153] [cursor=pointer]:
+                            - generic [ref=e154]: 
+                          - link "Shop" [ref=e156] [cursor=pointer]:
+                            - /url: /Admin/UI/Content/PageVisualEdit?Id=50&IsEmailMarketing=False&Type=GetPageById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                            - generic [ref=e158]: 
+                            - text: Shop
+                            - generic [ref=e159]:
+                              - generic "Ecommerce navigation" [ref=e160]:
+                                - generic [ref=e161]: 
+                              - generic "URL Provider" [ref=e162]:
+                                - generic [ref=e163]: 
+                              - 'generic "Navigation tag: Shop" [ref=e164]':
+                                - generic [ref=e165]: 
+                              - generic "Managed at deploy by 'Site framework'" [ref=e166]:
+                                - generic [ref=e167]: 
+                          - generic [ref=e168]:
+                            - 'generic "ID: 50" [ref=e170]':
+                              - generic [ref=e171]: 
+                            - button [ref=e172] [cursor=pointer]:
+                              - generic [ref=e173]: 
+                            - button "Click for more actions" [ref=e174] [cursor=pointer]:
+                              - generic [ref=e175]: 
+                            - text:              
+                      - listitem [ref=e176]:
+                        - generic [ref=e177]:
+                          - button "Toggle level" [ref=e178] [cursor=pointer]:
+                            - generic [ref=e179]: 
+                          - link "About" [ref=e181] [cursor=pointer]:
+                            - /url: /Admin/UI/Content/PageVisualEdit?Id=83&IsEmailMarketing=False&Type=GetPageById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                            - generic [ref=e183]: 
+                            - text: About
+                          - generic [ref=e184]:
+                            - 'generic "ID: 83" [ref=e186]':
+                              - generic [ref=e187]: 
+                            - button [ref=e188] [cursor=pointer]:
+                              - generic [ref=e189]: 
+                            - button "Click for more actions" [ref=e190] [cursor=pointer]:
+                              - generic [ref=e191]: 
+                            - text:               
+                      - listitem [ref=e192]:
+                        - generic [ref=e193]:
+                          - button "Toggle level" [ref=e194] [cursor=pointer]:
+                            - generic [ref=e195]: 
+                          - link "Posts" [ref=e197] [cursor=pointer]:
+                            - /url: /Admin/UI/Content/PageVisualEdit?Id=86&IsEmailMarketing=False&Type=GetPageById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                            - generic [ref=e199]: 
+                            - text: Posts
+                          - generic [ref=e200]:
+                            - 'generic "ID: 86" [ref=e202]':
+                              - generic [ref=e203]: 
+                            - button [ref=e204] [cursor=pointer]:
+                              - generic [ref=e205]: 
+                            - button "Click for more actions" [ref=e206] [cursor=pointer]:
+                              - generic [ref=e207]: 
+                            - text:               
+                      - listitem [ref=e208]:
+                        - generic [ref=e209]:
+                          - button "Toggle level" [ref=e210] [cursor=pointer]:
+                            - generic [ref=e211]: 
+                          - link "Navigation" [ref=e213] [cursor=pointer]:
+                            - /url: "#"
+                            - generic [ref=e215]: 
+                            - text: Navigation
+                            - generic [ref=e216]:
+                              - generic "URL ignore for children" [ref=e217]:
+                                - generic [ref=e218]: 
+                              - 'generic "Partially managed at deploy by ''Site framework'' — excluded below this page: /Navigation/Footer Navigation/About the shop, /Navigation/Footer Navigation/Help and info, /Navigation/Secondary Navigation/Find dealers" [ref=e219]':
+                                - generic [ref=e220]: 
+                          - generic [ref=e221]:
+                            - 'generic "ID: 25" [ref=e223]':
+                              - generic [ref=e224]: 
+                            - button [ref=e225] [cursor=pointer]:
+                              - generic [ref=e226]: 
+                            - button "Click for more actions" [ref=e227] [cursor=pointer]:
+                              - generic [ref=e228]: 
+                            - text:             
+                      - listitem [ref=e229]:
+                        - generic [ref=e230]:
+                          - button "Toggle level" [ref=e231] [cursor=pointer]:
+                            - generic [ref=e232]: 
+                          - link "Page presets" [ref=e234] [cursor=pointer]:
+                            - /url: /Admin/UI/Content/ParagraphList?PageId=33&IsEmailMarketing=False&IncludeEmptyColumns=True&SortColumnName=Sort&SortDirection=Ascending&Type=GetParagraphsByPageId&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                            - generic [ref=e236]: 
+                            - text: Page presets
+                            - generic [ref=e237]:
+                              - generic "Unpublished" [ref=e238]:
+                                - generic [ref=e239]: 
+                              - generic "Managed at deploy by 'Site framework'" [ref=e240]:
+                                - generic [ref=e241]: 
+                          - generic [ref=e242]:
+                            - 'generic "ID: 33" [ref=e244]':
+                              - generic [ref=e245]: 
+                            - button "Click for more actions" [ref=e246] [cursor=pointer]:
+                              - generic [ref=e247]: 
+                            - text:       
+                - list [ref=e248]:
+                  - listitem [ref=e249]:
+                    - generic [ref=e250]:
+                      - text: 
+                      - heading "Emails" [level=6] [ref=e252]
+                      - button "New page" [ref=e253] [cursor=pointer]:
+                        - generic [ref=e254]: 
+                      - button [ref=e255] [cursor=pointer]:
+                        - generic [ref=e256]: 
+                      - text:    
+                    - list [ref=e257]:
+                      - listitem [ref=e258]:
+                        - generic [ref=e259]:
+                          - button "Toggle level" [ref=e260] [cursor=pointer]:
+                            - generic [ref=e261]: 
+                          - link "Newsletter Emails" [ref=e263] [cursor=pointer]:
+                            - /url: "#"
+                            - generic [ref=e265]: 
+                            - text: Newsletter Emails
+                            - generic [ref=e266]:
+                              - generic "URL ignore for children" [ref=e267]:
+                                - generic [ref=e268]: 
+                              - 'generic "Partially managed at deploy by ''Site framework'' — excluded below this page: /Newsletter Emails/Swift Newsletters - Dark, /Newsletter Emails/Swift Newsletters - Light" [ref=e269]':
+                                - generic [ref=e270]: 
+                          - generic [ref=e271]:
+                            - 'generic "ID: 31" [ref=e273]':
+                              - generic [ref=e274]: 
+                            - button [ref=e275] [cursor=pointer]:
+                              - generic [ref=e276]: 
+                            - button "Click for more actions" [ref=e277] [cursor=pointer]:
+                              - generic [ref=e278]: 
+                            - text:             
+                      - listitem [ref=e279]:
+                        - generic [ref=e280]:
+                          - button "Toggle level" [ref=e281] [cursor=pointer]:
+                            - generic [ref=e282]: 
+                          - link "System emails" [ref=e284] [cursor=pointer]:
+                            - /url: "#"
+                            - generic [ref=e286]: 
+                            - text: System emails
+                            - generic [ref=e287]:
+                              - generic "URL ignore for children" [ref=e288]:
+                                - generic [ref=e289]: 
+                              - generic "Managed at deploy by 'Site framework'" [ref=e290]:
+                                - generic [ref=e291]: 
+                          - generic [ref=e292]:
+                            - 'generic "ID: 66" [ref=e294]':
+                              - generic [ref=e295]: 
+                            - button [ref=e296] [cursor=pointer]:
+                              - generic [ref=e297]: 
+                            - button "Click for more actions" [ref=e298] [cursor=pointer]:
+                              - generic [ref=e299]: 
+                            - text:             
+                - list [ref=e300]:
+                  - listitem [ref=e301]:
+                    - generic [ref=e302]:
+                      - text: 
+                      - heading "Customer center" [level=6] [ref=e304]
+                      - button "New page" [ref=e305] [cursor=pointer]:
+                        - generic [ref=e306]: 
+                      - button [ref=e307] [cursor=pointer]:
+                        - generic [ref=e308]: 
+                      - text:    
+                    - list [ref=e309]:
+                      - listitem [ref=e310]:
+                        - generic [ref=e311]:
+                          - button "Toggle level" [ref=e312] [cursor=pointer]:
+                            - generic [ref=e313]: 
+                          - link "Sign in" [ref=e315] [cursor=pointer]:
+                            - /url: /Admin/UI/Content/PageVisualEdit?Id=60&IsEmailMarketing=False&Type=GetPageById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                            - generic [ref=e317]: 
+                            - text: Sign in
+                            - generic [ref=e318]:
+                              - generic "Shortcut to another page or file" [ref=e319]:
+                                - generic [ref=e320]: 
+                              - generic "Managed at deploy by 'Site framework'" [ref=e321]:
+                                - generic [ref=e322]: 
+                          - generic [ref=e323]:
+                            - 'generic "ID: 60" [ref=e325]':
+                              - generic [ref=e326]: 
+                            - button [ref=e327] [cursor=pointer]:
+                              - generic [ref=e328]: 
+                            - button "Click for more actions" [ref=e329] [cursor=pointer]:
+                              - generic [ref=e330]: 
+                            - text:               
+                      - listitem [ref=e331]:
+                        - generic [ref=e332]:
+                          - button "Toggle level" [ref=e333] [cursor=pointer]:
+                            - generic [ref=e334]: 
+                          - link "Customer center" [ref=e336] [cursor=pointer]:
+                            - /url: "#"
+                            - generic [ref=e338]: 
+                            - text: Customer center
+                            - generic [ref=e339]:
+                              - generic "Has permissions" [ref=e340]:
+                                - generic [ref=e341]: 
+                              - generic "URL ignore for children" [ref=e342]:
+                                - generic [ref=e343]: 
+                              - generic "Managed at deploy by 'Site framework'" [ref=e344]:
+                                - generic [ref=e345]: 
+                          - generic [ref=e346]:
+                            - 'generic "ID: 1" [ref=e348]':
+                              - generic [ref=e349]: 
+                            - button [ref=e350] [cursor=pointer]:
+                              - generic [ref=e351]: 
+                            - button "Click for more actions" [ref=e352] [cursor=pointer]:
+                              - generic [ref=e353]: 
+                            - text:             
+                      - listitem [ref=e354]:
+                        - generic [ref=e355]:
+                          - button "Toggle level" [expanded] [ref=e356] [cursor=pointer]:
+                            - generic [ref=e357]: 
+                          - link "Shopping cart" [ref=e359] [cursor=pointer]:
+                            - /url: "#"
+                            - generic [ref=e361]: 
+                            - text: Shopping cart
+                            - generic [ref=e362]:
+                              - generic "URL ignore for children" [ref=e363]:
+                                - generic [ref=e364]: 
+                              - generic "Managed at deploy by 'Site framework'" [ref=e365]:
+                                - generic [ref=e366]: 
+                          - generic [ref=e367]:
+                            - 'generic "ID: 53" [ref=e369]':
+                              - generic [ref=e370]: 
+                            - button [ref=e371] [cursor=pointer]:
+                              - generic [ref=e372]: 
+                            - button "Click for more actions" [ref=e373] [cursor=pointer]:
+                              - generic [ref=e374]: 
+                            - text:             
+                        - list [ref=e598]:
+                          - listitem [ref=e599]:
+                            - generic [ref=e600]:
+                              - button "Toggle level" [ref=e601] [cursor=pointer]:
+                                - generic [ref=e602]: 
+                              - link "Cart" [ref=e604] [cursor=pointer]:
+                                - /url: /Admin/UI/Content/PageVisualEdit?Id=55&IsEmailMarketing=False&Type=GetPageById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                                - generic [ref=e606]: 
+                                - text: Cart
+                                - 'generic "Managed at deploy by ''Site framework'' — excluded on this page: eCom_CartV2 (21 settings)" [ref=e608]':
+                                  - generic [ref=e609]: 
+                              - generic [ref=e610]:
+                                - 'generic "ID: 55" [ref=e612]':
+                                  - generic [ref=e613]: 
+                                - button [ref=e614] [cursor=pointer]:
+                                  - generic [ref=e615]: 
+                                - button "Click for more actions" [ref=e616] [cursor=pointer]:
+                                  - generic [ref=e617]: 
+                                - text:               
+                          - listitem [ref=e618]:
+                            - generic [ref=e619]:
+                              - button [disabled]:
+                                - generic: 
+                              - link "Add credit card" [ref=e621] [cursor=pointer]:
+                                - /url: /Admin/UI/Content/PageVisualEdit?Id=54&IsEmailMarketing=False&Type=GetPageById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                                - generic [ref=e623]: 
+                                - text: Add credit card
+                                - generic [ref=e624]:
+                                  - 'generic "Navigation tag: AddCreditCardPage" [ref=e625]':
+                                    - generic [ref=e626]: 
+                                  - 'generic "Managed at deploy by ''Site framework'' — excluded on this page: eCom_CartV2 (21 settings)" [ref=e627]':
+                                    - generic [ref=e628]: 
+                              - generic [ref=e629]:
+                                - 'generic "ID: 54" [ref=e631]':
+                                  - generic [ref=e632]: 
+                                - button [ref=e633] [cursor=pointer]:
+                                  - generic [ref=e634]: 
+                                - button "Click for more actions" [ref=e635] [cursor=pointer]:
+                                  - generic [ref=e636]: 
+                                - text:               
+                - list [ref=e375]:
+                  - listitem [ref=e376]:
+                    - generic [ref=e377]:
+                      - text: 
+                      - heading "Swift Setup" [level=6] [ref=e379]
+                      - button "New page" [ref=e380] [cursor=pointer]:
+                        - generic [ref=e381]: 
+                      - button [ref=e382] [cursor=pointer]:
+                        - generic [ref=e383]: 
+                      - text:    
+                    - list [ref=e384]:
+                      - listitem [ref=e385]:
+                        - generic [ref=e386]:
+                          - button "Toggle level" [ref=e387] [cursor=pointer]:
+                            - generic [ref=e388]: 
+                          - link "Header / Footer" [ref=e390] [cursor=pointer]:
+                            - /url: "#"
+                            - generic [ref=e392]: 
+                            - text: Header / Footer
+                            - generic "URL ignore for children" [ref=e394]:
+                              - generic [ref=e395]: 
+                          - generic [ref=e396]:
+                            - 'generic "ID: 78" [ref=e398]':
+                              - generic [ref=e399]: 
+                            - button [ref=e400] [cursor=pointer]:
+                              - generic [ref=e401]: 
+                            - button "Click for more actions" [ref=e402] [cursor=pointer]:
+                              - generic [ref=e403]: 
+                            - text:             
+                      - listitem [ref=e404]:
+                        - generic [ref=e405]:
+                          - button "Toggle level" [ref=e406] [cursor=pointer]:
+                            - generic [ref=e407]: 
+                          - link "Product Components" [ref=e409] [cursor=pointer]:
+                            - /url: "#"
+                            - generic [ref=e411]: 
+                            - text: Product Components
+                            - generic [ref=e412]:
+                              - generic "URL ignore for children" [ref=e413]:
+                                - generic [ref=e414]: 
+                              - generic "Managed at deploy by 'Site framework'" [ref=e415]:
+                                - generic [ref=e416]: 
+                          - generic [ref=e417]:
+                            - 'generic "ID: 36" [ref=e419]':
+                              - generic [ref=e420]: 
+                            - button [ref=e421] [cursor=pointer]:
+                              - generic [ref=e422]: 
+                            - button "Click for more actions" [ref=e423] [cursor=pointer]:
+                              - generic [ref=e424]: 
+                            - text:             
+                      - listitem [ref=e425]:
+                        - generic [ref=e426]:
+                          - button "Toggle level" [ref=e427] [cursor=pointer]:
+                            - generic [ref=e428]: 
+                          - link "Service Pages" [ref=e430] [cursor=pointer]:
+                            - /url: /Admin/UI/Content/PageEdit?Id=41&IsEmailMarketing=False&Type=GetPageById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                            - generic [ref=e432]: 
+                            - text: Service Pages
+                            - generic [ref=e433]:
+                              - generic "Hidden in menu" [ref=e434]:
+                                - generic [ref=e435]: 
+                              - generic "Managed at deploy by 'Site framework'" [ref=e436]:
+                                - generic [ref=e437]: 
+                          - generic [ref=e438]:
+                            - 'generic "ID: 41" [ref=e440]':
+                              - generic [ref=e441]: 
+                            - button [ref=e442] [cursor=pointer]:
+                              - generic [ref=e443]: 
+                            - button "Click for more actions" [ref=e444] [cursor=pointer]:
+                              - generic [ref=e445]: 
+                            - text:              
+                      - listitem [ref=e446]:
+                        - generic [ref=e447]:
+                          - button [disabled]:
+                            - generic: 
+                          - link "Search result page" [ref=e449] [cursor=pointer]:
+                            - /url: /Admin/UI/Content/PageVisualEdit?Id=40&IsEmailMarketing=False&Type=GetPageById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                            - generic [ref=e451]: 
+                            - text: Search result page
+                            - generic [ref=e452]:
+                              - generic "Hidden in menu" [ref=e453]:
+                                - generic [ref=e454]: 
+                              - 'generic "Navigation tag: ContentSearch" [ref=e455]':
+                                - generic [ref=e456]: 
+                              - generic "Managed at deploy by 'Site framework'" [ref=e457]:
+                                - generic [ref=e458]: 
+                          - generic [ref=e459]:
+                            - 'generic "ID: 40" [ref=e461]':
+                              - generic [ref=e462]: 
+                            - button [ref=e463] [cursor=pointer]:
+                              - generic [ref=e464]: 
+                            - button "Click for more actions" [ref=e465] [cursor=pointer]:
+                              - generic [ref=e466]: 
+                            - text:               
+                - list [ref=e467]:
+                  - listitem [ref=e468]:
+                    - generic [ref=e469]:
+                      - text: 
+                      - heading "Recycle bin" [level=6] [ref=e471]
+                    - list [ref=e472]:
+                      - listitem [ref=e473]:
+                        - generic [ref=e474]:
+                          - button [disabled]:
+                            - generic: 
+                          - link "Pages" [ref=e476] [cursor=pointer]:
+                            - /url: /Admin/UI/Content/RecycleBinList?AreaId=3&EntityType=Page&Type=GetRecycleBins&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                            - generic [ref=e478]: 
+                            - text: Pages
+                      - listitem [ref=e479]:
+                        - generic [ref=e480]:
+                          - button [disabled]:
+                            - generic: 
+                          - link "Grid rows" [ref=e482] [cursor=pointer]:
+                            - /url: /Admin/UI/Content/RecycleBinList?AreaId=3&EntityType=GridRow&Type=GetRecycleBins&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                            - generic [ref=e484]: 
+                            - text: Grid rows
+                      - listitem [ref=e485]:
+                        - generic [ref=e486]:
+                          - button [disabled]:
+                            - generic: 
+                          - link "Paragraphs" [ref=e488] [cursor=pointer]:
+                            - /url: /Admin/UI/Content/RecycleBinList?AreaId=3&EntityType=Paragraph&Type=GetRecycleBins&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                            - generic [ref=e490]: 
+                            - text: Paragraphs
+        - generic [ref=e491]:
+          - generic [ref=e492]:
+            - navigation "breadcrumb" [ref=e494]:
+              - list [ref=e495]:
+                - listitem [ref=e496]:
+                  - link "Content" [ref=e497] [cursor=pointer]:
+                    - /url: /Admin/UI/Content
+                - text: 
+                - listitem [ref=e498]:  ...
+                - listitem [ref=e499]:  Websites
+            - generic [ref=e501]:
+              - button "Actions" [ref=e502] [cursor=pointer]
+              - text:  
+          - generic [ref=e505]:
+            - toolbar "List actions toolbar" [ref=e506]:
+              - heading "Websites (1)" [level=6] [ref=e508]
+              - generic [ref=e509]:
+                - button "New website" [ref=e510] [cursor=pointer]:
+                  - generic [ref=e511]: 
+                  - text: New website
+                - button "New website language" [ref=e512] [cursor=pointer]:
+                  - generic [ref=e513]: 
+                  - text: New website language
+              - generic [ref=e514]: "Search:"
+              - generic [ref=e515]:
+                - searchbox "Search:" [ref=e516]
+                - button "Search" [ref=e517] [cursor=pointer]:
+                  - generic [ref=e518]: Search
+                  - generic [ref=e519]: 
+            - table [ref=e521]:
+              - rowgroup [ref=e522]:
+                - row "Id Name Region Pages Active Published Updated Preview" [ref=e523]:
+                  - columnheader [ref=e524]
+                  - columnheader [ref=e525]
+                  - columnheader "Id" [ref=e526]:
+                    - button "Id" [ref=e527] [cursor=pointer]:
+                      - generic [ref=e528]: Id
+                  - columnheader "Name" [ref=e529]:
+                    - button "Name" [ref=e530] [cursor=pointer]:
+                      - generic [ref=e531]: Name
+                  - columnheader [ref=e532]
+                  - columnheader "Region" [ref=e533]:
+                    - button "Region" [ref=e534] [cursor=pointer]:
+                      - generic [ref=e535]: Region
+                  - columnheader "Pages" [ref=e536]:
+                    - button "Pages" [ref=e537] [cursor=pointer]:
+                      - generic [ref=e538]: Pages
+                  - columnheader "Active" [ref=e539]:
+                    - button "Active" [ref=e540] [cursor=pointer]:
+                      - generic [ref=e541]: Active
+                  - columnheader "Published" [ref=e542]:
+                    - button "Published" [ref=e543] [cursor=pointer]:
+                      - generic [ref=e544]: Published
+                  - columnheader "Updated" [ref=e545]:
+                    - button "Updated" [ref=e546] [cursor=pointer]:
+                      - generic [ref=e547]: Updated
+                  - columnheader "Preview" [ref=e548]
+                  - columnheader [ref=e549]
+              - rowgroup [ref=e550]:
+                - row "3 Swift 2 en-US 120 Published 11 Jun 2026 14:28" [ref=e551] [cursor=pointer]:
+                  - cell [ref=e552]
+                  - cell [ref=e553]:
+                    - link [ref=e554]:
+                      - /url: /Admin/UI/Content/AreaEdit?Id=3&Type=GetAreaById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                      - generic [ref=e555]: 
+                  - cell "3" [ref=e556]:
+                    - link "3" [ref=e557]:
+                      - /url: /Admin/UI/Content/AreaEdit?Id=3&Type=GetAreaById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                      - generic [ref=e558]: "3"
+                  - cell "Swift 2" [ref=e559]:
+                    - link "Swift 2" [ref=e560]:
+                      - /url: /Admin/UI/Content/AreaEdit?Id=3&Type=GetAreaById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                  - cell [ref=e561]:       
+                  - cell "en-US" [ref=e562]:
+                    - link "en-US" [ref=e563]:
+                      - /url: /Admin/UI/Content/AreaEdit?Id=3&Type=GetAreaById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                      - img "en-US" [ref=e564]
+                  - cell "120" [ref=e565]:
+                    - link "120" [ref=e566]:
+                      - /url: /Admin/UI/Content/AreaEdit?Id=3&Type=GetAreaById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                      - generic [ref=e567]: "120"
+                  - cell [ref=e568]:
+                    - checkbox [checked] [ref=e572]
+                  - cell "Published" [ref=e573]:
+                    - generic [ref=e575]: Published
+                  - cell "11 Jun 2026 14:28" [ref=e577]:
+                    - link "11 Jun 2026 14:28" [ref=e578]:
+                      - /url: /Admin/UI/Content/AreaEdit?Id=3&Type=GetAreaById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                  - cell [ref=e579]:
+                    - link [ref=e580]:
+                      - /url: /Admin/UI/Content/AreaEdit?Id=3&Type=GetAreaById&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                      - button [ref=e581]:
+                        - generic [ref=e582]: 
+                  - cell [ref=e583]
+    - progressbar [ref=e85]

@@ -105,7 +105,7 @@ Every permission action is recorded in the run log:
 - **Skipped** — `Group 'X' not found on target — skipping permission for page {GUID}`
 - **Safety fallback triggered** — the warning above
 
-The log viewer (`Settings > Database > Serialize > Log Viewer`) surfaces
+The log viewer (`Settings > Developer > Serialize > Log Viewer`) surfaces
 these per-run; the Management API response's `Message` field includes the
 cumulative count of skipped-and-fallback-triggered permissions.
 

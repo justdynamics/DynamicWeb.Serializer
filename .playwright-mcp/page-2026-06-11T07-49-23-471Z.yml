@@ -1,0 +1,20 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - generic [ref=e4]:
+      - img [ref=e7]
+      - img [ref=e24]
+    - generic [ref=e31]:
+      - heading "Sign in" [level=3] [ref=e32]
+      - generic [ref=e33]: Enter credentials to sign in
+      - generic [ref=e35]:
+        - textbox "Username" [active] [ref=e37]
+        - generic [ref=e39]:
+          - checkbox "Stay signed in" [ref=e40]
+          - generic "Maintains your login between sessions using a secure cookie. Only use this option on trusted or personal devices." [ref=e41]:
+            - text: Stay signed in
+            - img [ref=e42]
+        - button "Next" [ref=e45] [cursor=pointer]
+      - 'generic "InstallationId: 6509801628282b485d4786e1c3666870" [ref=e48]': Dynamicweb Software A/S
+  - generic [ref=e49]:
+    - generic [ref=e50]: © 2026 DynamicWeb Software A/S. All rights reserved
+    - generic [ref=e51]: "License: Trial 10.26.7+5be1855867a5a5b141ada86b027a6b1ca660b088"

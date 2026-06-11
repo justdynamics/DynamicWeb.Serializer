@@ -1,0 +1,15 @@
+[     650ms] [WARNING] ignoring attaching to nonexistent format ai JSHandle@node @ https://localhost:56100/Admin/assets/main.js?v=639166046000000000:80
+[     673ms] [WARNING] ignoring attaching to nonexistent format ai JSHandle@node @ https://localhost:56100/Admin/assets/main.js?v=639166046000000000:80
+[     690ms] [WARNING] ignoring attaching to nonexistent format ai JSHandle@node @ https://localhost:56100/Admin/assets/main.js?v=639166046000000000:80
+[    5065ms] [WARNING] Google Maps JavaScript API warning: NoApiKeys https://developers.google.com/maps/documentation/javascript/error-messages#no-api-keys @ https://maps.googleapis.com/maps-api-v3/api/js/65/3b/intl/en_gb/util.js:37
+[    5065ms] [WARNING] Google Maps JavaScript API warning: InvalidKey https://developers.google.com/maps/documentation/javascript/error-messages#invalid-key @ https://maps.googleapis.com/maps-api-v3/api/js/65/3b/intl/en_gb/util.js:37
+[10998434ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ https://localhost:56100/Admin/UI/Content/TreeNodes?Path=%2FDynamicweb.Content.UI.ContentArea%2F3%2FSwift%20Setup%2F6860&DisplayState=full&Type=NavigationByPath&ScreenType=noScreen&Target=n753a3042f3182e1e89e67e07efb78de38645c76b:0
+[10998437ms] [ERROR] TypeError: Failed to fetch
+    at Object.GetMarkup (https://localhost:56100/Admin/assets/main.js?v=639166046000000000:1:6244)
+    at Object.GetMarkupFromUrl (https://localhost:56100/Admin/assets/main.js?v=639166046000000000:1:5825)
+    at p (https://localhost:56100/Admin/assets/main.js?v=639166046000000000:35:54550)
+    at u (https://localhost:56100/Admin/assets/main.js?v=639166046000000000:35:54109)
+    at Object.NavigateAndLoad (https://localhost:56100/Admin/assets/main.js?v=639166046000000000:35:42871)
+    at async ExpandTreeNode (https://localhost:56100/Admin/assets/main.js?v=639166046000000000:35:62327)
+    at async Object.DWActionHandler (https://localhost:56100/Admin/assets/main.js?v=639166046000000000:23:6928)
+    at async HTMLDocument.<anonymous> (https://localhost:56100/Admin/assets/main.js?v=639166046000000000:81:288137) @ https://localhost:56100/Admin/assets/main.js?v=639166046000000000:22

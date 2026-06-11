@@ -35,6 +35,13 @@ public sealed class SerializerDeserializeCommand : CommandBase
     /// </summary>
     public bool IsAdminUiInvocation { get; set; } = false;
 
+    /// <summary>
+    /// Dry-run preview: the full deserialize pipeline runs and reports what WOULD be
+    /// created/updated/skipped (with per-field [DRY-RUN] detail in the log), but nothing
+    /// is written. Also honored via query string: ?dryRun=true.
+    /// </summary>
+    public bool IsDryRun { get; set; }
+
     private string? _logFile;
     private readonly List<string> _logLines = new();
 
@@ -93,6 +100,16 @@ public sealed class SerializerDeserializeCommand : CommandBase
             }
         }
 
+        // Same query-string fallback for dry-run (?dryRun=true), D-38-11 precedent.
+        if (!IsDryRun)
+        {
+            var dryFromQuery = Dynamicweb.Context.Current?.Request?["dryRun"];
+            if (!string.IsNullOrEmpty(dryFromQuery) && bool.TryParse(dryFromQuery, out var dryQ))
+            {
+                IsDryRun = dryQ;
+            }
+        }
+
         try
         {
             var configPath = ConfigPathResolver.FindConfigFile();
@@ -102,7 +119,7 @@ public sealed class SerializerDeserializeCommand : CommandBase
             // Phase 43 / DESER-04: config-free deserialize path. Predicates are no longer
             // consulted; the orchestrator reads the manifest from disk and dispatches per-entry.
             // Mode subfolder is the lowercased mode name (Phase 42 ManifestWriter convention).
-            var filesRoot = Path.GetDirectoryName(configPath)!;
+            var filesRoot = ConfigPathResolver.GetFilesRoot(configPath);
             var systemDir = Path.Combine(filesRoot, "System");
             var paths = SerializerPathResolver.EnsureDirectories(systemDir);
 
@@ -116,8 +133,9 @@ public sealed class SerializerDeserializeCommand : CommandBase
             // Phase 44 / WR-04: _logFile is created BEFORE the inner try region so the
             // outer-most catch can flush accumulated lines even if a downstream call throws
             // before reaching the inner try/finally.
-            _logFile = LogFileWriter.CreateLogFile(paths.Log, "Deserialize");
-            Log($"=== Serializer Deserialize (API) started [mode: {deploymentMode}] ===");
+            _logFile = LogFileWriter.CreateLogFile(paths.Log, "Deserialize",
+                IsDryRun ? $"{modeName}-dryrun" : modeName);
+            Log($"=== Serializer Deserialize (API) started [mode: {deploymentMode}{(IsDryRun ? " | DRY RUN" : "")}] ===");
 
             try
             {
@@ -149,7 +167,7 @@ public sealed class SerializerDeserializeCommand : CommandBase
                     deploymentMode,
                     modeStrategy,
                     Log,
-                    isDryRun: false,
+                    isDryRun: IsDryRun,
                     providerFilter: null,
                     escalator: escalator);
 
@@ -159,6 +177,8 @@ public sealed class SerializerDeserializeCommand : CommandBase
                 var summary = new LogFileSummary
                 {
                     Operation = "Deserialize",
+                    Mode = modeName,
+                    DryRun = IsDryRun,
                     Timestamp = DateTime.UtcNow,
                     Predicates = result.EntryOutcomes
                         .Where(o => o.EntryId != EntryOutcome.RunLevelEntryId)  // Phase 44 / IN-06
@@ -181,7 +201,10 @@ public sealed class SerializerDeserializeCommand : CommandBase
                 };
                 FlushLog(_logFile, summary);
 
-                var message = $"[{deploymentMode}] {result.Summary}";
+                var message = IsDryRun
+                    ? $"[{deploymentMode} DRY RUN — nothing was written] {result.Summary} " +
+                      $"Per-item [DRY-RUN] detail: Log Viewer > {Path.GetFileName(_logFile)}."
+                    : $"[{deploymentMode}] {result.Summary}";
                 if (result.HasErrors)
                     message += $" Errors: {string.Join("; ", result.Errors)}";
 
@@ -202,6 +225,8 @@ public sealed class SerializerDeserializeCommand : CommandBase
                     var failSummary = new LogFileSummary
                     {
                         Operation = "Deserialize",
+                        Mode = modeName,
+                        DryRun = IsDryRun,
                         Timestamp = DateTime.UtcNow,
                         Predicates = new List<PredicateSummary>(),
                         Errors = new List<string> { ex.Message }

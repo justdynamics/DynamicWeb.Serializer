@@ -158,7 +158,7 @@ key derived from the primary key if `nameColumn` is unset).
 
 ## The serialize flow
 
-1. `SerializerSerialize` reads `Files/Serializer.config.json` and resolves the
+1. `SerializerSerialize` reads `Files/System/Serializer/Serializer.config.json` and resolves the
    requested mode (Deploy or Seed).
 2. `SerializerOrchestrator` iterates the mode's predicates in order.
 3. Content predicates: `ContentSerializer` walks the DW area → pages tree,

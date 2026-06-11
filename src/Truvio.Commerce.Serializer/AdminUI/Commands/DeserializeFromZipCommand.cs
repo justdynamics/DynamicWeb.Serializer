@@ -48,6 +48,10 @@ public sealed class DeserializeFromZipCommand : CommandBase<DeserializeFromZipMo
     /// </summary>
     public bool IsAdminUiInvocation { get; set; } = false;
 
+    /// <summary>Dry-run preview: runs the import pipeline without writing anything,
+    /// mirroring <see cref="SerializerDeserializeCommand.IsDryRun"/>.</summary>
+    public bool IsDryRun { get; set; }
+
     private readonly List<string> _logLines = new();
 
     private void Log(string message)
@@ -73,7 +77,7 @@ public sealed class DeserializeFromZipCommand : CommandBase<DeserializeFromZipMo
             if (configPath == null)
                 return new() { Status = CommandResult.ResultType.Error, Message = "Serializer.config.json not found" };
 
-            var filesRoot = Path.GetDirectoryName(configPath)!;
+            var filesRoot = ConfigPathResolver.GetFilesRoot(configPath);
             var systemDir = Path.Combine(filesRoot, "System");
             var paths = SerializerPathResolver.EnsureDirectories(systemDir);
 
@@ -93,7 +97,8 @@ public sealed class DeserializeFromZipCommand : CommandBase<DeserializeFromZipMo
             ZipFile.ExtractToDirectory(physicalZipPath, zipImportDir);
 
             // Create log file
-            var logFile = LogFileWriter.CreateLogFile(paths.Log, "ZipImport");
+            var logFile = LogFileWriter.CreateLogFile(paths.Log, "ZipImport",
+                IsDryRun ? "deploy-dryrun" : "deploy");
             Log("=== Serializer ZipImport started ===");
             Log($"Source zip: {FilePath}");
             Log($"Target area: {TargetAreaId}");
@@ -135,12 +140,14 @@ public sealed class DeserializeFromZipCommand : CommandBase<DeserializeFromZipMo
             var orchestrator = ProviderRegistry.CreateOrchestrator(filesRoot);
             var result = orchestrator.DeserializeAll(
                 manifest, zipImportDir, DeploymentMode.Deploy, ConflictStrategy.SourceWins,
-                Log, isDryRun: false, providerFilter: null, escalator);
+                Log, isDryRun: IsDryRun, providerFilter: null, escalator);
 
             // Build summary from EntryOutcomes (mirrors SerializerDeserializeCommand pattern).
             var summary = new LogFileSummary
             {
                 Operation = "ZipImport",
+                Mode = "deploy",
+                DryRun = IsDryRun,
                 Timestamp = DateTime.UtcNow,
                 Predicates = result.EntryOutcomes
                     .Where(o => o.EntryId != EntryOutcome.RunLevelEntryId)  // Phase 44 / IN-06: filter run-level synthesis

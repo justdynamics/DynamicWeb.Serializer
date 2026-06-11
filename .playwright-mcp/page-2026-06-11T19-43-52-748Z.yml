@@ -1,0 +1,367 @@
+- generic [ref=e2]:
+  - navigation [ref=e3]:
+    - link [ref=e4] [cursor=pointer]:
+      - /url: /
+      - img
+      - img [ref=e5]
+    - tablist [ref=e21]:
+      - tab "Insights" [ref=e22] [cursor=pointer]:
+        - generic [ref=e24]: 
+        - generic [ref=e25]: Insights
+      - tab "Content" [ref=e26] [cursor=pointer]:
+        - generic [ref=e28]: 
+        - generic [ref=e29]: Content
+      - tab "Assets" [ref=e30] [cursor=pointer]:
+        - generic [ref=e32]: 
+        - generic [ref=e33]: Assets
+      - tab "Users" [ref=e34] [cursor=pointer]:
+        - generic [ref=e36]: 
+        - generic [ref=e37]: Users
+      - tab "Products" [ref=e38] [cursor=pointer]:
+        - generic [ref=e40]: 
+        - generic [ref=e41]: Products
+      - tab "Commerce" [ref=e42] [cursor=pointer]:
+        - generic [ref=e44]: 
+        - generic [ref=e45]: Commerce
+      - tab "Email" [ref=e46] [cursor=pointer]:
+        - generic [ref=e48]: 
+        - generic [ref=e49]: Email
+      - tab "Integration" [ref=e50] [cursor=pointer]:
+        - generic [ref=e52]: 
+        - generic [ref=e53]: Integration
+      - tab "Apps" [ref=e54] [cursor=pointer]:
+        - generic [ref=e56]: 
+        - generic [ref=e57]: Apps
+      - tab "Settings" [active] [selected] [ref=e58] [cursor=pointer]:
+        - generic [ref=e60]: 
+        - generic [ref=e61]: Settings
+    - list [ref=e62]:
+      - listitem [ref=e63]:
+        - 'button "Version: 10.26.7+5be1855867a5a5b141ada86b027a6b1ca660b088, Loaded: 21:43:38, Build time: 09/06/2026 12:23:20" [ref=e64] [cursor=pointer]':
+          - generic [ref=e65]: 
+        - text:      
+      - listitem [ref=e66]:
+        - button "Expand area" [ref=e67] [cursor=pointer]:
+          - generic [ref=e68]: 
+          - generic [ref=e69]: Expand area
+      - link "Trial license Expires 11-Jul-2026" [ref=e70] [cursor=pointer]:
+        - /url: /Admin/UI/Settings/LicenseOverview?Type=License&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+        - generic [ref=e71]: 
+        - generic [ref=e72]:
+          - text: Trial license
+          - generic [ref=e73]: Expires 11-Jul-2026
+  - generic [ref=e74]:
+    - tabpanel [ref=e75]:
+      - generic [ref=e81]:
+        - navigation [ref=e82]:
+          - generic [ref=e83]:
+            - generic [ref=e84]:
+              - heading "Settings" [level=6] [ref=e85]
+              - button [ref=e86] [cursor=pointer]:
+                - generic [ref=e87]: 
+              - text: 
+              - button [ref=e88] [cursor=pointer]:
+                - generic [ref=e90]: 
+            - generic [ref=e92]:
+              - list [ref=e93]:
+                - listitem [ref=e94]:
+                  - generic [ref=e95]:
+                    - text: 
+                    - heading "System" [level=6] [ref=e97]
+                  - list [ref=e98]:
+                    - listitem [ref=e99]:
+                      - generic [ref=e100]:
+                        - button "Toggle level" [ref=e101] [cursor=pointer]:
+                          - generic [ref=e102]: 
+                        - link "System" [ref=e104] [cursor=pointer]:
+                          - /url: "#"
+                          - generic [ref=e106]: 
+                          - text: System
+                    - listitem [ref=e107]:
+                      - generic [ref=e108]:
+                        - button "Toggle level" [ref=e109] [cursor=pointer]:
+                          - generic [ref=e110]: 
+                        - link "Administration" [ref=e112] [cursor=pointer]:
+                          - /url: "#"
+                          - generic [ref=e114]: 
+                          - text: Administration
+                    - listitem [ref=e115]:
+                      - generic [ref=e116]:
+                        - button "Toggle level" [ref=e117] [cursor=pointer]:
+                          - generic [ref=e118]: 
+                        - link "Web & http" [ref=e120] [cursor=pointer]:
+                          - /url: "#"
+                          - generic [ref=e122]: 
+                          - text: Web & http
+                    - listitem [ref=e123]:
+                      - generic [ref=e124]:
+                        - button "Toggle level" [ref=e125] [cursor=pointer]:
+                          - generic [ref=e126]: 
+                        - link "Database" [ref=e128] [cursor=pointer]:
+                          - /url: "#"
+                          - generic [ref=e130]: 
+                          - text: Database
+                        - generic [ref=e131]:
+                          - button "Click for more actions" [ref=e132] [cursor=pointer]:
+                            - generic [ref=e133]: 
+                          - text: 
+                    - listitem [ref=e134]:
+                      - generic [ref=e135]:
+                        - button "Toggle level" [expanded] [ref=e136] [cursor=pointer]:
+                          - generic [ref=e137]: 
+                        - link "Developer" [expanded] [ref=e139] [cursor=pointer]:
+                          - /url: "#"
+                          - generic [ref=e141]: 
+                          - text: Developer
+                      - list [ref=e143]:
+                        - listitem [ref=e144]:
+                          - generic [ref=e145]:
+                            - button "Toggle level" [ref=e146] [cursor=pointer]:
+                              - generic [ref=e147]: 
+                            - link "Deployment" [ref=e149] [cursor=pointer]:
+                              - /url: "#"
+                              - generic [ref=e151]: 
+                              - text: Deployment
+                        - listitem [ref=e152]:
+                          - generic [ref=e153]:
+                            - button "Toggle level" [ref=e154] [cursor=pointer]:
+                              - generic [ref=e155]: 
+                            - link "Addins" [ref=e157] [cursor=pointer]:
+                              - /url: /Admin/UI/Settings/AssembliesList?Type=AssembliesAll&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                              - generic [ref=e159]: 
+                              - text: Addins
+                        - listitem [ref=e160]:
+                          - generic [ref=e161]:
+                            - button "Toggle level" [ref=e162] [cursor=pointer]:
+                              - generic [ref=e163]: 
+                            - link "Cache" [ref=e165] [cursor=pointer]:
+                              - /url: "#"
+                              - generic [ref=e167]: 
+                              - text: Cache
+                        - listitem [ref=e168]:
+                          - generic [ref=e169]:
+                            - button "Toggle level" [ref=e170] [cursor=pointer]:
+                              - generic [ref=e171]: 
+                            - link "Api Explorer" [ref=e173] [cursor=pointer]:
+                              - /url: "#"
+                              - generic [ref=e175]: 
+                              - text: Api Explorer
+                        - listitem [ref=e176]:
+                          - generic [ref=e177]:
+                            - button [disabled]:
+                              - generic: 
+                            - link "Api Keys" [ref=e179] [cursor=pointer]:
+                              - /url: /Admin/UI/Settings/ApiKeyList?Type=ApiKeyAll&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                              - generic [ref=e181]: 
+                              - text: Api Keys
+                        - listitem [ref=e182]:
+                          - generic [ref=e183]:
+                            - button [disabled]:
+                              - generic: 
+                            - link "OAuth Clients" [ref=e185] [cursor=pointer]:
+                              - /url: /Admin/UI/Settings/OAuthClientList?Type=OAuthClientAll&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                              - generic [ref=e187]: 
+                              - text: OAuth Clients
+                        - listitem [ref=e188]:
+                          - generic [ref=e189]:
+                            - button "Toggle level" [ref=e190] [cursor=pointer]:
+                              - generic [ref=e191]: 
+                            - link "Serialize" [ref=e193] [cursor=pointer]:
+                              - /url: /Admin/UI/Settings/SerializerSettingsEdit?Type=SerializerSettings&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                              - generic [ref=e195]: 
+                              - text: Serialize
+                    - listitem [ref=e196]:
+                      - generic [ref=e197]:
+                        - button "Toggle level" [ref=e198] [cursor=pointer]:
+                          - generic [ref=e199]: 
+                        - link "Translations" [ref=e201] [cursor=pointer]:
+                          - /url: "#"
+                          - generic [ref=e203]: 
+                          - text: Translations
+                    - listitem [ref=e204]:
+                      - generic [ref=e205]:
+                        - button "Toggle level" [ref=e206] [cursor=pointer]:
+                          - generic [ref=e207]: 
+                        - link "Repositories" [ref=e209] [cursor=pointer]:
+                          - /url: "#"
+                          - generic [ref=e211]: 
+                          - text: Repositories
+                        - button [ref=e213] [cursor=pointer]:
+                          - generic [ref=e214]: 
+              - list [ref=e215]:
+                - listitem [ref=e216]:
+                  - generic [ref=e217]:
+                    - text: 
+                    - heading "Areas" [level=6] [ref=e219]
+                  - list [ref=e220]:
+                    - listitem [ref=e221]:
+                      - generic [ref=e222]:
+                        - button "Toggle level" [ref=e223] [cursor=pointer]:
+                          - generic [ref=e224]: 
+                        - link "Content" [ref=e226] [cursor=pointer]:
+                          - /url: "#"
+                          - generic [ref=e228]: 
+                          - text: Content
+                    - listitem [ref=e229]:
+                      - generic [ref=e230]:
+                        - button "Toggle level" [ref=e231] [cursor=pointer]:
+                          - generic [ref=e232]: 
+                        - link "Assets" [ref=e234] [cursor=pointer]:
+                          - /url: "#"
+                          - generic [ref=e236]: 
+                          - text: Assets
+                        - generic [ref=e237]:
+                          - button "Click for more actions" [ref=e238] [cursor=pointer]:
+                            - generic [ref=e239]: 
+                          - text: 
+                    - listitem [ref=e240]:
+                      - generic [ref=e241]:
+                        - button "Toggle level" [ref=e242] [cursor=pointer]:
+                          - generic [ref=e243]: 
+                        - link "Users" [ref=e245] [cursor=pointer]:
+                          - /url: "#"
+                          - generic [ref=e247]: 
+                          - text: Users
+                    - listitem [ref=e248]:
+                      - generic [ref=e249]:
+                        - button "Toggle level" [ref=e250] [cursor=pointer]:
+                          - generic [ref=e251]: 
+                        - link "Products" [ref=e253] [cursor=pointer]:
+                          - /url: "#"
+                          - generic [ref=e255]: 
+                          - text: Products
+                    - listitem [ref=e256]:
+                      - generic [ref=e257]:
+                        - button "Toggle level" [ref=e258] [cursor=pointer]:
+                          - generic [ref=e259]: 
+                        - link "Commerce" [ref=e261] [cursor=pointer]:
+                          - /url: "#"
+                          - generic [ref=e263]: 
+                          - text: Commerce
+                    - listitem [ref=e264]:
+                      - generic [ref=e265]:
+                        - button "Toggle level" [ref=e266] [cursor=pointer]:
+                          - generic [ref=e267]: 
+                        - link "Email" [ref=e269] [cursor=pointer]:
+                          - /url: "#"
+                          - generic [ref=e271]: 
+                          - text: Email
+                    - listitem [ref=e272]:
+                      - generic [ref=e273]:
+                        - button "Toggle level" [ref=e274] [cursor=pointer]:
+                          - generic [ref=e275]: 
+                        - link "Integration" [ref=e277] [cursor=pointer]:
+                          - /url: "#"
+                          - generic [ref=e279]: 
+                          - text: Integration
+              - list [ref=e280]:
+                - listitem [ref=e281]:
+                  - generic [ref=e282]:
+                    - text: 
+                    - heading "Apps" [level=6] [ref=e284]
+                  - list [ref=e285]:
+                    - listitem [ref=e286]:
+                      - generic [ref=e287]:
+                        - button "Toggle level" [ref=e288] [cursor=pointer]:
+                          - generic [ref=e289]: 
+                        - link "Apps settings" [ref=e291] [cursor=pointer]:
+                          - /url: "#"
+                          - generic [ref=e293]: 
+                          - text: Apps settings
+                    - listitem [ref=e294]:
+                      - generic [ref=e295]:
+                        - button "Toggle level" [ref=e296] [cursor=pointer]:
+                          - generic [ref=e297]: 
+                        - link "GDPR" [ref=e299] [cursor=pointer]:
+                          - /url: "#"
+                          - generic [ref=e301]: 
+                          - text: GDPR
+        - generic [ref=e303]:
+          - generic [ref=e304]:
+            - navigation "breadcrumb" [ref=e306]:
+              - list [ref=e307]:
+                - listitem [ref=e308]:
+                  - link "Settings" [ref=e309] [cursor=pointer]:
+                    - /url: /Admin/UI/Settings
+                - text:   
+                - listitem [ref=e310]:  ...
+                - listitem [ref=e311]:  Serialize Settings
+            - generic [ref=e312]:
+              - button "Cancel" [ref=e313] [cursor=pointer]
+              - generic [ref=e314]:
+                - button "Save and close" [ref=e315] [cursor=pointer]
+                - button "Toggle context menu" [ref=e316] [cursor=pointer]:
+                  - generic [ref=e317]: Toggle context menu
+                - generic: 
+              - generic [ref=e318]:
+                - button "Actions" [ref=e319] [cursor=pointer]
+                - text:   
+          - generic [ref=e325]:
+            - generic [ref=e326]:
+              - button "Serialize" [expanded] [ref=e328] [cursor=pointer]
+              - generic [ref=e330]:
+                - generic [ref=e331]:
+                  - generic [ref=e332]:
+                    - generic [ref=e333]: Output Directory *
+                    - generic [ref=e334]: 
+                  - 'textbox "Top-level folder relative to Files/System. Subfolders are managed automatically: SerializeRoot (YAML files), Upload (zip imports), Download (zip exports), Log (run logs)." [ref=e337]':
+                    - /placeholder: ""
+                - generic [ref=e338]:
+                  - generic [ref=e339]:
+                    - generic [ref=e340]: Deploy subfolder
+                    - generic [ref=e341]: 
+                  - textbox "Subfolder under SerializeRoot for Deploy-mode YAML. Letters, digits, '-' and '_' only." [ref=e344]:
+                    - /placeholder: ""
+                    - text: deploy
+                - generic [ref=e345]:
+                  - generic [ref=e346]:
+                    - generic [ref=e347]: Seed subfolder
+                    - generic [ref=e348]: 
+                  - textbox "Subfolder under SerializeRoot for Seed-mode YAML. Letters, digits, '-' and '_' only." [ref=e351]:
+                    - /placeholder: ""
+                    - text: seed
+                - generic [ref=e355]:
+                  - checkbox "Show seed indicators" [ref=e356]
+                  - generic [ref=e357]:
+                    - generic [ref=e358]: Show seed indicators
+                    - generic [ref=e360]: 
+            - generic [ref=e361]:
+              - button "Information" [expanded] [ref=e363] [cursor=pointer]
+              - generic [ref=e365]:
+                - generic [ref=e366]:
+                  - generic [ref=e367]:
+                    - generic [ref=e368]: Config File
+                    - generic [ref=e369]: 
+                  - textbox "Location of the configuration file (relative to wwwroot). It lives inside the serializer folder so the folder travels as one unit — upload an example configuration (e.g. a Swift starter) into that folder via the file manager to start from it. You can also edit the file manually." [ref=e372]:
+                    - /placeholder: ""
+                - generic [ref=e373]:
+                  - generic [ref=e374]:
+                    - generic [ref=e375]: Sync history
+                    - generic [ref=e376]: 
+                  - textbox "Most recent deploy and seed received by this environment, read from the run logs. Dry-run previews are not counted." [ref=e379]:
+                    - /placeholder: ""
+                - generic [ref=e380]:
+                  - generic [ref=e381]:
+                    - generic [ref=e382]: Coverage
+                    - generic [ref=e383]: 
+                  - textbox "How much of this environment the current predicates manage. Pages are counted per content area; tables per SqlTable predicate." [ref=e386]:
+                    - /placeholder: ""
+                - generic [ref=e387]:
+                  - generic [ref=e388]:
+                    - generic [ref=e389]: Item type field excludes
+                    - generic [ref=e390]: 
+                  - textbox "Per-item-type fields excluded from sync — they stay local to each environment. Manage via the Item Type Excludes sub-node. Pages carrying these item types show as partially managed in the content tree." [ref=e393]:
+                    - /placeholder: ""
+                - generic [ref=e394]:
+                  - generic [ref=e395]:
+                    - generic [ref=e396]: Embedded XML excludes
+                    - generic [ref=e397]: 
+                  - textbox "Per-type XML elements (module settings, provider parameters) excluded from sync — they stay local to each environment. Manage via the Embedded XML Excludes sub-node. Content pages carrying these types show as partially managed in the content tree." [ref=e400]:
+                    - /placeholder: ""
+                - generic [ref=e401]:
+                  - generic [ref=e402]:
+                    - generic [ref=e403]: About Predicates
+                    - generic [ref=e404]: 
+                  - 'textbox "Predicates define which content trees and SQL tables to synchronize, each in Deploy or Seed mode. Use the Predicates sub-node to add, edit, or remove predicates. Only content matching at least one predicate is serialized or deserialized. Terminology: see docs/glossary.md in the project repository." [ref=e407]':
+                    - /placeholder: ""
+    - progressbar [ref=e79]

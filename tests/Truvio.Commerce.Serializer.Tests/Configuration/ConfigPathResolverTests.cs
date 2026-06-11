@@ -39,11 +39,30 @@ public class ConfigPathResolverTests : IDisposable
         Assert.NotNull(result);
         Assert.True(File.Exists(result));
 
-        // Verify it's valid JSON loadable by ConfigLoader
+        // Verify it's valid JSON loadable by ConfigLoader. The default config deliberately
+        // has NO predicates — syncing anything is an explicit decision, never a default.
         var config = ConfigLoader.Load(result);
         Assert.NotNull(config);
         Assert.NotEmpty(config.OutputDirectory);
-        Assert.NotEmpty(config.Predicates);
+        Assert.Empty(config.Predicates);
+    }
+
+    [Fact]
+    public void GetFilesRoot_ConfigInsideSerializerFolder_ReturnsFilesDir()
+    {
+        var filesDir = Path.Combine(Path.GetTempPath(), "host", "wwwroot", "Files");
+        var configPath = Path.Combine(filesDir, "System", "Serializer", "Serializer.config.json");
+
+        Assert.Equal(filesDir, ConfigPathResolver.GetFilesRoot(configPath));
+    }
+
+    [Fact]
+    public void GetFilesRoot_NoFilesAncestor_FallsBackToConfigDirectory()
+    {
+        var configDir = Path.Combine(Path.GetTempPath(), "serializer-test-no-files-ancestor");
+        var configPath = Path.Combine(configDir, "Serializer.config.json");
+
+        Assert.Equal(configDir, ConfigPathResolver.GetFilesRoot(configPath));
     }
 
     [Fact]

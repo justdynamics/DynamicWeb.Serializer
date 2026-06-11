@@ -88,14 +88,14 @@ public sealed class SerializerSerializeCommand : CommandBase
                     Message = $"No {deploymentMode} predicates configured"
                 };
 
-            var filesRoot = Path.GetDirectoryName(configPath)!;
+            var filesRoot = ConfigPathResolver.GetFilesRoot(configPath);
             var systemDir = Path.Combine(filesRoot, "System");
             var paths = config.EnsureDirectories(systemDir);
 
             var modeRoot = Path.Combine(paths.SerializeRoot, modeSubfolder);
             Directory.CreateDirectory(modeRoot);
 
-            _logFile = LogFileWriter.CreateLogFile(paths.Log, "Serialize");
+            _logFile = LogFileWriter.CreateLogFile(paths.Log, "Serialize", deploymentMode.ToString().ToLowerInvariant());
             Log($"=== Serializer Serialize (API) started [mode: {deploymentMode}] ===");
 
             var orchestrator = ProviderRegistry.CreateOrchestrator(filesRoot);
@@ -119,6 +119,7 @@ public sealed class SerializerSerializeCommand : CommandBase
             var summary = new LogFileSummary
             {
                 Operation = "Serialize",
+                Mode = deploymentMode.ToString().ToLowerInvariant(),
                 Timestamp = DateTime.UtcNow,
                 Predicates = result.SerializeResults.Select(r => new PredicateSummary
                 {

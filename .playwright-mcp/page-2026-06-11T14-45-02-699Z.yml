@@ -1,0 +1,433 @@
+- generic [ref=e2]:
+  - navigation [ref=e3]:
+    - link [ref=e4] [cursor=pointer]:
+      - /url: /
+      - img
+      - img [ref=e5]
+    - tablist [ref=e21]:
+      - tab "Insights" [ref=e22] [cursor=pointer]:
+        - generic [ref=e24]: 
+        - generic [ref=e25]: Insights
+      - tab "Content" [ref=e26] [cursor=pointer]:
+        - generic [ref=e28]: 
+        - generic [ref=e29]: Content
+      - tab "Assets" [ref=e30] [cursor=pointer]:
+        - generic [ref=e32]: 
+        - generic [ref=e33]: Assets
+      - tab "Users" [ref=e34] [cursor=pointer]:
+        - generic [ref=e36]: 
+        - generic [ref=e37]: Users
+      - tab "Products" [ref=e38] [cursor=pointer]:
+        - generic [ref=e40]: 
+        - generic [ref=e41]: Products
+      - tab "Commerce" [ref=e42] [cursor=pointer]:
+        - generic [ref=e44]: 
+        - generic [ref=e45]: Commerce
+      - tab "Email" [ref=e46] [cursor=pointer]:
+        - generic [ref=e48]: 
+        - generic [ref=e49]: Email
+      - tab "Integration" [ref=e50] [cursor=pointer]:
+        - generic [ref=e52]: 
+        - generic [ref=e53]: Integration
+      - tab "Apps" [ref=e54] [cursor=pointer]:
+        - generic [ref=e56]: 
+        - generic [ref=e57]: Apps
+      - tab "Settings" [active] [selected] [ref=e58] [cursor=pointer]:
+        - generic [ref=e60]: 
+        - generic [ref=e61]: Settings
+    - list [ref=e62]:
+      - listitem [ref=e63]:
+        - 'button "Version: 10.26.7+5be1855867a5a5b141ada86b027a6b1ca660b088, Loaded: 16:44:55, Build time: 09/06/2026 12:23:20" [ref=e64] [cursor=pointer]':
+          - generic [ref=e65]: 
+        - text:      
+      - listitem [ref=e66]:
+        - button "Expand area" [ref=e67] [cursor=pointer]:
+          - generic [ref=e68]: 
+          - generic [ref=e69]: Expand area
+      - link "Trial license Expires 11-Jul-2026" [ref=e70] [cursor=pointer]:
+        - /url: /Admin/UI/Settings/LicenseOverview?Type=License&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+        - generic [ref=e71]: 
+        - generic [ref=e72]:
+          - text: Trial license
+          - generic [ref=e73]: Expires 11-Jul-2026
+  - generic [ref=e74]:
+    - tabpanel [ref=e75]:
+      - generic [ref=e80]:
+        - navigation [ref=e81]:
+          - generic [ref=e82]:
+            - generic [ref=e83]:
+              - heading "Settings" [level=6] [ref=e84]
+              - button [ref=e85] [cursor=pointer]:
+                - generic [ref=e86]: 
+              - text: 
+              - button [ref=e87] [cursor=pointer]:
+                - generic [ref=e89]: 
+            - generic [ref=e91]:
+              - list [ref=e92]:
+                - listitem [ref=e93]:
+                  - generic [ref=e94]:
+                    - text: 
+                    - heading "System" [level=6] [ref=e96]
+                  - list [ref=e97]:
+                    - listitem [ref=e98]:
+                      - generic [ref=e99]:
+                        - button "Toggle level" [ref=e100] [cursor=pointer]:
+                          - generic [ref=e101]: 
+                        - link "System" [ref=e103] [cursor=pointer]:
+                          - /url: "#"
+                          - generic [ref=e105]: 
+                          - text: System
+                    - listitem [ref=e106]:
+                      - generic [ref=e107]:
+                        - button "Toggle level" [ref=e108] [cursor=pointer]:
+                          - generic [ref=e109]: 
+                        - link "Administration" [ref=e111] [cursor=pointer]:
+                          - /url: "#"
+                          - generic [ref=e113]: 
+                          - text: Administration
+                    - listitem [ref=e114]:
+                      - generic [ref=e115]:
+                        - button "Toggle level" [ref=e116] [cursor=pointer]:
+                          - generic [ref=e117]: 
+                        - link "Web & http" [ref=e119] [cursor=pointer]:
+                          - /url: "#"
+                          - generic [ref=e121]: 
+                          - text: Web & http
+                    - listitem [ref=e122]:
+                      - generic [ref=e123]:
+                        - button "Toggle level" [ref=e124] [cursor=pointer]:
+                          - generic [ref=e125]: 
+                        - link "Database" [ref=e127] [cursor=pointer]:
+                          - /url: "#"
+                          - generic [ref=e129]: 
+                          - text: Database
+                        - generic [ref=e130]:
+                          - button "Click for more actions" [ref=e131] [cursor=pointer]:
+                            - generic [ref=e132]: 
+                          - text: 
+                    - listitem [ref=e133]:
+                      - generic [ref=e134]:
+                        - button "Toggle level" [ref=e135] [cursor=pointer]:
+                          - generic [ref=e136]: 
+                        - link "Developer" [ref=e138] [cursor=pointer]:
+                          - /url: "#"
+                          - generic [ref=e140]: 
+                          - text: Developer
+                    - listitem [ref=e141]:
+                      - generic [ref=e142]:
+                        - button "Toggle level" [ref=e143] [cursor=pointer]:
+                          - generic [ref=e144]: 
+                        - link "Translations" [ref=e146] [cursor=pointer]:
+                          - /url: "#"
+                          - generic [ref=e148]: 
+                          - text: Translations
+                    - listitem [ref=e149]:
+                      - generic [ref=e150]:
+                        - button "Toggle level" [ref=e151] [cursor=pointer]:
+                          - generic [ref=e152]: 
+                        - link "Repositories" [ref=e154] [cursor=pointer]:
+                          - /url: "#"
+                          - generic [ref=e156]: 
+                          - text: Repositories
+                        - button [ref=e158] [cursor=pointer]:
+                          - generic [ref=e159]: 
+              - list [ref=e160]:
+                - listitem [ref=e161]:
+                  - generic [ref=e162]:
+                    - text: 
+                    - heading "Areas" [level=6] [ref=e164]
+                  - list [ref=e165]:
+                    - listitem [ref=e166]:
+                      - generic [ref=e167]:
+                        - button "Toggle level" [ref=e168] [cursor=pointer]:
+                          - generic [ref=e169]: 
+                        - link "Content" [ref=e171] [cursor=pointer]:
+                          - /url: "#"
+                          - generic [ref=e173]: 
+                          - text: Content
+                    - listitem [ref=e174]:
+                      - generic [ref=e175]:
+                        - button "Toggle level" [ref=e176] [cursor=pointer]:
+                          - generic [ref=e177]: 
+                        - link "Assets" [ref=e179] [cursor=pointer]:
+                          - /url: "#"
+                          - generic [ref=e181]: 
+                          - text: Assets
+                        - generic [ref=e182]:
+                          - button "Click for more actions" [ref=e183] [cursor=pointer]:
+                            - generic [ref=e184]: 
+                          - text: 
+                    - listitem [ref=e185]:
+                      - generic [ref=e186]:
+                        - button "Toggle level" [ref=e187] [cursor=pointer]:
+                          - generic [ref=e188]: 
+                        - link "Users" [ref=e190] [cursor=pointer]:
+                          - /url: "#"
+                          - generic [ref=e192]: 
+                          - text: Users
+                    - listitem [ref=e193]:
+                      - generic [ref=e194]:
+                        - button "Toggle level" [ref=e195] [cursor=pointer]:
+                          - generic [ref=e196]: 
+                        - link "Products" [ref=e198] [cursor=pointer]:
+                          - /url: "#"
+                          - generic [ref=e200]: 
+                          - text: Products
+                    - listitem [ref=e201]:
+                      - generic [ref=e202]:
+                        - button "Toggle level" [expanded] [ref=e203] [cursor=pointer]:
+                          - generic [ref=e204]: 
+                        - link "Commerce" [expanded] [ref=e206] [cursor=pointer]:
+                          - /url: "#"
+                          - generic [ref=e208]: 
+                          - text: Commerce
+                      - list [ref=e210]:
+                        - listitem [ref=e211]:
+                          - generic [ref=e212]:
+                            - button "Toggle level" [expanded] [ref=e213] [cursor=pointer]:
+                              - generic [ref=e214]: 
+                            - link "Order Management" [expanded] [ref=e216] [cursor=pointer]:
+                              - /url: "#"
+                              - generic [ref=e218]: 
+                              - text: Order Management
+                          - list [ref=e220]:
+                            - listitem [ref=e221]:
+                              - generic [ref=e222]:
+                                - button [disabled]:
+                                  - generic: 
+                                - link "Payment" [ref=e224] [cursor=pointer]:
+                                  - /url: /Admin/UI/Settings/PaymentList?Type=PaymentsAll&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                                  - generic [ref=e226]: 
+                                  - text: Payment
+                            - listitem [ref=e227]:
+                              - generic [ref=e228]:
+                                - button [disabled]:
+                                  - generic: 
+                                - link "Shipping" [ref=e230] [cursor=pointer]:
+                                  - /url: /Admin/UI/Settings/ShippingList?Type=ShippingsAll&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                                  - generic [ref=e232]: 
+                                  - text: Shipping
+                            - listitem [ref=e233]:
+                              - generic [ref=e234]:
+                                - button [disabled]:
+                                  - generic: 
+                                - link "Stock states" [ref=e236] [cursor=pointer]:
+                                  - /url: /Admin/UI/Settings/StockGroupList?Type=GetStockGroups&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                                  - generic [ref=e238]: 
+                                  - text: Stock states
+                            - listitem [ref=e239]:
+                              - generic [ref=e240]:
+                                - button [disabled]:
+                                  - generic: 
+                                - link "Order fields" [ref=e242] [cursor=pointer]:
+                                  - /url: /Admin/UI/Settings/OrderFieldList?Type=GetOrderFields&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                                  - generic [ref=e244]: 
+                                  - text: Order fields
+                            - listitem [ref=e245]:
+                              - generic [ref=e246]:
+                                - button [disabled]:
+                                  - generic: 
+                                - link "Order line fields" [ref=e248] [cursor=pointer]:
+                                  - /url: /Admin/UI/Settings/OrderLineFieldList?Type=GetOrderLineFields&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                                  - generic [ref=e250]: 
+                                  - text: Order line fields
+                            - listitem [ref=e251]:
+                              - generic [ref=e252]:
+                                - button [disabled]:
+                                  - generic: 
+                                - link "Order flows" [ref=e254] [cursor=pointer]:
+                                  - /url: /Admin/UI/Settings/OrderFlowList?OrderType=Order&Type=GetOrderFlowList&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                                  - generic [ref=e256]: 
+                                  - text: Order flows
+                            - listitem [ref=e257]:
+                              - generic [ref=e258]:
+                                - button [disabled]:
+                                  - generic: 
+                                - link "Cart flows" [ref=e260] [cursor=pointer]:
+                                  - /url: /Admin/UI/Settings/OrderFlowList?OrderType=Cart&Type=GetOrderFlowList&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                                  - generic [ref=e262]: 
+                                  - text: Cart flows
+                            - listitem [ref=e263]:
+                              - generic [ref=e264]:
+                                - button [disabled]:
+                                  - generic: 
+                                - link "Quote flows" [ref=e266] [cursor=pointer]:
+                                  - /url: /Admin/UI/Settings/OrderFlowList?OrderType=Quote&Type=GetOrderFlowList&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                                  - generic [ref=e268]: 
+                                  - text: Quote flows
+                            - listitem [ref=e269]:
+                              - generic [ref=e270]:
+                                - button [disabled]:
+                                  - generic: 
+                                - link "Ledger flows" [ref=e272] [cursor=pointer]:
+                                  - /url: /Admin/UI/Settings/OrderFlowList?OrderType=LedgerEntry&Type=GetOrderFlowList&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                                  - generic [ref=e274]: 
+                                  - text: Ledger flows
+                            - listitem [ref=e275]:
+                              - generic [ref=e276]:
+                                - button [disabled]:
+                                  - generic: 
+                                - link "Ledger types" [ref=e278] [cursor=pointer]:
+                                  - /url: /Admin/UI/Settings/LedgerTypeList?Type=LedgerTypeAll&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                                  - generic [ref=e280]: 
+                                  - text: Ledger types
+                            - listitem [ref=e281]:
+                              - generic [ref=e282]:
+                                - button [disabled]:
+                                  - generic: 
+                                - link "Order contexts" [ref=e284] [cursor=pointer]:
+                                  - /url: /Admin/UI/Settings/OrderContextList?Type=OrderContextsAll&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                                  - generic [ref=e286]: 
+                                  - text: Order contexts
+                            - listitem [ref=e287]:
+                              - generic [ref=e288]:
+                                - button [disabled]:
+                                  - generic: 
+                                - link "Track & Trace" [ref=e290] [cursor=pointer]:
+                                  - /url: /Admin/UI/Settings/TrackAndTraceList?Type=TrackAndTraceAll&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                                  - generic [ref=e292]: 
+                                  - text: Track & Trace
+                            - listitem [ref=e293]:
+                              - generic [ref=e294]:
+                                - button [disabled]:
+                                  - generic: 
+                                - link "Address validation" [ref=e296] [cursor=pointer]:
+                                  - /url: /Admin/UI/Settings/AddressValidatorList?Type=AddressValidatorsAll&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                                  - generic [ref=e298]: 
+                                  - text: Address validation
+                            - listitem [ref=e299]:
+                              - generic [ref=e300]:
+                                - button [disabled]:
+                                  - generic: 
+                                - link "Validation groups" [ref=e302] [cursor=pointer]:
+                                  - /url: /Admin/UI/Settings/ValidationGroupList?Type=ValidationGroupsAll&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                                  - generic [ref=e304]: 
+                                  - text: Validation groups
+                        - listitem [ref=e305]:
+                          - generic [ref=e306]:
+                            - button "Toggle level" [ref=e307] [cursor=pointer]:
+                              - generic [ref=e308]: 
+                            - link "Product catalog" [ref=e310] [cursor=pointer]:
+                              - /url: "#"
+                              - generic [ref=e312]: 
+                              - text: Product catalog
+                        - listitem [ref=e313]:
+                          - generic [ref=e314]:
+                            - button "Toggle level" [ref=e315] [cursor=pointer]:
+                              - generic [ref=e316]: 
+                            - link "Advanced configuration" [ref=e318] [cursor=pointer]:
+                              - /url: "#"
+                              - generic [ref=e320]: 
+                              - text: Advanced configuration
+                        - listitem [ref=e321]:
+                          - generic [ref=e322]:
+                            - button "Toggle level" [ref=e323] [cursor=pointer]:
+                              - generic [ref=e324]: 
+                            - link "RMAs" [ref=e326] [cursor=pointer]:
+                              - /url: "#"
+                              - generic [ref=e328]: 
+                              - text: RMAs
+                    - listitem [ref=e329]:
+                      - generic [ref=e330]:
+                        - button "Toggle level" [ref=e331] [cursor=pointer]:
+                          - generic [ref=e332]: 
+                        - link "Email" [ref=e334] [cursor=pointer]:
+                          - /url: "#"
+                          - generic [ref=e336]: 
+                          - text: Email
+                    - listitem [ref=e337]:
+                      - generic [ref=e338]:
+                        - button "Toggle level" [ref=e339] [cursor=pointer]:
+                          - generic [ref=e340]: 
+                        - link "Integration" [ref=e342] [cursor=pointer]:
+                          - /url: "#"
+                          - generic [ref=e344]: 
+                          - text: Integration
+              - list [ref=e345]:
+                - listitem [ref=e346]:
+                  - generic [ref=e347]:
+                    - text: 
+                    - heading "Apps" [level=6] [ref=e349]
+                  - list [ref=e350]:
+                    - listitem [ref=e351]:
+                      - generic [ref=e352]:
+                        - button "Toggle level" [ref=e353] [cursor=pointer]:
+                          - generic [ref=e354]: 
+                        - link "Apps settings" [ref=e356] [cursor=pointer]:
+                          - /url: "#"
+                          - generic [ref=e358]: 
+                          - text: Apps settings
+                    - listitem [ref=e359]:
+                      - generic [ref=e360]:
+                        - button "Toggle level" [ref=e361] [cursor=pointer]:
+                          - generic [ref=e362]: 
+                        - link "GDPR" [ref=e364] [cursor=pointer]:
+                          - /url: "#"
+                          - generic [ref=e366]: 
+                          - text: GDPR
+        - generic [ref=e368]:
+          - generic [ref=e369]:
+            - navigation "breadcrumb" [ref=e371]:
+              - list [ref=e372]:
+                - listitem [ref=e373]:
+                  - link "Settings" [ref=e374] [cursor=pointer]:
+                    - /url: /Admin/UI/Settings
+                - text:    
+                - listitem [ref=e375]:  ...
+                - listitem [ref=e376]: " Edit payment: Invoice"
+            - generic [ref=e377]:
+              - button "Translations" [ref=e380] [cursor=pointer]
+              - button "Cancel" [ref=e381] [cursor=pointer]
+              - generic [ref=e382]:
+                - button "Save and close" [ref=e383] [cursor=pointer]
+                - button "Toggle context menu" [ref=e384] [cursor=pointer]:
+                  - generic [ref=e385]: Toggle context menu
+                - generic: 
+              - generic [ref=e386]:
+                - button "Actions" [ref=e387] [cursor=pointer]
+                - text:  
+          - generic [ref=e388]:
+            - generic [ref=e390]:
+              - generic [ref=e392]: 
+              - text: This payment method is managed at deploy by 'EcomPayments'. Changes here are overwritten by the next deploy — make lasting changes in the source environment.
+            - generic [ref=e396]:
+              - tablist [ref=e397]:
+                - listitem [ref=e398]:
+                  - link "General" [ref=e399] [cursor=pointer]:
+                    - /url: "#tab-5a7eecb108f347a4b904c02b7ba3349e"
+                - listitem [ref=e400]:
+                  - link "Provider" [ref=e401] [cursor=pointer]:
+                    - /url: "#tab-12fcb64e24a24c628f978a29228034aa"
+                - listitem [ref=e402]:
+                  - link "Fees" [ref=e403] [cursor=pointer]:
+                    - /url: "#tab-a2dc258443784a4eb76bd203dcf7c5a8"
+                - listitem [ref=e404]:
+                  - link "Availability" [ref=e405] [cursor=pointer]:
+                    - /url: "#tab-3c27b43405de42229074c86a2399102d"
+                - listitem [ref=e406]:
+                  - link "Business Central" [ref=e407] [cursor=pointer]:
+                    - /url: "#tab-857bc5fb0bb3422e9702809479fec429"
+              - generic [ref=e408]:
+                - generic [ref=e411]:
+                  - button "Method" [expanded] [ref=e413] [cursor=pointer]
+                  - generic [ref=e415]:
+                    - generic [ref=e416]:
+                      - generic [ref=e418]: Name *
+                      - textbox [ref=e421]: Invoice
+                    - generic [ref=e425]:
+                      - checkbox "Active" [checked] [ref=e426]
+                      - generic [ref=e428]: Active
+                    - generic [ref=e429]:
+                      - generic [ref=e431]: Description
+                      - textbox [ref=e434]: Invoice
+                    - generic [ref=e435]:
+                      - generic [ref=e437]: Icon
+                      - generic [ref=e439]:
+                        - generic [ref=e442] [cursor=pointer]: 
+                        - generic [ref=e443]:
+                          - generic [ref=e444]: Select media file
+                          - generic "Search or browse for a media file" [ref=e445]
+                        - button "Search" [ref=e446] [cursor=pointer]
+                        - text:       
+                - text:            
+    - progressbar [ref=e79]

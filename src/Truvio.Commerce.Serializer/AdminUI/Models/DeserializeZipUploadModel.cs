@@ -40,9 +40,8 @@ public sealed class DeserializeZipUploadModel : DataViewModelBase
                 return model;
             }
 
-            // Physical Files root is the config file's directory; mirror it as the
-            // virtual /Files root for the FileUpload editor.
-            var filesRoot = Path.GetDirectoryName(configPath)!;
+            // Mirror the physical Files root as the virtual /Files root for the FileUpload editor.
+            var filesRoot = ConfigPathResolver.GetFilesRoot(configPath);
             var uploadPhysical = Path.Combine(filesRoot, "System", "Serializer", "Upload");
             Directory.CreateDirectory(uploadPhysical);
 

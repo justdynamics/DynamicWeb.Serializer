@@ -52,7 +52,7 @@ becomes `git revert` followed by a redeploy.
   before any SQL runs. `;`, `--`, `/*`, `xp_`, `DROP`, `EXEC`, and related tokens
   are rejected at config-load.
 - **Admin UI + Management API.** Configure predicates, item types, and XML filters
-  from `Settings > Database > Serialize`. Run `SerializerSerialize` and
+  from `Settings > Developer > Serialize`. Run `SerializerSerialize` and
   `SerializerDeserialize` from CI/CD using the DW Management API.
 
 ## Quick start
@@ -93,8 +93,8 @@ cp src/Truvio.Commerce.Serializer/bin/Release/net8.0/Truvio.Commerce.Serializer.
    /path/to/your/dw-instance/bin/
 
 # 3. Restart the DW host, then sign in and go to
-#    Settings > Database > Serialize > Predicates to configure what to sync.
-#    Or edit Files/Serializer.config.json directly.
+#    Settings > Developer > Serialize > Predicates to configure what to sync.
+#    Or edit Files/System/Serializer/Serializer.config.json directly.
 
 # 4. Serialize on the source environment
 curl -X POST https://source.example.com/Admin/Api/SerializerSerialize \
@@ -111,7 +111,9 @@ Full walkthrough: [`docs/getting-started.md`](docs/getting-started.md).
 
 For a Swift site, copy
 [`src/Truvio.Commerce.Serializer/Configuration/swift-starter.json`](src/Truvio.Commerce.Serializer/Configuration/swift-starter.json)
-to `Files/Serializer.config.json`. It encodes the analysed split (full rationale per
+to `Files/System/Serializer/Serializer.config.json`. App-store installs drop the same file
+into `Files/System/Serializer/swift-starter.example.json` — rename it to
+`Serializer.config.json` to activate it. It encodes the analysed split (full rationale per
 content item: [Swift deploy/seed analysis](docs/swift-deploy-seed-analysis.md)):
 
 - **Deploy** — `Site framework`: the platform-wired site (Shop + PLP/PDP, customer
@@ -134,15 +136,25 @@ the config:
 | Icon | Meaning |
 |---|---|
 | sync | Fully managed at deploy — tooltip names the predicate |
-| sync-slash | Partially managed — tooltip lists the excluded paths below this page, or the deploy-managed subtrees under an unmanaged page |
-| flower | Seeded starter content — lands once, local edits on the target are preserved. **Off by default** (broad seed coverage would mark nearly every page); enable via Settings > Database > Serialize > "Show seed indicators in content tree" or `showSeedTreeIndicators` in the config |
+| sync-slash | Partially managed — tooltip lists the excluded paths below this page, the deploy-managed subtrees under an unmanaged page, or the fields/settings on this page that are excluded by type and stay local (e.g. the cart page's `eCom_CartV2` module settings) |
+| flower | Seeded starter content — lands once, local edits on the target are preserved. **Off by default** (broad seed coverage would mark nearly every page); enable via Settings > Developer > Serialize > "Show seed indicators" or `showSeedIndicators` in the config |
 | *(none)* | Not serialized (environment-owned) |
 
-The editing screens carry the same signal where it matters most: the visual editor,
-paragraph dialog and grid-row dialog show a screen alert for the owning page — a warning
-on deploy-managed pages ("content here is overwritten by the next deploy") and an info
-note on seeded pages ("your edits are preserved"). Rows and paragraphs always inherit
-their page's mode, so one page-level alert covers them all.
+The editing screens carry the same signal where it matters most: the visual editor, the
+page properties editor, the paragraph dialog and the grid-row dialog show a screen alert
+for the owning page — a warning
+on deploy-managed pages ("content here is overwritten by the next deploy") and, when
+seed indicators are enabled, an info note on seeded pages ("your edits are preserved").
+The `showSeedIndicators` setting gates both seed cues — tree icons and the editor note —
+while the deploy warning always shows. Both alerts name any fields excluded by type on
+the page, so a partially managed page (like the cart) says exactly which settings stay
+local. Field-level carve-outs (like the cart settings) appear as a clickable header chip —
+"eCom_CartV2 — 21 settings stay local — view" — that opens the exact exclusion list, and
+the tree's right-click menu carries the same "View excluded fields" action. Rows and
+paragraphs always inherit their page's mode, so one page-level alert covers them all. The
+commerce settings edit screens (payment, shipping, country, currency, language, shop,
+order flow, order state) carry the same alert when a SqlTable predicate manages their
+table.
 
 Every page also gets right-click **Serialize subtree** (zip download) and
 **Deserialize from zip** (upload into this website) actions.

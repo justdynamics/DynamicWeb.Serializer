@@ -128,7 +128,7 @@ public sealed class SerializeSubtreeCommand : CommandBase
             var configPath = ConfigPathResolver.FindOrCreateConfigFile();
             var config = ConfigLoader.Load(configPath);
 
-            var filesDir = Path.GetDirectoryName(configPath)!;
+            var filesDir = ConfigPathResolver.GetFilesRoot(configPath);
             var systemDir = Path.Combine(filesDir, "System");
             var paths = config.EnsureDirectories(systemDir);
 

@@ -29,6 +29,16 @@
 
   <ItemGroup>
     <EmbeddedResource Include="wwwroot/**/*" />
+    <!-- The Swift starter is also embedded so the settings screen's "Get started" action can
+         apply it (with a chosen areaId) without any file having to exist on disk first. -->
+    <EmbeddedResource Include="Configuration\swift-starter.json" />
+    <!-- Ship the Swift starter into the host's Files/System/Serializer/ on app-store install.
+         Legacy content\ packaging is required: modern contentFiles\ are NOT copied into a DW
+         host's /Files (see doc.dynamicweb.com forum: locally-installing-nuget-package). The
+         .example suffix keeps ConfigPathResolver from ever picking it up as the live config —
+         users copy/rename it (or upload their own) to activate it. -->
+    <Content Update="Configuration\swift-starter.json" Pack="true"
+             PackagePath="content\Files\System\Serializer\swift-starter.example.json" />
   </ItemGroup>
 
   <ItemGroup>
@@ -47,6 +57,9 @@
     <PackageReference Include="Dynamicweb" Version="10.23.9" />
     <PackageReference Include="Dynamicweb.Content.UI" Version="10.23.9" />
     <PackageReference Include="Dynamicweb.CoreUI.Rendering" Version="10.23.9" />
+    <!-- Payment/shipping method edit screens (PaymentEditScreen / ShippingEditScreen) for
+         the deploy/seed mode alerts on SqlTable-managed commerce methods. -->
+    <PackageReference Include="Dynamicweb.Ecommerce.UI" Version="10.23.9" />
     <PackageReference Include="Dynamicweb.Files.UI" Version="10.23.9" />
     <PackageReference Include="YamlDotNet" Version="13.7.1" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="8.0.1" />

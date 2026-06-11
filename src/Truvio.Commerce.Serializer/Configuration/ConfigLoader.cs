@@ -24,6 +24,15 @@ public static class ConfigLoader
     private static readonly Regex _safeSubfolder = new("^[a-zA-Z0-9_-]{1,32}$", RegexOptions.Compiled);
 
     /// <summary>
+    /// True when the candidate is a safe per-mode subfolder name (matches
+    /// <c>[a-zA-Z0-9_-]{1,32}</c> — no path separators, no '..', no absolute paths).
+    /// Save paths validate with this BEFORE writing so a bad name fails at save time with
+    /// a screen-level error instead of poisoning every subsequent <see cref="Load(string)"/>.
+    /// </summary>
+    public static bool IsValidSubfolderName(string candidate) =>
+        !string.IsNullOrEmpty(candidate) && _safeSubfolder.IsMatch(candidate);
+
+    /// <summary>
     /// Test-only override of the default SqlIdentifierValidator used by the 1-arg
     /// <see cref="Load(string)"/> overload. When non-null, <see cref="Load(string)"/>
     /// delegates to the 2-arg overload with THIS validator; when null, it constructs
@@ -113,7 +122,7 @@ public static class ConfigLoader
             SeedOutputSubfolder = string.IsNullOrEmpty(raw.SeedOutputSubfolder) ? "seed" : raw.SeedOutputSubfolder!,
             ExcludeFieldsByItemType = raw.ExcludeFieldsByItemType ?? new Dictionary<string, List<string>>(),
             ExcludeXmlElementsByType = raw.ExcludeXmlElementsByType ?? new Dictionary<string, List<string>>(),
-            ShowSeedTreeIndicators = raw.ShowSeedTreeIndicators,
+            ShowSeedIndicators = raw.ShowSeedIndicators,
             Predicates = predicates
         };
 
@@ -354,10 +363,10 @@ public static class ConfigLoader
         public Dictionary<string, List<string>>? ExcludeFieldsByItemType { get; set; }
         public Dictionary<string, List<string>>? ExcludeXmlElementsByType { get; set; }
 
-        /// <summary>Tree UI: show the seed (flower) annotation on content-tree pages. Off by
-        /// default — broad seed coverage turns every node green and drowns the deploy icons,
-        /// which are the ones that signal "your edit will be overwritten".</summary>
-        public bool ShowSeedTreeIndicators { get; set; }
+        /// <summary>Admin UI: show seed indicators (tree flower icons + seed message on edit
+        /// screens). Off by default — broad seed coverage turns every node green and drowns
+        /// the deploy icons, which are the ones that signal "your edit will be overwritten".</summary>
+        public bool ShowSeedIndicators { get; set; }
 
         // Phase 40 D-02: SINGLE flat predicate list with per-entry Mode.
         public List<RawPredicateDefinition>? Predicates { get; set; }

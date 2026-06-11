@@ -1,9 +1,25 @@
 {
   "outputDirectory": "Serializer",
-  "logLevel": "info",
-  "dryRun": false,
   "deployOutputSubfolder": "deploy",
   "seedOutputSubfolder": "seed",
+  "excludeFieldsByItemType": {
+    "Swift-v2_Master": [
+      "GoogleTagManagerID",
+      "Favicon",
+      "AppleTouchIcon",
+      "FacebookAppId",
+      "Fb_app_id",
+      "Google_APIKey",
+      "Google_Site_Verification",
+      "P_domain_verify",
+      "TwitterSite",
+      "Twitter_Site",
+      "MetaSiteName",
+      "MetaImage",
+      "MetaImageALT",
+      "CustomHeadInclude"
+    ]
+  },
   "excludeXmlElementsByType": {
     "Dynamicweb.Ecommerce.Frontend.UrlHandling.ShopUrlDataProvider, Dynamicweb.Ecommerce": [],
     "eCom_CartV2": [
@@ -96,18 +112,7 @@
         "AreaNoindex",
         "AreaNofollow",
         "AreaRobotsTxt",
-        "AreaRobotsTxtIncludeSitemap",
-        "GoogleTagManagerID",
-        "Favicon",
-        "AppleTouchIcon",
-        "FacebookAppId",
-        "Google_APIKey",
-        "Google_Site_Verification",
-        "P_domain_verify",
-        "TwitterSite",
-        "MetaSiteName",
-        "MetaImage",
-        "MetaImageALT"
+        "AreaRobotsTxtIncludeSitemap"
       ],
       "excludeXmlElements": [],
       "excludeAreaColumns": [

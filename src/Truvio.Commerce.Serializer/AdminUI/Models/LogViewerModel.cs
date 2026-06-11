@@ -60,7 +60,7 @@ public sealed class LogViewerModel : DataViewModelBase
             return model;
 
         var config = ConfigLoader.Load(configPath);
-        var filesRoot = Path.GetDirectoryName(configPath)!;
+        var filesRoot = ConfigPathResolver.GetFilesRoot(configPath);
         var systemDir = Path.Combine(filesRoot, "System");
         var paths = config.EnsureDirectories(systemDir);
 
@@ -100,7 +100,7 @@ public sealed class LogViewerModel : DataViewModelBase
             var configPath = ConfigPathResolver.FindConfigFile();
             if (configPath == null) return;
             var config = ConfigLoader.Load(configPath);
-            var filesRoot = Path.GetDirectoryName(configPath)!;
+            var filesRoot = ConfigPathResolver.GetFilesRoot(configPath);
             var systemDir = Path.Combine(filesRoot, "System");
             var paths = config.EnsureDirectories(systemDir);
             _logDir = paths.Log;

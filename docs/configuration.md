@@ -21,10 +21,20 @@ debugging a config-load failure.
 The canonical config path is:
 
 ```
-{DW_host}/Files/Serializer.config.json
+{DW_host}/Files/System/Serializer/Serializer.config.json
 ```
 
-The admin UI at `Settings > Database > Serialize` reads and writes this file.
+The config lives inside the serializer folder so the folder travels as one
+unit — config plus YAML, Upload and Download. Copy it between environments, or
+upload an example config (such as the Swift starter) into the folder through
+the file manager to start from it.
+
+The location is convention-fixed relative to the Files root. It is never
+derived from the config's own `outputDirectory` value — that would be circular
+(the file would define where to find itself). `outputDirectory` only governs
+where the data subfolders are created.
+
+The admin UI at `Settings > Developer > Serialize` reads and writes this file.
 Manual edits are picked up on the next screen load (no restart required). The
 Management API commands also read the same file on each call.
 
@@ -37,16 +47,14 @@ with a clear actionable error.
 ```json
 {
   "outputDirectory": "Serializer",
-  "logLevel": "info",
-  "dryRun": false,
-  "strictMode": false,
   "deployOutputSubfolder": "deploy",
   "seedOutputSubfolder": "seed",
+  "showSeedIndicators": false,
   "excludeFieldsByItemType": {
     "Swift_Content": ["SystemName_Internal"]
   },
   "excludeXmlElementsByType": {
-    "ParagraphModule": ["cache"]
+    "eCom_CartV2": ["Mail1Recipient", "DefaultPaymentId"]
   },
   "predicates": [
     { "name": "...", "mode": "Deploy", "providerType": "Content", "areaId": 3, "path": "/" },
@@ -58,13 +66,11 @@ with a clear actionable error.
 | Field | Type | Description |
 |-------|------|-------------|
 | `outputDirectory` | string (required) | Top-level folder relative to `Files/System`. Subfolders `SerializeRoot/`, `Upload/`, `Download/`, `Log/` are created automatically. |
-| `logLevel` | `info` / `debug` / `warn` / `error` | Logging verbosity. Default: `info`. |
-| `dryRun` | boolean | When `true`, deserialize reports what would change without mutating the DB. Default: `false`. |
-| `strictMode` | boolean or null | `true` escalates recoverable warnings to `CumulativeStrictModeException`; `false` logs and continues; `null` uses the entry-point default (API/CLI: on, admin UI: off). See [`strict-mode.md`](strict-mode.md). |
 | `deployOutputSubfolder` | string | Subfolder under `SerializeRoot/` for Deploy-mode YAML output. Default: `deploy`. Validated against a safe-name regex to prevent path traversal. |
 | `seedOutputSubfolder` | string | Subfolder under `SerializeRoot/` for Seed-mode YAML output. Default: `seed`. Same regex check. |
+| `showSeedIndicators` | boolean | Show seed cues in the admin UI: the flower icon on content-tree pages covered by a seed predicate and the seed info message on content editing screens. Default: `false` — with broad seed coverage these would appear nearly everywhere and drown out the deploy warnings. Deploy icons and the deploy editing warning always show. |
 | `excludeFieldsByItemType` | map | Global per-item-type field exclusions, applied to every predicate regardless of mode. Key: item-type system name. Value: list of field names to strip. |
-| `excludeXmlElementsByType` | map | Global per-XML-type element exclusions, applied to every predicate regardless of mode. Key: XML type name. Value: list of element names to strip. |
+| `excludeXmlElementsByType` | map | Global per-XML-type element exclusions, applied to every predicate regardless of mode. Key: XML type name (paragraph module system name or URL provider type). Value: list of element names to strip. |
 | `predicates` | list | The predicates serialized and deserialized. Each entry must carry its own `mode` (Deploy or Seed). The orchestrator filters on `predicate.Mode` when iterating per mode. |
 
 ## Per-predicate mode
@@ -190,13 +196,27 @@ Use these for cross-predicate cleanup. Per-predicate exclusions still work;
 the effective exclude set is the union of the predicate's list and the global
 dictionary entry for that item type.
 
+These maps are visible in four places in the admin UI: the settings screen
+shows a per-type inventory of everything excluded; the Item Type Excludes and
+Embedded XML Excludes sub-nodes edit them; content pages carrying an affected
+type show as **partially managed** in the content tree (sync-slash icon) with
+the excluded types named in the tooltip and a right-click "View excluded
+fields" action; and the editing screens add a clickable header chip per
+carved-out type ("eCom_CartV2 — 21 settings stay local — view") next to the
+verdict alert. Both click-throughs open a read-only **"Stays local"** panel
+listing the exact excluded fields — visible to every backend user, no Settings
+access needed; administrators additionally get a "Manage exclusions" shortcut
+into the editor. The cart page is the canonical case: covered by the deploy
+predicate, but its `eCom_CartV2` module settings (mail recipients, error
+messages, default payment/shipping ids) stay local per environment.
+
 ## Admin UI screens
 
-Navigation: `Settings > Database > Serialize`.
+Navigation: `Settings > Developer > Serialize`.
 
 | Node | Purpose |
 |------|---------|
-| **Serialize** | Top-level settings screen: output directory and tree-indicator toggle. Per-mode conflict strategy is hardcoded — Deploy=source-wins, Seed=destination-wins — and is not an admin-editable setting. |
+| **Serialize** | Top-level settings screen. Every top-level config value is visible here: output directory, deploy/seed subfolders and the seed-indicator toggle are editable; the config file location, sync history (last deploy/seed received), coverage counts, the two exclusion maps and the predicate list show as read-only summaries. Actions: serialize/deserialize per mode plus **Preview … (dry run)** — the full pipeline without writing, per-field `[DRY-RUN]` detail in the Log Viewer. With no predicates configured the actions are replaced by a **Get started** group (apply the embedded Swift starter to a chosen website, or create an empty configuration). Per-mode conflict strategy is hardcoded — Deploy=source-wins, Seed=destination-wins — and is not an admin-editable setting. |
 | **Predicates** | CRUD for Content and SqlTable predicates. Each predicate carries its own `mode` field (Deploy or Seed) — pick the mode on the predicate edit screen. Fields match the JSON schema above with dual-list pickers populated from the live DB schema. |
 | **Item Types** | Browse item types by category, edit global per-type field exclusions (mode-agnostic). |
 | **Embedded XML** | Browse XML types, edit global per-type element exclusions (mode-agnostic). |
@@ -208,6 +228,12 @@ zip file downloaded by the browser and copied to `Files/System/Serializer/Downlo
 The matching import is at `Files/System/Serializer/Upload/` — drop a zip there
 and use the file's **"Import to database"** action.
 
+The commerce settings edit screens — payment, shipping, country, currency,
+ecommerce language, shop, order flow and order state — show the same
+deploy/seed alert as the content editors when a SqlTable predicate manages
+their table. A predicate with exclusions adds a clickable "Stays local" header
+chip that opens the predicate editor.
+
 ## Full config example
 
 The Swift 2.2 reference baseline — a working config with one Content predicate
@@ -217,9 +243,6 @@ and seventeen SqlTable predicates. Lives at
 ```json
 {
   "outputDirectory": "Serializer",
-  "logLevel": "info",
-  "dryRun": false,
-  "strictMode": true,
   "deployOutputSubfolder": "deploy",
   "seedOutputSubfolder": "seed",
   "predicates": [
@@ -314,7 +337,8 @@ Management API. No SQL runs until the config is clean.
 ## See also
 
 - [Getting started](getting-started.md) — minimal working config
+- [Glossary](glossary.md) — baseline, predicate, deploy/seed, drift, dry run
 - [Concepts](concepts.md) — predicate semantics, Deploy/Seed modes
 - [SQL tables](sql-tables.md) — `WHERE` clauses, field filters, credentials
-- [Strict mode](strict-mode.md) — `strictMode` behavior and defaults
+- [Strict mode](strict-mode.md) — warning escalation and entry-point defaults
 - [Runtime exclusions](runtime-exclusions.md) — what's auto-excluded and why

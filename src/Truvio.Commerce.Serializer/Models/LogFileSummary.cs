@@ -3,6 +3,13 @@ namespace Truvio.Commerce.Serializer.Models;
 public record LogFileSummary
 {
     public string Operation { get; init; } = "";
+
+    /// <summary>Deployment mode of the run: "deploy" or "seed" (lowercase).</summary>
+    public string Mode { get; init; } = "";
+
+    /// <summary>True when the run was a dry-run preview — nothing was written.</summary>
+    public bool DryRun { get; init; }
+
     public DateTime Timestamp { get; init; }
     public List<PredicateSummary> Predicates { get; init; } = new();
     public int TotalCreated { get; init; }

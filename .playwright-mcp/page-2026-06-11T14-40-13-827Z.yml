@@ -1,0 +1,151 @@
+- generic [ref=e2]:
+  - navigation [ref=e3]:
+    - link [ref=e4] [cursor=pointer]:
+      - /url: /
+      - img
+      - img [ref=e5]
+    - tablist [ref=e21]:
+      - tab "Insights" [active] [selected] [ref=e22] [cursor=pointer]:
+        - generic [ref=e24]: 
+        - generic [ref=e25]: Insights
+      - tab "Content" [ref=e26] [cursor=pointer]:
+        - generic [ref=e28]: 
+        - generic [ref=e29]: Content
+      - tab "Assets" [ref=e30] [cursor=pointer]:
+        - generic [ref=e32]: 
+        - generic [ref=e33]: Assets
+      - tab "Users" [ref=e34] [cursor=pointer]:
+        - generic [ref=e36]: 
+        - generic [ref=e37]: Users
+      - tab "Products" [ref=e38] [cursor=pointer]:
+        - generic [ref=e40]: 
+        - generic [ref=e41]: Products
+      - tab "Commerce" [ref=e42] [cursor=pointer]:
+        - generic [ref=e44]: 
+        - generic [ref=e45]: Commerce
+      - tab "Email" [ref=e46] [cursor=pointer]:
+        - generic [ref=e48]: 
+        - generic [ref=e49]: Email
+      - tab "Integration" [ref=e50] [cursor=pointer]:
+        - generic [ref=e52]: 
+        - generic [ref=e53]: Integration
+      - tab "Apps" [ref=e54] [cursor=pointer]:
+        - generic [ref=e56]: 
+        - generic [ref=e57]: Apps
+      - tab "Settings" [ref=e58] [cursor=pointer]:
+        - generic [ref=e60]: 
+        - generic [ref=e61]: Settings
+    - list [ref=e62]:
+      - listitem [ref=e63]:
+        - 'button "Version: 10.26.7+5be1855867a5a5b141ada86b027a6b1ca660b088, Loaded: 16:40:12, Build time: 09/06/2026 12:23:20" [ref=e64] [cursor=pointer]':
+          - generic [ref=e65]: 
+        - text:      
+      - listitem [ref=e66]:
+        - button "Expand area" [ref=e67] [cursor=pointer]:
+          - generic [ref=e68]: 
+          - generic [ref=e69]: Expand area
+      - link "Trial license Expires 11-Jul-2026" [ref=e70] [cursor=pointer]:
+        - /url: /Admin/UI//LicenseOverview?Type=License&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+        - generic [ref=e71]: 
+        - generic [ref=e72]:
+          - text: Trial license
+          - generic [ref=e73]: Expires 11-Jul-2026
+  - generic [ref=e74]:
+    - tabpanel [ref=e75]:
+      - generic [ref=e76]:
+        - navigation [ref=e77]:
+          - generic [ref=e78]:
+            - generic [ref=e79]:
+              - heading "Insights" [level=6] [ref=e80]:
+                - link "Insights" [ref=e81] [cursor=pointer]:
+                  - /url: /Admin/UI/Insights/DashboardOverview?DashboardType=Monitoring&Type=DashboardWidgets&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+              - button [ref=e82] [cursor=pointer]:
+                - generic [ref=e83]: 
+              - text: 
+              - button [ref=e84] [cursor=pointer]:
+                - generic [ref=e86]: 
+            - generic [ref=e88]:
+              - list [ref=e89]:
+                - listitem [ref=e90]:
+                  - generic [ref=e91]:
+                    - text: 
+                    - heading "Dashboard" [level=6] [ref=e93]
+                  - list [ref=e94]:
+                    - listitem [ref=e95]:
+                      - generic [ref=e96]:
+                        - button [disabled]:
+                          - generic: 
+                        - link "Marketing insights dashboard" [ref=e98] [cursor=pointer]:
+                          - /url: /Admin/UI/Insights/DashboardOverview?DashboardType=Marketing insights&Type=DashboardWidgets&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                          - generic [ref=e100]: 
+                          - text: Marketing insights dashboard
+                    - listitem [ref=e101]:
+                      - generic [ref=e102]:
+                        - button [disabled]:
+                          - generic: 
+                        - link "Monitoring dashboard" [ref=e104] [cursor=pointer]:
+                          - /url: /Admin/UI/Insights/DashboardOverview?DashboardType=Monitoring&Type=DashboardWidgets&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                          - generic [ref=e106]: 
+                          - text: Monitoring dashboard
+              - list [ref=e107]:
+                - listitem [ref=e108]:
+                  - generic [ref=e109]:
+                    - text: 
+                    - heading "Monitoring" [level=6] [ref=e111]
+                  - list [ref=e112]:
+                    - listitem [ref=e113]:
+                      - generic [ref=e114]:
+                        - button "Toggle level" [ref=e115] [cursor=pointer]:
+                          - generic [ref=e116]: 
+                        - link "Reports" [ref=e118] [cursor=pointer]:
+                          - /url: "#"
+                          - generic [ref=e120]: 
+                          - text: Reports
+                    - listitem [ref=e121]:
+                      - generic [ref=e122]:
+                        - button "Toggle level" [ref=e123] [cursor=pointer]:
+                          - generic [ref=e124]: 
+                        - link "Event viewer" [ref=e126] [cursor=pointer]:
+                          - /url: "#"
+                          - generic [ref=e128]: 
+                          - text: Event viewer
+                    - listitem [ref=e129]:
+                      - generic [ref=e130]:
+                        - button "Toggle level" [ref=e131] [cursor=pointer]:
+                          - generic [ref=e132]: 
+                        - link "Health" [ref=e134] [cursor=pointer]:
+                          - /url: "#"
+                          - generic [ref=e136]: 
+                          - text: Health
+                    - listitem [ref=e137]:
+                      - generic [ref=e138]:
+                        - button [disabled]:
+                          - generic: 
+                        - link "Notifications" [ref=e140] [cursor=pointer]:
+                          - /url: /Admin/UI/Insights/LogEventNotificationList?Type=LogEventNotificationAll&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                          - generic [ref=e142]: 
+                          - text: Notifications
+                        - button [ref=e144] [cursor=pointer]:
+                          - generic [ref=e145]: 
+                    - listitem [ref=e146]:
+                      - generic [ref=e147]:
+                        - button "Toggle level" [ref=e148] [cursor=pointer]:
+                          - generic [ref=e149]: 
+                        - link "Logs" [ref=e151] [cursor=pointer]:
+                          - /url: "#"
+                          - generic [ref=e153]: 
+                          - text: Logs
+              - list [ref=e154]:
+                - listitem [ref=e155]:
+                  - generic [ref=e156]:
+                    - text: 
+                    - heading "Analytics" [level=6] [ref=e158]
+                    - button [ref=e159] [cursor=pointer]:
+                      - generic [ref=e160]: 
+                    - button [ref=e161] [cursor=pointer]:
+                      - generic [ref=e162]: 
+                    - text:  
+                  - list
+        - status [ref=e165]:
+          - generic [ref=e166]: Loading...
+    - progressbar [ref=e167]

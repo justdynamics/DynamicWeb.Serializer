@@ -13,11 +13,15 @@ public sealed class SaveSerializerSettingsCommand : CommandBase<SerializerSettin
             return new() { Status = CommandResult.ResultType.Invalid, Message = "Model data must be given" };
         if (string.IsNullOrWhiteSpace(Model.OutputDirectory))
             return new() { Status = CommandResult.ResultType.Invalid, Message = "Output Directory is required" };
+        if (!ConfigLoader.IsValidSubfolderName(Model.DeployOutputSubfolder))
+            return new() { Status = CommandResult.ResultType.Invalid, Message = $"Deploy subfolder '{Model.DeployOutputSubfolder}' is invalid — letters, digits, '-' and '_' only (max 32 chars)." };
+        if (!ConfigLoader.IsValidSubfolderName(Model.SeedOutputSubfolder))
+            return new() { Status = CommandResult.ResultType.Invalid, Message = $"Seed subfolder '{Model.SeedOutputSubfolder}' is invalid — letters, digits, '-' and '_' only (max 32 chars)." };
 
         try
         {
             var configPath = ConfigPathResolver.FindOrCreateConfigFile();
-            var filesDir = Path.GetDirectoryName(configPath)!;
+            var filesDir = ConfigPathResolver.GetFilesRoot(configPath);
             var systemDir = Path.Combine(filesDir, "System");
             var resolvedOutputDir = Path.GetFullPath(
                 Path.Combine(systemDir, Model.OutputDirectory.TrimStart('\\', '/')));
@@ -45,7 +49,9 @@ public sealed class SaveSerializerSettingsCommand : CommandBase<SerializerSettin
             var updatedConfig = existingConfig with
             {
                 OutputDirectory = Model.OutputDirectory,
-                ShowSeedTreeIndicators = Model.ShowSeedTreeIndicators
+                DeployOutputSubfolder = Model.DeployOutputSubfolder,
+                SeedOutputSubfolder = Model.SeedOutputSubfolder,
+                ShowSeedIndicators = Model.ShowSeedIndicators
             };
 
             ConfigWriter.Save(updatedConfig, configPath);

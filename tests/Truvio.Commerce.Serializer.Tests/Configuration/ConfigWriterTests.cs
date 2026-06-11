@@ -278,12 +278,12 @@ public class ConfigWriterTests : ConfigLoaderValidatorFixtureBase
     }
 
     [Fact]
-    public void Save_ThenLoad_RoundTripsShowSeedTreeIndicators()
+    public void Save_ThenLoad_RoundTripsShowSeedIndicators()
     {
         var config = new SerializerConfiguration
         {
             OutputDirectory = "/out",
-            ShowSeedTreeIndicators = true,
+            ShowSeedIndicators = true,
             Predicates = new List<ProviderPredicateDefinition>()
         };
         var filePath = Path.Combine(_tempDir, "seed_indicators.json");
@@ -291,11 +291,11 @@ public class ConfigWriterTests : ConfigLoaderValidatorFixtureBase
         ConfigWriter.Save(config, filePath);
         var reloaded = ConfigLoader.Load(filePath);
 
-        Assert.True(reloaded.ShowSeedTreeIndicators);
+        Assert.True(reloaded.ShowSeedIndicators);
     }
 
     [Fact]
-    public void Load_ShowSeedTreeIndicatorsAbsent_DefaultsToFalse()
+    public void Load_ShowSeedIndicatorsAbsent_DefaultsToFalse()
     {
         var config = new SerializerConfiguration
         {
@@ -307,6 +307,6 @@ public class ConfigWriterTests : ConfigLoaderValidatorFixtureBase
         ConfigWriter.Save(config, filePath);
         var reloaded = ConfigLoader.Load(filePath);
 
-        Assert.False(reloaded.ShowSeedTreeIndicators);
+        Assert.False(reloaded.ShowSeedIndicators);
     }
 }

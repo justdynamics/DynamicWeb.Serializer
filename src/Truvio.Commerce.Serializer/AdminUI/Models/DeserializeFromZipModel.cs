@@ -84,7 +84,7 @@ public sealed class DeserializeFromZipModel : DataViewModelBase
                 return;
             }
 
-            var filesRoot = Path.GetDirectoryName(configPath)!;
+            var filesRoot = ConfigPathResolver.GetFilesRoot(configPath);
             var zipImportDir = Path.Combine(filesRoot, "System", "Serializer", "ZipImport");
             ZipImportDir = zipImportDir;
 

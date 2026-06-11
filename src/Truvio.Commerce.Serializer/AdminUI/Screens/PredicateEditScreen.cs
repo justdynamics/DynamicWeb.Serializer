@@ -102,11 +102,7 @@ public sealed class PredicateEditScreen : EditScreenBase<PredicateEditModel>
             areaId: Model?.AreaId > 0 ? Model.AreaId : null,
             hint: "Select root page for this predicate"
         ),
-        nameof(PredicateEditModel.Excludes) => new Textarea
-        {
-            Label = "Excludes",
-            Explanation = "One path per line. Pages under these paths will be excluded from sync."
-        },
+        nameof(PredicateEditModel.Excludes) => CreateContentPathSelectMultiDual(Model?.AreaId, Model?.Excludes),
         nameof(PredicateEditModel.ServiceCaches) => new Textarea
         {
             Label = "Service Caches",
@@ -165,6 +161,63 @@ public sealed class PredicateEditScreen : EditScreenBase<PredicateEditModel>
             },
         _ => null
     };
+
+    /// <summary>
+    /// Excludes as a picker over the area's REAL content paths instead of free text — a
+    /// mistyped path silently excludes nothing, so the options come from walking the live
+    /// page tree. Saved paths that no longer match a live page are merged into the option
+    /// set so they stay visible (and removable) rather than vanishing on next edit.
+    /// </summary>
+    private SelectMultiDual CreateContentPathSelectMultiDual(int? areaId, string? currentValue)
+    {
+        var editor = new SelectMultiDual
+        {
+            Label = "Excludes",
+            Explanation = "Select pages to exclude from sync. An exclude covers the page and its entire subtree.",
+            SortOrder = OrderBy.Default
+        };
+
+        if (areaId is null or <= 0)
+        {
+            editor.Explanation = "Select an area to pick exclude paths.";
+            return editor;
+        }
+
+        var paths = new SortedSet<string>(StringComparer.OrdinalIgnoreCase);
+        try
+        {
+            foreach (var root in Dynamicweb.Content.Services.Pages.GetRootPagesForArea(areaId.Value))
+                CollectContentPaths(root, "/" + root.MenuText, paths);
+        }
+        catch (Exception ex)
+        {
+            editor.Explanation = $"Could not read the area's pages: {ex.Message}";
+        }
+
+        var selected = (currentValue ?? string.Empty)
+            .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
+            .Select(v => v.Trim())
+            .Where(v => v.Length > 0)
+            .ToArray();
+        foreach (var s in selected)
+            paths.Add(s);
+
+        editor.Options = paths
+            .Select(p => new ListOption { Value = p, Label = p })
+            .ToList();
+
+        if (selected.Length > 0)
+            editor.Value = selected;
+
+        return editor;
+    }
+
+    private static void CollectContentPaths(Dynamicweb.Content.Page page, string path, SortedSet<string> paths)
+    {
+        paths.Add(path);
+        foreach (var child in Dynamicweb.Content.Services.Pages.GetPagesByParentID(page.ID))
+            CollectContentPaths(child, path + "/" + child.MenuText, paths);
+    }
 
     private SelectMultiDual CreateColumnSelectMultiDual(string? tableName, string? currentValue, string label, string explanation)
     {
