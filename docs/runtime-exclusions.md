@@ -13,7 +13,7 @@ auto-exclude, and the pre-commit checks to run before pushing a baseline.
 - [Opting back in with includeFields](#opting-back-in-with-includefields)
 - [Credential handling](#credential-handling)
 - [Pre-commit grep check](#pre-commit-grep-check)
-- [Roadmap: curated credential registry (v0.6.0)](#roadmap-curated-credential-registry-v060)
+- [Roadmap: curated credential registry](#roadmap-curated-credential-registry)
 
 ## Auto-excluded columns
 
@@ -149,11 +149,11 @@ Tune per your naming conventions. The goal is a CI-runnable check that
 catches "oops, a credential column made it into the baseline" before
 the PR lands.
 
-## Roadmap: curated credential registry (v0.6.0)
+## Roadmap: curated credential registry
 
 A curated credential registry — analogous to `RuntimeExcludes` but for
-credential columns — was deliberately deferred to v0.6.0 per the
-Phase 37 decision log (`D-07`, `D-09`). Two reasons:
+credential columns — is a roadmap item, not a shipped feature. Two reasons
+it is not built in today:
 
 - **Classification is per-customer.** What's a credential on one
   customer's payment gateway is a shared config value on another
@@ -163,8 +163,8 @@ Phase 37 decision log (`D-07`, `D-09`). Two reasons:
 - **The env-config workflow is the real fix.** Credentials belong in
   Azure Key Vault (or equivalent), injected as App Service settings at
   startup. The env-config workflow — per-environment secret bindings
-  that the DW host reads from the platform, not the DB — is the v0.6.0
-  milestone that retires the "exclude manually" workaround.
+  that the DW host reads from the platform, not the DB — is the roadmap
+  item that retires the "exclude manually" workaround.
 
 Until then, `excludeFields` is explicit. Review it on every baseline PR.
 The pre-commit grep above is the compensating control.

@@ -15,7 +15,7 @@ applying them across dev, test, QA, and production through ordinary CI/CD.
 
 Identity is GUID-based, so pages survive environments where numeric IDs differ.
 Cross-environment `Default.aspx?ID=N` references are rewritten automatically on
-deserialize. A `strictMode` switch escalates recoverable warnings to hard failures
+deserialize. Strict mode escalates recoverable warnings to hard failures
 so CI/CD pipelines fail loud on content drift, schema drift, or missing templates.
 
 ## Why it exists
@@ -41,8 +41,8 @@ becomes `git revert` followed by a redeploy.
   and `ButtonEditor` `SelectedValue` JSON are rewritten source → target on content
   deserialize. SqlTable columns opt in via `resolveLinksInColumns`.
 - **Deploy and Seed modes.** `Deploy` is source-wins (baseline overwrites target).
-  `Seed` is destination-wins (skip rows whose natural key already exists on target)
-  — safe for first-run customer content that must not get trampled by re-deploys.
+  `Seed` is destination-wins (field-level merge: only fields the target left empty are
+  filled) — customer content lands once and is never trampled by re-deploys.
 - **Strict mode for CI/CD.** Recoverable warnings (unresolvable links, missing
   templates, schema drift, FK orphans, cache invalidation failures) accumulate and
   throw one `CumulativeStrictModeException` at end-of-run. HTTP 4xx on the API.
@@ -111,14 +111,19 @@ Full walkthrough: [`docs/getting-started.md`](docs/getting-started.md).
 
 For a Swift site, copy
 [`src/Truvio.Commerce.Serializer/Configuration/swift-starter.json`](src/Truvio.Commerce.Serializer/Configuration/swift-starter.json)
-to `Files/Serializer.config.json`. It encodes the recommended split:
+to `Files/Serializer.config.json`. It encodes the analysed split (full rationale per
+content item: [Swift deploy/seed analysis](docs/swift-deploy-seed-analysis.md)):
 
-- **Deploy** — `Site structure and design` (the whole site **excluding** `/Posts`) plus the
-  commerce framework tables (countries, currencies, languages, VAT, shops, payments,
-  shippings, order flow, URL paths). Identical on every environment; re-deploys overwrite.
-- **Seed** — `Starter blog posts` (`/Posts`) plus starter catalog data (groups, products,
-  variants, discounts). Lands once; afterwards the receiving environment owns it — re-deploys
-  only fill fields that are still empty.
+- **Deploy** — `Site framework`: the platform-wired site (Shop + PLP/PDP, customer
+  center, checkout, service pages, product components, system emails, navigation
+  scaffold, page presets) plus the commerce framework tables (countries, currencies,
+  languages, VAT, shops, payments, shippings, order flow, URL paths). Identical on
+  every environment; re-deploys overwrite.
+- **Seed** — the customer-owned content surfaces, one predicate per subtree: Home,
+  the site chrome (Header / Footer), About, blog posts, footer legal/help pages,
+  Find dealers and the example newsletters — plus starter catalog data (groups,
+  products, variants, discounts). Lands once; afterwards the receiving environment
+  owns it — later passes only fill fields that are still empty.
 - **Everything else** (orders, users, logs) is environment data and is never serialized.
 
 ### Reading the content tree
@@ -218,16 +223,15 @@ secret management, pre-commit link sweeps, and the Seed-vs-Deploy split — are 
 
 ## Project status
 
-Shared with partners as open source — usable today, not a fully productized
-offering. You are expected to build the DLL yourself, validate against your own
-solution, and read the docs; there is no SLA or formal support channel. Issues
-and PRs are welcome.
+Shared with partners as open source (beta) — usable today, not a fully productized
+offering. Install from a [release](https://github.com/justdynamics/Truvio.Commerce.Serializer/releases)
+or build from source, validate against your own solution, and read the docs; there
+is no SLA or formal support channel. Issues and PRs are welcome.
 
-Milestone history: v0.6.0 **Manifest-Driven Deserialize** completed 2026-05-11
-(manifest-driven entry dispatch, zip import/export convergence). v0.5.0
-**Production-Ready Baseline** closed with a full Swift 2.2 → CleanDB round-trip
-passing under `strictMode: true` end-to-end via `tools/e2e/full-clean-roundtrip.ps1`.
-Test suite: 851 unit tests, plus integration tests that require a live DW host.
+Quality gates: the full Swift 2.2 round-trip — YAML-only sources onto a blank
+database, including a translated website language layer — runs green end to end
+via `tools/e2e/full-clean-roundtrip.ps1`, alongside 890 unit tests and integration
+tests that require a live DW host.
 
 The API surface (Management API commands, predicate shape, YAML format) is stable
 for the current release line. Config schema and runtime-exclusion defaults may

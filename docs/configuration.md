@@ -28,14 +28,11 @@ The admin UI at `Settings > Database > Serialize` reads and writes this file.
 Manual edits are picked up on the next screen load (no restart required). The
 Management API commands also read the same file on each call.
 
-Legacy `ContentSync.config.json` names are recognized for backward
-compatibility. New installs should use `Serializer.config.json`.
-
 ## Top-level config schema
 
-Phase 40 (2026-04-28) replaces the section-level `deploy: { ... }` / `seed: { ... }` shape
-with a single flat `predicates: [...]` list where each predicate carries its own `mode`.
-The legacy section shape is hard-rejected by ConfigLoader with a clear actionable error.
+The config is a single flat `predicates: [...]` list where each predicate carries its own
+`mode`. Section-level `deploy: { ... }` / `seed: { ... }` keys are rejected by ConfigLoader
+with a clear actionable error.
 
 ```json
 {
@@ -77,9 +74,9 @@ Every predicate must declare a `mode` value of `Deploy` or `Seed` (case-insensit
 | Mode | Conflict strategy | When to use |
 |------|-------------------|-------------|
 | `Deploy` | source-wins (YAML overwrites target on every deploy) | Reference data and structural deployment items: countries, currencies, shop definitions, payment methods, page templates, item-type schemas. |
-| `Seed` | destination-wins via field-level merge (Phase 39) | One-time bootstrap content the customer is expected to edit: product catalog, marketing copy, FAQ body text, newsletter templates. The serializer fills fields the target has NOT set, preserving customer edits. |
+| `Seed` | destination-wins via field-level merge | One-time bootstrap content the customer is expected to edit: product catalog, marketing copy, FAQ body text, newsletter templates. The serializer fills fields the target has NOT set, preserving customer edits. |
 
-The conflict strategy is hardcoded per mode and is no longer a config knob. Phase 39's
+The conflict strategy is hardcoded per mode and is not a config knob.
 [`MergePredicate`](../src/Truvio.Commerce.Serializer/Serialization/MergePredicate.cs) and
 [`XmlMergeHelper`](../src/Truvio.Commerce.Serializer/Serialization/XmlMergeHelper.cs) implement
 the Seed-mode field-level merge.
@@ -170,7 +167,7 @@ the Seed-mode field-level merge.
 ## Global exclusion maps
 
 Two dictionaries live at the top level of the config and apply across every predicate
-regardless of mode. Phase 40 (D-04) hoisted these out of the per-mode section because
+regardless of mode. These live at the top level because
 the same exclusions almost always apply to both Deploy and Seed.
 
 ```json
@@ -199,10 +196,10 @@ Navigation: `Settings > Database > Serialize`.
 
 | Node | Purpose |
 |------|---------|
-| **Serialize** | Top-level settings screen: output directory, log level, dry-run toggle, strict-mode toggle. (Phase 40: per-mode conflict strategy is hardcoded — Deploy=source-wins, Seed=destination-wins — and is no longer an admin-editable setting.) |
+| **Serialize** | Top-level settings screen: output directory and tree-indicator toggle. Per-mode conflict strategy is hardcoded — Deploy=source-wins, Seed=destination-wins — and is not an admin-editable setting. |
 | **Predicates** | CRUD for Content and SqlTable predicates. Each predicate carries its own `mode` field (Deploy or Seed) — pick the mode on the predicate edit screen. Fields match the JSON schema above with dual-list pickers populated from the live DB schema. |
-| **Item Types** | Browse item types by category, edit global per-type field exclusions (Phase 40 D-04: mode-agnostic). |
-| **Embedded XML** | Browse XML types, edit global per-type element exclusions (Phase 40 D-04: mode-agnostic). |
+| **Item Types** | Browse item types by category, edit global per-type field exclusions (mode-agnostic). |
+| **Embedded XML** | Browse XML types, edit global per-type element exclusions (mode-agnostic). |
 | **Log Viewer** | Per-run logs with summary headers, per-predicate counts, and `AdviceGenerator` remediation hints. |
 
 The **"Serialize subtree"** action appears in the Actions menu on every page

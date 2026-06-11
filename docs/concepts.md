@@ -234,9 +234,8 @@ key derived from the primary key if `nameColumn` is unset).
   [`runtime-exclusions.md`](runtime-exclusions.md).
 - Files and media: images, documents, video uploads. Files already live in
   Git (or Azure Files, or a CDN) — the serializer is for DB state only.
-- Payment gateway credentials: not auto-excluded in v0.5.0; must be listed
-  manually in a predicate's `excludeFields` until the curated credential
-  registry lands in v0.6.0.
+- Payment gateway credentials: not auto-excluded; list them in a predicate's
+  `excludeFields` (a curated credential registry is on the roadmap).
 
 ## See also
 

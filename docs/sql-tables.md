@@ -87,8 +87,8 @@ Column identifier not in INFORMATION_SCHEMA: '[EcomVatGroups].[VatName]'.
 Check exclude/include/where fields in your predicate config.
 ```
 
-The reference baseline used to have exactly this bug (`VatName` instead
-of `VatGroupName`); `SqlIdentifierValidator` catches it at config-load now.
+A typo like `VatName` instead of `VatGroupName` is exactly this bug;
+`SqlIdentifierValidator` catches it at config-load.
 
 ## WHERE clauses
 

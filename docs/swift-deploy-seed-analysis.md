@@ -1,13 +1,11 @@
 # Swift content: deploy/seed analysis
 
-Status: **implemented** (2026-06-11) — `swift-starter.json` ships the v2 split below, the
-E2E pipeline asserts the full seed-subtree contract, and the round-trip is verified.
-Originally written against the coarse 0.6.1 split (deploy = everything but `/Posts`).
-This document analyses
+`swift-starter.json` ships the split documented here; the E2E pipeline asserts the full
+seed-subtree contract and the round-trip is verified end to end. This document analyses
 every content item in the Swift 2.2 baseline and assigns each an underpinned deploy/seed
-decision. The headline change: **the coarse split puts the Home page under deploy, so a
-re-deploy overwrites the customer's homepage edits.** That is wrong for how Swift projects
-actually run.
+decision. The principle behind it: **a re-deploy must never overwrite the customer's
+content surfaces (the homepage above all), while everything platform-wired must stay
+identical on every environment.**
 
 ## 1. What the modes actually do (the facts decisions rest on)
 
@@ -72,7 +70,7 @@ Page counts and paragraph counts (¶) from the verified Swift 2.2 baseline (Area
 | **Home Machines** (4897, inactive) | 23 | none | **Seed** | Inactive demo alternative homepage; example material to repurpose or delete. |
 | **Shop** (5862) + Product List / Product Details | 1+5+6 | NavTag `Shop`, `ProductListPage`, `ProductDetailPage`; catalog module paragraphs | **Deploy** | Pure commerce wiring; paragraphs are app configuration, not copy. PLP/PDP fixes must propagate. (Customer banner tweaks on PLP are the known middle case — see §5.) |
 | **About** (107) + Contact + Thank you | 16+5+1 | contact form → form receipt emails (deploy) | **Seed** | Marketing copy and the contact flow's visible content. Cross-mode links to email pages resolve via deferral. |
-| **Posts** (8345) + Reviews / Buying guides / Travel guides (20 articles, 2¶ each) | ~42 | none | **Seed** (unchanged) | The canonical starter-blog example, already proven in the shipped split. |
+| **Posts** (8345) + Reviews / Buying guides / Travel guides (20 articles, 2¶ each) | ~42 | none | **Seed** | The canonical starter-blog example. |
 | **Navigation** (88) structure + **Express Buy** | 5 | NavTag `ExpressBuyPage` | **Deploy** | The navigation scaffolding (Secondary/Footer Navigation folders, Languages → Preferences) is solution structure; Express Buy is a wired feature page. |
 | └ **Find dealers** (1247) | 1 | none | **Seed** | Customer-owned store-locator content under the nav scaffold. |
 | └ **Footer Navigation / About the shop** (About us, Terms, Employees, Privacy policy) | 0–4 | none | **Seed** | Legal and company copy — quintessential customer content. A deploy must never overwrite an updated privacy policy. |
@@ -91,7 +89,7 @@ Page counts and paragraph counts (¶) from the verified Swift 2.2 baseline (Area
 
 | Subtree | Decision | Rationale |
 |---|---|---|
-| **Header / Footer** (Desktop/Mobile Header, Desktop/Mobile Footer; 5–8¶ each) | **Seed** (resolved — see §5) | Bound from area settings (HeaderDesktop/Mobile, FooterDesktop/Mobile item fields) — but seed guarantees presence and self-heals structure (§1), the area bindings ship at deploy with cross-mode link deferral, and customers routinely edit USP texts, phone numbers and footer columns. Both former blockers are resolved: structure-creation in seed is verified at code level, and embedded-`/` path matching ("Header / Footer") is verified by unit test. |
+| **Header / Footer** (Desktop/Mobile Header, Desktop/Mobile Footer; 5–8¶ each) | **Seed** | Customers routinely edit USP texts, phone numbers and footer columns. The chrome is bound from area settings (HeaderDesktop/Mobile, FooterDesktop/Mobile item fields), and that wiring is safe in seed: seed guarantees presence and self-heals structure (§1), the area bindings ship at deploy and resolve via cross-pass link deferral, and embedded-`/` path matching ("Header / Footer") is covered by unit test. |
 | **Product Components** (Product List, Product List Card, Product Info) | **Deploy** | PLP/PDP component configuration; partner-iterated, never customer-authored. |
 | **Service Pages** (CartService, CartSummary, search results, Related products list/slider, Variant Selector, Favorites service) | **Deploy** | The user's own example of clear deploy candidates: invisible framework endpoints, all NavTag-wired. |
 | **Search result page** | **Deploy** | NavTag `ContentSearch`. |
@@ -102,7 +100,7 @@ Page counts and paragraph counts (¶) from the verified Swift 2.2 baseline (Area
 |---|---|---|
 | **System emails** (Order confirmation 30¶, Welcome, Back in stock, Form receipts) | **Deploy** | Transactional templates wired into checkout/user-management/stock-notification settings. Environment-specific bits (sender, recipient) are already carved out at field level (`excludeXmlElementsByType`). Copy edits by customers exist but transactional correctness and propagation win. |
 | **Newsletter Emails** root + **Unsubscribe confirmation page** | **Deploy** | The folder scaffold and the unsubscribe page are wired into the newsletter flow. |
-| └ **Swift Newsletters - Light / - Dark** (example campaigns, Sale 22¶, Announcement 31¶) | **Seed** | Example campaigns the customer duplicates and rewrites — classic starter material. Carving at the folder level (not the root) keeps the unsubscribe page in deploy; an earlier draft excluded the whole root and would have shipped it nowhere. |
+| └ **Swift Newsletters - Light / - Dark** (example campaigns, Sale 22¶, Announcement 31¶) | **Seed** | Example campaigns the customer duplicates and rewrites — classic starter material. The carve sits at the folder level (not the root) so the unsubscribe page ships via deploy — every page must be covered by exactly one mode. |
 
 ### Presets section
 
@@ -110,7 +108,7 @@ Page counts and paragraph counts (¶) from the verified Swift 2.2 baseline (Area
 |---|---|---|
 | **Page presets** (Home pages → Home preset, `IsTemplate`, 20¶) | **Deploy** | Part of the solution's design system: presets are the partner's curated starting points for new pages. Customer-created presets are additions and survive (upsert semantics). |
 
-## 4. Resulting predicate set (v2 proposal)
+## 4. The predicate set
 
 One deploy predicate keeps the "everything is managed unless carved out" default; the
 carve-outs become explicit seed predicates. SqlTable predicates are unchanged (framework
@@ -145,37 +143,33 @@ tables deploy, catalog seeds).
 //  same acknowledgedOrphanPageIds list as today)
 ```
 
-Net effect versus the shipped split: **well over a hundred customer-content paragraphs
-across Home, About, the site chrome (Header / Footer), footer legal/help pages, Find
-dealers and the newsletter examples move from overwrite-on-redeploy to
-land-once-then-customer-owned.** Everything wired stays deploy.
+The bottom line: **well over a hundred customer-content paragraphs across Home, About,
+the site chrome (Header / Footer), footer legal/help pages, Find dealers and the
+newsletter examples land once and are customer-owned from then on.** Everything wired
+deploys identically to every environment.
 
-## 5. Open items and caveats
+## 5. Notes and caveats
 
-1. **Header / Footer is the contested call.** The wiring argument (area bindings) says
-   deploy; the ownership argument (USP texts, footer columns) says seed.
-   **RESOLVED to seed (2026-06-11):** both blockers were investigated and cleared —
-   (a) seed guarantees presence and self-heals structure at page/row/paragraph level
-   (create-if-missing is mode-independent, §1), so "must exist or the solution breaks" is
-   satisfied while customers keep their chrome edits; (b) path matching is pure string
-   prefix with a `/`-boundary, both sides built from the same menu texts, so the literal
-   `/` in "Header / Footer" matches correctly (unit-tested in
+1. **Why the chrome can live in seed.** "Must exist or the solution breaks" is satisfied
+   by seed itself: presence and structure self-heal at page/row/paragraph level
+   (create-if-missing is mode-independent, §1) while customers keep their chrome edits.
+   Path matching is pure string prefix with a `/`-boundary, both sides built from the same
+   menu texts, so the literal `/` in "Header / Footer" matches correctly (unit-tested in
    `ContentCoverageEvaluatorTests`).
 2. **Shop PLP/PDP marketing slots.** If customers routinely add banners to the Shop pages,
    those edits sit on deploy-managed pages and would be overwritten. Mitigation today:
    customer banners as *new* paragraphs survive only if deploy YAML doesn't carry the page
    (it does). If this bites, the fix is finer granularity (paragraph-level merge on
    deploy), not moving Shop to seed.
-3. **Mode migration on existing targets.** Changing a page's mode does not migrate
-   anything by itself: a page that previously landed via deploy already exists on the
-   target, and a seed pass will merge (fill-empty) it from then on — which is exactly the
-   desired behaviour. No data movement is needed.
-4. **E2E contract.** The pipeline's Step 18 asserts the `/Posts` exclusion contract
-   specifically. Adopting v2 means extending it: deploy YAML must contain none of the
-   eight seed subtrees, seed must ship them all, and the target must land them.
-5. **Both modes still ship the area definition only via the whole-area deploy predicate**
-   (`path: "/"` owns area properties/item fields) — unchanged by this proposal and
-   already enforced by the deserializer's area-state ownership rule.
+3. **Changing a page's mode needs no data migration.** A page that already exists on the
+   target keeps existing; a seed pass merges (fill-empty) it from then on — exactly the
+   desired behaviour.
+4. **E2E contract.** The pipeline's Step 18 asserts the full split: deploy YAML contains
+   none of the seed subtrees, seed ships them all, the target lands them, and the
+   unsubscribe page ships via deploy.
+5. **The area definition ships only via the whole-area deploy predicate**
+   (`path: "/"` owns area properties/item fields), enforced by the deserializer's
+   area-state ownership rule.
 
 ## 6. Decision record
 
@@ -184,5 +178,5 @@ land-once-then-customer-owned.** Everything wired stays deploy.
 | D-1 | Seed wins ties for customer-edited wired pages | Seed creates fully-wired pages on first land; cross-mode links resolve; stomping customer content is the worse failure |
 | D-2 | Home, About, footer legal/help, Find dealers, newsletter examples → seed | Litmus test 1 + 4 |
 | D-3 | Shop, Customer center, Shopping cart, Swift Setup, System emails, presets, nav scaffold → deploy | Litmus tests 2 + 3 |
-| D-4 | Header / Footer → seed (revised 2026-06-11) | Seed self-heals structure (presence guaranteed); embedded-slash path matching verified; customer owns chrome copy |
+| D-4 | Header / Footer → seed | Seed self-heals structure (presence guaranteed); embedded-slash path matching verified; customer owns chrome copy |
 | D-5 | No third Content mode needed | Upsert (no-delete) semantics already protect customer additions under deploy paths |

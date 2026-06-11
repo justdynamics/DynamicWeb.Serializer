@@ -352,7 +352,7 @@ If source has 2051 rows and YAML has 582, you're hitting the
 `nameColumn` collides. Two rows with the same `ProductName` would
 otherwise overwrite each other's YAML file.
 
-Phase 38 fixed this with per-row monotonic counters; confirm the DLL
+The serializer writes per-row monotonic counters; confirm the DLL
 is current (`grep -r "FlatFileStore" tests/`). If the issue persists,
 check for duplicate `nameColumn` values:
 

@@ -221,7 +221,7 @@ The resolver's `SelectedValuePattern` rewrites the `SelectedValue` digits
 when `LinkType` is `page` (or indistinguishable from it at the regex
 level — the resolver doesn't parse the JSON). When `LinkType` is
 `paragraph`, `SelectedValue` holds a paragraph ID rather than a page ID;
-Phase 38.1 B.5.1 extended `BaselineLinkSweeper` to validate those matches
+`BaselineLinkSweeper` validates those matches
 against paragraph IDs as well (source: `BaselineLinkSweeper.CheckField`
 `SelectedValuePattern` block at ~line 156).
 
@@ -245,7 +245,7 @@ rewritten and the anchor is preserved as-is with a warning:
 WARNING: Unresolvable paragraph ID 15717 in anchor link
 ```
 
-`BaselineLinkSweeper` validates both segments (Phase 38 B.5): an
+`BaselineLinkSweeper` validates both segments: an
 unresolved page OR an unresolved anchor fails the sweep.
 
 ## Strict-mode interaction
@@ -291,9 +291,6 @@ Use cases:
   (Example: Swift 2.2 ships with five known-broken page ID references
   that were cleaned via `tools/swift22-cleanup/01-null-orphan-page-refs.sql`
   before being shipped as a baseline.)
-- Paragraph anchors mistakenly sweep-rejected by an older version of
-  BaselineLinkSweeper. (Phase 38 B.5 fixed the regex; this no longer
-  happens in current versions.)
 
 When the underlying data is cleaned, remove the entry from
 `acknowledgedOrphanPageIds`. Leaving acknowledged IDs around silences
