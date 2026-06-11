@@ -113,6 +113,7 @@ public static class ConfigLoader
             SeedOutputSubfolder = string.IsNullOrEmpty(raw.SeedOutputSubfolder) ? "seed" : raw.SeedOutputSubfolder!,
             ExcludeFieldsByItemType = raw.ExcludeFieldsByItemType ?? new Dictionary<string, List<string>>(),
             ExcludeXmlElementsByType = raw.ExcludeXmlElementsByType ?? new Dictionary<string, List<string>>(),
+            ShowSeedTreeIndicators = raw.ShowSeedTreeIndicators,
             Predicates = predicates
         };
 
@@ -352,6 +353,11 @@ public static class ConfigLoader
         public string? SeedOutputSubfolder { get; set; }
         public Dictionary<string, List<string>>? ExcludeFieldsByItemType { get; set; }
         public Dictionary<string, List<string>>? ExcludeXmlElementsByType { get; set; }
+
+        /// <summary>Tree UI: show the seed (flower) annotation on content-tree pages. Off by
+        /// default — broad seed coverage turns every node green and drowns the deploy icons,
+        /// which are the ones that signal "your edit will be overwritten".</summary>
+        public bool ShowSeedTreeIndicators { get; set; }
 
         // Phase 40 D-02: SINGLE flat predicate list with per-entry Mode.
         public List<RawPredicateDefinition>? Predicates { get; set; }

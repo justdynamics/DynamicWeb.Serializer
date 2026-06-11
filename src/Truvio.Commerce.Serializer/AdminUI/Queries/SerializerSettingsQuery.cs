@@ -28,6 +28,7 @@ public sealed class SerializerSettingsQuery : DataQueryModelBase<SerializerSetti
         {
             OutputDirectory = config.OutputDirectory,
             ConfigFilePath = relativePath,
+            ShowSeedTreeIndicators = config.ShowSeedTreeIndicators,
             PredicatesSummary = (deployCount + seedCount) == 0
                 ? "No predicates configured. Nothing will be synced."
                 : $"{deployCount} deploy predicate(s), {seedCount} seed predicate(s) configured. Manage via the Predicates sub-node."

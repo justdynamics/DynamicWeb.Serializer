@@ -44,7 +44,8 @@ public sealed class SaveSerializerSettingsCommand : CommandBase<SerializerSettin
 
             var updatedConfig = existingConfig with
             {
-                OutputDirectory = Model.OutputDirectory
+                OutputDirectory = Model.OutputDirectory,
+                ShowSeedTreeIndicators = Model.ShowSeedTreeIndicators
             };
 
             ConfigWriter.Save(updatedConfig, configPath);

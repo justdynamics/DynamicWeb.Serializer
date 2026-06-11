@@ -197,4 +197,56 @@ public class ContentCoverageEvaluatorTests
         Assert.Contains("a", result.Explanation);
         Assert.Contains("b", result.Explanation);
     }
+
+    // -------------------------------------------------------------------------
+    // GetManagingPredicateNames — page-level inclusion for the editor mode alerts
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public void GetManagingPredicateNames_IncludedNode_ReturnsPredicateNames()
+    {
+        var evaluator = new ContentCoverageEvaluator(new[] { Predicate("framework", path: "/", excludes: "/Home") });
+
+        Assert.Equal(new[] { "framework" }, evaluator.GetManagingPredicateNames("/Shop", 3));
+    }
+
+    [Fact]
+    public void GetManagingPredicateNames_ExcludedNode_IsEmpty()
+    {
+        var evaluator = new ContentCoverageEvaluator(new[] { Predicate("framework", path: "/", excludes: "/Home") });
+
+        Assert.Empty(evaluator.GetManagingPredicateNames("/Home", 3));
+        Assert.Empty(evaluator.GetManagingPredicateNames("/Home/Hero", 3));
+    }
+
+    [Fact]
+    public void GetManagingPredicateNames_ManagedSubtreeBelowUnmanagedNode_IsEmpty()
+    {
+        // The tree shows Partial ("contains managed subtrees") for this shape; the editor
+        // alert must NOT fire — the node's own content is not managed.
+        var evaluator = new ContentCoverageEvaluator(new[] { Predicate("posts", path: "/Posts") });
+
+        Assert.Empty(evaluator.GetManagingPredicateNames("/", 3));
+        Assert.Equal(ContentCoverage.Partial, evaluator.Evaluate("/", 3).Coverage);
+    }
+
+    [Fact]
+    public void GetManagingPredicateNames_WrongArea_IsEmpty()
+    {
+        var evaluator = new ContentCoverageEvaluator(new[] { Predicate("framework") });
+
+        Assert.Empty(evaluator.GetManagingPredicateNames("/Shop", 26));
+    }
+
+    [Fact]
+    public void GetManagingPredicateNames_PathWithEmbeddedSlashInMenuText_Matches()
+    {
+        // "Header / Footer" is a literal menu text: matching is pure string prefix with a
+        // '/'-boundary, both sides built from the same menu texts — embedded slashes work.
+        var evaluator = new ContentCoverageEvaluator(new[] { Predicate("chrome", path: "/Header / Footer") });
+
+        Assert.Equal(new[] { "chrome" }, evaluator.GetManagingPredicateNames("/Header / Footer", 3));
+        Assert.Equal(new[] { "chrome" }, evaluator.GetManagingPredicateNames("/Header / Footer/Desktop Header", 3));
+        Assert.Empty(evaluator.GetManagingPredicateNames("/Header / Footer 2", 3));
+    }
 }

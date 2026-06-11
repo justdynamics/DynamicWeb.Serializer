@@ -31,6 +31,7 @@ public static class ConfigWriter
             SeedOutputSubfolder = config.SeedOutputSubfolder,
             ExcludeFieldsByItemType = config.ExcludeFieldsByItemType.Count > 0 ? config.ExcludeFieldsByItemType : null,
             ExcludeXmlElementsByType = config.ExcludeXmlElementsByType.Count > 0 ? config.ExcludeXmlElementsByType : null,
+            ShowSeedTreeIndicators = config.ShowSeedTreeIndicators,
             Predicates = config.Predicates
         };
 
@@ -48,6 +49,7 @@ public static class ConfigWriter
         public string SeedOutputSubfolder { get; init; } = "seed";
         public Dictionary<string, List<string>>? ExcludeFieldsByItemType { get; init; }
         public Dictionary<string, List<string>>? ExcludeXmlElementsByType { get; init; }
+        public bool ShowSeedTreeIndicators { get; init; }
         public List<ProviderPredicateDefinition> Predicates { get; init; } = new();
     }
 }

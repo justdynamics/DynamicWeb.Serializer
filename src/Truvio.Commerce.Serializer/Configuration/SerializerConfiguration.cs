@@ -46,6 +46,14 @@ public record SerializerConfiguration
     /// <summary>Global per-type XML element exclusions, applied to every predicate regardless of mode.</summary>
     public Dictionary<string, List<string>> ExcludeXmlElementsByType { get; init; } = new();
 
+    /// <summary>
+    /// Tree UI: show the seed (flower) annotation on content-tree pages. Off by default —
+    /// broad seed coverage marks nearly every node and drowns out the deploy/partial icons,
+    /// which carry the actionable signal ("edits here are overwritten by the next deploy").
+    /// Deploy annotations and the edit-screen mode alerts are unaffected by this switch.
+    /// </summary>
+    public bool ShowSeedTreeIndicators { get; init; } = false;
+
     // -------------------------------------------------------------------------
     // Phase 40 D-02: SINGLE flat predicate list. Each predicate carries its own .Mode.
     // -------------------------------------------------------------------------

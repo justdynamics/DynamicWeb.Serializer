@@ -88,6 +88,18 @@ public class ContentCoverageEvaluator
         return ContentCoverageResult.None;
     }
 
+    /// <summary>
+    /// Names of the predicates that include THIS node itself — page-level inclusion,
+    /// independent of subtree carve-outs. Empty when the node's own content is not managed.
+    /// Used by the edit-screen mode alerts, where "a subtree below is managed"
+    /// (the second flavour of <see cref="ContentCoverage.Partial"/>) must NOT warn.
+    /// </summary>
+    public IReadOnlyList<string> GetManagingPredicateNames(string contentPath, int areaId)
+        => _predicates
+            .Where(p => p.AreaId == areaId && Includes(p, contentPath))
+            .Select(p => p.Name)
+            .ToList();
+
     /// <summary>Single-predicate inclusion: under the predicate path and not under any of its excludes.</summary>
     private static bool Includes(ProviderPredicateDefinition predicate, string contentPath)
     {

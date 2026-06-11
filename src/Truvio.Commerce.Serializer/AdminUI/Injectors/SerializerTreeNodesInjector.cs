@@ -69,8 +69,13 @@ internal static class TreeNodeDecorator
         => path is not null
            && string.Equals(path.First, typeof(ContentArea).FullName, StringComparison.Ordinal);
 
-    /// <summary>Per-mode coverage evaluators for tree annotations.</summary>
-    internal sealed record CoverageEvaluators(ContentCoverageEvaluator? Deploy, ContentCoverageEvaluator? Seed);
+    /// <summary>
+    /// Per-mode coverage evaluators for tree annotations. <paramref name="ShowSeedInTree"/>
+    /// gates only the tree's flower icon (config: showSeedTreeIndicators, default off — broad
+    /// seed coverage drowns the deploy/partial icons); the Seed evaluator itself stays
+    /// available for the edit-screen alerts.
+    /// </summary>
+    internal sealed record CoverageEvaluators(ContentCoverageEvaluator? Deploy, ContentCoverageEvaluator? Seed, bool ShowSeedInTree);
 
     public static void Decorate(NavigationNode node, CoverageEvaluators? evaluators)
     {
@@ -117,7 +122,9 @@ internal static class TreeNodeDecorator
                         });
                     }
 
-                    var seed = evaluators.Seed?.Evaluate(checkPath, page.AreaId);
+                    var seed = evaluators.ShowSeedInTree
+                        ? evaluators.Seed?.Evaluate(checkPath, page.AreaId)
+                        : null;
                     if (seed is not null && seed.Coverage != ContentCoverage.None)
                     {
                         node.Annotations.Add(new ActionNode
@@ -149,7 +156,8 @@ internal static class TreeNodeDecorator
             if (configPath == null)
                 return null;
 
-            var contentPredicates = ConfigLoader.Load(configPath).Predicates
+            var config = ConfigLoader.Load(configPath);
+            var contentPredicates = config.Predicates
                 .Where(p => string.Equals(p.ProviderType, "Content", StringComparison.OrdinalIgnoreCase))
                 .ToList();
 
@@ -168,7 +176,9 @@ internal static class TreeNodeDecorator
 
             var deploy = Build(DeploymentMode.Deploy, "deploy");
             var seed = Build(DeploymentMode.Seed, "seed");
-            return deploy is null && seed is null ? null : new CoverageEvaluators(deploy, seed);
+            return deploy is null && seed is null
+                ? null
+                : new CoverageEvaluators(deploy, seed, config.ShowSeedTreeIndicators);
         }
         catch
         {
@@ -181,7 +191,7 @@ internal static class TreeNodeDecorator
     /// Predicate paths live in the master area's path space; for a language-layer page
     /// (MasterPageId > 0) rebuild the path from the master chain, otherwise use its own path.
     /// </summary>
-    private static string GetPredicateCheckPath(Page page)
+    internal static string GetPredicateCheckPath(Page page)
     {
         if (page.MasterPageId <= 0)
             return SerializeSubtreeCommand.BuildContentPath(page);

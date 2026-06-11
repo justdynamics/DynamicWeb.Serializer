@@ -130,8 +130,14 @@ the config:
 |---|---|
 | sync | Fully managed at deploy — tooltip names the predicate |
 | sync-slash | Partially managed — tooltip lists the excluded paths below this page, or the deploy-managed subtrees under an unmanaged page |
-| flower | Seeded starter content — lands once, local edits on the target are preserved |
+| flower | Seeded starter content — lands once, local edits on the target are preserved. **Off by default** (broad seed coverage would mark nearly every page); enable via Settings > Database > Serialize > "Show seed indicators in content tree" or `showSeedTreeIndicators` in the config |
 | *(none)* | Not serialized (environment-owned) |
+
+The editing screens carry the same signal where it matters most: the visual editor,
+paragraph dialog and grid-row dialog show a screen alert for the owning page — a warning
+on deploy-managed pages ("content here is overwritten by the next deploy") and an info
+note on seeded pages ("your edits are preserved"). Rows and paragraphs always inherit
+their page's mode, so one page-level alert covers them all.
 
 Every page also gets right-click **Serialize subtree** (zip download) and
 **Deserialize from zip** (upload into this website) actions.

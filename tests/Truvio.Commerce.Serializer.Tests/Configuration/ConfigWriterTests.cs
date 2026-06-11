@@ -276,4 +276,37 @@ public class ConfigWriterTests : ConfigLoaderValidatorFixtureBase
             Assert.Equal(config.Predicates[i].Mode, loaded.Predicates[i].Mode);
         }
     }
+
+    [Fact]
+    public void Save_ThenLoad_RoundTripsShowSeedTreeIndicators()
+    {
+        var config = new SerializerConfiguration
+        {
+            OutputDirectory = "/out",
+            ShowSeedTreeIndicators = true,
+            Predicates = new List<ProviderPredicateDefinition>()
+        };
+        var filePath = Path.Combine(_tempDir, "seed_indicators.json");
+
+        ConfigWriter.Save(config, filePath);
+        var reloaded = ConfigLoader.Load(filePath);
+
+        Assert.True(reloaded.ShowSeedTreeIndicators);
+    }
+
+    [Fact]
+    public void Load_ShowSeedTreeIndicatorsAbsent_DefaultsToFalse()
+    {
+        var config = new SerializerConfiguration
+        {
+            OutputDirectory = "/out",
+            Predicates = new List<ProviderPredicateDefinition>()
+        };
+        var filePath = Path.Combine(_tempDir, "seed_indicators_default.json");
+
+        ConfigWriter.Save(config, filePath);
+        var reloaded = ConfigLoader.Load(filePath);
+
+        Assert.False(reloaded.ShowSeedTreeIndicators);
+    }
 }

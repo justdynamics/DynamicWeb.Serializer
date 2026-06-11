@@ -18,14 +18,20 @@ These semantics are implemented and E2E-verified; the decisions below depend on 
 | Page exists on target but not in YAML | left alone — deserialize is an **upsert, never a mirror**; nothing is ever deleted | left alone |
 | Links into the other mode's pages | deferred and resolved during that mode's pass (cross-mode link deferral) | same |
 
-Two consequences worth spelling out:
+Three consequences worth spelling out:
 
 - Customer-**added** pages under a deploy-managed path survive every re-deploy (they are
   simply unmanaged). The deploy risk is only to **edits of pages the YAML contains**.
 - A page can be *structurally required* and still live in seed: seed creates it with full
   wiring on first land, and deploy-side links to it resolve via cross-mode deferral. What
   seed gives up is **update propagation** — later solution changes to that page's
-  paragraphs do not reach existing environments.
+  *existing* paragraphs do not reach existing environments.
+- **Structure self-heals in both modes.** Create-if-missing applies at every level — page,
+  grid row, paragraph — independent of mode (the merge/overwrite strategies only govern
+  *updates*). A seed-managed page whose row or paragraph is missing on the target gets it
+  back on the next pass, and **new** rows/paragraphs the solution adds to a seed page do
+  propagate. Seed is therefore already a "partial" mode: presence and structure are
+  guaranteed, content inside is customer-owned.
 
 ## 2. Decision framework
 
@@ -83,7 +89,7 @@ Page counts and paragraph counts (¶) from the verified Swift 2.2 baseline (Area
 
 | Subtree | Decision | Rationale |
 |---|---|---|
-| **Header / Footer** (Desktop/Mobile Header, Desktop/Mobile Footer; 5–8¶ each) | **Deploy** (contested — see §5) | Bound from area settings (HeaderDesktop/Mobile, FooterDesktop/Mobile item fields); structurally the site chrome. *But* customers do edit USP texts, phone numbers and footer columns — this is the one subtree where the tie-break argument for seed is also defensible. Kept in deploy for v2 because of the area-binding wiring and a path-matching caveat (the menu text contains `/`, see §5). |
+| **Header / Footer** (Desktop/Mobile Header, Desktop/Mobile Footer; 5–8¶ each) | **Seed** (resolved — see §5) | Bound from area settings (HeaderDesktop/Mobile, FooterDesktop/Mobile item fields) — but seed guarantees presence and self-heals structure (§1), the area bindings ship at deploy with cross-mode link deferral, and customers routinely edit USP texts, phone numbers and footer columns. Both former blockers are resolved: structure-creation in seed is verified at code level, and embedded-`/` path matching ("Header / Footer") is verified by unit test. |
 | **Product Components** (Product List, Product List Card, Product Info) | **Deploy** | PLP/PDP component configuration; partner-iterated, never customer-authored. |
 | **Service Pages** (CartService, CartSummary, search results, Related products list/slider, Variant Selector, Favorites service) | **Deploy** | The user's own example of clear deploy candidates: invisible framework endpoints, all NavTag-wired. |
 | **Search result page** | **Deploy** | NavTag `ContentSearch`. |
@@ -114,6 +120,7 @@ tables deploy, catalog seeds).
   "path": "/", "includeLanguageLayers": true,
   "excludes": [
     "/Home", "/Home Machines", "/About", "/Posts",
+    "/Header / Footer",
     "/Navigation/Secondary Navigation/Find dealers",
     "/Navigation/Footer Navigation/About the shop",
     "/Navigation/Footer Navigation/Help and info",
@@ -123,6 +130,7 @@ tables deploy, catalog seeds).
 // Seed — Content (one predicate per customer-owned subtree)
 { "name": "Homepage",            "path": "/Home" }
 { "name": "Homepage (machines)", "path": "/Home Machines" }
+{ "name": "Site chrome",         "path": "/Header / Footer" }
 { "name": "About pages",         "path": "/About" }
 { "name": "Starter blog posts",  "path": "/Posts" }
 { "name": "Find dealers",        "path": "/Navigation/Secondary Navigation/Find dealers" }
@@ -134,18 +142,22 @@ tables deploy, catalog seeds).
 //  same acknowledgedOrphanPageIds list as today)
 ```
 
-Net effect versus the shipped split: **~70 customer-content paragraphs across Home, About,
-footer legal/help pages, Find dealers and the newsletter examples move from
-overwrite-on-redeploy to land-once-then-customer-owned.** Everything wired stays deploy.
+Net effect versus the shipped split: **well over a hundred customer-content paragraphs
+across Home, About, the site chrome (Header / Footer), footer legal/help pages, Find
+dealers and the newsletter examples move from overwrite-on-redeploy to
+land-once-then-customer-owned.** Everything wired stays deploy.
 
 ## 5. Open items and caveats
 
 1. **Header / Footer is the contested call.** The wiring argument (area bindings) says
-   deploy; the ownership argument (USP texts, footer columns) says seed. v2 keeps it in
-   deploy. Additionally its menu text contains a literal `/` ("Header / Footer"), and
-   predicate paths are menu-text based — splitting it out needs a verified answer for how
-   path matching treats embedded slashes before it can move. Revisit after first real
-   customer feedback.
+   deploy; the ownership argument (USP texts, footer columns) says seed.
+   **RESOLVED to seed (2026-06-11):** both blockers were investigated and cleared —
+   (a) seed guarantees presence and self-heals structure at page/row/paragraph level
+   (create-if-missing is mode-independent, §1), so "must exist or the solution breaks" is
+   satisfied while customers keep their chrome edits; (b) path matching is pure string
+   prefix with a `/`-boundary, both sides built from the same menu texts, so the literal
+   `/` in "Header / Footer" matches correctly (unit-tested in
+   `ContentCoverageEvaluatorTests`).
 2. **Shop PLP/PDP marketing slots.** If customers routinely add banners to the Shop pages,
    those edits sit on deploy-managed pages and would be overwritten. Mitigation today:
    customer banners as *new* paragraphs survive only if deploy YAML doesn't carry the page
@@ -169,5 +181,5 @@ overwrite-on-redeploy to land-once-then-customer-owned.** Everything wired stays
 | D-1 | Seed wins ties for customer-edited wired pages | Seed creates fully-wired pages on first land; cross-mode links resolve; stomping customer content is the worse failure |
 | D-2 | Home, About, footer legal/help, Find dealers, newsletter examples → seed | Litmus test 1 + 4 |
 | D-3 | Shop, Customer center, Shopping cart, Swift Setup, System emails, presets, nav scaffold → deploy | Litmus tests 2 + 3 |
-| D-4 | Header / Footer stays deploy in v2 | Area-binding wiring + path-slash caveat; revisit |
+| D-4 | Header / Footer → seed (revised 2026-06-11) | Seed self-heals structure (presence guaranteed); embedded-slash path matching verified; customer owns chrome copy |
 | D-5 | No third Content mode needed | Upsert (no-delete) semantics already protect customer additions under deploy paths |
