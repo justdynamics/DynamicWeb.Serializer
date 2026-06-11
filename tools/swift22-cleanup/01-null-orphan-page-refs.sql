@@ -9,8 +9,14 @@
 --   295   — non-existent; referenced by CheckoutApp (1), CustomerCenterApp (9)
 --   140   — non-existent; referenced by CheckoutApp (1), CustomerCenterApp (9),
 --           Emails.Header (1), Emails.Footer (3)
---   15717 — non-existent; referenced by Home Machines SecondButton (ButtonEditor
---           JSON format — handled below)
+--
+-- 15717 is intentionally NOT cleaned here. It looks like an orphan page ref in
+-- ButtonEditor JSON but is actually a PARAGRAPH anchor (LinkType "paragraph":
+-- SelectedValue holds a paragraph id; the page ref is the Link's ID= part) and
+-- Paragraph 15717 exists. The original REPLACE never fired anyway (it matched
+-- '"SelectedValue":"15717"' but the stored JSON is pretty-printed with a space)
+-- — a silent no-op that kept this legitimate content intact by accident.
+-- The serializer link extractor skips paragraph-typed SelectedValues instead.
 
 SET NOCOUNT ON;
 SET XACT_ABORT ON;
@@ -50,21 +56,7 @@ UPDATE [ItemType_Swift-v2_CustomerCenterApp]  SET AccountSettingsPage   = '' WHE
 UPDATE [ItemType_Swift-v2_Emails]             SET Header                = '' WHERE Header                LIKE '%Default.aspx?%=140%';
 UPDATE [ItemType_Swift-v2_Emails]             SET Footer                = '' WHERE Footer                LIKE '%Default.aspx?%=140%';
 
-PRINT '--- ID 15717 cleanup (non-existent page; ButtonEditor JSON format) ---';
--- Home Machines SecondButton stores page ref as {"SelectedValue":"15717",...}.
--- Replace just the SelectedValue payload so the ButtonEditor json stays valid.
--- We scan ALL string columns in ItemType_Swift-v2_* tables that contain '15717'
--- in the SelectedValue pattern. Kept dynamic because the exact table isn't
--- deterministic across Swift versions.
-DECLARE @sql NVARCHAR(MAX) = N'';
-SELECT @sql = @sql
-    + N'UPDATE [' + c.TABLE_NAME + N'] SET [' + c.COLUMN_NAME + N'] = '
-    + N'REPLACE(REPLACE(CAST([' + c.COLUMN_NAME + N'] AS NVARCHAR(MAX)), ''"SelectedValue":"15717"'', ''"SelectedValue":""''), ''Default.aspx?ID=15717'', '''') '
-    + N'WHERE CAST([' + c.COLUMN_NAME + N'] AS NVARCHAR(MAX)) LIKE ''%15717%'';' + CHAR(10)
-FROM INFORMATION_SCHEMA.COLUMNS c
-WHERE c.TABLE_NAME LIKE 'ItemType_Swift-v2_%'
-  AND c.DATA_TYPE IN ('nvarchar', 'ntext', 'varchar', 'nchar');
-EXEC sp_executesql @sql;
+PRINT '--- ID 15717: intentionally untouched (paragraph anchor, see header) ---';
 
 PRINT '';
 PRINT '--- Verify after cleanup ---';
