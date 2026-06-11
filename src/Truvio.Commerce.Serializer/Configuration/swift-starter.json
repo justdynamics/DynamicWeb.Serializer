@@ -76,6 +76,7 @@
       "mode": "Deploy",
       "providerType": "Content",
       "areaId": 3,
+      "includeLanguageLayers": true,
       "path": "/",
       "excludes": [
         "/Posts"
@@ -290,6 +291,7 @@
       "mode": "Seed",
       "providerType": "Content",
       "areaId": 3,
+      "includeLanguageLayers": true,
       "path": "/Posts",
       "excludes": [],
       "excludeFields": [],

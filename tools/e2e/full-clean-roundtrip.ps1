@@ -26,8 +26,14 @@ End-to-end, unattended execution of the Phase 38.1 gap-closure pipeline:
  16. Run tools/smoke/Test-BaselineFrontend.ps1 (expect exit 0 AND non-vacuous)
  17. Assert EcomProducts row count: 2051 on Swift-2.2 AND 2051 on CleanDB
  18. Assert no baselines/Swift2.2/_sql/EcomShopGroupRelation/GROUP253$$SHOP19.yml
- 19. Stop both hosts
- 20. Emit pass/fail summary JSON
+ 19. Language-layer round-trip contract: every source area with
+     AreaMasterAreaId > 0 must have a deploy-manifest entry, exist on the
+     target with the same id + master link, and match the source on page
+     count, restored (non-dangling) master-page links, and the multiset of
+     page menu texts (translated content). Skipped with a log line when the
+     source has no language layers.
+ 20. Stop both hosts
+ 21. Emit pass/fail summary JSON
 
 All steps write logs to a timestamped run directory under
 tools/e2e/runs/<yyyyMMdd-HHmmss>/ (gitignored).
@@ -626,12 +632,61 @@ $tgtPosts = Invoke-Sqlcmd-Scalar -Server $SqlServer -Database $CleanDb -Query "S
 if ($tgtPosts -lt 1) { throw 'Posts root page missing on target — seed deserialize did not land the excluded subtree' }
 Write-Host "  Exclusion contract OK: deploy YAML clean, seed ships Posts, target has Posts root ($tgtPosts)"
 
-# ----- Step 19: Stop both hosts ----------------------------------------------
-Write-Step 'Step 19: Stop both DW hosts'
+# ----- Step 19: Language-layer round-trip contract -----------------------------
+# Auto-detected: every area on the source with AreaMasterAreaId > 0 is a language
+# layer and must round-trip onto the target — same area id + master link (area ids
+# are the cross-environment coordinate system), same page count, every master-page
+# link restored to a page that exists in the master area, and the same multiset of
+# menu texts (proves translated content shipped, not master copies).
+Write-Step 'Step 19: Language-layer round-trip contract'
+$layerIdsRaw = & sqlcmd -S $SqlServer -E -d $SwiftDb -h -1 -W -Q "SET NOCOUNT ON; SELECT AreaID FROM Area WHERE AreaMasterAreaId > 0 ORDER BY AreaID" 2>&1
+$layerIds = @($layerIdsRaw | Where-Object { $_ -match '^\s*\d+\s*$' } | ForEach-Object { [int]"$_".Trim() })
+$layersVerified = 0
+if ($layerIds.Count -eq 0) {
+    Write-Host '  Source has no language-layer areas — contract skipped (vacuous)'
+} else {
+    $deployManifestPath = Join-Path $SwiftHostPath 'wwwroot/Files/System/Serializer/SerializeRoot/deploy/deploy-manifest.json'
+    $deployManifest = Get-Content $deployManifestPath -Raw | ConvertFrom-Json
+    foreach ($layerId in $layerIds) {
+        $masterId = Invoke-Sqlcmd-Scalar -Server $SqlServer -Database $SwiftDb -Query "SELECT AreaMasterAreaId FROM Area WHERE AreaID = $layerId"
+        $entry = $deployManifest.entries | Where-Object { $_.entryId -eq "content/area-$layerId" }
+        if (-not $entry) {
+            throw "Layer area ${layerId}: no content/area-$layerId entry in deploy manifest — includeLanguageLayers expansion did not serialize the layer"
+        }
+        $tgtMaster = Invoke-Sqlcmd-Scalar -Server $SqlServer -Database $CleanDb -Query "SELECT ISNULL((SELECT AreaMasterAreaId FROM Area WHERE AreaID = $layerId), -1)"
+        if ($tgtMaster -ne $masterId) {
+            throw "Layer area ${layerId}: target AreaMasterAreaId is $tgtMaster, expected $masterId (area missing or master link lost)"
+        }
+        $srcPages = Invoke-Sqlcmd-Scalar -Server $SqlServer -Database $SwiftDb -Query "SELECT COUNT(*) FROM Page WHERE PageAreaID = $layerId"
+        $tgtPages = Invoke-Sqlcmd-Scalar -Server $SqlServer -Database $CleanDb -Query "SELECT COUNT(*) FROM Page WHERE PageAreaID = $layerId"
+        if ($tgtPages -ne $srcPages) {
+            throw "Layer area ${layerId}: page count src=$srcPages tgt=$tgtPages"
+        }
+        $srcLinks = Invoke-Sqlcmd-Scalar -Server $SqlServer -Database $SwiftDb -Query "SELECT COUNT(*) FROM Page WHERE PageAreaID = $layerId AND PageMasterPageId > 0"
+        $tgtLinks = Invoke-Sqlcmd-Scalar -Server $SqlServer -Database $CleanDb -Query "SELECT COUNT(*) FROM Page WHERE PageAreaID = $layerId AND PageMasterPageId > 0"
+        if ($tgtLinks -ne $srcLinks -or $tgtLinks -eq 0) {
+            throw "Layer area ${layerId}: master-page link count src=$srcLinks tgt=$tgtLinks (MasterLinkRestorer pass incomplete)"
+        }
+        $tgtValidLinks = Invoke-Sqlcmd-Scalar -Server $SqlServer -Database $CleanDb -Query "SELECT COUNT(*) FROM Page p WHERE p.PageAreaID = $layerId AND p.PageMasterPageId > 0 AND EXISTS (SELECT 1 FROM Page m WHERE m.PageID = p.PageMasterPageId AND m.PageAreaID = $masterId)"
+        if ($tgtValidLinks -ne $tgtLinks) {
+            throw "Layer area ${layerId}: $($tgtLinks - $tgtValidLinks) of $tgtLinks master-page links dangle (no such page in master area $masterId on target)"
+        }
+        $srcTextSum = Invoke-Sqlcmd-Scalar -Server $SqlServer -Database $SwiftDb -Query "SELECT ISNULL(CHECKSUM_AGG(CHECKSUM(PageMenuText)), 0) FROM Page WHERE PageAreaID = $layerId"
+        $tgtTextSum = Invoke-Sqlcmd-Scalar -Server $SqlServer -Database $CleanDb -Query "SELECT ISNULL(CHECKSUM_AGG(CHECKSUM(PageMenuText)), 0) FROM Page WHERE PageAreaID = $layerId"
+        if ($tgtTextSum -ne $srcTextSum) {
+            throw "Layer area ${layerId}: menu-text checksum mismatch (src=$srcTextSum tgt=$tgtTextSum) — translated content did not round-trip"
+        }
+        Write-Host "  Layer area $layerId OK: master=$masterId pages=$tgtPages masterLinks=$tgtLinks (all resolve) menuTextChecksum=$tgtTextSum"
+        $layersVerified++
+    }
+}
+
+# ----- Step 20: Stop both hosts ----------------------------------------------
+Write-Step 'Step 20: Stop both DW hosts'
 Stop-HostOnPort -Port $swiftPort -Label 'source'
 Stop-HostOnPort -Port $cleanPort -Label 'target'
 
-# ----- Step 20: Summary -------------------------------------------------------
+# ----- Step 21: Summary -------------------------------------------------------
 Write-Step 'PIPELINE PASSED — all gates met'
 $pipelineEndUtc = (Get-Date).ToUniversalTime()
 $duration = ($pipelineEndUtc - $pipelineStartUtc).TotalSeconds
@@ -648,6 +703,7 @@ $summary = @{
         DeserializeSeed   = $desSeed.Code
     }
     EcomProducts = @{ Src = $srcCount; Tgt = $tgtCount }
+    LanguageLayersVerified = $layersVerified
     SmokeExit    = $smokeExit
     DllMd5       = $srcMd5
     RunDir       = $runDir

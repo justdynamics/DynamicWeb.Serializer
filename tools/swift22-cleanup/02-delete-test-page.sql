@@ -3,16 +3,28 @@
 -- docs/baselines/Swift2.2-baseline.md). Not part of the Swift 2.2 template.
 --
 -- This walks PageParentPageId recursively so any accidental children are caught.
+--
+-- IDENTITY GUARD: the anchor matches on PageId AND PageMenuText. After the
+-- artifact is deleted once, SQL Server happily reuses PageId 8451 for new
+-- legitimate pages (observed 2026-06-11: a language-layer copy of "Sign in"
+-- took the id and a blind re-run deleted it). If 8451 is absent or holds a
+-- different page, this script is a no-op.
 
 SET NOCOUNT ON;
 SET XACT_ABORT ON;
+
+IF NOT EXISTS (SELECT 1 FROM Page WHERE PageId = 8451 AND PageMenuText = N'New Serialized Page')
+BEGIN
+    PRINT 'OK-ZERO: Page 8451 "New Serialized Page" not present (already deleted, or the id was reused by a different page). Script is a no-op (idempotent re-run).';
+    RETURN;
+END
 
 BEGIN TRAN;
 
 -- Collect the subtree
 DECLARE @victims TABLE (PageId INT PRIMARY KEY);
 ;WITH subtree AS (
-    SELECT PageId FROM Page WHERE PageId = 8451
+    SELECT PageId FROM Page WHERE PageId = 8451 AND PageMenuText = N'New Serialized Page'
     UNION ALL
     SELECT p.PageId FROM Page p INNER JOIN subtree s ON p.PageParentPageId = s.PageId
 )
