@@ -1,0 +1,180 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - navigation [ref=e3]:
+      - link [ref=e4] [cursor=pointer]:
+        - /url: /
+        - img
+        - img [ref=e5]
+      - tablist [ref=e21]:
+        - tab "Insights" [ref=e22] [cursor=pointer]:
+          - generic [ref=e24]: 
+          - generic [ref=e25]: Insights
+        - tab "Content" [ref=e26] [cursor=pointer]:
+          - generic [ref=e28]: 
+          - generic [ref=e29]: Content
+        - tab "Assets" [ref=e30] [cursor=pointer]:
+          - generic [ref=e32]: 
+          - generic [ref=e33]: Assets
+        - tab "Users" [ref=e34] [cursor=pointer]:
+          - generic [ref=e36]: 
+          - generic [ref=e37]: Users
+        - tab "Products" [ref=e38] [cursor=pointer]:
+          - generic [ref=e40]: 
+          - generic [ref=e41]: Products
+        - tab "Commerce" [ref=e42] [cursor=pointer]:
+          - generic [ref=e44]: 
+          - generic [ref=e45]: Commerce
+        - tab "Email" [ref=e46] [cursor=pointer]:
+          - generic [ref=e48]: 
+          - generic [ref=e49]: Email
+        - tab "Integration" [ref=e50] [cursor=pointer]:
+          - generic [ref=e52]: 
+          - generic [ref=e53]: Integration
+        - tab "Apps" [selected] [ref=e54] [cursor=pointer]:
+          - generic [ref=e56]: 
+          - generic [ref=e57]: Apps
+        - tab "Settings" [ref=e58] [cursor=pointer]:
+          - generic [ref=e60]: 
+          - generic [ref=e61]: Settings
+      - list [ref=e62]:
+        - listitem [ref=e63]:
+          - 'button "Version: 10.25.10+7d14c8b4327801740ba723c1a4f4200a447a4907, Loaded: 10:56:33 PM, Build time: 6/2/2026 10:54:06 AM" [ref=e64] [cursor=pointer]':
+            - generic [ref=e65]: 
+          - text:      
+        - listitem [ref=e66]:
+          - button "Expand area" [ref=e67] [cursor=pointer]:
+            - generic [ref=e68]: 
+            - generic [ref=e69]: Expand area
+        - link "Trial license Expires 11-Jul-2026" [ref=e70] [cursor=pointer]:
+          - /url: /Admin/UI/Apps/LicenseOverview?Type=License&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+          - generic [ref=e71]: 
+          - generic [ref=e72]:
+            - text: Trial license
+            - generic [ref=e73]: Expires 11-Jul-2026
+    - generic [ref=e74]:
+      - tabpanel [ref=e75]:
+        - generic [ref=e81]:
+          - navigation [ref=e82]:
+            - generic [ref=e212]:
+              - generic [ref=e213]:
+                - heading "Apps" [level=6] [ref=e214]:
+                  - link "Apps" [ref=e215] [cursor=pointer]:
+                    - /url: /Admin/UI/Apps/DashboardOverview?DashboardType=Apps&Type=DashboardWidgets&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                - button [ref=e216] [cursor=pointer]:
+                  - generic [ref=e217]: 
+                - text: 
+                - button [ref=e218] [cursor=pointer]:
+                  - generic [ref=e220]: 
+              - generic [ref=e222]:
+                - list [ref=e223]:
+                  - listitem [ref=e224]:
+                    - generic [ref=e225]:
+                      - text: 
+                      - heading "Dashboard" [level=6] [ref=e227]
+                    - list [ref=e228]:
+                      - listitem [ref=e229]:
+                        - generic [ref=e230]:
+                          - button [disabled]:
+                            - generic: 
+                          - link "Apps dashboard" [ref=e232] [cursor=pointer]:
+                            - /url: /Admin/UI/Apps/DashboardOverview?DashboardType=Apps&Type=DashboardWidgets&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                            - generic [ref=e234]: 
+                            - text: Apps dashboard
+                - list [ref=e235]:
+                  - listitem [ref=e236]:
+                    - generic [ref=e237]:
+                      - text: 
+                      - heading "Appstore" [level=6] [ref=e239]
+                    - list [ref=e240]:
+                      - listitem [ref=e241]:
+                        - generic [ref=e242]:
+                          - button [disabled]:
+                            - generic: 
+                          - link "All apps" [ref=e244] [cursor=pointer]:
+                            - /url: /Admin/UI/Apps/AddinList?Type=AddinAll&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                            - generic [ref=e246]: 
+                            - text: All apps
+                      - listitem [ref=e247]:
+                        - generic [ref=e248]:
+                          - button [disabled]:
+                            - generic: 
+                          - link "Installed apps" [ref=e250] [cursor=pointer]:
+                            - /url: /Admin/UI/Apps/AddinList?Type=AddinInstalled&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                            - generic [ref=e252]: 
+                            - text: Installed apps
+                      - listitem [ref=e253]:
+                        - generic [ref=e254]:
+                          - button [disabled]:
+                            - generic: 
+                          - link "Available apps" [ref=e256] [cursor=pointer]:
+                            - /url: /Admin/UI/Apps/AddinList?Type=AddinAvailable&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                            - generic [ref=e258]: 
+                            - text: Available apps
+                - list [ref=e259]:
+                  - listitem [ref=e260]:
+                    - generic [ref=e261]:
+                      - text: 
+                      - heading "Forms For Editors" [level=6] [ref=e263]
+                    - list [ref=e264]:
+                      - listitem [ref=e265]:
+                        - generic [ref=e266]:
+                          - button [disabled]:
+                            - generic: 
+                          - link "Forms" [ref=e268] [cursor=pointer]:
+                            - /url: /Admin/UI/Apps/FormList?Type=FormsAll&QueryContext=Dynamicweb.CoreUI.Data.DataQueryContext
+                            - generic [ref=e270]: 
+                            - text: Forms
+                      - listitem [ref=e271]:
+                        - generic [ref=e272]:
+                          - button "Toggle level" [ref=e273] [cursor=pointer]:
+                            - generic [ref=e274]: 
+                          - link "Templates" [ref=e276] [cursor=pointer]:
+                            - /url: "#"
+                            - generic [ref=e278]: 
+                            - text: Templates
+          - generic [ref=e279]:
+            - generic [ref=e280]:
+              - navigation "breadcrumb" [ref=e282]:
+                - list [ref=e283]:
+                  - listitem [ref=e284]:
+                    - link "Apps" [ref=e285] [cursor=pointer]:
+                      - /url: /Admin/UI/Apps
+                  - text:  
+                  - listitem [ref=e286]:  ...
+                  - listitem [ref=e287]:  Truvio.Commerce.Serializer
+              - generic [ref=e289]:
+                - button "Actions" [ref=e290] [cursor=pointer]
+                - text:  
+            - generic [ref=e291]:
+              - generic [ref=e293]:
+                - generic [ref=e297]:
+                  - generic [ref=e298]: Name
+                  - generic [ref=e299]: Truvio Commerce Serializer
+                - generic [ref=e301]:
+                  - generic [ref=e302]: Author
+                  - generic [ref=e303]: JustDynamics
+                - generic [ref=e305]:
+                  - generic [ref=e306]: Version
+                  - generic [ref=e307]: 0.6.4-beta
+                - generic [ref=e309]:
+                  - generic [ref=e310]: Installed version
+                  - generic [ref=e311]: 0.6.4-beta
+                - generic [ref=e314]: Downloads
+              - generic [ref=e316]:
+                - tablist [ref=e317]:
+                  - listitem [ref=e318]:
+                    - link "Description" [ref=e319] [cursor=pointer]:
+                      - /url: "#tab-3f9c8ce738714d3b9f9bccbc8a535e28"
+                  - listitem [ref=e320]:
+                    - link "Dependencies" [ref=e321] [cursor=pointer]:
+                      - /url: "#tab-02ea5fd7a6644f65be0350cc320ac90d"
+                - generic [ref=e326]:
+                  - heading "Truvio Commerce Serializer" [level=6] [ref=e328]
+                  - generic [ref=e332]: Serialize and deserialize Truvio Commerce (Dynamicweb 10) database state to YAML files for version control and environment sync.
+      - progressbar [ref=e79]
+  - generic [ref=e333]:
+    - generic [ref=e334]:
+      - generic [ref=e336]: 
+      - generic [ref=e338]: App(s) successfully installed
+    - button "Close" [ref=e339] [cursor=pointer]:
+      - generic [ref=e340]: 

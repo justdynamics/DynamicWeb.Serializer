@@ -21,6 +21,25 @@ public class ContentSerializer
     private readonly Action<string>? _log;
     private readonly bool _lenientLinkSweep;
 
+    /// <summary>
+    /// Test seam: does a page id exist in the SOURCE database? Production default asks DW.
+    /// Used by the link sweep to tell a source-side broken link (target page deleted from
+    /// the source — auto-acknowledged, ships as-is) from a coverage gap (target page exists
+    /// but no predicate ships it — fatal). A lookup failure counts as "exists" so the sweep
+    /// never downgrades a fatal on infrastructure errors.
+    /// </summary>
+    internal Func<int, bool> PageExistsInSource { get; set; } = pageId =>
+    {
+        try
+        {
+            return Services.Pages.GetPage(pageId) is not null;
+        }
+        catch
+        {
+            return true;
+        }
+    };
+
     /// <param name="lenientLinkSweep">
     /// When true, unresolvable internal links found by the <see cref="BaselineLinkSweeper"/>
     /// are logged as warnings instead of failing the run. Used by ad-hoc subtree exports
@@ -156,12 +175,28 @@ public class ContentSerializer
                     Log($"Deferred link: ID {u.UnresolvablePageId} in {u.SourcePageIdentifier} / {u.FieldName} " +
                         $"is outside this predicate but ships via {via} in the same configuration — resolved on target during that pass.");
 
-                if (trulyFatal.Count > 0)
+                // A reference whose target page does not exist in the SOURCE database is a
+                // source-side broken link: the link is equally broken before and after a sync,
+                // so failing the whole baseline over it punishes the serializer for a content
+                // defect it didn't cause. Auto-acknowledge with a warning (every Swift demo
+                // database ships its own set of dangling ids — a hand-maintained
+                // AcknowledgedOrphanPageIds list can never cover them all). Only references to
+                // pages that EXIST in source but ship through no predicate remain fatal: there a
+                // working source link would land broken on the target.
+                var (sourceOrphans, stillFatal) = PartitionBySourceExistence(trulyFatal, PageExistsInSource);
+
+                foreach (var u in sourceOrphans)
+                    Log($"WARNING: source orphan auto-acknowledged — page ID {u.UnresolvablePageId} does not exist " +
+                        $"in the source database; reference in {u.SourcePageIdentifier} / {u.FieldName} ({u.Context}) " +
+                        "ships as-is (it is equally broken in the source).");
+
+                if (stillFatal.Count > 0)
                 {
-                    var lines = trulyFatal.Select(u =>
+                    var lines = stillFatal.Select(u =>
                         $"  - ID {u.UnresolvablePageId} in {u.SourcePageIdentifier} / {u.FieldName}: {u.Context}");
                     throw new InvalidOperationException(
-                        $"Baseline link sweep found {trulyFatal.Count} unresolvable reference(s):\n" +
+                        $"Baseline link sweep found {stillFatal.Count} unresolvable reference(s) to pages that exist " +
+                        "in the source but are shipped by no predicate:\n" +
                         string.Join("\n", lines) +
                         "\nFix the source baseline: include the referenced pages in a predicate path, or remove the references. " +
                         "Known-broken source refs may be listed under AcknowledgedOrphanPageIds on the owning Content predicate.");
@@ -170,6 +205,22 @@ public class ContentSerializer
         }
 
         Log($"Serialization complete: {totalPages} pages, {totalGridRows} grid rows, {totalParagraphs} paragraphs serialized.");
+    }
+
+    /// <summary>
+    /// Split unresolvable references by whether their target page exists in the SOURCE
+    /// database: non-existent targets are source-side broken links (auto-acknowledged,
+    /// shipped as-is — they are equally broken before and after a sync); existing targets
+    /// are genuine coverage gaps and stay fatal.
+    /// </summary>
+    internal static (List<UnresolvedLink> SourceOrphans, List<UnresolvedLink> StillFatal) PartitionBySourceExistence(
+        IEnumerable<UnresolvedLink> links, Func<int, bool> pageExistsInSource)
+    {
+        var sourceOrphans = new List<UnresolvedLink>();
+        var stillFatal = new List<UnresolvedLink>();
+        foreach (var u in links)
+            (pageExistsInSource(u.UnresolvablePageId) ? stillFatal : sourceOrphans).Add(u);
+        return (sourceOrphans, stillFatal);
     }
 
     // -------------------------------------------------------------------------

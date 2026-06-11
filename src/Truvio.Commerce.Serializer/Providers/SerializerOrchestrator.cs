@@ -134,8 +134,17 @@ public class SerializerOrchestrator
                 excludeFieldsByItemType: excludeFieldsByItemType,
                 excludeXmlElementsByType: excludeXmlElementsByType);
 
+            // Stale cleanup compares the manifest against THIS run's written files — a failed
+            // predicate contributes nothing to WrittenFiles, so cleaning after a partial run
+            // would delete every file the failed predicate wrote on previous successful runs.
+            // Skip cleanup entirely when anything failed; the next clean run catches up.
             if (manifestCleaner != null)
-                stale = manifestCleaner.CleanStale(outputRoot, modeName, allWritten, log);
+            {
+                if (errors.Count > 0 || results.Any(r => r.HasErrors))
+                    log?.Invoke("Stale-file cleanup skipped: this run had errors, so the written-file set is incomplete and cleanup could delete files owned by the failed predicate(s).");
+                else
+                    stale = manifestCleaner.CleanStale(outputRoot, modeName, allWritten, log);
+            }
         }
 
         return new OrchestratorResult { SerializeResults = results, Errors = errors, StaleFilesDeleted = stale };

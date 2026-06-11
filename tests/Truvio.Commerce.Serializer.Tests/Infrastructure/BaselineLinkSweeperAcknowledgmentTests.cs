@@ -120,6 +120,61 @@ public class BaselineLinkSweeperAcknowledgmentTests
     }
 
     [Fact]
+    public void PartitionBySourceExistence_NonExistentTarget_IsSourceOrphan_NotFatal()
+    {
+        // A reference to a page that does not exist in the SOURCE database is broken in the
+        // source itself — auto-acknowledged (warning), never fatal. This is what makes the
+        // first serialize on an arbitrary Swift database succeed without hand-curating
+        // AcknowledgedOrphanPageIds per environment.
+        var page = MakePageWithShortcutToId(sourceId: 100, shortcutTargetId: 9999);
+        var sweepResult = new BaselineLinkSweeper().Sweep(new List<SerializedPage> { page });
+        Assert.Single(sweepResult.Unresolved);
+
+        var (orphans, fatal) = Truvio.Commerce.Serializer.Serialization.ContentSerializer.PartitionBySourceExistence(
+            sweepResult.Unresolved, pageExistsInSource: _ => false);
+
+        Assert.Single(orphans);
+        Assert.Equal(9999, orphans[0].UnresolvablePageId);
+        Assert.Empty(fatal);
+    }
+
+    [Fact]
+    public void PartitionBySourceExistence_ExistingUncoveredTarget_StaysFatal()
+    {
+        // The referenced page EXISTS in source but ships through no predicate — a working
+        // source link would land broken on the target. That stays fatal.
+        var page = MakePageWithShortcutToId(sourceId: 100, shortcutTargetId: 555);
+        var sweepResult = new BaselineLinkSweeper().Sweep(new List<SerializedPage> { page });
+
+        var (orphans, fatal) = Truvio.Commerce.Serializer.Serialization.ContentSerializer.PartitionBySourceExistence(
+            sweepResult.Unresolved, pageExistsInSource: _ => true);
+
+        Assert.Empty(orphans);
+        Assert.Single(fatal);
+        Assert.Equal(555, fatal[0].UnresolvablePageId);
+    }
+
+    [Fact]
+    public void PartitionBySourceExistence_MixedTargets_SplitCorrectly()
+    {
+        var pages = new List<SerializedPage>
+        {
+            MakePageWithShortcutToId(sourceId: 100, shortcutTargetId: 9999), // deleted in source
+            MakePageWithShortcutToId(sourceId: 200, shortcutTargetId: 555)   // exists, uncovered
+        };
+        var sweepResult = new BaselineLinkSweeper().Sweep(pages);
+        Assert.Equal(2, sweepResult.Unresolved.Count);
+
+        var (orphans, fatal) = Truvio.Commerce.Serializer.Serialization.ContentSerializer.PartitionBySourceExistence(
+            sweepResult.Unresolved, pageExistsInSource: id => id == 555);
+
+        Assert.Single(orphans);
+        Assert.Equal(9999, orphans[0].UnresolvablePageId);
+        Assert.Single(fatal);
+        Assert.Equal(555, fatal[0].UnresolvablePageId);
+    }
+
+    [Fact]
     public void Sweep_UnlistedOrphanId_Throws_EvenWhenOtherAcknowledged()
     {
         // Threat T-38-02: ack = [15717], tree has refs to BOTH 15717 AND 9999.

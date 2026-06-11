@@ -136,7 +136,15 @@ public sealed class SerializerSerializeCommand : CommandBase
             if (result.StaleFilesDeleted > 0)
                 message += $" Cleaned {result.StaleFilesDeleted} stale file(s).";
             if (result.HasErrors)
-                message += $" Errors: {string.Join("; ", result.Errors)}";
+            {
+                // Per-predicate errors drive HasErrors too — surface them, not just the
+                // run-level list, so the API response never says a bare "Errors: ".
+                var allErrors = result.Errors
+                    .Concat(result.SerializeResults
+                        .Where(r => r.HasErrors)
+                        .SelectMany(r => r.Errors.Select(e => $"{r.TableName}: {e}")));
+                message += $" Errors: {string.Join("; ", allErrors)}";
+            }
 
             // D-38-12: HTTP status is driven by result.HasErrors (Errors.Count > 0 ||
             // SerializeResults.Any(r => r.HasErrors)). A zero-error result MUST map to Ok
