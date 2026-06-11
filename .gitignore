@@ -54,3 +54,5 @@ Desktop.ini
 tools/e2e/runs/
 # Top-level bacpac zip (source of truth; too large for repo)
 tools/swift2.2.0-*.zip
+
+.playwright-mcp/

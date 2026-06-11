@@ -1,5 +1,0 @@
-[     875ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://localhost:56200/admin/assets/flags/001.svg:0
-[    1086ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://localhost:56200/admin/assets/flags/029.svg:0
-[    1410ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://localhost:56200/admin/assets/flags/419.svg:0
-[    5127ms] [WARNING] Google Maps JavaScript API warning: NoApiKeys https://developers.google.com/maps/documentation/javascript/error-messages#no-api-keys @ https://maps.googleapis.com/maps-api-v3/api/js/65/3b/intl/en_gb/util.js:37
-[    5128ms] [WARNING] Google Maps JavaScript API warning: InvalidKey https://developers.google.com/maps/documentation/javascript/error-messages#invalid-key @ https://maps.googleapis.com/maps-api-v3/api/js/65/3b/intl/en_gb/util.js:37
