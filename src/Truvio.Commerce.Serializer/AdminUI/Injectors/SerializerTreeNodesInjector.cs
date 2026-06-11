@@ -75,13 +75,17 @@ internal static class TreeNodeDecorator
     /// <paramref name="ShowSeedIndicators"/> gates every seed-mode cue — the tree's flower
     /// icon AND the seed info alert on editing screens (config: showSeedIndicators, default
     /// off — broad seed coverage drowns the deploy/partial cues, which carry the actionable
-    /// signal). The exclusion dicts ride along so per-page field-level carve-outs (e.g. the
-    /// cart page's eCom_CartV2 settings) can downgrade a "fully managed" verdict to partial.
+    /// signal). <paramref name="ShowDeployIndicators"/> gates every deploy-mode cue the same
+    /// way (config: showDeployIndicators, default ON — the deploy warnings carry the
+    /// actionable signal, but e.g. a source environment can switch them off). The exclusion
+    /// dicts ride along so per-page field-level carve-outs (e.g. the cart page's eCom_CartV2
+    /// settings) can downgrade a "fully managed" verdict to partial.
     /// </summary>
     internal sealed record CoverageEvaluators(
         ContentCoverageEvaluator? Deploy,
         ContentCoverageEvaluator? Seed,
         bool ShowSeedIndicators,
+        bool ShowDeployIndicators,
         IReadOnlyDictionary<string, List<string>> ExcludeFieldsByItemType,
         IReadOnlyDictionary<string, List<string>> ExcludeXmlElementsByType,
         DateTime? LastDeployUtc);
@@ -101,7 +105,9 @@ internal static class TreeNodeDecorator
                     // paths are authored against the master area (same rule as serialize time).
                     var checkPath = GetPredicateCheckPath(page);
 
-                    var deploy = evaluators.Deploy?.Evaluate(checkPath, page.AreaId);
+                    var deploy = evaluators.ShowDeployIndicators
+                        ? evaluators.Deploy?.Evaluate(checkPath, page.AreaId)
+                        : null;
                     var seed = evaluators.ShowSeedIndicators
                         ? evaluators.Seed?.Evaluate(checkPath, page.AreaId)
                         : null;
@@ -273,6 +279,7 @@ internal static class TreeNodeDecorator
             return deploy is null && seed is null
                 ? null
                 : new CoverageEvaluators(deploy, seed, config.ShowSeedIndicators,
+                    config.ShowDeployIndicators,
                     config.ExcludeFieldsByItemType, config.ExcludeXmlElementsByType,
                     Reporting.LastRunResolver.FindLastDeployReceivedUtc());
         }

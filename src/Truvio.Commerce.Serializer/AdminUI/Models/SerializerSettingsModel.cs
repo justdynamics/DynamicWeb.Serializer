@@ -21,8 +21,11 @@ public sealed class SerializerSettingsModel : DataViewModelBase
     [ConfigurableProperty("Seed subfolder", explanation: "Subfolder under SerializeRoot for Seed-mode YAML. Letters, digits, '-' and '_' only.")]
     public string SeedOutputSubfolder { get; set; } = "seed";
 
-    [ConfigurableProperty("Show seed indicators", explanation: "Show seed cues in the admin UI: the flower icon on content-tree pages covered by a seed predicate, and the seed message on content editing screens. Off by default — with broad seed coverage these appear nearly everywhere and drown out the deploy warnings, which carry the actionable signal. Deploy icons and the deploy editing warning always show.")]
+    [ConfigurableProperty("Show seed indicators", explanation: "Show seed cues in the admin UI: the flower icon on content-tree pages covered by a seed predicate, and the seed message on content editing screens. Off by default — with broad seed coverage these appear nearly everywhere and drown out the deploy warnings, which carry the actionable signal.")]
     public bool ShowSeedIndicators { get; set; }
+
+    [ConfigurableProperty("Show deploy indicators", explanation: "Show deploy cues in the admin UI: the sync icon on content-tree pages covered by a deploy predicate, the deploy warning on content editing screens, and the deploy warning on commerce settings screens (payment methods, currencies, …) managed by a deploy predicate. On by default — they warn editors that changes are overwritten by the next deploy. Switch off on environments where the warnings are noise, e.g. the source environment itself.")]
+    public bool ShowDeployIndicators { get; set; } = true;
 
     [ConfigurableProperty("Config File", explanation: "Location of the configuration file (relative to wwwroot). It lives inside the serializer folder so the folder travels as one unit — upload an example configuration (e.g. a Swift starter) into that folder via the file manager to start from it. You can also edit the file manually.")]
     public string ConfigFilePath { get; set; } = string.Empty;

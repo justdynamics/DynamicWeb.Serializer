@@ -20,10 +20,11 @@ namespace Truvio.Commerce.Serializer.AdminUI.Injectors;
 ///   seed   → info: starter content, local edits are preserved.
 ///
 /// Uses <see cref="ScreenLayout.Alert"/>, DW's native screen alert slot. The deploy warning
-/// always shows — at the moment of editing, "will my change survive?" is exactly the
-/// question being answered. The seed info alert is gated by the same showSeedIndicators
-/// setting as the tree's flower icons: with broad seed coverage it would appear on nearly
-/// every editing screen and dull the deploy warning's signal.
+/// shows by default — at the moment of editing, "will my change survive?" is exactly the
+/// question being answered — and is gated by the showDeployIndicators setting (default on).
+/// The seed info alert is gated by the same showSeedIndicators setting as the tree's flower
+/// icons: with broad seed coverage it would appear on nearly every editing screen and dull
+/// the deploy warning's signal.
 ///
 /// Field-level carve-outs (e.g. the cart page's eCom_CartV2 settings) render on their own
 /// line: a clickable chip in the screen's header info bar per carved-out type, opening the
@@ -51,7 +52,9 @@ internal static class ModeAlert
 
             var checkPath = TreeNodeDecorator.GetPredicateCheckPath(page);
 
-            var deployNames = evaluators.Deploy?.GetManagingPredicateNames(checkPath, page.AreaId);
+            var deployNames = evaluators.ShowDeployIndicators
+                ? evaluators.Deploy?.GetManagingPredicateNames(checkPath, page.AreaId)
+                : null;
             if (deployNames is { Count: > 0 })
             {
                 AddCarveOutChips(layout, TreeNodeDecorator.GetFieldCarveOuts(page, evaluators), "stay local");

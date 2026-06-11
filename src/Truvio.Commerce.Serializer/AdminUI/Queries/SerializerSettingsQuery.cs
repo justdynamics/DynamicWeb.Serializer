@@ -34,6 +34,7 @@ public sealed class SerializerSettingsQuery : DataQueryModelBase<SerializerSetti
             DeployOutputSubfolder = config.DeployOutputSubfolder,
             SeedOutputSubfolder = config.SeedOutputSubfolder,
             ShowSeedIndicators = config.ShowSeedIndicators,
+            ShowDeployIndicators = config.ShowDeployIndicators,
             ConfigFilePath = relativePath,
             ItemTypeExcludesSummary = SummarizeExcludes(config.ExcludeFieldsByItemType,
                 "field", "No per-item-type field excludes configured — every field of every item type syncs."),

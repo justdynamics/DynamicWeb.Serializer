@@ -22,6 +22,7 @@ public sealed class SerializerSettingsEditScreen : EditScreenBase<SerializerSett
                 EditorFor(m => m.OutputDirectory),
                 EditorFor(m => m.DeployOutputSubfolder),
                 EditorFor(m => m.SeedOutputSubfolder),
+                EditorFor(m => m.ShowDeployIndicators),
                 EditorFor(m => m.ShowSeedIndicators)
             ]),
             new("Information",

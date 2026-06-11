@@ -32,6 +32,7 @@ public static class ConfigWriter
             ExcludeFieldsByItemType = config.ExcludeFieldsByItemType.Count > 0 ? config.ExcludeFieldsByItemType : null,
             ExcludeXmlElementsByType = config.ExcludeXmlElementsByType.Count > 0 ? config.ExcludeXmlElementsByType : null,
             ShowSeedIndicators = config.ShowSeedIndicators,
+            ShowDeployIndicators = config.ShowDeployIndicators,
             Predicates = config.Predicates
         };
 
@@ -50,6 +51,7 @@ public static class ConfigWriter
         public Dictionary<string, List<string>>? ExcludeFieldsByItemType { get; init; }
         public Dictionary<string, List<string>>? ExcludeXmlElementsByType { get; init; }
         public bool ShowSeedIndicators { get; init; }
+        public bool ShowDeployIndicators { get; init; } = true;
         public List<ProviderPredicateDefinition> Predicates { get; init; } = new();
     }
 }

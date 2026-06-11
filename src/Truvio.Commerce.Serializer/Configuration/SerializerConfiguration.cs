@@ -50,10 +50,19 @@ public record SerializerConfiguration
     /// Admin UI: show seed indicators — the seed (flower) annotation on content-tree pages
     /// AND the seed info message on content editing screens. Off by default — broad seed
     /// coverage marks nearly every node/page and drowns out the deploy warnings, which carry
-    /// the actionable signal ("edits here are overwritten by the next deploy"). Deploy
-    /// annotations and the deploy edit-screen warning are unaffected by this switch.
+    /// the actionable signal ("edits here are overwritten by the next deploy").
     /// </summary>
     public bool ShowSeedIndicators { get; init; } = false;
+
+    /// <summary>
+    /// Admin UI: show deploy indicators — the sync annotation on content-tree pages, the
+    /// deploy warning on content editing screens, and the deploy warning on commerce
+    /// settings screens backed by deploy-managed SqlTable predicates. On by default — these
+    /// carry the actionable "edits here are overwritten by the next deploy" signal — but
+    /// can be switched off (e.g. on a source environment where every page is deploy-managed
+    /// and the warnings are noise).
+    /// </summary>
+    public bool ShowDeployIndicators { get; init; } = true;
 
     // -------------------------------------------------------------------------
     // Phase 40 D-02: SINGLE flat predicate list. Each predicate carries its own .Mode.

@@ -51,7 +51,8 @@ public sealed class SaveSerializerSettingsCommand : CommandBase<SerializerSettin
                 OutputDirectory = Model.OutputDirectory,
                 DeployOutputSubfolder = Model.DeployOutputSubfolder,
                 SeedOutputSubfolder = Model.SeedOutputSubfolder,
-                ShowSeedIndicators = Model.ShowSeedIndicators
+                ShowSeedIndicators = Model.ShowSeedIndicators,
+                ShowDeployIndicators = Model.ShowDeployIndicators
             };
 
             ConfigWriter.Save(updatedConfig, configPath);

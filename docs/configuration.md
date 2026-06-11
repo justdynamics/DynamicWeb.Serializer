@@ -50,6 +50,7 @@ with a clear actionable error.
   "deployOutputSubfolder": "deploy",
   "seedOutputSubfolder": "seed",
   "showSeedIndicators": false,
+  "showDeployIndicators": true,
   "excludeFieldsByItemType": {
     "Swift_Content": ["SystemName_Internal"]
   },
@@ -68,7 +69,8 @@ with a clear actionable error.
 | `outputDirectory` | string (required) | Top-level folder relative to `Files/System`. Subfolders `SerializeRoot/`, `Upload/`, `Download/`, `Log/` are created automatically. |
 | `deployOutputSubfolder` | string | Subfolder under `SerializeRoot/` for Deploy-mode YAML output. Default: `deploy`. Validated against a safe-name regex to prevent path traversal. |
 | `seedOutputSubfolder` | string | Subfolder under `SerializeRoot/` for Seed-mode YAML output. Default: `seed`. Same regex check. |
-| `showSeedIndicators` | boolean | Show seed cues in the admin UI: the flower icon on content-tree pages covered by a seed predicate and the seed info message on content editing screens. Default: `false` — with broad seed coverage these would appear nearly everywhere and drown out the deploy warnings. Deploy icons and the deploy editing warning always show. |
+| `showSeedIndicators` | boolean | Show seed cues in the admin UI: the flower icon on content-tree pages covered by a seed predicate and the seed info message on content editing screens. Default: `false` — with broad seed coverage these would appear nearly everywhere and drown out the deploy warnings. |
+| `showDeployIndicators` | boolean | Show deploy cues in the admin UI: the sync icon on content-tree pages covered by a deploy predicate, the deploy warning on content editing screens, and the deploy warning on commerce settings screens (payment methods, currencies, …) backed by a deploy-managed SqlTable predicate. Default: `true` — these warn editors that changes are overwritten by the next deploy. Switch off where the warnings are noise, e.g. on the source environment itself. |
 | `excludeFieldsByItemType` | map | Global per-item-type field exclusions, applied to every predicate regardless of mode. Key: item-type system name. Value: list of field names to strip. |
 | `excludeXmlElementsByType` | map | Global per-XML-type element exclusions, applied to every predicate regardless of mode. Key: XML type name (paragraph module system name or URL provider type). Value: list of element names to strip. |
 | `predicates` | list | The predicates serialized and deserialized. Each entry must carry its own `mode` (Deploy or Seed). The orchestrator filters on `predicate.Mode` when iterating per mode. |

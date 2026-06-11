@@ -123,6 +123,7 @@ public static class ConfigLoader
             ExcludeFieldsByItemType = raw.ExcludeFieldsByItemType ?? new Dictionary<string, List<string>>(),
             ExcludeXmlElementsByType = raw.ExcludeXmlElementsByType ?? new Dictionary<string, List<string>>(),
             ShowSeedIndicators = raw.ShowSeedIndicators,
+            ShowDeployIndicators = raw.ShowDeployIndicators ?? true,
             Predicates = predicates
         };
 
@@ -367,6 +368,10 @@ public static class ConfigLoader
         /// screens). Off by default — broad seed coverage turns every node green and drowns
         /// the deploy icons, which are the ones that signal "your edit will be overwritten".</summary>
         public bool ShowSeedIndicators { get; set; }
+
+        /// <summary>Admin UI: show deploy indicators (tree sync icons + deploy warnings on
+        /// content and commerce edit screens). Nullable so an absent key defaults to ON.</summary>
+        public bool? ShowDeployIndicators { get; set; }
 
         // Phase 40 D-02: SINGLE flat predicate list with per-entry Mode.
         public List<RawPredicateDefinition>? Predicates { get; set; }

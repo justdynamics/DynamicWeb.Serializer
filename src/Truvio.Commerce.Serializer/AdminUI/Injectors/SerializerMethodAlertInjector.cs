@@ -23,8 +23,8 @@ namespace Truvio.Commerce.Serializer.AdminUI.Injectors;
 ///
 /// Same shape as the content alerts: a single verdict sentence in the screen alert, the
 /// exception list as a clickable header chip navigating to the managing predicate (falls
-/// back to inline text when the screen has no info bar). Deploy warnings always show; seed
-/// info alerts only when showSeedIndicators is on.
+/// back to inline text when the screen has no info bar). Deploy warnings show when
+/// showDeployIndicators is on (default); seed info alerts when showSeedIndicators is on.
 /// </summary>
 internal static class SqlTableModeAlert
 {
@@ -55,6 +55,8 @@ internal static class SqlTableModeAlert
                 localParts.Add($"provider settings {string.Join(", ", predicate.ExcludeXmlElements)}");
 
             var isDeploy = predicate.Mode == DeploymentMode.Deploy;
+            if (isDeploy && !config.ShowDeployIndicators)
+                return;
             if (!isDeploy && !config.ShowSeedIndicators)
                 return;
 
