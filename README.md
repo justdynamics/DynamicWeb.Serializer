@@ -173,6 +173,7 @@ in conflict strategy and output subfolder.
 | Cross-environment `Default.aspx?ID=N` rewriting | [Link resolution](docs/link-resolution.md) |
 | Role and group permission handling | [Permissions](docs/permissions.md) |
 | `SqlTable` predicates, WHERE clauses, field filters | [SQL tables](docs/sql-tables.md) |
+| Per-content-item deploy/seed decisions for Swift | [Swift deploy/seed analysis](docs/swift-deploy-seed-analysis.md) |
 | Auto-excluded runtime columns and credential caveats | [Runtime exclusions](docs/runtime-exclusions.md) |
 | Common errors and remedies | [Troubleshooting](docs/troubleshooting.md) |
 
