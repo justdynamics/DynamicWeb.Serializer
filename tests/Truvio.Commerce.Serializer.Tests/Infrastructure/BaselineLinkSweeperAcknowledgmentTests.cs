@@ -120,7 +120,7 @@ public class BaselineLinkSweeperAcknowledgmentTests
     }
 
     [Fact]
-    public void PartitionBySourceExistence_NonExistentTarget_IsSourceOrphan_NotFatal()
+    public void PartitionUnresolved_NonExistentTarget_IsSourceOrphan_NotFatal()
     {
         // A reference to a page that does not exist in the SOURCE database is broken in the
         // source itself — auto-acknowledged (warning), never fatal. This is what makes the
@@ -130,46 +130,86 @@ public class BaselineLinkSweeperAcknowledgmentTests
         var sweepResult = new BaselineLinkSweeper().Sweep(new List<SerializedPage> { page });
         Assert.Single(sweepResult.Unresolved);
 
-        var (orphans, fatal) = Truvio.Commerce.Serializer.Serialization.ContentSerializer.PartitionBySourceExistence(
-            sweepResult.Unresolved, pageExistsInSource: _ => false);
+        var (orphans, outOfScope, fatal) = Truvio.Commerce.Serializer.Serialization.ContentSerializer.PartitionUnresolved(
+            sweepResult.Unresolved, getPageAreaIdInSource: _ => null, coveredAreaIds: new HashSet<int> { 1 });
 
         Assert.Single(orphans);
         Assert.Equal(9999, orphans[0].UnresolvablePageId);
+        Assert.Empty(outOfScope);
         Assert.Empty(fatal);
     }
 
     [Fact]
-    public void PartitionBySourceExistence_ExistingUncoveredTarget_StaysFatal()
+    public void PartitionUnresolved_TargetInUncoveredArea_IsOutOfScope_NotFatal()
     {
-        // The referenced page EXISTS in source but ships through no predicate — a working
-        // source link would land broken on the target. That stays fatal.
+        // The referenced page EXISTS but lives in an area no Content predicate covers
+        // (e.g. the Swift header linking to a second demo website) — a scope boundary the
+        // user drew, not a baseline defect. Warn, ship as-is.
+        var page = MakePageWithShortcutToId(sourceId: 100, shortcutTargetId: 8308);
+        var sweepResult = new BaselineLinkSweeper().Sweep(new List<SerializedPage> { page });
+
+        var (orphans, outOfScope, fatal) = Truvio.Commerce.Serializer.Serialization.ContentSerializer.PartitionUnresolved(
+            sweepResult.Unresolved, getPageAreaIdInSource: _ => 26, coveredAreaIds: new HashSet<int> { 3 });
+
+        Assert.Empty(orphans);
+        Assert.Single(outOfScope);
+        Assert.Equal(8308, outOfScope[0].UnresolvablePageId);
+        Assert.Empty(fatal);
+    }
+
+    [Fact]
+    public void PartitionUnresolved_TargetInCoveredArea_StaysFatal()
+    {
+        // The referenced page EXISTS inside the synced scope but ships through no predicate —
+        // a working source link would land broken on the target. That stays fatal.
         var page = MakePageWithShortcutToId(sourceId: 100, shortcutTargetId: 555);
         var sweepResult = new BaselineLinkSweeper().Sweep(new List<SerializedPage> { page });
 
-        var (orphans, fatal) = Truvio.Commerce.Serializer.Serialization.ContentSerializer.PartitionBySourceExistence(
-            sweepResult.Unresolved, pageExistsInSource: _ => true);
+        var (orphans, outOfScope, fatal) = Truvio.Commerce.Serializer.Serialization.ContentSerializer.PartitionUnresolved(
+            sweepResult.Unresolved, getPageAreaIdInSource: _ => 3, coveredAreaIds: new HashSet<int> { 3 });
 
         Assert.Empty(orphans);
+        Assert.Empty(outOfScope);
         Assert.Single(fatal);
         Assert.Equal(555, fatal[0].UnresolvablePageId);
     }
 
     [Fact]
-    public void PartitionBySourceExistence_MixedTargets_SplitCorrectly()
+    public void PartitionUnresolved_LookupFailure_StaysFatal()
+    {
+        // -1 = "area lookup failed": never downgrade a fatal on infrastructure errors.
+        var page = MakePageWithShortcutToId(sourceId: 100, shortcutTargetId: 777);
+        var sweepResult = new BaselineLinkSweeper().Sweep(new List<SerializedPage> { page });
+
+        var (orphans, outOfScope, fatal) = Truvio.Commerce.Serializer.Serialization.ContentSerializer.PartitionUnresolved(
+            sweepResult.Unresolved, getPageAreaIdInSource: _ => -1, coveredAreaIds: new HashSet<int> { 3 });
+
+        Assert.Empty(orphans);
+        Assert.Empty(outOfScope);
+        Assert.Single(fatal);
+    }
+
+    [Fact]
+    public void PartitionUnresolved_MixedTargets_SplitCorrectly()
     {
         var pages = new List<SerializedPage>
         {
             MakePageWithShortcutToId(sourceId: 100, shortcutTargetId: 9999), // deleted in source
-            MakePageWithShortcutToId(sourceId: 200, shortcutTargetId: 555)   // exists, uncovered
+            MakePageWithShortcutToId(sourceId: 200, shortcutTargetId: 8308), // exists, other area
+            MakePageWithShortcutToId(sourceId: 300, shortcutTargetId: 555)   // exists, covered area
         };
         var sweepResult = new BaselineLinkSweeper().Sweep(pages);
-        Assert.Equal(2, sweepResult.Unresolved.Count);
+        Assert.Equal(3, sweepResult.Unresolved.Count);
 
-        var (orphans, fatal) = Truvio.Commerce.Serializer.Serialization.ContentSerializer.PartitionBySourceExistence(
-            sweepResult.Unresolved, pageExistsInSource: id => id == 555);
+        var (orphans, outOfScope, fatal) = Truvio.Commerce.Serializer.Serialization.ContentSerializer.PartitionUnresolved(
+            sweepResult.Unresolved,
+            getPageAreaIdInSource: id => id switch { 8308 => 26, 555 => 3, _ => null },
+            coveredAreaIds: new HashSet<int> { 3 });
 
         Assert.Single(orphans);
         Assert.Equal(9999, orphans[0].UnresolvablePageId);
+        Assert.Single(outOfScope);
+        Assert.Equal(8308, outOfScope[0].UnresolvablePageId);
         Assert.Single(fatal);
         Assert.Equal(555, fatal[0].UnresolvablePageId);
     }

@@ -22,21 +22,20 @@ public class ContentSerializer
     private readonly bool _lenientLinkSweep;
 
     /// <summary>
-    /// Test seam: does a page id exist in the SOURCE database? Production default asks DW.
-    /// Used by the link sweep to tell a source-side broken link (target page deleted from
-    /// the source — auto-acknowledged, ships as-is) from a coverage gap (target page exists
-    /// but no predicate ships it — fatal). A lookup failure counts as "exists" so the sweep
-    /// never downgrades a fatal on infrastructure errors.
+    /// Test seam: which AREA does a page id live in, in the SOURCE database? Production
+    /// default asks DW. Returns null when the page does not exist (source orphan), the
+    /// area id when it does, and -1 when the lookup itself failed — the sweep treats -1
+    /// as "unknown, stay fatal" so infrastructure errors never downgrade a fatal.
     /// </summary>
-    internal Func<int, bool> PageExistsInSource { get; set; } = pageId =>
+    internal Func<int, int?> GetPageAreaIdInSource { get; set; } = pageId =>
     {
         try
         {
-            return Services.Pages.GetPage(pageId) is not null;
+            return Services.Pages.GetPage(pageId)?.AreaId;
         }
         catch
         {
-            return true;
+            return -1;
         }
     };
 
@@ -175,20 +174,36 @@ public class ContentSerializer
                     Log($"Deferred link: ID {u.UnresolvablePageId} in {u.SourcePageIdentifier} / {u.FieldName} " +
                         $"is outside this predicate but ships via {via} in the same configuration — resolved on target during that pass.");
 
-                // A reference whose target page does not exist in the SOURCE database is a
-                // source-side broken link: the link is equally broken before and after a sync,
-                // so failing the whole baseline over it punishes the serializer for a content
-                // defect it didn't cause. Auto-acknowledge with a warning (every Swift demo
-                // database ships its own set of dangling ids — a hand-maintained
-                // AcknowledgedOrphanPageIds list can never cover them all). Only references to
-                // pages that EXIST in source but ship through no predicate remain fatal: there a
-                // working source link would land broken on the target.
-                var (sourceOrphans, stillFatal) = PartitionBySourceExistence(trulyFatal, PageExistsInSource);
+                // Classify the remaining unresolvables by what the SOURCE database says about
+                // their target page:
+                //   - Page does not exist → source-side broken link, equally broken before and
+                //     after a sync. Auto-acknowledge with a warning (every Swift demo database
+                //     ships its own set of dangling ids — a hand-maintained
+                //     AcknowledgedOrphanPageIds list can never cover them all).
+                //   - Page exists in an area NO Content predicate covers → the link crosses the
+                //     boundary the user drew around the sync (e.g. Swift header linking to a
+                //     second demo website). Out of scope by configuration, not a baseline
+                //     defect: warn and ship as-is.
+                //   - Page exists in a COVERED area but ships through no predicate → genuine
+                //     coverage gap inside the synced scope; a working source link would land
+                //     broken on the target. Fatal.
+                var coveredAreaIds = _configuration.Predicates
+                    .Where(p => string.Equals(p.ProviderType, "Content", StringComparison.OrdinalIgnoreCase))
+                    .Select(p => p.AreaId)
+                    .Where(id => id > 0)
+                    .ToHashSet();
+                var (sourceOrphans, outOfScope, stillFatal) =
+                    PartitionUnresolved(trulyFatal, GetPageAreaIdInSource, coveredAreaIds);
 
                 foreach (var u in sourceOrphans)
                     Log($"WARNING: source orphan auto-acknowledged — page ID {u.UnresolvablePageId} does not exist " +
                         $"in the source database; reference in {u.SourcePageIdentifier} / {u.FieldName} ({u.Context}) " +
                         "ships as-is (it is equally broken in the source).");
+
+                foreach (var u in outOfScope)
+                    Log($"WARNING: cross-area reference out of sync scope — page ID {u.UnresolvablePageId} lives in " +
+                        $"an area no Content predicate covers; reference in {u.SourcePageIdentifier} / {u.FieldName} " +
+                        $"({u.Context}) ships as-is and resolves only where the target environment has that content.");
 
                 if (stillFatal.Count > 0)
                 {
@@ -196,7 +211,7 @@ public class ContentSerializer
                         $"  - ID {u.UnresolvablePageId} in {u.SourcePageIdentifier} / {u.FieldName}: {u.Context}");
                     throw new InvalidOperationException(
                         $"Baseline link sweep found {stillFatal.Count} unresolvable reference(s) to pages that exist " +
-                        "in the source but are shipped by no predicate:\n" +
+                        "inside the synced scope but are shipped by no predicate:\n" +
                         string.Join("\n", lines) +
                         "\nFix the source baseline: include the referenced pages in a predicate path, or remove the references. " +
                         "Known-broken source refs may be listed under AcknowledgedOrphanPageIds on the owning Content predicate.");
@@ -208,19 +223,28 @@ public class ContentSerializer
     }
 
     /// <summary>
-    /// Split unresolvable references by whether their target page exists in the SOURCE
-    /// database: non-existent targets are source-side broken links (auto-acknowledged,
-    /// shipped as-is — they are equally broken before and after a sync); existing targets
-    /// are genuine coverage gaps and stay fatal.
+    /// Split unresolvable references by what the source database says about their target:
+    /// non-existent target → source orphan (warn); target in an area no Content predicate
+    /// covers → out of sync scope (warn); target inside the synced scope → genuine coverage
+    /// gap (fatal). An area lookup of -1 means "lookup failed" and stays fatal.
     /// </summary>
-    internal static (List<UnresolvedLink> SourceOrphans, List<UnresolvedLink> StillFatal) PartitionBySourceExistence(
-        IEnumerable<UnresolvedLink> links, Func<int, bool> pageExistsInSource)
+    internal static (List<UnresolvedLink> SourceOrphans, List<UnresolvedLink> OutOfScope, List<UnresolvedLink> StillFatal)
+        PartitionUnresolved(IEnumerable<UnresolvedLink> links, Func<int, int?> getPageAreaIdInSource, IReadOnlySet<int> coveredAreaIds)
     {
         var sourceOrphans = new List<UnresolvedLink>();
+        var outOfScope = new List<UnresolvedLink>();
         var stillFatal = new List<UnresolvedLink>();
         foreach (var u in links)
-            (pageExistsInSource(u.UnresolvablePageId) ? stillFatal : sourceOrphans).Add(u);
-        return (sourceOrphans, stillFatal);
+        {
+            var areaId = getPageAreaIdInSource(u.UnresolvablePageId);
+            if (areaId is null)
+                sourceOrphans.Add(u);
+            else if (areaId > 0 && !coveredAreaIds.Contains(areaId.Value))
+                outOfScope.Add(u);
+            else
+                stillFatal.Add(u);
+        }
+        return (sourceOrphans, outOfScope, stillFatal);
     }
 
     // -------------------------------------------------------------------------
