@@ -73,6 +73,14 @@ public sealed class DeserializeFromZipCommand : CommandBase<DeserializeFromZipMo
             if (TargetAreaId <= 0)
                 return new() { Status = CommandResult.ResultType.Invalid, Message = "Target area is required" };
 
+            // Upload Package gate: explicit function grant + Edit on the target area.
+            if (!Security.PackageAccess.CanUpload(Dynamicweb.Content.Services.Areas.GetArea(TargetAreaId)))
+                return new()
+                {
+                    Status = CommandResult.ResultType.NotAllowed,
+                    Message = "You do not have permission to upload packages into this area."
+                };
+
             var configPath = ConfigPathResolver.FindConfigFile();
             if (configPath == null)
                 return new() { Status = CommandResult.ResultType.Error, Message = "Serializer.config.json not found" };
@@ -95,6 +103,28 @@ public sealed class DeserializeFromZipCommand : CommandBase<DeserializeFromZipMo
                 return new() { Status = CommandResult.ResultType.Error, Message = $"Zip file not found: {FilePath}" };
 
             ZipFile.ExtractToDirectory(physicalZipPath, zipImportDir);
+
+            // Pre-flight gate: a package whose required item types / layouts are absent on
+            // this environment would import as BROKEN content (pages bound to missing
+            // layouts, items of unregistered types). Block the upload with the full list —
+            // unlike the full-pipeline deserialize, where the strict-mode escalator decides.
+            var templateManifest = new TemplateAssetManifest();
+            var packageRefs = templateManifest.Read(zipImportDir);
+            if (packageRefs is { Count: > 0 })
+            {
+                var missing = templateManifest.CollectMissing(filesRoot, packageRefs);
+                if (missing.Count > 0)
+                {
+                    return new()
+                    {
+                        Status = CommandResult.ResultType.Invalid,
+                        Message = $"The package cannot be uploaded: {missing.Count} required item type(s)/layout(s) " +
+                                  "are not present on this environment, so the content would import broken. " +
+                                  "Install the design/item types first. " +
+                                  string.Join("; ", missing)
+                    };
+                }
+            }
 
             // Create log file
             var logFile = LogFileWriter.CreateLogFile(paths.Log, "ZipImport",
@@ -132,6 +162,11 @@ public sealed class DeserializeFromZipCommand : CommandBase<DeserializeFromZipMo
             Log($"=== Strict mode: {strict} (entry-point: {entryPoint}) ===");
 
             var escalator = new StrictModeEscalator(strict, Log);
+
+            // Restore bundled assets (Download Package "include referenced assets") BEFORE
+            // the content writes so restored images/files are in place when pages land.
+            var (assetsRestored, assetsTotal) = Serialization.PackageBuilder.RestoreBundledAssets(
+                zipImportDir, filesRoot, IsDryRun, Log);
 
             // Phase 44 / CONVERGE-02: orchestrator pipeline — single canonical dispatch site
             // for full-deserialize + zip-import. The new DeserializeAll(Manifest, ...) overload
@@ -174,6 +209,10 @@ public sealed class DeserializeFromZipCommand : CommandBase<DeserializeFromZipMo
             catch { /* best effort */ }
 
             var message = result.Summary;
+            if (assetsTotal > 0)
+                message += IsDryRun
+                    ? $" {assetsTotal} bundled asset(s) would be restored."
+                    : $" {assetsRestored} bundled asset(s) restored.";
             if (result.HasErrors)
                 message += $" Errors: {string.Join("; ", result.Errors)}";
 

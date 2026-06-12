@@ -68,30 +68,33 @@ public sealed class SerializerSettingsEditScreen : EditScreenBase<SerializerSett
             };
         }
 
+        // One verb set, mirrored per mode: Serialize / Preview deserialize / Deserialize,
+        // each suffixed with its mode. One preview term ("preview"); the dry-run mechanics
+        // live in the command, not the label.
         return new[]
         {
             new ActionGroup
             {
-                Name = "Deploy Actions",
+                Name = "Deploy",
                 Nodes = new List<ActionNode>
                 {
                     new()
                     {
-                        Name = "Serialize",
+                        Name = "Serialize (Deploy)",
                         Icon = Icon.DownloadAlt,
                         NodeAction = RunCommandAction.For(new SerializerSerializeCommand { Mode = "deploy" }).WithReloadOnSuccess()
                     },
                     new()
                     {
-                        // Dry run: full pipeline, nothing written — the answer to "what
+                        // Preview: full pipeline, nothing written — the answer to "what
                         // would happen if I deserialized right now?" before committing.
-                        Name = "Preview deserialize (dry run)",
+                        Name = "Preview deserialize (Deploy)",
                         Icon = Icon.Eye,
                         NodeAction = RunCommandAction.For(new SerializerDeserializeCommand { Mode = "deploy", IsAdminUiInvocation = true, IsDryRun = true })
                     },
                     new()
                     {
-                        Name = "Deserialize",
+                        Name = "Deserialize (Deploy)",
                         Icon = Icon.UploadAlt,
                         // Phase 37-04 D-16: admin UI is the interactive entry point — flip
                         // IsAdminUiInvocation so the resolver falls back to AdminUi default (OFF).
@@ -103,7 +106,7 @@ public sealed class SerializerSettingsEditScreen : EditScreenBase<SerializerSett
             // so admins can't trigger a destination-wins deserialize by accident.
             new ActionGroup
             {
-                Name = "Seed Actions",
+                Name = "Seed",
                 Nodes = new List<ActionNode>
                 {
                     new()
@@ -114,7 +117,7 @@ public sealed class SerializerSettingsEditScreen : EditScreenBase<SerializerSett
                     },
                     new()
                     {
-                        Name = "Preview seed (dry run)",
+                        Name = "Preview deserialize (Seed)",
                         Icon = Icon.Eye,
                         NodeAction = RunCommandAction.For(new SerializerDeserializeCommand { Mode = "seed", IsAdminUiInvocation = true, IsDryRun = true })
                     },
@@ -124,6 +127,41 @@ public sealed class SerializerSettingsEditScreen : EditScreenBase<SerializerSett
                         Icon = Icon.UploadAlt,
                         // Phase 37-04 D-16: admin UI triggered — resolver uses AdminUi default (OFF).
                         NodeAction = RunCommandAction.For(new SerializerDeserializeCommand { Mode = "seed", IsAdminUiInvocation = true }).WithReloadOnSuccess()
+                    }
+                }
+            },
+            // Explicit grant surface for the package functions: opens DW's standard
+            // permission management screen scoped to the function's permission entity.
+            new ActionGroup
+            {
+                Name = "Permissions",
+                Nodes = new List<ActionNode>
+                {
+                    new()
+                    {
+                        Name = "Download Package permissions",
+                        Icon = Icon.Lock,
+                        NodeAction = NavigateScreenAction
+                            .To<Dynamicweb.Application.UI.Screens.PermissionListScreen>()
+                            .With(new Dynamicweb.Application.UI.Queries.PermissionsByIdentifierQuery
+                            {
+                                Key = AdminUI.Security.PackagePermissionEntity.DownloadKey,
+                                Name = AdminUI.Security.PackagePermissionEntity.PermissionName,
+                                SubName = "Download Package"
+                            })
+                    },
+                    new()
+                    {
+                        Name = "Upload Package permissions",
+                        Icon = Icon.Lock,
+                        NodeAction = NavigateScreenAction
+                            .To<Dynamicweb.Application.UI.Screens.PermissionListScreen>()
+                            .With(new Dynamicweb.Application.UI.Queries.PermissionsByIdentifierQuery
+                            {
+                                Key = AdminUI.Security.PackagePermissionEntity.UploadKey,
+                                Name = AdminUI.Security.PackagePermissionEntity.PermissionName,
+                                SubName = "Upload Package"
+                            })
                     }
                 }
             }

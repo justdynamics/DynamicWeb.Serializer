@@ -22,7 +22,7 @@ public sealed class DeserializeUploadedZipCommand : CommandBase<DeserializeZipUp
 
         var zip = Files.FirstOrDefault(f => f.EndsWith(".zip", StringComparison.OrdinalIgnoreCase));
         if (zip is null)
-            return new() { Status = CommandResult.ResultType.Invalid, Message = "Upload a .zip file produced by Serialize subtree" };
+            return new() { Status = CommandResult.ResultType.Invalid, Message = "Upload a .zip file produced by Download Package" };
 
         // FileUpload reports /Files-rooted virtual paths (e.g. /Files/System/Serializer/Upload/x.zip);
         // normalize defensively in case only a bare file name arrives.

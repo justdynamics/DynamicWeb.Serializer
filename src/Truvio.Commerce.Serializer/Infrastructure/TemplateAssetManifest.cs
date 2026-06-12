@@ -97,22 +97,35 @@ public class TemplateAssetManifest
         List<TemplateReference> references,
         StrictModeEscalator escalator)
     {
+        var missing = CollectMissing(filesRoot, references);
+        foreach (var message in missing)
+            escalator.Escalate(message);
+        return missing.Count;
+    }
+
+    /// <summary>
+    /// Validate each reference against the filesystem rooted at <paramref name="filesRoot"/>
+    /// and return a human-readable message per unresolved reference. Used by the zip-import
+    /// pre-flight gate (which BLOCKS the upload on any missing reference) and by
+    /// <see cref="Validate"/> (which escalates them through strict-mode handling).
+    /// </summary>
+    public List<string> CollectMissing(string filesRoot, List<TemplateReference> references)
+    {
+        var missing = new List<string>();
+
         if (references.Count > MaxReferences)
         {
-            escalator.Escalate(
-                $"Template manifest rejected: {references.Count} references exceeds cap of {MaxReferences}");
-            return references.Count;
+            missing.Add($"Template manifest rejected: {references.Count} references exceeds cap of {MaxReferences}");
+            return missing;
         }
 
         var designsDir = Path.Combine(filesRoot, "Templates", "Designs");
-        int missingCount = 0;
 
         foreach (var r in references)
         {
             if (!IsPathSafe(r.Path))
             {
-                missingCount++;
-                escalator.Escalate(
+                missing.Add(
                     $"Template manifest contains invalid {r.Kind} path '{r.Path}' " +
                     $"(traversal attempt or disallowed characters) — referenced by: {FormatRefList(r.ReferencedBy)}");
                 continue;
@@ -129,14 +142,10 @@ public class TemplateAssetManifest
             };
 
             if (!found)
-            {
-                missingCount++;
-                escalator.Escalate(
-                    $"Missing {r.Kind} template: '{r.Path}' — referenced by: {FormatRefList(r.ReferencedBy)}");
-            }
+                missing.Add($"Missing {r.Kind} template: '{r.Path}' — referenced by: {FormatRefList(r.ReferencedBy)}");
         }
 
-        return missingCount;
+        return missing;
     }
 
     private static bool FindInAnyDesign(string designsDir, string relativePath)

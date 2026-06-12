@@ -9,8 +9,9 @@ using Dynamicweb.CoreUI.Screens;
 namespace Truvio.Commerce.Serializer.AdminUI.Injectors;
 
 /// <summary>
-/// Injects "Serialize subtree" action into the page edit screen's Actions menu
+/// Injects the "Download Package…" action into the page edit screen's Actions menu
 /// (alongside Preview, Paragraphs, etc.). Auto-discovered by DW's AddInManager.
+/// Permission-gated like the tree context menu (PackageAccess.CanDownload).
 /// </summary>
 public sealed class SerializerPageEditInjector : EditScreenInjector<PageEditScreen, PageDataModel>
 {
@@ -18,6 +19,10 @@ public sealed class SerializerPageEditInjector : EditScreenInjector<PageEditScre
     {
         var model = Screen?.Model;
         if (model == null || model.Id <= 0)
+            return null;
+
+        if (!Truvio.Commerce.Serializer.AdminUI.Security.PackageAccess.CanDownload(
+                Dynamicweb.Content.Services.Pages.GetPage(model.Id)))
             return null;
 
         return new[]
@@ -29,11 +34,10 @@ public sealed class SerializerPageEditInjector : EditScreenInjector<PageEditScre
                 {
                     new()
                     {
-                        Name = "Serialize subtree",
+                        Name = "Download Package…",
                         Icon = Icon.DownloadAlt,
-                        NodeAction = DownloadFileAction.Using(
-                            new SerializeSubtreeCommand { PageId = model.Id, AreaId = model.AreaId }
-                        )
+                        NodeAction = OpenDialogAction.To<Screens.DownloadPackageScreen>()
+                            .With(new Queries.DownloadPackageQuery { PageId = model.Id, AreaId = model.AreaId })
                     }
                 }
             }

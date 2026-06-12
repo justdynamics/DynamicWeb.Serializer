@@ -218,17 +218,25 @@ Navigation: `Settings > Developer > Serialize`.
 
 | Node | Purpose |
 |------|---------|
-| **Serialize** | Top-level settings screen. Every top-level config value is visible here: output directory, deploy/seed subfolders and the seed-indicator toggle are editable; the config file location, sync history (last deploy/seed received), coverage counts, the two exclusion maps and the predicate list show as read-only summaries. Actions: serialize/deserialize per mode plus **Preview … (dry run)** — the full pipeline without writing, per-field `[DRY-RUN]` detail in the Log Viewer. With no predicates configured the actions are replaced by a **Get started** group (apply the embedded Swift starter to a chosen website, or create an empty configuration). Per-mode conflict strategy is hardcoded — Deploy=source-wins, Seed=destination-wins — and is not an admin-editable setting. |
+| **Serialize** | Top-level settings screen. Every top-level config value is visible here: output directory, deploy/seed subfolders and the deploy/seed indicator toggles are editable; the config file location, sync history (last deploy/seed received), coverage counts, the two exclusion maps and the predicate list show as read-only summaries. Actions per mode: **Serialize (Deploy/Seed)**, **Preview deserialize (Deploy/Seed)** — the full pipeline without writing, per-field `[DRY-RUN]` detail in the Log Viewer — and **Deserialize (Deploy/Seed)**. A **Permissions** group opens DW's permission management for the Download/Upload Package functions. With no predicates configured the actions are replaced by a **Get started** group (apply the embedded Swift starter to a chosen website, or create an empty configuration). Per-mode conflict strategy is hardcoded — Deploy=source-wins, Seed=destination-wins — and is not an admin-editable setting. |
 | **Predicates** | CRUD for Content and SqlTable predicates. Each predicate carries its own `mode` field (Deploy or Seed) — pick the mode on the predicate edit screen. Fields match the JSON schema above with dual-list pickers populated from the live DB schema. |
 | **Item Types** | Browse item types by category, edit global per-type field exclusions (mode-agnostic). |
 | **Embedded XML** | Browse XML types, edit global per-type element exclusions (mode-agnostic). |
 | **Log Viewer** | Per-run logs with summary headers, per-predicate counts, and `AdviceGenerator` remediation hints. |
 
-The **"Serialize subtree"** action appears in the Actions menu on every page
-edit screen. It ad-hoc serializes the current page and its descendants to a
-zip file downloaded by the browser and copied to `Files/System/Serializer/Download/`.
-The matching import is at `Files/System/Serializer/Upload/` — drop a zip there
-and use the file's **"Import to database"** action.
+**Download Package** appears in the content tree right-click menu (Truvio
+Serializer group) and in the Actions menu on every page edit screen. It opens a
+dialog with a content-scope choice — *this page and all subpages* (default),
+*only this page*, or *only the subpages* — and an option to bundle the images
+and files the content references. The zip downloads in the browser and a copy
+lands in `Files/System/Serializer/Download/`. **Upload Package** (tree
+right-click) imports such a zip into the clicked node's area; before anything
+is written, the package's required item types and layouts are verified against
+the environment and the upload is blocked with a full list if any are missing.
+Bundled assets are restored into the Files archive. Both functions are
+permission-gated: an explicit function grant (Serialize settings → Actions →
+Permissions) plus Read on the page for download and Edit on the target area
+for upload.
 
 The commerce settings edit screens — payment, shipping, country, currency,
 ecommerce language, shop, order flow and order state — show the same

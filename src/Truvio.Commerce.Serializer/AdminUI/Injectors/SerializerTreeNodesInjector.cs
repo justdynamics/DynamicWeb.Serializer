@@ -163,23 +163,30 @@ internal static class TreeNodeDecorator
 
                 // Context menu: serializer actions + a click-through per carve-out type, so
                 // "WHICH 21 settings?" is one right-click away from the icon that raised it.
-                var groupNodes = new List<ActionNode>
+                // "Download Package" / "Upload Package": business-user terms for the ad-hoc
+                // zip export/import. Both are permission-gated (PackageAccess): the function
+                // grant plus Read on the page (download) / Edit on the area (upload).
+                var groupNodes = new List<ActionNode>();
+                if (Truvio.Commerce.Serializer.AdminUI.Security.PackageAccess.CanDownload(page))
                 {
-                    new()
+                    groupNodes.Add(new()
                     {
-                        Name = "Serialize subtree",
+                        Name = "Download Package…",
                         Icon = Icon.DownloadAlt,
-                        NodeAction = DownloadFileAction.Using(
-                            new SerializeSubtreeCommand { PageId = pageId, AreaId = page.AreaId })
-                    },
-                    new()
+                        NodeAction = OpenDialogAction.To<DownloadPackageScreen>()
+                            .With(new DownloadPackageQuery { PageId = pageId, AreaId = page.AreaId })
+                    });
+                }
+                if (Truvio.Commerce.Serializer.AdminUI.Security.PackageAccess.CanUpload(Services.Areas.GetArea(page.AreaId)))
+                {
+                    groupNodes.Add(new()
                     {
-                        Name = "Deserialize from zip",
+                        Name = "Upload Package",
                         Icon = Icon.UploadAlt,
                         NodeAction = OpenDialogAction.To<DeserializeZipUploadScreen>()
                             .With(new DeserializeZipUploadQuery { TargetAreaId = page.AreaId })
-                    }
-                };
+                    });
+                }
                 if (carveOuts.Count > 0)
                 {
                     // ONE short entry regardless of how many types are carved out — per-type
@@ -193,10 +200,13 @@ internal static class TreeNodeDecorator
                     });
                 }
 
-                node.ContextActionGroups = node.ContextActionGroups.Append(new ActionGroup
+                if (groupNodes.Count > 0)
                 {
-                    Nodes = groupNodes
-                });
+                    node.ContextActionGroups = node.ContextActionGroups.Append(new ActionGroup
+                    {
+                        Nodes = groupNodes
+                    });
+                }
             }
         }
 

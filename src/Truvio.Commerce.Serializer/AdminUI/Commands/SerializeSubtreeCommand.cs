@@ -1,16 +1,26 @@
-using System.IO.Compression;
 using Dynamicweb.Content;
-using Truvio.Commerce.Serializer.Configuration;
-using Truvio.Commerce.Serializer.Models;
+using Truvio.Commerce.Serializer.AdminUI.Security;
 using Truvio.Commerce.Serializer.Serialization;
 using Dynamicweb.CoreUI.Data;
 
 namespace Truvio.Commerce.Serializer.AdminUI.Commands;
 
+/// <summary>
+/// API-facing flat-parameter variant of the package download (legacy name kept so
+/// POST /Admin/Api/SerializeSubtree continues to work). The admin UI goes through
+/// <see cref="Screens.DownloadPackageScreen"/> + <see cref="DownloadPackageCommand"/>;
+/// both route into <see cref="PackageBuilder"/>.
+/// </summary>
 public sealed class SerializeSubtreeCommand : CommandBase
 {
     public int PageId { get; set; }
     public int AreaId { get; set; }
+
+    /// <summary>Content scope: PageAndSubpages (default), PageOnly, or SubpagesOnly.</summary>
+    public string Scope { get; set; } = PackageBuilder.ScopePageAndSubpages;
+
+    /// <summary>Bundle referenced images/files from the Files archive into the package.</summary>
+    public bool IncludeAssets { get; set; }
 
     public override CommandResult Handle()
     {
@@ -21,91 +31,33 @@ public sealed class SerializeSubtreeCommand : CommandBase
 
         try
         {
-            // 1. Load the clicked page to get its name and build content path
             var page = Services.Pages.GetPage(PageId);
             if (page == null)
                 return new() { Status = CommandResult.ResultType.Error, Message = $"Page {PageId} not found" };
 
-            var pageName = page.MenuText ?? $"Page{PageId}";
-            var contentPath = BuildContentPath(page);
-
-            // 2. Create temp directory for serialization output
-            var tempDir = Path.Combine(Path.GetTempPath(), "Serializer", Guid.NewGuid().ToString("N"));
-            Directory.CreateDirectory(tempDir);
-
-            try
-            {
-                // 3. Create temp SerializerConfiguration with single predicate targeting the page subtree (per D-05)
-                // Phase 40 D-07: ad-hoc subtree export builds a single Deploy-mode predicate. The
-                // flat config shape carries the predicate at top level; SourceWins is implicit on
-                // Deploy via SerializerConfiguration.GetConflictStrategyForMode.
-                var tempConfig = new SerializerConfiguration
+            if (!PackageAccess.CanDownload(page))
+                return new()
                 {
-                    OutputDirectory = tempDir,
-                    Predicates = new List<ProviderPredicateDefinition>
-                    {
-                        new ProviderPredicateDefinition
-                        {
-                            Name = "ad-hoc-serialize",
-                            Mode = DeploymentMode.Deploy,
-                            ProviderType = "Content",
-                            Path = contentPath,
-                            AreaId = AreaId,
-                            Excludes = new List<string>()
-                        }
-                    }
+                    Status = CommandResult.ResultType.NotAllowed,
+                    Message = "You do not have permission to download packages for this page."
                 };
 
-                // 4. Run serialization (reuses existing ContentSerializer -- ACT-08).
-                // lenientLinkSweep: references out of the exported subtree are expected for
-                // ad-hoc exports — they resolve against the target DB at import time.
-                var serializer = new ContentSerializer(tempConfig, lenientLinkSweep: true);
-                serializer.Serialize();
+            var filesRoot = DownloadPackageCommand.ResolveFilesRoot();
+            var result = PackageBuilder.Build(PageId, AreaId, Scope, IncludeAssets, filesRoot);
 
-                // 5. Create zip from the serialized output (per D-01: YAML files in mirror-tree layout)
-                var zipFileName = $"Serializer_{SanitizeFileName(pageName)}_{DateTime.Now:yyyy-MM-dd}.zip";
-                var zipPath = Path.Combine(Path.GetTempPath(), "Serializer", zipFileName);
-                Directory.CreateDirectory(Path.GetDirectoryName(zipPath)!);
+            DownloadPackageCommand.CopyToDownloadDir(result.ZipPath, result.ZipFileName);
 
-                if (File.Exists(zipPath))
-                    File.Delete(zipPath);
-
-                // Write a log file into the temp dir before zipping (per D-01)
-                var logContent = $"Serializer Export\n" +
-                                $"Page: {pageName} (ID={PageId})\n" +
-                                $"Area: {AreaId}\n" +
-                                $"Content Path: {contentPath}\n" +
-                                $"Exported: {DateTime.Now:yyyy-MM-dd HH:mm:ss}\n" +
-                                $"Files: {Directory.GetFiles(tempDir, "*.yml", SearchOption.AllDirectories).Length} YAML files\n";
-                File.WriteAllText(Path.Combine(tempDir, "export.log"), logContent);
-
-                ZipFile.CreateFromDirectory(tempDir, zipPath);
-
-                // 6. Copy to download subfolder
-                CopyToDownloadDir(zipPath, zipFileName);
-
-                // 7. Clean up temp serialization directory (zip is separate)
-                try { Directory.Delete(tempDir, recursive: true); } catch { /* best effort */ }
-
-                // 8. Return FileResult for browser download (per D-03)
-                var zipStream = new FileStream(zipPath, FileMode.Open, FileAccess.Read, FileShare.Delete);
-                return new CommandResult
-                {
-                    Status = CommandResult.ResultType.Ok,
-                    Model = new FileResult
-                    {
-                        FileStream = zipStream,
-                        ContentType = "application/zip",
-                        FileDownloadName = zipFileName
-                    }
-                };
-            }
-            catch
+            var zipStream = new FileStream(result.ZipPath, FileMode.Open, FileAccess.Read, FileShare.Delete);
+            return new CommandResult
             {
-                // Clean up temp dir on error
-                try { Directory.Delete(tempDir, recursive: true); } catch { }
-                throw;
-            }
+                Status = CommandResult.ResultType.Ok,
+                Model = new FileResult
+                {
+                    FileStream = zipStream,
+                    ContentType = "application/zip",
+                    FileDownloadName = result.ZipFileName
+                }
+            };
         }
         catch (Exception ex)
         {
@@ -115,35 +67,7 @@ public sealed class SerializeSubtreeCommand : CommandBase
 
     /// <summary>
     /// Builds the content path from root to the given page by walking up the parent chain.
-    /// ContentSerializer uses "/" + rootPage.MenuText for roots and appends "/" + child.MenuText.
-    /// So for a page at /CustomerCenter/SubPage, the path is "/CustomerCenter/SubPage".
-    /// A predicate with this path will include this page and all its children.
+    /// Kept here because tree decoration and predicate path checks call through this name.
     /// </summary>
     internal static string BuildContentPath(Page page) => ContentPathBuilder.BuildContentPath(page);
-
-    private static void CopyToDownloadDir(string zipPath, string zipFileName)
-    {
-        try
-        {
-            var configPath = ConfigPathResolver.FindOrCreateConfigFile();
-            var config = ConfigLoader.Load(configPath);
-
-            var filesDir = ConfigPathResolver.GetFilesRoot(configPath);
-            var systemDir = Path.Combine(filesDir, "System");
-            var paths = config.EnsureDirectories(systemDir);
-
-            var destPath = Path.Combine(paths.Download, zipFileName);
-            File.Copy(zipPath, destPath, overwrite: true);
-        }
-        catch
-        {
-            // Download copy is best-effort -- don't fail the browser download
-        }
-    }
-
-    private static string SanitizeFileName(string name)
-    {
-        var invalid = Path.GetInvalidFileNameChars();
-        return new string(name.Select(c => invalid.Contains(c) ? '_' : c).ToArray());
-    }
 }
