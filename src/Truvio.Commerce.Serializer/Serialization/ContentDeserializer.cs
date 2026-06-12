@@ -181,9 +181,13 @@ public class ContentDeserializer
         // — without it every entry re-deserializes (and re-link-resolves) every sibling
         // entry's content: thousands of phantom merge-updates, and already-rewritten target
         // ids reinterpreted as source ids in the link pass.
+        // File keys are compared WITHOUT the "_content/" prefix: full-pipeline manifests key
+        // files mode-root-relative ("_content/<Area>/.../page.yml") while zip-import entries
+        // key them zip-root-relative ("<Area>/.../page.yml") — comparing raw keys pruned
+        // EVERY page on zip import and the upload silently wrote nothing.
         if (_entry.Files.Count > 0)
         {
-            var entryFiles = new HashSet<string>(_entry.Files, StringComparer.OrdinalIgnoreCase);
+            var entryFiles = new HashSet<string>(_entry.Files.Select(NormalizeFileKey), StringComparer.OrdinalIgnoreCase);
             area = area with { Pages = PruneToEntryFiles(area.Pages, entryFiles) };
         }
 
@@ -436,13 +440,18 @@ public class ContentDeserializer
     /// any page with kept descendants (parent chain must survive so attachment works).
     /// Pages outside the entry are dropped entirely — they belong to sibling entries.
     /// </summary>
-    private static List<SerializedPage> PruneToEntryFiles(List<SerializedPage> pages, HashSet<string> entryFiles)
+    /// <summary>Strip the full-pipeline "_content/" manifest-key prefix so file keys from
+    /// mode-root manifests and zip-root entries compare equal.</summary>
+    internal static string NormalizeFileKey(string key) =>
+        key.StartsWith("_content/", StringComparison.OrdinalIgnoreCase) ? key["_content/".Length..] : key;
+
+    internal static List<SerializedPage> PruneToEntryFiles(List<SerializedPage> pages, HashSet<string> entryFiles)
     {
         var kept = new List<SerializedPage>();
         foreach (var page in pages)
         {
             var children = PruneToEntryFiles(page.Children, entryFiles);
-            var selfIncluded = page.SourceFile is not null && entryFiles.Contains(page.SourceFile);
+            var selfIncluded = page.SourceFile is not null && entryFiles.Contains(NormalizeFileKey(page.SourceFile));
             if (selfIncluded || children.Count > 0)
                 kept.Add(page with { Children = children });
         }
@@ -952,6 +961,8 @@ public class ContentDeserializer
 
                 // Apply PropertyItem fields (e.g. Icon, SubmenuType)
                 SavePropertyItemFields(refetched, dto.PropertyFields, pageExclude);
+
+                ResyncMenuTextAfterItemWrite(saved.ID, dto);
             }
 
             ctx.Created++;
@@ -1052,6 +1063,8 @@ public class ContentDeserializer
 
             // Apply PropertyItem fields (e.g. Icon, SubmenuType)
             SavePropertyItemFields(existingPage, dto.PropertyFields, updatePageExclude);
+
+            ResyncMenuTextAfterItemWrite(existingId, dto);
 
             ctx.Updated++;
             Log($"UPDATED page {dto.PageUniqueId} (ID={existingId})");
@@ -1399,6 +1412,33 @@ public class ContentDeserializer
     // -------------------------------------------------------------------------
     // Page PropertyItem persistence (Icon, SubmenuType, etc.)
     // -------------------------------------------------------------------------
+
+    /// <summary>
+    /// DW's SavePage forces MenuText = item Title for non-template pages, reading the item
+    /// AS IT IS AT SAVE TIME. Pages save BEFORE their item fields are written, so a Title
+    /// change in the YAML updates the item but leaves the page's MenuText at the OLD Title
+    /// (found live: zip roundtrip editing the Posts title — item updated, tree label stale).
+    /// Re-save once after the item-field write when the on-target MenuText drifted from the
+    /// DTO; DW re-derives MenuText from the now-updated item Title during that save.
+    /// </summary>
+    private void ResyncMenuTextAfterItemWrite(int pageId, SerializedPage dto)
+    {
+        if (_isDryRun)
+            return;
+        try
+        {
+            var page = Services.Pages.GetPage(pageId);
+            if (page is null || string.Equals(page.MenuText, dto.MenuText, StringComparison.Ordinal))
+                return;
+            page.MenuText = dto.MenuText;
+            Services.Pages.SavePage(page, skipLanguages: true);
+            Log($"  Re-synced MenuText after item-field write: '{dto.MenuText}' (page ID={pageId})");
+        }
+        catch (Exception ex)
+        {
+            Log($"WARNING: Could not re-sync MenuText for page {pageId}: {ex.Message}");
+        }
+    }
 
     private void SavePropertyItemFields(Page page, Dictionary<string, object> propertyFields, IReadOnlySet<string>? excludeFields = null)
     {
