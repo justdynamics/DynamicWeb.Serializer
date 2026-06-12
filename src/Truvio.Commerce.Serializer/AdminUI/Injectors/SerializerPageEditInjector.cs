@@ -36,7 +36,7 @@ public sealed class SerializerPageEditInjector : EditScreenInjector<PageEditScre
                     {
                         Name = "Download Package…",
                         Icon = Icon.DownloadAlt,
-                        NodeAction = OpenDialogAction.To<Screens.DownloadPackageScreen>()
+                        NodeAction = OpenSlideOverAction.To<Screens.DownloadPackageScreen>()
                             .With(new Queries.DownloadPackageQuery { PageId = model.Id, AreaId = model.AreaId })
                     }
                 }

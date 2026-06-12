@@ -173,7 +173,11 @@ internal static class TreeNodeDecorator
                     {
                         Name = "Download Package…",
                         Icon = Icon.DownloadAlt,
-                        NodeAction = OpenDialogAction.To<DownloadPackageScreen>()
+                        // SlideOver, not Dialog: a PromptScreenBase whose OK action is a
+                        // DownloadFileAction only renders correctly in a SlideOver (the DW
+                        // ProductExportPromptScreen precedent). OpenDialogAction returns the
+                        // bootstrap shell and the dialog never opens.
+                        NodeAction = OpenSlideOverAction.To<DownloadPackageScreen>()
                             .With(new DownloadPackageQuery { PageId = pageId, AreaId = page.AreaId })
                     });
                 }
