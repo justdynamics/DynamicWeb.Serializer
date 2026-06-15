@@ -59,28 +59,21 @@ becomes `git revert` followed by a redeploy.
 
 ### From a release (no build, no source environment)
 
-Every [GitHub release](https://github.com/justdynamics/Truvio.Commerce.Serializer/releases)
-ships two assets so you can start a Swift solution **from YAML alone**:
+Install the app from any
+[GitHub release](https://github.com/justdynamics/Truvio.Commerce.Serializer/releases)
+(`Truvio.Commerce.Serializer.<version>.nupkg`) or from the DW10 app store under
+*Available apps*.
 
-- `Truvio.Commerce.Serializer.<version>.nupkg` — the app (also in the DW10 app store
-  under *Available apps*).
-- `Truvio.Commerce.Serializer-SwiftYaml-<version>.zip` — the verified Swift 2.2 content
-  baseline: deploy YAML (site structure + framework tables) and seed YAML (starter blog
-  posts + catalog), plus the starter `Serializer.config.json`.
+To start a Swift (or Digital Asset Portal) solution **from YAML alone**, pair the
+app with a deploy-ready content baseline from the companion catalog:
 
-```text
-1. Install the app on a DW10 host that has the Swift Files folder (templates/designs).
-2. Unzip:  Serializer.config.json  ->  wwwroot/Files/
-           SerializeRoot/          ->  wwwroot/Files/System/Serializer/SerializeRoot/
-3. On a blank database, run deploy then seed:
-   POST /Admin/Api/SerializerDeserialize?mode=deploy
-   POST /Admin/Api/SerializerDeserialize?mode=seed
-4. Commit the YAML to your repo and manage deploy/seed content in your git flow
-   from day one: serialize where you author, deserialize everywhere else.
-```
+**[justdynamics/Truvio.Commerce.Serializer.Baselines](https://github.com/justdynamics/Truvio.Commerce.Serializer.Baselines)**
 
-The zip's `INSTALL.txt` has the step-by-step details (including the one schema note for
-databases that never saw a Swift import).
+Each package ships a `config` plus `deploy/` and `seed/` YAML trees. Download a
+package's release `.zip` and apply it through **Settings → Developer → Serialize
+→ Upload Package**, or check the YAML out in CI/CD and deserialize it. See that
+repo's [consuming guide](https://github.com/justdynamics/Truvio.Commerce.Serializer.Baselines/blob/main/docs/consuming-cicd.md)
+for both paths.
 
 ### From source
 
