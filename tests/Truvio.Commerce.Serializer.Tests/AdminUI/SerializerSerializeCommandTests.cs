@@ -43,12 +43,24 @@ public class SerializerSerializeCommandTests
     [Fact]
     public void Handle_InvalidMode_ReturnsInvalid()
     {
-        // T-38-D1-01 threat mitigation: anything outside Deploy/Seed is rejected
-        // up-front via Enum.TryParse<DeploymentMode>, BEFORE any path interpolation.
+        // T-38-D1-01 threat mitigation: anything outside the deploy/replace/seed/merge alias set
+        // is rejected up-front via DeploymentModeAlias.TryResolve, BEFORE any path interpolation.
         var cmd = new SerializerSerializeCommand { Mode = "bogus" };
         var result = cmd.Handle();
         Assert.Equal(CommandResult.ResultType.Invalid, result.Status);
         Assert.Contains("Invalid mode", result.Message ?? string.Empty);
+    }
+
+    [Theory]
+    [InlineData("replace")]
+    [InlineData("merge")]
+    public void Handle_AliasMode_NotRejectedByModeGate(string mode)
+    {
+        // DIST-04: replace/merge are aliases for deploy/seed. The mode gate accepts them
+        // (NotEqual Invalid); downstream may still Error without config, but never Invalid.
+        var cmd = new SerializerSerializeCommand { Mode = mode };
+        var result = cmd.Handle();
+        Assert.NotEqual(CommandResult.ResultType.Invalid, result.Status);
     }
 
     [Fact]

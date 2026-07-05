@@ -67,7 +67,8 @@ public class SerializerOrchestrator
         ManifestWriter? manifestWriter = null,
         ManifestCleaner? manifestCleaner = null,
         IReadOnlyDictionary<string, List<string>>? excludeFieldsByItemType = null,
-        IReadOnlyDictionary<string, List<string>>? excludeXmlElementsByType = null)
+        IReadOnlyDictionary<string, List<string>>? excludeXmlElementsByType = null,
+        string? modeLabel = null)
     {
         log?.Invoke($"=== Mode: {mode} | Strategy: {strategy} ===");
 
@@ -116,7 +117,10 @@ public class SerializerOrchestrator
         int stale = 0;
         if (manifestWriter != null || manifestCleaner != null)
         {
-            var modeName = mode.ToString().ToLowerInvariant();
+            // DIST-04: manifest/subfolder label follows the caller's requested label when supplied
+            // (e.g. "replace" writes replace-manifest.json), else the legacy enum name. Default
+            // config still yields "deploy"/"seed", so existing output is byte-for-byte unchanged.
+            var modeName = modeLabel ?? mode.ToString().ToLowerInvariant();
             var allWritten = results.SelectMany(r => r.WrittenFiles).ToList();
 
             // Phase 42-03: collect non-null Entry instances across providers. Validation-failed
@@ -225,15 +229,29 @@ public class SerializerOrchestrator
         string? providerFilter = null,
         StrictModeEscalator? escalator = null,
         IReadOnlyDictionary<string, List<string>>? excludeFieldsByItemType = null,
-        IReadOnlyDictionary<string, List<string>>? excludeXmlElementsByType = null)
+        IReadOnlyDictionary<string, List<string>>? excludeXmlElementsByType = null,
+        string? modeLabel = null)
     {
         // Phase 44 / D-01: thin wrapper over DeserializeAll(Manifest, ...). The disk read
         // happens here; everything past this point is identical to zip-import's in-memory
         // path. MANIFEST-05 envelope precedence is applied inside the Manifest-typed
         // overload, so the two paths agree on every dispatch invariant.
-        var modeName = mode.ToString().ToLowerInvariant();
-        var manifest = _manifestWriter.Read(modeRoot, modeName)
-            ?? throw new InvalidOperationException(
+        //
+        // DIST-04 accept-both: read {label}-manifest.json using the caller's requested label
+        // first (e.g. "replace"), then fall back to the mode's candidate labels (legacy + alias)
+        // so a folder holding EITHER deploy-manifest.json or replace-manifest.json deserializes.
+        var modeName = modeLabel ?? mode.ToString().ToLowerInvariant();
+        var manifest = _manifestWriter.Read(modeRoot, modeName);
+        if (manifest == null)
+        {
+            foreach (var cand in DeploymentModeAlias.Candidates(mode))
+            {
+                manifest = _manifestWriter.Read(modeRoot, cand);
+                if (manifest != null) { modeName = cand; break; }
+            }
+        }
+        if (manifest == null)
+            throw new InvalidOperationException(
                 $"Manifest not found at {Path.Combine(modeRoot, $"{modeName}-manifest.json")}. " +
                 "Run serialize first to produce the manifest, then re-run deserialize.");
 
