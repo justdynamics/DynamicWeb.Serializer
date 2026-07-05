@@ -37,6 +37,20 @@ public class SerializerDeserializeCommandTests
         Assert.Contains("Invalid mode", result.Message ?? string.Empty);
     }
 
+    [Theory]
+    [InlineData("replace")]
+    [InlineData("merge")]
+    [InlineData("MERGE")]
+    public void Handle_AliasMode_NotRejectedByModeGate(string mode)
+    {
+        // DIST-04: replace/merge are aliases for deploy/seed. The mode gate must accept them
+        // (NotEqual Invalid); downstream resolution may still Error (no config/subfolder), but
+        // the alias itself is never rejected as an invalid mode.
+        var cmd = new SerializerDeserializeCommand { Mode = mode };
+        var result = cmd.Handle();
+        Assert.NotEqual(CommandResult.ResultType.Invalid, result.Status);
+    }
+
     [Fact]
     public void Handle_ZeroErrors_SynthOrchestratorResult_ReturnsOk()
     {

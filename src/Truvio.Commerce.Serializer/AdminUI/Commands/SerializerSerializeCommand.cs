@@ -38,12 +38,15 @@ public sealed class SerializerSerializeCommand : CommandBase
     {
         // T-37-01-03: parse the mode string strictly; reject anything that isn't Deploy or Seed
         // BEFORE any path-interpolation so the string never reaches the filesystem.
-        if (!Enum.TryParse<DeploymentMode>(Mode, ignoreCase: true, out var deploymentMode))
+        // DIST-04: replace/merge accepted as aliases for deploy/seed (alias-first). The enum
+        // drives predicate filtering + conflict strategy; the on-disk subfolder/manifest name
+        // is config-driven (GetSubfolderForMode) below, so both names round-trip.
+        if (!DeploymentModeAlias.TryResolve(Mode, out var deploymentMode, out _))
         {
             return new()
             {
                 Status = CommandResult.ResultType.Invalid,
-                Message = $"Invalid mode '{Mode}'. Expected 'deploy' or 'seed' (case-insensitive)."
+                Message = $"Invalid mode '{Mode}'. Expected 'deploy'/'replace' or 'seed'/'merge' (case-insensitive)."
             };
         }
 
@@ -57,12 +60,12 @@ public sealed class SerializerSerializeCommand : CommandBase
             if (!string.IsNullOrEmpty(fromQuery))
             {
                 Mode = fromQuery;
-                if (!Enum.TryParse<DeploymentMode>(Mode, ignoreCase: true, out deploymentMode))
+                if (!DeploymentModeAlias.TryResolve(Mode, out deploymentMode, out _))
                 {
                     return new()
                     {
                         Status = CommandResult.ResultType.Invalid,
-                        Message = $"Invalid mode '{Mode}'. Expected 'deploy' or 'seed' (case-insensitive)."
+                        Message = $"Invalid mode '{Mode}'. Expected 'deploy'/'replace' or 'seed'/'merge' (case-insensitive)."
                     };
                 }
             }
@@ -109,7 +112,8 @@ public sealed class SerializerSerializeCommand : CommandBase
                 manifestWriter: new ManifestWriter(),
                 manifestCleaner: new ManifestCleaner(),
                 excludeFieldsByItemType: config.ExcludeFieldsByItemType,
-                excludeXmlElementsByType: config.ExcludeXmlElementsByType);
+                excludeXmlElementsByType: config.ExcludeXmlElementsByType,
+                modeLabel: modeSubfolder);
 
             var fileCount = Directory.Exists(modeRoot)
                 ? Directory.GetFiles(modeRoot, "*.yml", SearchOption.AllDirectories).Length

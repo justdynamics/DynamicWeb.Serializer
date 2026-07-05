@@ -57,15 +57,35 @@ public sealed class SerializerDeserializeCommand : CommandBase
             File.AppendAllText(logFile, line + "\n");
     }
 
+    /// <summary>
+    /// DIST-04 accept-both: pick the on-disk subfolder for a deserialize run. Tries the
+    /// caller-requested label first, then the mode's candidate labels (legacy + alias), returning
+    /// the first whose directory exists. Falls back to the requested label when none exist, so the
+    /// downstream "Mode subfolder not found" error names what the caller asked for.
+    /// </summary>
+    private static string ResolveExistingModeLabel(string serializeRoot, string requestedLabel, DeploymentMode mode)
+    {
+        if (Directory.Exists(Path.Combine(serializeRoot, requestedLabel)))
+            return requestedLabel;
+        foreach (var candidate in DeploymentModeAlias.Candidates(mode))
+        {
+            if (Directory.Exists(Path.Combine(serializeRoot, candidate)))
+                return candidate;
+        }
+        return requestedLabel;
+    }
+
     public override CommandResult Handle()
     {
         // T-37-01-03: parse mode string strictly before any path interpolation.
-        if (!Enum.TryParse<DeploymentMode>(Mode, ignoreCase: true, out var deploymentMode))
+        // DIST-04: replace/merge are accepted as aliases for deploy/seed (alias-first — both
+        // work). The resolver also yields the on-disk label the caller requested (modeLabel).
+        if (!DeploymentModeAlias.TryResolve(Mode, out var deploymentMode, out var modeLabel))
         {
             return new()
             {
                 Status = CommandResult.ResultType.Invalid,
-                Message = $"Invalid mode '{Mode}'. Expected 'deploy' or 'seed' (case-insensitive)."
+                Message = $"Invalid mode '{Mode}'. Expected 'deploy'/'replace' or 'seed'/'merge' (case-insensitive)."
             };
         }
 
@@ -78,12 +98,12 @@ public sealed class SerializerDeserializeCommand : CommandBase
             if (!string.IsNullOrEmpty(fromQuery))
             {
                 Mode = fromQuery;
-                if (!Enum.TryParse<DeploymentMode>(Mode, ignoreCase: true, out deploymentMode))
+                if (!DeploymentModeAlias.TryResolve(Mode, out deploymentMode, out modeLabel))
                 {
                     return new()
                     {
                         Status = CommandResult.ResultType.Invalid,
-                        Message = $"Invalid mode '{Mode}'. Expected 'deploy' or 'seed' (case-insensitive)."
+                        Message = $"Invalid mode '{Mode}'. Expected 'deploy'/'replace' or 'seed'/'merge' (case-insensitive)."
                     };
                 }
             }
@@ -123,7 +143,10 @@ public sealed class SerializerDeserializeCommand : CommandBase
             var systemDir = Path.Combine(filesRoot, "System");
             var paths = SerializerPathResolver.EnsureDirectories(systemDir);
 
-            var modeName = deploymentMode.ToString().ToLowerInvariant();
+            // DIST-04 accept-both: prefer the caller's requested label folder (e.g. "replace");
+            // fall back to the mode's legacy/alias candidate whose directory actually exists, so
+            // both new (replace/) and legacy (deploy/) trees deserialize. Old names keep working.
+            var modeName = ResolveExistingModeLabel(paths.SerializeRoot, modeLabel, deploymentMode);
             var modeRoot = Path.Combine(paths.SerializeRoot, modeName);
 
             // Conflict strategy is hardcoded per mode (Deploy=SourceWins, Seed=DestinationWins).
@@ -169,7 +192,8 @@ public sealed class SerializerDeserializeCommand : CommandBase
                     Log,
                     isDryRun: IsDryRun,
                     providerFilter: null,
-                    escalator: escalator);
+                    escalator: escalator,
+                    modeLabel: modeName);
 
                 // Build summary with advice and flush log. Phase 43 / REPORT-03: drive off
                 // result.EntryOutcomes (canonical) — Phase 44 / IN-01 deleted DeserializeResults.
