@@ -65,15 +65,19 @@ Install the app from any
 *Available apps*.
 
 To start a Swift (or Digital Asset Portal) solution **from YAML alone**, pair the
-app with a deploy-ready content baseline from the companion catalog:
+app with ready-made content from the companion distribution:
 
-**[justdynamics/Truvio.Commerce.Serializer.Baselines](https://github.com/justdynamics/Truvio.Commerce.Serializer.Baselines)**
+**[justdynamics/Truvio.Commerce.Distribution](https://github.com/justdynamics/Truvio.Commerce.Distribution)**
 
-Each package ships a `config` plus `deploy/` and `seed/` YAML trees. Download a
-package's release `.zip` and apply it through **Settings → Developer → Serialize
-→ Upload Package**, or check the YAML out in CI/CD and deserialize it. See that
-repo's [consuming guide](https://github.com/justdynamics/Truvio.Commerce.Serializer.Baselines/blob/main/docs/consuming-cicd.md)
-for both paths.
+The distribution is structured as versioned **layers** composed into gate-proven
+**editions**. Clone it, pick an edition (`base-only`, `swift-demo`,
+`headless-demo`), and apply its layers to the host — each layer ships serialized
+mode trees the serializer deserializes into the database. Pin a specific
+composition by its annotated tag (`editions/<name>/<semver>` /
+`layers/<name>/<semver>`). It is git-clone consumption: there are no release
+archives. See the distribution's
+[README](https://github.com/justdynamics/Truvio.Commerce.Distribution/blob/main/README.md)
+and [layer/edition catalog](https://github.com/justdynamics/Truvio.Commerce.Distribution/blob/main/LAYERS.md).
 
 ### From source
 
@@ -93,7 +97,7 @@ cp src/Truvio.Commerce.Serializer/bin/Release/net8.0/Truvio.Commerce.Serializer.
 curl -X POST https://source.example.com/Admin/Api/SerializerSerialize \
   -H "Authorization: Bearer CLD.your-api-key"
 
-# 5. Commit baselines/ to Git, deploy the YAML to the target, then deserialize
+# 5. Commit the SerializeRoot/ YAML tree to Git, deploy it to the target, then deserialize
 curl -X POST https://target.example.com/Admin/Api/SerializerDeserialize \
   -H "Authorization: Bearer CLD.your-api-key"
 ```
@@ -192,10 +196,7 @@ in conflict strategy and output subfolder.
 | Per-content-item deploy/seed decisions for Swift | [Swift deploy/seed analysis](docs/swift-deploy-seed-analysis.md) |
 | Auto-excluded runtime columns and credential caveats | [Runtime exclusions](docs/runtime-exclusions.md) |
 | Common errors and remedies | [Troubleshooting](docs/troubleshooting.md) |
-
-Reference material also lives in [`docs/baselines/`](docs/baselines) (the Swift 2.2
-reference baseline and the per-environment config bucket) and [`docs/findings/`](docs/findings)
-(operational findings from baseline round-trip runs).
+| Ready-made layers and editions for Swift / headless / DAP | [Truvio.Commerce.Distribution](https://github.com/justdynamics/Truvio.Commerce.Distribution) |
 
 ## CI/CD teaser
 
