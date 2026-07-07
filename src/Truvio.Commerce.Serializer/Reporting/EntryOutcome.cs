@@ -14,7 +14,7 @@ namespace Truvio.Commerce.Serializer.Reporting;
 /// <list type="bullet">
 /// <item>Files-don't-exist-on-disk ⇒ <see cref="EntryStatus.Failed"/> via <see cref="Failed"/>.</item>
 /// <item>Dry-run ⇒ <see cref="EntryStatus.Succeeded"/> with <see cref="Counts"/> populated.</item>
-/// <item>Seed-merge no-op ⇒ <see cref="EntryStatus.Succeeded"/> with <see cref="ProviderCounts.Skipped"/> non-zero.</item>
+/// <item>Merge-fill no-op ⇒ <see cref="EntryStatus.Succeeded"/> with <see cref="ProviderCounts.Skipped"/> non-zero.</item>
 /// <item>providerFilter exclusion ⇒ <see cref="EntryStatus.Skipped"/> via <see cref="Skipped"/>.</item>
 /// </list>
 /// </remarks>

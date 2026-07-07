@@ -4,10 +4,9 @@ using System.Xml.Linq;
 namespace Truvio.Commerce.Serializer.Infrastructure;
 
 /// <summary>
-/// Phase 39 D-22..D-27 (see <c>.planning/phases/39-seed-mode-field-level-merge-.../39-02-PLAN.md</c>):
-/// per-element XML merge for Seed-mode deserialization. Fills target XML elements that are
+/// Per-element XML merge for Merge-mode deserialization. Fills target XML elements that are
 /// absent OR have null/empty/whitespace text, using source XML as the fill value pool.
-/// Preserves any element present on target but absent from source (D-24 — Seed never strips).
+/// Preserves any element present on target but absent from source (Merge never strips).
 /// </summary>
 /// <remarks>
 /// <para>

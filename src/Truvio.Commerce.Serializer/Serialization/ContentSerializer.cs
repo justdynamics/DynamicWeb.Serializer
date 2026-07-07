@@ -77,13 +77,13 @@ public class ContentSerializer
         int totalPages = 0, totalGridRows = 0, totalParagraphs = 0;
         var allSerializedPages = new List<SerializedPage>();
 
-        // 2026-06-11 fix: serialize every Content predicate handed to us, regardless of Mode.
-        // Callers pre-filter by mode (SerializerSerializeCommand filters config.Predicates by
-        // the requested mode before SerializeAll; ContentProvider passes exactly one predicate;
-        // SerializeSubtreeCommand builds a single Deploy predicate). The previous
-        // `Mode == DeploymentMode.Deploy` filter here — a Phase 40 D-07 leftover — silently
-        // produced ZERO YAML for Seed-mode Content predicates: the orchestrator dispatched the
-        // seed predicate, this loop skipped it, and the run still reported success.
+        // Serialize every Content predicate handed to us, regardless of Mode. Callers
+        // pre-filter by mode (SerializerSerializeCommand filters config.Predicates by the
+        // requested mode before SerializeAll; ContentProvider passes exactly one predicate;
+        // SerializeSubtreeCommand builds a single Replace predicate). A `Mode ==
+        // SerializerMode.Replace` filter here would silently produce ZERO YAML for Merge-mode
+        // Content predicates: the orchestrator dispatches the predicate, this loop skips it,
+        // and the run still reports success.
         foreach (var predicate in _configuration.Predicates.Where(p =>
                      string.Equals(p.ProviderType, "Content", StringComparison.OrdinalIgnoreCase)))
         {
@@ -122,20 +122,19 @@ public class ContentSerializer
         // still fails.
         var sweeper = new BaselineLinkSweeper();
         var sweepResult = sweeper.Sweep(allSerializedPages);
-        // Phase 38 A.3 (D-38-03): per-predicate ack list is the single source of truth.
-        // Aggregate across both modes' predicates so the sweep receives the union.
-        // Phase 40 D-07: read both slices off the flat predicate list filtered by Mode.
-        var deployAck = _configuration.Predicates
-            .Where(p => p.Mode == DeploymentMode.Deploy)
+        // Per-predicate ack list is the single source of truth. Aggregate across both modes'
+        // predicates (filtered by Mode off the flat predicate list) so the sweep receives the union.
+        var replaceAck = _configuration.Predicates
+            .Where(p => p.Mode == SerializerMode.Replace)
             .SelectMany(p => p.AcknowledgedOrphanPageIds)
             .ToList();
-        var seedAck = _configuration.Predicates
-            .Where(p => p.Mode == DeploymentMode.Seed)
+        var mergeAck = _configuration.Predicates
+            .Where(p => p.Mode == SerializerMode.Merge)
             .SelectMany(p => p.AcknowledgedOrphanPageIds)
             .ToList();
         Log($"Link sweep: {sweepResult.ResolvedCount} internal link(s) verified, " +
             $"{sweepResult.Unresolved.Count} unresolvable " +
-            $"(ack deploy={deployAck.Count}, seed={seedAck.Count})");
+            $"(ack replace={replaceAck.Count}, merge={mergeAck.Count})");
         if (sweepResult.Unresolved.Count > 0)
         {
             if (_lenientLinkSweep)
@@ -148,7 +147,7 @@ public class ContentSerializer
                 return;
             }
 
-            var acknowledged = new HashSet<int>(deployAck.Concat(seedAck));
+            var acknowledged = new HashSet<int>(replaceAck.Concat(mergeAck));
             var (accepted, fatal) = sweepResult.Unresolved
                 .GroupBy(u => acknowledged.Contains(u.UnresolvablePageId))
                 .Aggregate(
@@ -167,7 +166,7 @@ public class ContentSerializer
             {
                 // A reference leaving THIS predicate's tree is not broken when another content
                 // predicate in the same configuration (either mode) ships the target page —
-                // e.g. deploy pages linking into an excluded subtree that arrives via a seed
+                // e.g. replace pages linking into an excluded subtree that arrives via a merge
                 // predicate. Check the on-disk config before declaring the baseline broken.
                 var (shipsViaSibling, trulyFatal) = PartitionBySiblingPredicateCoverage(fatal);
                 foreach (var (u, via) in shipsViaSibling)
@@ -297,9 +296,9 @@ public class ContentSerializer
             : null;
 
         Log($"Serialized pages: {serializedPages.Count}");
-        // Phase 40 D-04: exclusion dicts moved from per-ModeConfig to top-level on SerializerConfiguration.
-        // ContentSerializer is Deploy-scoped, so Deploy-mode runs always read these dicts; Seed-mode
-        // runs are dispatched through the orchestrator + ContentDeserializer (Phase 39 runtime, untouched).
+        // Exclusion dicts are top-level on SerializerConfiguration. ContentSerializer is
+        // replace-scoped, so Replace-mode runs always read these dicts; Merge-mode runs are
+        // dispatched through the orchestrator + ContentDeserializer.
         var serializedArea = _mapper.MapArea(area, serializedPages, excludeFields,
             _configuration.ExcludeFieldsByItemType, excludeAreaColumns);
         _store.WriteTree(serializedArea, _configuration.OutputDirectory);

@@ -48,7 +48,7 @@ public class TemplateReferenceScanner
                 AddRef(acc, "grid-row", row.DefinitionId, pageIdentifier);
 
             // Grid rows can also carry ItemType (container fields) — track these too so
-            // the baseline deploy has all referenced item-type xml files.
+            // the baseline replace run has all referenced item-type xml files.
             if (!string.IsNullOrEmpty(row.ItemType))
                 AddRef(acc, "item-type", row.ItemType, pageIdentifier);
 

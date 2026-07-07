@@ -26,7 +26,7 @@ public sealed record SqlTableEntry : ManifestEntry
     /// <summary>Comma-separated columns used for change detection.</summary>
     public string? CompareColumns { get; init; }
 
-    /// <summary>Column names containing embedded XML content — XmlMergeHelper merges per-element on Seed deserialize.</summary>
+    /// <summary>Column names containing embedded XML content — XmlMergeHelper merges per-element on Merge deserialize.</summary>
     public IReadOnlyList<string> XmlColumns { get; init; } = Array.Empty<string>();
 
     /// <summary>String-column names whose Default.aspx?ID=N values get rewritten source→target via InternalLinkResolver — Phase 37-05 LINK-02 pass 2.</summary>

@@ -58,7 +58,7 @@ public static class PackageBuilder
                     new()
                     {
                         Name = "ad-hoc-serialize",
-                        Mode = DeploymentMode.Deploy,
+                        Mode = SerializerMode.Replace,
                         ProviderType = "Content",
                         Path = contentPath,
                         AreaId = areaId,
@@ -206,7 +206,7 @@ public static class PackageBuilder
 
     /// <summary>
     /// Restore bundled assets from an extracted package into the Files root. Source-wins
-    /// (deploy semantics): existing files are overwritten. Returns (restored, skipped) —
+    /// (replace semantics): existing files are overwritten. Returns (restored, skipped) —
     /// skipped counts dry-run files that would have been written.
     /// </summary>
     public static (int Restored, int Total) RestoreBundledAssets(string extractedRoot, string filesRoot, bool isDryRun, Action<string>? log = null)

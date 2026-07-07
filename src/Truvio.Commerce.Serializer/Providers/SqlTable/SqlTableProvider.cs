@@ -248,7 +248,7 @@ public class SqlTableProvider : SerializationProviderBase
 
         // Phase 37-02: unified schema-drift + type coercion via TargetSchemaCache.
         // Target columns absent from the live target schema are stripped from each row
-        // before composing MERGE SQL (prevents "Invalid column name" on cross-env deploys);
+        // before composing MERGE SQL (prevents "Invalid column name" on cross-environment syncs);
         // remaining string values are coerced to proper .NET types for SQL parameterization.
         var targetCols = _schemaCache.GetColumns(metadata.TableName);
         var columnTypes = _schemaCache.GetColumnTypes(metadata.TableName);
@@ -365,8 +365,7 @@ public class SqlTableProvider : SerializationProviderBase
                     continue;
                 }
 
-                // Seed mode (Phase 39 D-01..D-19, D-21..D-27): supersedes Phase 37-01 D-06
-                // whole-row skip with field-level merge. When identity matches an existing
+                // Merge mode: field-level fill. When identity matches an existing
                 // target row, we diff YAML values against target per-column using the
                 // MergePredicate (scalar) and XmlMergeHelper (xml data type) predicates, and
                 // only UPDATE the subset of columns where target is "unset" per D-01/D-22.
@@ -378,7 +377,7 @@ public class SqlTableProvider : SerializationProviderBase
                     var mergedRow = new Dictionary<string, object?>(currentRow, StringComparer.OrdinalIgnoreCase);
                     var columnsToUpdate = new List<string>();
                     var xmlFills = new Dictionary<string, IReadOnlyList<string>>(StringComparer.OrdinalIgnoreCase);
-                    var scalarFills = new Dictionary<string, (object? target, object? seed)>(StringComparer.OrdinalIgnoreCase);
+                    var scalarFills = new Dictionary<string, (object? target, object? fill)>(StringComparer.OrdinalIgnoreCase);
 
                     foreach (var kvp in yamlRow)
                     {
@@ -427,7 +426,7 @@ public class SqlTableProvider : SerializationProviderBase
                     if (columnsToUpdate.Count == 0)
                     {
                         skipped++;
-                        Log($"  Seed-merge: [{metadata.TableName}].{identity} - 0 filled, all set", log);
+                        Log($"  Merge-fill: [{metadata.TableName}].{identity} - 0 filled, all set", log);
                         continue;
                     }
 
@@ -443,13 +442,13 @@ public class SqlTableProvider : SerializationProviderBase
                             else if (scalarFills.TryGetValue(col, out var pair))
                             {
                                 Log(
-                                    $"    would fill [{metadata.TableName}.{col}]: target=<unset> -> seed='{pair.seed}'",
+                                    $"    would fill [{metadata.TableName}.{col}]: target=<unset> -> fill='{pair.fill}'",
                                     log);
                             }
                         }
                         updated++;
                         Log(
-                            $"  [DRY-RUN] Seed-merge: [{metadata.TableName}].{identity} - {columnsToUpdate.Count} would-fill",
+                            $"  [DRY-RUN] Merge-fill: [{metadata.TableName}].{identity} - {columnsToUpdate.Count} would-fill",
                             log);
                         continue;
                     }
@@ -463,12 +462,12 @@ public class SqlTableProvider : SerializationProviderBase
                             updated++;
                             var remaining = Math.Max(0, currentRow.Count - columnsToUpdate.Count - metadata.KeyColumns.Count);
                             Log(
-                                $"  Seed-merge: [{metadata.TableName}].{identity} - {columnsToUpdate.Count} filled, {remaining} left",
+                                $"  Merge-fill: [{metadata.TableName}].{identity} - {columnsToUpdate.Count} filled, {remaining} left",
                                 log);
                             break;
                         case WriteOutcome.Failed:
                             failed++;
-                            errors.Add($"Seed-merge failed: [{metadata.TableName}].{identity}");
+                            errors.Add($"Merge-fill failed: [{metadata.TableName}].{identity}");
                             break;
                     }
                     continue;

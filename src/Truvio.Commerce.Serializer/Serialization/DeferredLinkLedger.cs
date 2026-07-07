@@ -11,14 +11,14 @@ public sealed record DeferredLinkRecord(string Locator, int SourceId);
 /// Persistence + finalization for cross-pass deferred links. A field that references a page
 /// shipping in ANOTHER pass (other mode, or a later predicate of the same mode) cannot be
 /// resolved when it is written — the target id does not exist yet. The resolver leaves the
-/// SOURCE id in place and records (locator, sourceId) here; the end of the seed run rewrites
+/// SOURCE id in place and records (locator, sourceId) here; the end of the merge run rewrites
 /// EXACTLY those occurrences. Rescanning fields instead would be unsound: an already-written
 /// TARGET id is indistinguishable from a source id in the int id space.
 ///
 /// Locator formats: <c>item|{itemType}|{itemId}|{field}</c>, <c>propitem|{pageId}|{field}</c>,
 /// <c>shortcut|{pageId}</c>, <c>navsettings|{pageId}</c>, <c>modulesettings|{paragraphId}</c>.
 /// The ledger file (<c>deferred-links.json</c>) lives in the mode root next to the manifest,
-/// so a deploy-only run leaves its deferrals on disk for the next seed run to finalize.
+/// so a replace-only run leaves its deferrals on disk for the next merge run to finalize.
 /// </summary>
 public static class DeferredLinkLedger
 {

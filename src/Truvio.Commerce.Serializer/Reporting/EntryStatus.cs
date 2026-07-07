@@ -7,7 +7,7 @@ namespace Truvio.Commerce.Serializer.Reporting;
 /// but also no work — it needs its own observable. Per CONTEXT D-02 (tight definition):
 /// <list type="bullet">
 /// <item><b>Succeeded</b> — entry dispatched, completed without error. Includes dry-run
-/// (would-be work reported in <c>Counts</c>); includes seed-merge with all fields already
+/// (would-be work reported in <c>Counts</c>); includes merge-fill with all fields already
 /// on target (per-row skip count in <c>ProviderCounts.Skipped</c>).</item>
 /// <item><b>Failed</b> — entry dispatched (or attempted), returned errors OR validation/dispatch
 /// failure. Includes "files don't exist on disk" (drift between manifest and disk is a real

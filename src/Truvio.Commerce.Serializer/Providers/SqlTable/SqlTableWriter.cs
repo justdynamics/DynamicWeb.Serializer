@@ -164,11 +164,10 @@ public class SqlTableWriter
     }
 
     /// <summary>
-    /// Phase 39 D-17 (see <c>.planning/phases/39-seed-mode-field-level-merge-.../39-02-PLAN.md</c>):
-    /// issue a targeted UPDATE statement writing only the requested column subset,
+    /// Issue a targeted UPDATE statement writing only the requested column subset,
     /// scoped by the key-column identity predicate. Used by <see cref="SqlTableProvider"/>'s
-    /// Seed-merge branch after per-column <see cref="Infrastructure.MergePredicate"/>
-    /// planning has decided which target columns are "unset" per D-01 and therefore
+    /// Merge-mode fill branch after per-column <see cref="Infrastructure.MergePredicate"/>
+    /// planning has decided which target columns are "unset" and therefore
     /// eligible to fill. UPDATE path — no IDENTITY_INSERT wrapping (irrelevant for UPDATE).
     /// </summary>
     /// <param name="tableName">

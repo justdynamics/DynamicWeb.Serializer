@@ -280,7 +280,7 @@ public class ContentProvider : ISerializationProvider
             var result = deserializer.Deserialize();
 
             if (strategy == ConflictStrategy.DestinationWins)
-                log?.Invoke($"Content provider running in DestinationWins (Seed) mode — pages whose PageUniqueId is already present on target are preserved.");
+                log?.Invoke($"Content provider running in DestinationWins (Merge) mode — pages whose PageUniqueId is already present on target are preserved.");
 
             // Phase 37-05 / LINK-02 pass 2: after a successful deserialize, build the
             // source→target page ID map from the YAML tree (SourcePageId) + the target DB

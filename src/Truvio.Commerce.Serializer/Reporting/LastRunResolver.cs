@@ -5,7 +5,7 @@ using Truvio.Commerce.Serializer.Models;
 namespace Truvio.Commerce.Serializer.Reporting;
 
 /// <summary>
-/// Answers "when did this environment last receive a deploy/seed?" from the run logs:
+/// Answers "when did this environment last receive a replace/merge?" from the run logs:
 /// the newest non-dry-run summary per operation + mode, read via the existing
 /// <see cref="LogFileWriter"/> summary headers. Logs written before the summary carried
 /// a <c>Mode</c> field never match a mode filter — timestamps appear after the first run
@@ -14,7 +14,7 @@ namespace Truvio.Commerce.Serializer.Reporting;
 /// </summary>
 public static class LastRunResolver
 {
-    /// <summary>Operations that land data ON this environment (deploy/seed received).</summary>
+    /// <summary>Operations that land data ON this environment (replace/merge received).</summary>
     private static readonly string[] ReceiveOperations = { "Deserialize", "ZipImport" };
 
     /// <summary>
@@ -49,17 +49,17 @@ public static class LastRunResolver
         => FindLastRun(logDir, ReceiveOperations, mode);
 
     /// <summary>
-    /// UTC timestamp of the last real deploy received by this environment, resolved from
+    /// UTC timestamp of the last real replace received by this environment, resolved from
     /// the canonical log directory next to the config file. Null when unknown.
     /// </summary>
-    public static DateTime? FindLastDeployReceivedUtc()
+    public static DateTime? FindLastReplaceReceivedUtc()
     {
         try
         {
             var configPath = ConfigPathResolver.FindConfigFile();
             if (configPath is null)
                 return null;
-            return FindLastReceived(GetLogDir(configPath), "deploy")?.Timestamp;
+            return FindLastReceived(GetLogDir(configPath), "replace")?.Timestamp;
         }
         catch
         {

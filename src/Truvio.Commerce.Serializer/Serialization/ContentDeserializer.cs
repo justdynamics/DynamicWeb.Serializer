@@ -41,14 +41,13 @@ public class ContentDeserializer
     private readonly ISqlExecutor _sqlExecutor;
 
     /// <summary>
-    /// When <see cref="ConflictStrategy.DestinationWins"/> (Phase 39 Seed mode), pages whose
-    /// <c>PageUniqueId</c> is already present on target are field-level merged with the Seed
+    /// When <see cref="ConflictStrategy.DestinationWins"/> (Merge mode), pages whose
+    /// <c>PageUniqueId</c> is already present on target are field-level filled from the Merge
     /// YAML: scalars, sub-object DTO properties, ItemFields, and PropertyItem fields each
     /// honor <see cref="MergePredicate.IsUnsetForMerge(object?, System.Type)"/>. Only fields
-    /// that are NULL or at the type default on target are filled from YAML; customer tweaks
+    /// that are NULL or at the type default on target are filled from YAML; destination tweaks
     /// already set on target survive intrinsically. Page permissions are never touched on the
-    /// Seed UPDATE path (D-06). Phase 39 supersedes the Phase 37-01 row-level skip that
-    /// previously short-circuited the UPDATE here.
+    /// Merge UPDATE path.
     /// </summary>
     /// <param name="entry">Manifest entry for the single area subtree to deserialize.
     /// Carries AreaId, Path, PageId, AcknowledgedOrphanPageIds, ExcludeAreaColumns, and
@@ -58,8 +57,8 @@ public class ContentDeserializer
     /// (replaces the pre-pivot <c>SerializerConfiguration.OutputDirectory</c>).</param>
     /// <param name="excludeFieldsByItemType">Optional by-ItemType field exclusions threaded
     /// from the orchestrator (envelope-level per MANIFEST-05). Null/empty → no by-type
-    /// exclusions; preserved exactly to keep the Deploy-side area-creation path's exclusion
-    /// semantics identical to Phase 43.</param>
+    /// exclusions; preserved exactly to keep the Replace-side area-creation path's exclusion
+    /// semantics identical.</param>
     /// <param name="schemaCache">
     /// Shared target-schema cache used by the Area write path for schema-drift tolerance and
     /// YAML→CLR type coercion (Phase 37-02). Defaults to a new instance backed by the live
@@ -229,7 +228,7 @@ public class ContentDeserializer
                 catch { /* skip unreadable areas */ }
             }
 
-            // Multi-mode runs ship sibling YAML (deploy + seed under the same SerializeRoot).
+            // Multi-mode runs ship sibling YAML (replace + merge under the same SerializeRoot).
             // Include sibling pages in the map so links to already-deserialized sibling pages
             // resolve, and remember which sibling pages are NOT on target yet — links to those
             // are deferred (rewritten during the sibling mode's own pass), not warnings.
@@ -239,7 +238,7 @@ public class ContentDeserializer
 
             // Same-mode predicates that run AFTER this entry are sibling passes too: their
             // YAML pages are in allYamlPages but not yet on target. Defer links to them —
-            // the end-of-seed-run ledger finalization rewrites the recorded occurrences.
+            // the end-of-merge-run ledger finalization rewrites the recorded occurrences.
             var sameModeLaterPages = allYamlPages;
 
             // Build GUID cache from ALL areas in the target DB
@@ -292,7 +291,7 @@ public class ContentDeserializer
             if (resolved > 0 || unresolved > 0 || resolver.DeferredCount > 0)
                 Log($"Link resolution: {resolved} page links resolved, {unresolved} unresolvable, {resolver.DeferredCount} deferred to sibling mode; {paraResolved} paragraph anchors resolved, {paraUnresolved} unresolvable");
 
-            // Persist deferred-link occurrences for end-of-seed-run finalization.
+            // Persist deferred-link occurrences for end-of-merge-run finalization.
             if (resolver.DeferredRecords.Count > 0)
             {
                 var modeRoot = Path.GetDirectoryName(_contentRoot.TrimEnd('/', '\\'));
@@ -327,8 +326,8 @@ public class ContentDeserializer
     }
 
     /// <summary>
-    /// Locates sibling mode roots (e.g. <c>SerializeRoot/seed</c> while deserializing
-    /// <c>SerializeRoot/deploy</c>) and reads their page trees. Only applies when the content
+    /// Locates sibling mode roots (e.g. <c>SerializeRoot/merge</c> while deserializing
+    /// <c>SerializeRoot/replace</c>) and reads their page trees. Only applies when the content
     /// root follows the <c>&lt;SerializeRoot&gt;/&lt;mode&gt;/_content</c> convention — zip
     /// imports and ad-hoc roots return empty. Best-effort: unreadable areas are skipped.
     /// </summary>
@@ -368,13 +367,13 @@ public class ContentDeserializer
     }
 
     /// <summary>
-    /// End-of-seed-run finalization for a DEPLOY Content entry's area ITEM fields.
-    /// Area item fields are deploy-owned but may reference pages that arrive in the seed
-    /// pass (header/footer bindings, legal-page links): at deploy time those links cannot
+    /// End-of-merge-run finalization for a REPLACE Content entry's area ITEM fields.
+    /// Area item fields are replace-owned but may reference pages that arrive in the merge
+    /// pass (header/footer bindings, legal-page links): at replace time those links cannot
     /// resolve and are left as source ids. Once every mode's pages are on target, this
-    /// re-writes the fields from the deploy YAML (fresh SOURCE ids — a deterministic input,
+    /// re-writes the fields from the replace YAML (fresh SOURCE ids — a deterministic input,
     /// so no risk of reinterpreting already-rewritten target ids) and resolves them against
-    /// the complete cross-mode map. Construct with the DEPLOY entry + the DEPLOY _content root.
+    /// the complete cross-mode map. Construct with the REPLACE entry + the REPLACE _content root.
     /// </summary>
     public void FinalizeAreaItemLinks()
     {
@@ -464,7 +463,7 @@ public class ContentDeserializer
     /// fields still carry source ids and may be link-resolved. Structural-stub ancestors
     /// that PRE-EXISTED this entry are skipped (their fields were written and resolved by
     /// the predicate that owns them — re-resolving would reinterpret target ids as source
-    /// ids); stubs this entry CREATED (e.g. seed-only onto a blank database) do resolve.
+    /// ids); stubs this entry CREATED (e.g. merge-only onto a blank database) do resolve.
     /// </summary>
     private static void CollectEntryTargetPageIds(
         List<SerializedPage> pages,
@@ -545,11 +544,11 @@ public class ContentDeserializer
                 Log($"Area with ID {entry.AreaId} not found. Creating from YAML data.");
                 try
                 {
-                    // Phase 40 D-04: exclusion dicts moved from per-ModeConfig to top-level on SerializerConfiguration.
-                    // The Deploy-side area-creation path is mode-agnostic w.r.t. the exclusion dict — Phase 39 Seed
-                    // merge does not run this code path (Seed reaches WriteSimpleScalarFieldsViaMerge / etc.) so
-                    // a top-level read is correct for both modes. Phase 44: sourced from constructor-injected
-                    // envelope dict instead of SerializerConfiguration.
+                    // Exclusion dicts are top-level on SerializerConfiguration. The Replace-side
+                    // area-creation path is mode-agnostic w.r.t. the exclusion dict — Merge-mode
+                    // fill does not run this code path (Merge reaches WriteSimpleScalarFieldsViaMerge
+                    // / etc.) so a top-level read is correct for both modes. Sourced from the
+                    // constructor-injected envelope dict.
                     var createAreaExclude = _excludeFieldsByItemType != null && _excludeFieldsByItemType.Count > 0 && !string.IsNullOrEmpty(area.ItemType)
                     ? ExclusionMerger.MergeFieldExclusions(
                         excludeFieldsSet?.ToList() ?? new List<string>(),
@@ -603,7 +602,7 @@ public class ContentDeserializer
         };
 
         // Area-level state (properties + area ItemType fields) belongs to the whole-area
-        // entry. A partial-path entry (e.g. seed '/Posts' after deploy '/') re-writing it
+        // entry. A partial-path entry (e.g. merge '/Posts' after replace '/') re-writing it
         // would at best merge-skip and at worst clobber the owning entry's already
         // link-resolved values — and the later re-resolution of those fields would
         // re-interpret rewritten TARGET ids as source ids.
@@ -981,11 +980,11 @@ public class ContentDeserializer
                     $"Could not load existing page with ID {existingId} for update.");
             }
 
-            // Phase 39 D-01..D-07, D-11, D-19: Seed mode — field-level merge.
+            // Merge mode — field-level fill.
             // Supersedes the row-level skip previously enforced here (Phase 37-01 D-06).
             if (_conflictStrategy == ConflictStrategy.DestinationWins)
             {
-                var seedExclude = ctx.ExcludeFieldsByItemType != null
+                var mergeExclude = ctx.ExcludeFieldsByItemType != null
                     ? ExclusionMerger.MergeFieldExclusions(
                         ctx.ExcludeFields?.ToList() ?? new List<string>(),
                         ctx.ExcludeFieldsByItemType,
@@ -994,7 +993,7 @@ public class ContentDeserializer
 
                 if (_isDryRun)
                 {
-                    LogSeedMergeDryRun(dto, existingPage, seedExclude, ctx);
+                    LogMergeFillDryRun(dto, existingPage, mergeExclude, ctx);
                     return existingId;
                 }
 
@@ -1012,16 +1011,16 @@ public class ContentDeserializer
                 Services.Pages.SavePage(existingPage, skipLanguages: true);
 
                 // D-02 / D-03: field-level merge for ItemFields + PropertyItem fields.
-                filled += MergeItemFields(existingPage.ItemType, existingPage.ItemId, dto.Fields, seedExclude, ref left);
-                filled += MergePropertyItemFields(existingPage, dto.PropertyFields, seedExclude, ref left);
+                filled += MergeItemFields(existingPage.ItemType, existingPage.ItemId, dto.Fields, mergeExclude, ref left);
+                filled += MergePropertyItemFields(existingPage, dto.PropertyFields, mergeExclude, ref left);
 
-                // D-06: permissions NOT applied on Seed UPDATE.
+                // Permissions NOT applied on Merge UPDATE.
                 // (Intentionally absent: no _permissionMapper.ApplyPermissions call here.)
 
                 // D-11: new log format + counter repurpose.
                 if (filled == 0) ctx.Skipped++;
                 else ctx.Updated++;
-                Log($"Seed-merge: page {dto.PageUniqueId} (ID={existingId}) - {filled} filled, {left} left");
+                Log($"Merge-fill: page {dto.PageUniqueId} (ID={existingId}) - {filled} filled, {left} left");
 
                 // D-07: child recursion (gridrows -> columns -> paragraphs) continues below and
                 // inherits _conflictStrategy automatically.
@@ -1638,7 +1637,7 @@ public class ContentDeserializer
     }
 
     // -------------------------------------------------------------------------
-    // Phase 39: Seed-mode field-level merge helpers (D-01..D-07, D-11, D-19)
+    // Merge-mode field-level fill helpers
     // -------------------------------------------------------------------------
 
     /// <summary>
@@ -1890,34 +1889,34 @@ public class ContentDeserializer
     }
 
     /// <summary>
-    /// D-19: per-field dry-run diff for the Seed-merge path. Emits
-    /// <c>"  would fill [col=X]: target=&lt;unset&gt; -&gt; seed='...'"</c> lines
-    /// only where the merge would actually fire on a live run. No DW-API writes.
+    /// Per-field dry-run diff for the Merge-fill path. Emits
+    /// <c>"  would fill [col=X]: target=&lt;unset&gt; -&gt; fill='...'"</c> lines
+    /// only where the fill would actually fire on a live run. No DW-API writes.
     /// </summary>
     /// <remarks>
     /// Dry-run log output includes YAML field values. Do not enable dry-run in
     /// logs that flow to untrusted parties — Phase 39 threat model T-39-01-03.
     /// </remarks>
-    private void LogSeedMergeDryRun(SerializedPage dto, Page existing, IReadOnlySet<string>? excludeFields, WriteContext ctx)
+    private void LogMergeFillDryRun(SerializedPage dto, Page existing, IReadOnlySet<string>? excludeFields, WriteContext ctx)
     {
         var diffs = new List<string>();
 
-        void Consider(string col, string? target, object? seedValue)
+        void Consider(string col, string? target, object? fillValue)
         {
             if (MergePredicate.IsUnsetForMerge(target))
-                diffs.Add($"  would fill [col={col}]: target=<unset> -> seed='{seedValue}'");
+                diffs.Add($"  would fill [col={col}]: target=<unset> -> fill='{fillValue}'");
         }
 
-        void ConsiderInt(string col, int target, object seedValue)
+        void ConsiderInt(string col, int target, object fillValue)
         {
             if (MergePredicate.IsUnsetForMerge(target))
-                diffs.Add($"  would fill [col={col}]: target=<unset> -> seed='{seedValue}'");
+                diffs.Add($"  would fill [col={col}]: target=<unset> -> fill='{fillValue}'");
         }
 
-        void ConsiderBool(string col, bool target, object seedValue)
+        void ConsiderBool(string col, bool target, object fillValue)
         {
             if (MergePredicate.IsUnsetForMerge(target))
-                diffs.Add($"  would fill [col={col}]: target=<unset> -> seed='{seedValue}'");
+                diffs.Add($"  would fill [col={col}]: target=<unset> -> fill='{fillValue}'");
         }
 
         // Flat scalars
@@ -1952,12 +1951,12 @@ public class ContentDeserializer
                     if (excludeFields != null && excludeFields.Contains(kvp.Key)) continue;
                     currentDict.TryGetValue(kvp.Key, out var curr);
                     if (MergePredicate.IsUnsetForMerge(curr?.ToString()))
-                        diffs.Add($"  would fill [col={kvp.Key}]: target=<unset> -> seed='{kvp.Value}'");
+                        diffs.Add($"  would fill [col={kvp.Key}]: target=<unset> -> fill='{kvp.Value}'");
                 }
             }
         }
 
-        Log($"[DRY-RUN] Seed-merge: page {dto.PageUniqueId} (ID={existing.ID}) - {diffs.Count} would-fills");
+        Log($"[DRY-RUN] Merge-fill: page {dto.PageUniqueId} (ID={existing.ID}) - {diffs.Count} would-fills");
         foreach (var d in diffs) Log(d);
 
         if (diffs.Count == 0) ctx.Skipped++;

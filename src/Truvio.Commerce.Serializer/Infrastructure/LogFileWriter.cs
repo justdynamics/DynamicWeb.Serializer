@@ -22,7 +22,7 @@ public static class LogFileWriter
     /// Creates a new log file for the given operation with a timestamped filename.
     /// Creates the directory if it doesn't exist. The optional suffix carries the mode
     /// (and dry-run marker) so runs are distinguishable from the filename alone, e.g.
-    /// <c>Deserialize_deploy_2026-06-11_142800.log</c>.
+    /// <c>Deserialize_replace_2026-06-11_142800.log</c>.
     /// </summary>
     public static string CreateLogFile(string logDir, string operation, string? suffix = null)
     {

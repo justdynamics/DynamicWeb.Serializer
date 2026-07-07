@@ -23,7 +23,7 @@ public static class RuntimeExcludes
     private static readonly Dictionary<string, string[]> Map =
         new(StringComparer.OrdinalIgnoreCase)
     {
-        // F-07: visit counter on URL path table — recomputed at runtime, overwrites target on deploy.
+        // F-07: visit counter on URL path table — recomputed at runtime, overwrites target on replace.
         ["UrlPath"] = new[] { "UrlPathVisitsCount" },
 
         // F-06: env-specific search-index bindings; differ between Azure dev/test/QA/prod.

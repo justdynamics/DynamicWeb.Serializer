@@ -32,7 +32,7 @@ public sealed record FieldCarveOut(CarveOutKind Kind, string TypeName, int Count
 /// (<see cref="SerializerConfiguration.ExcludeFieldsByItemType"/> /
 /// <see cref="SerializerConfiguration.ExcludeXmlElementsByType"/>) keep part of the page's
 /// fields local to the environment. The classic case is the cart page: the page itself is
-/// covered by a deploy predicate, but the eCom_CartV2 module-settings exclusions (mail
+/// covered by a replace predicate, but the eCom_CartV2 module-settings exclusions (mail
 /// recipients, error messages, default payment/shipping ids) never sync — the page is only
 /// PARTIALLY managed, and the tree icon / editor alert must say so.
 ///

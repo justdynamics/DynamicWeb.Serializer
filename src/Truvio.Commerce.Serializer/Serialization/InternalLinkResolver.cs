@@ -43,8 +43,8 @@ public class InternalLinkResolver
         RegexOptions.Compiled);
 
     /// <param name="deferredSourcePageIds">
-    /// Source page IDs known to ship via a sibling mode in the same run (e.g. seed pages
-    /// while deserializing deploy). Links to these are left unchanged and logged as deferred
+    /// Source page IDs known to ship via a sibling mode in the same run (e.g. merge pages
+    /// while deserializing replace). Links to these are left unchanged and logged as deferred
     /// (NOT as WARNING — they are rewritten during the sibling mode's own pass and must not
     /// escalate under strict mode).
     /// </param>
@@ -99,7 +99,7 @@ public class InternalLinkResolver
             }
             // Raw numeric pointing at a sibling-mode page that is not on target yet: defer
             // with bookkeeping (these were previously left behind SILENTLY — e.g. the area's
-            // HeaderDesktop binding when the chrome ships via seed).
+            // HeaderDesktop binding when the chrome ships via merge).
             if (_deferredSourcePageIds?.Contains(rawPageId) == true)
             {
                 _log?.Invoke($"  Link deferred: page ID {rawPageId} (raw numeric) ships via another pass in this run");
@@ -148,7 +148,7 @@ public class InternalLinkResolver
             }
             else if (_deferredSourcePageIds?.Contains(sourcePageId) == true)
             {
-                _log?.Invoke($"  Link deferred: page ID {sourcePageId} ships via another pass in this run — finalized at the end of the seed run");
+                _log?.Invoke($"  Link deferred: page ID {sourcePageId} ships via another pass in this run — finalized at the end of the merge run");
                 _deferredCount++;
                 RecordDeferred(sourcePageId);
                 return match.Value;

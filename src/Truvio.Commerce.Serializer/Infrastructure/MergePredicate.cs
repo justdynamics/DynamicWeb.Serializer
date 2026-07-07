@@ -3,10 +3,10 @@ using System;
 namespace Truvio.Commerce.Serializer.Infrastructure;
 
 /// <summary>
-/// Per-value predicate used by Seed-mode deserializers (ContentDeserializer +
+/// Per-value predicate used by Merge-mode deserializers (ContentDeserializer +
 /// SqlTableProvider) to decide whether a target value is "unset" — NULL, DBNull,
 /// or the type's default (empty string, 0, false, DateTime.MinValue, Guid.Empty).
-/// Unset values are eligible to be filled from Seed YAML per Phase 39 D-01..D-03.
+/// Unset values are eligible to be filled from Merge YAML.
 /// </summary>
 /// <remarks>
 /// D-10 tradeoff: a customer who explicitly set a bool to false or an int to 0 is
