@@ -129,21 +129,22 @@ for the full folder layout.
 ## Commit the YAML
 
 The source host's `Files/System/Serializer/SerializeRoot/` directory holds the
-canonical baseline. Copy (or mount, or sync) that tree into your repo under a
-stable location — the convention in this repo is `baselines/<BaselineName>/`:
+canonical baseline. Copy (or mount, or sync) that tree into your own repo at any
+stable path:
 
 ```bash
-mkdir -p baselines/Example/
+mkdir -p serialize-root/
 cp -R /path/to/your-dw-host/Files/System/Serializer/SerializeRoot/deploy \
-      baselines/Example/
+      serialize-root/
 
-git add baselines/Example/
-git commit -m "baseline: Example Deploy snapshot"
+git add serialize-root/
+git commit -m "content: Deploy snapshot"
 git push
 ```
 
-The deploy/seed split in the folder name matches the config's `outputSubfolder`
-settings. Downstream environments read from the same layout.
+The `deploy/` and `seed/` subfolders match the config's `deployOutputSubfolder`
+and `seedOutputSubfolder` settings. Downstream environments read from the same
+layout.
 
 ## Deserialize into the target
 
@@ -183,7 +184,7 @@ Two quick checks prove end-to-end fidelity:
      -H "Authorization: Bearer CLD.your-target-api-key"
 
    diff -r \
-     baselines/Example/deploy/EcomOrderFlow/ \
+     serialize-root/deploy/EcomOrderFlow/ \
      /path/to/target-dw-host/Files/System/Serializer/SerializeRoot/deploy/EcomOrderFlow/
    # empty output = round-trip clean
    ```
@@ -204,10 +205,16 @@ serialize → commit → deserialize → serialize.
 
 ## What next
 
-- **Expand the config.** Start with the reference baseline at
-  `src/Truvio.Commerce.Serializer/Configuration/swift2.2-combined.json` — a working
-  Content predicate plus seventeen SqlTable predicates covering the full Swift 2.2
-  deployment surface. Trim to what your project needs.
+- **Expand the config.** Start with the shipped starter config at
+  `src/Truvio.Commerce.Serializer/Configuration/swift-starter.json` — a Deploy-mode
+  site-framework Content predicate plus the commerce-framework SqlTable predicates
+  (countries, currencies, languages, VAT, shops, payments, shippings, order flow,
+  URL paths), and Seed-mode predicates for the customer-owned content surfaces and
+  the starter catalog. Trim to what your project needs.
+- **Start from ready-made content.** The
+  [Truvio.Commerce.Distribution](https://github.com/justdynamics/Truvio.Commerce.Distribution)
+  ships gate-proven editions (`base-only`, `swift-demo`, `headless-demo`) as
+  versioned layers you can clone and deserialize instead of capturing your own.
 - **Turn on strict mode for CI.** Flip `"strictMode": true` in config, or pass
   `?strictMode=true` on the API call, so any warning fails the run. See
   [`strict-mode.md`](strict-mode.md).
