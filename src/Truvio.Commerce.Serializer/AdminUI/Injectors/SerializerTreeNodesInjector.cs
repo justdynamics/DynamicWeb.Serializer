@@ -20,7 +20,7 @@ namespace Truvio.Commerce.Serializer.AdminUI.Injectors;
 /// <summary>
 /// Decorates Content-tree page nodes on tree expansion / section loads (TreeNodesScreen):
 /// adds a "Truvio Serializer" right-click group with Serialize subtree / Deserialize from zip,
-/// and an annotation icon on pages covered by a deploy-mode content predicate.
+/// and an annotation icon on pages covered by a replace-mode content predicate.
 /// Auto-discovered by DW's AddInManager. The initial full-tree render goes through
 /// <see cref="TreeScreen"/> instead — covered by <see cref="SerializerTreeInjector"/>.
 /// </summary>
@@ -72,23 +72,23 @@ internal static class TreeNodeDecorator
 
     /// <summary>
     /// Per-mode coverage evaluators for tree annotations and edit-screen alerts.
-    /// <paramref name="ShowSeedIndicators"/> gates every seed-mode cue — the tree's flower
-    /// icon AND the seed info alert on editing screens (config: showSeedIndicators, default
-    /// off — broad seed coverage drowns the deploy/partial cues, which carry the actionable
-    /// signal). <paramref name="ShowDeployIndicators"/> gates every deploy-mode cue the same
-    /// way (config: showDeployIndicators, default ON — the deploy warnings carry the
+    /// <paramref name="ShowMergeIndicators"/> gates every merge-mode cue — the tree's flower
+    /// icon AND the merge info alert on editing screens (config: showMergeIndicators, default
+    /// off — broad merge coverage drowns the replace/partial cues, which carry the actionable
+    /// signal). <paramref name="ShowReplaceIndicators"/> gates every replace-mode cue the same
+    /// way (config: showReplaceIndicators, default ON — the replace warnings carry the
     /// actionable signal, but e.g. a source environment can switch them off). The exclusion
     /// dicts ride along so per-page field-level carve-outs (e.g. the cart page's eCom_CartV2
     /// settings) can downgrade a "fully managed" verdict to partial.
     /// </summary>
     internal sealed record CoverageEvaluators(
-        ContentCoverageEvaluator? Deploy,
-        ContentCoverageEvaluator? Seed,
-        bool ShowSeedIndicators,
-        bool ShowDeployIndicators,
+        ContentCoverageEvaluator? Replace,
+        ContentCoverageEvaluator? Merge,
+        bool ShowMergeIndicators,
+        bool ShowReplaceIndicators,
         IReadOnlyDictionary<string, List<string>> ExcludeFieldsByItemType,
         IReadOnlyDictionary<string, List<string>> ExcludeXmlElementsByType,
-        DateTime? LastDeployUtc);
+        DateTime? LastReplaceUtc);
 
     public static void Decorate(NavigationNode node, CoverageEvaluators? evaluators)
     {
@@ -105,28 +105,28 @@ internal static class TreeNodeDecorator
                     // paths are authored against the master area (same rule as serialize time).
                     var checkPath = GetPredicateCheckPath(page);
 
-                    var deploy = evaluators.ShowDeployIndicators
-                        ? evaluators.Deploy?.Evaluate(checkPath, page.AreaId)
+                    var replace = evaluators.ShowReplaceIndicators
+                        ? evaluators.Replace?.Evaluate(checkPath, page.AreaId)
                         : null;
-                    var seed = evaluators.ShowSeedIndicators
-                        ? evaluators.Seed?.Evaluate(checkPath, page.AreaId)
+                    var merge = evaluators.ShowMergeIndicators
+                        ? evaluators.Merge?.Evaluate(checkPath, page.AreaId)
                         : null;
 
                     // Field-level carve-outs apply only when the page ITSELF is managed —
                     // the "contains managed subtrees" flavour of Partial carries no page
                     // content to carve from.
-                    var deployManagesPage = deploy is not null && deploy.Coverage != ContentCoverage.None
-                        && evaluators.Deploy!.GetManagingPredicateNames(checkPath, page.AreaId).Count > 0;
-                    var seedManagesPage = seed is not null && seed.Coverage != ContentCoverage.None
-                        && evaluators.Seed!.GetManagingPredicateNames(checkPath, page.AreaId).Count > 0;
-                    if (deployManagesPage || seedManagesPage)
+                    var replaceManagesPage = replace is not null && replace.Coverage != ContentCoverage.None
+                        && evaluators.Replace!.GetManagingPredicateNames(checkPath, page.AreaId).Count > 0;
+                    var mergeManagesPage = merge is not null && merge.Coverage != ContentCoverage.None
+                        && evaluators.Merge!.GetManagingPredicateNames(checkPath, page.AreaId).Count > 0;
+                    if (replaceManagesPage || mergeManagesPage)
                         carveOuts = GetFieldCarveOuts(page, evaluators);
 
-                    if (deploy is not null && deploy.Coverage != ContentCoverage.None)
+                    if (replace is not null && replace.Coverage != ContentCoverage.None)
                     {
-                        var explanation = deploy.Explanation;
-                        var isPartial = deploy.Coverage != ContentCoverage.Full;
-                        if (deployManagesPage && carveOuts.Count > 0)
+                        var explanation = replace.Explanation;
+                        var isPartial = replace.Coverage != ContentCoverage.Full;
+                        if (replaceManagesPage && carveOuts.Count > 0)
                         {
                             // Cart-page case: path algebra says fully managed, but excluded
                             // fields/settings on this page stay local — show partial.
@@ -135,9 +135,9 @@ internal static class TreeNodeDecorator
                                 + string.Join("; ", carveOuts.Select(c => c.Label))
                                 + ". Right-click > Truvio Serializer to view the excluded fields.";
                         }
-                        if (deployManagesPage && IsEditedSinceLastDeploy(page, evaluators.LastDeployUtc))
+                        if (replaceManagesPage && IsEditedSinceLastReplace(page, evaluators.LastReplaceUtc))
                         {
-                            explanation += " — changed on this environment after the last deploy; the next deploy will overwrite those changes";
+                            explanation += " — changed on this environment after the last replace run; the next replace run will overwrite those changes";
                         }
                         node.Annotations.Add(new ActionNode
                         {
@@ -147,10 +147,10 @@ internal static class TreeNodeDecorator
                         });
                     }
 
-                    if (seed is not null && seed.Coverage != ContentCoverage.None)
+                    if (merge is not null && merge.Coverage != ContentCoverage.None)
                     {
-                        var explanation = $"{seed.Explanation} (seed fills empty fields once; edits on this environment are preserved)";
-                        if (seedManagesPage && carveOuts.Count > 0)
+                        var explanation = $"{merge.Explanation} (merge fills empty fields once; edits on this environment are preserved)";
+                        if (mergeManagesPage && carveOuts.Count > 0)
                             explanation += $" — never filled (excluded by type): {string.Join("; ", carveOuts.Select(c => c.Label))}";
                         node.Annotations.Add(new ActionNode
                         {
@@ -220,19 +220,19 @@ internal static class TreeNodeDecorator
     }
 
     /// <summary>
-    /// Drift v1: was this page edited on THIS environment after the last deploy landed?
-    /// Timestamp-based (page audit date vs. the newest deploy-received log summary) with a
-    /// 5-minute grace margin so pages the deploy itself wrote don't read as drifted.
+    /// Drift v1: was this page edited on THIS environment after the last replace run landed?
+    /// Timestamp-based (page audit date vs. the newest replace-received log summary) with a
+    /// 5-minute grace margin so pages the replace run itself wrote don't read as drifted.
     /// Occasional false positives from system touches are the accepted v1 tradeoff; the
     /// honest alternative is a per-page YAML diff.
     /// </summary>
-    internal static bool IsEditedSinceLastDeploy(Page page, DateTime? lastDeployUtc)
+    internal static bool IsEditedSinceLastReplace(Page page, DateTime? lastReplaceUtc)
     {
-        if (lastDeployUtc is null)
+        if (lastReplaceUtc is null)
             return false;
         try
         {
-            var threshold = lastDeployUtc.Value.ToLocalTime() + TimeSpan.FromMinutes(5);
+            var threshold = lastReplaceUtc.Value.ToLocalTime() + TimeSpan.FromMinutes(5);
             return page.Audit?.LastModifiedAt > threshold;
         }
         catch
@@ -278,7 +278,7 @@ internal static class TreeNodeDecorator
             if (contentPredicates.Count == 0)
                 return null;
 
-            ContentCoverageEvaluator? Build(DeploymentMode mode, string word)
+            ContentCoverageEvaluator? Build(SerializerMode mode, string word)
             {
                 var modePredicates = contentPredicates.Where(p => p.Mode == mode).ToList();
                 if (modePredicates.Count == 0)
@@ -288,14 +288,14 @@ internal static class TreeNodeDecorator
                 return new ContentCoverageEvaluator(expanded, word);
             }
 
-            var deploy = Build(DeploymentMode.Deploy, "deploy");
-            var seed = Build(DeploymentMode.Seed, "seed");
-            return deploy is null && seed is null
+            var replace = Build(SerializerMode.Replace, "replace");
+            var merge = Build(SerializerMode.Merge, "merge");
+            return replace is null && merge is null
                 ? null
-                : new CoverageEvaluators(deploy, seed, config.ShowSeedIndicators,
-                    config.ShowDeployIndicators,
+                : new CoverageEvaluators(replace, merge, config.ShowMergeIndicators,
+                    config.ShowReplaceIndicators,
                     config.ExcludeFieldsByItemType, config.ExcludeXmlElementsByType,
-                    Reporting.LastRunResolver.FindLastDeployReceivedUtc());
+                    Reporting.LastRunResolver.FindLastReplaceReceivedUtc());
         }
         catch
         {

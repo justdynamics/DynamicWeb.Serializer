@@ -21,8 +21,8 @@ public sealed class ScanXmlTypesCommand : CommandBase
             var discovery = Discovery ?? new XmlTypeDiscovery(new DwSqlExecutor());
             var discoveredTypes = discovery.DiscoverXmlTypes();
 
-            // Phase 40 D-04: discovered types merge into the top-level ExcludeXmlElementsByType dict.
-            // Mode-agnostic per D-04 — there is no separate Deploy/Seed dict anymore. The full
+            // Discovered types merge into the top-level ExcludeXmlElementsByType dict.
+            // Mode-agnostic — there is no separate Replace/Merge dict. The full
             // pre-existing dict is preserved (case-insensitive contains check); only NEW types are
             // added with empty exclusion lists for the user to fill in via the admin screen.
             var updated = new Dictionary<string, List<string>>(config.ExcludeXmlElementsByType, StringComparer.OrdinalIgnoreCase);

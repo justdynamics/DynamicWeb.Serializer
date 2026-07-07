@@ -89,8 +89,8 @@ public sealed class PredicateEditScreen : EditScreenBase<PredicateEditModel>
             SortOrder = OrderBy.Default,
             Options = new List<ListOption>
             {
-                new() { Value = nameof(DeploymentMode.Deploy), Label = "Deploy" },
-                new() { Value = nameof(DeploymentMode.Seed), Label = "Seed" }
+                new() { Value = nameof(SerializerMode.Replace), Label = "Replace" },
+                new() { Value = nameof(SerializerMode.Merge), Label = "Merge" }
             }
         },
         nameof(PredicateEditModel.AreaId) => SelectorBuilder.CreateAreaSelector(

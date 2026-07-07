@@ -20,9 +20,9 @@ public sealed class SerializerSettingsNodeProvider : NavigationNodeProvider<Syst
     public const string DeveloperRootId = "Settings_Developer";
     public const string SerializeNodeId = "Serializer_Settings";
 
-    // Phase 40 D-06: single flat tree under Serialize — Predicates, Item Types, Embedded XML, Log Viewer.
-    // No Deploy/Seed group split: each predicate carries its own Mode (D-01) and exclusion dicts are
-    // top-level mode-agnostic (D-04).
+    // Single flat tree under Serialize — Predicates, Item Types, Embedded XML, Log Viewer.
+    // No Replace/Merge group split: each predicate carries its own Mode and exclusion dicts are
+    // top-level mode-agnostic.
     public const string PredicatesNodeId = "Serializer_Predicates";
     public const string ItemTypesNodeId = "Serializer_ItemTypes";
     public const string XmlTypesNodeId = "Serializer_XmlTypes";

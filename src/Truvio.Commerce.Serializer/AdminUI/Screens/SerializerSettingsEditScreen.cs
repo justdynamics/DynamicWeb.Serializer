@@ -20,10 +20,10 @@ public sealed class SerializerSettingsEditScreen : EditScreenBase<SerializerSett
             new("Serialize",
             [
                 EditorFor(m => m.OutputDirectory),
-                EditorFor(m => m.DeployOutputSubfolder),
-                EditorFor(m => m.SeedOutputSubfolder),
-                EditorFor(m => m.ShowDeployIndicators),
-                EditorFor(m => m.ShowSeedIndicators)
+                EditorFor(m => m.ReplaceOutputSubfolder),
+                EditorFor(m => m.MergeOutputSubfolder),
+                EditorFor(m => m.ShowReplaceIndicators),
+                EditorFor(m => m.ShowMergeIndicators)
             ]),
             new("Information",
             [
@@ -75,58 +75,58 @@ public sealed class SerializerSettingsEditScreen : EditScreenBase<SerializerSett
         {
             new ActionGroup
             {
-                Name = "Deploy",
+                Name = "Replace",
                 Nodes = new List<ActionNode>
                 {
                     new()
                     {
-                        Name = "Serialize (Deploy)",
+                        Name = "Serialize (Replace)",
                         Icon = Icon.DownloadAlt,
-                        NodeAction = RunCommandAction.For(new SerializerSerializeCommand { Mode = "deploy" }).WithReloadOnSuccess()
+                        NodeAction = RunCommandAction.For(new SerializerSerializeCommand { Mode = "replace" }).WithReloadOnSuccess()
                     },
                     new()
                     {
                         // Preview: full pipeline, nothing written — the answer to "what
                         // would happen if I deserialized right now?" before committing.
-                        Name = "Preview deserialize (Deploy)",
+                        Name = "Preview deserialize (Replace)",
                         Icon = Icon.Eye,
-                        NodeAction = RunCommandAction.For(new SerializerDeserializeCommand { Mode = "deploy", IsAdminUiInvocation = true, IsDryRun = true })
+                        NodeAction = RunCommandAction.For(new SerializerDeserializeCommand { Mode = "replace", IsAdminUiInvocation = true, IsDryRun = true })
                     },
                     new()
                     {
-                        Name = "Deserialize (Deploy)",
+                        Name = "Deserialize (Replace)",
                         Icon = Icon.UploadAlt,
                         // Phase 37-04 D-16: admin UI is the interactive entry point — flip
                         // IsAdminUiInvocation so the resolver falls back to AdminUi default (OFF).
-                        NodeAction = RunCommandAction.For(new SerializerDeserializeCommand { Mode = "deploy", IsAdminUiInvocation = true }).WithReloadOnSuccess()
+                        NodeAction = RunCommandAction.For(new SerializerDeserializeCommand { Mode = "replace", IsAdminUiInvocation = true }).WithReloadOnSuccess()
                     }
                 }
             },
-            // Phase 37-01 D-04: Seed requires explicit opt-in — expose via a dedicated action group
+            // Merge requires explicit opt-in — expose via a dedicated action group
             // so admins can't trigger a destination-wins deserialize by accident.
             new ActionGroup
             {
-                Name = "Seed",
+                Name = "Merge",
                 Nodes = new List<ActionNode>
                 {
                     new()
                     {
-                        Name = "Serialize (Seed)",
+                        Name = "Serialize (Merge)",
                         Icon = Icon.DownloadAlt,
-                        NodeAction = RunCommandAction.For(new SerializerSerializeCommand { Mode = "seed" }).WithReloadOnSuccess()
+                        NodeAction = RunCommandAction.For(new SerializerSerializeCommand { Mode = "merge" }).WithReloadOnSuccess()
                     },
                     new()
                     {
-                        Name = "Preview deserialize (Seed)",
+                        Name = "Preview deserialize (Merge)",
                         Icon = Icon.Eye,
-                        NodeAction = RunCommandAction.For(new SerializerDeserializeCommand { Mode = "seed", IsAdminUiInvocation = true, IsDryRun = true })
+                        NodeAction = RunCommandAction.For(new SerializerDeserializeCommand { Mode = "merge", IsAdminUiInvocation = true, IsDryRun = true })
                     },
                     new()
                     {
-                        Name = "Deserialize (Seed)",
+                        Name = "Deserialize (Merge)",
                         Icon = Icon.UploadAlt,
                         // Phase 37-04 D-16: admin UI triggered — resolver uses AdminUi default (OFF).
-                        NodeAction = RunCommandAction.For(new SerializerDeserializeCommand { Mode = "seed", IsAdminUiInvocation = true }).WithReloadOnSuccess()
+                        NodeAction = RunCommandAction.For(new SerializerDeserializeCommand { Mode = "merge", IsAdminUiInvocation = true }).WithReloadOnSuccess()
                     }
                 }
             },

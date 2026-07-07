@@ -14,13 +14,13 @@ public sealed class PredicateEditModel : DataViewModelBase, IIdentifiable
     /// match and the screen errors out with "The selected option no longer exists" (project memory
     /// feedback_dw_patterns.md). Mirrors the LogLevel / ConflictStrategy precedent on SerializerSettingsModel.
     ///
-    /// Persists into ProviderPredicateDefinition.Mode (DeploymentMode enum) via Enum.Parse&lt;DeploymentMode&gt;
+    /// Persists into ProviderPredicateDefinition.Mode (SerializerMode enum) via Enum.Parse&lt;SerializerMode&gt;
     /// in SavePredicateCommand, and hydrates from the enum via .ToString() in PredicateByIndexQuery.
-    /// Default value mirrors nameof(DeploymentMode.Deploy) to keep the new-predicate flow valid for the
+    /// Default value mirrors nameof(SerializerMode.Replace) to keep the new-predicate flow valid for the
     /// Enum.Parse round-trip.
     /// </summary>
-    [ConfigurableProperty("Mode", hint: "Deploy = source-wins (YAML overwrites destination). Seed = destination-wins field-level merge (only fills empty destination fields).")]
-    public string Mode { get; set; } = nameof(DeploymentMode.Deploy);
+    [ConfigurableProperty("Mode", hint: "Replace = source-wins (YAML overwrites destination). Merge = destination-wins field-level fill (only fills empty destination fields).")]
+    public string Mode { get; set; } = nameof(SerializerMode.Replace);
 
     // DW framework treats "0" as "no identifier" -- use 1-based for round-tripping
     public string GetId() => (Index + 1).ToString();

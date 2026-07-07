@@ -34,14 +34,14 @@ public sealed class SavePredicateCommand : CommandBase<PredicateEditModel>
         if (string.IsNullOrWhiteSpace(Model.Name))
             return new() { Status = CommandResult.ResultType.Invalid, Message = "Name is required" };
 
-        // Phase 41 D-13 + T-41-01: validate Mode is a known DeploymentMode value. Mirrors
+        // Phase 41 D-13 + T-41-01: validate Mode is a known SerializerMode value. Mirrors
         // ConfigLoader's case-insensitive Enum.TryParse gate on the JSON read path so admin-UI
         // saves and config-file loads share identical Mode validation semantics.
-        if (!Enum.TryParse<DeploymentMode>(Model.Mode, ignoreCase: true, out _))
+        if (!Enum.TryParse<SerializerMode>(Model.Mode, ignoreCase: true, out _))
             return new()
             {
                 Status = CommandResult.ResultType.Invalid,
-                Message = $"Mode must be 'Deploy' or 'Seed' (case-insensitive); got '{Model.Mode}'."
+                Message = $"Mode must be 'Replace' or 'Merge' (case-insensitive); got '{Model.Mode}'."
             };
 
         try
@@ -230,16 +230,16 @@ public sealed class SavePredicateCommand : CommandBase<PredicateEditModel>
             .ToList();
 
     /// <summary>
-    /// Phase 41 D-13 + threat T-41-01: parse the string-typed Model.Mode into the DeploymentMode
-    /// enum stored on ProviderPredicateDefinition. Case-insensitive (matches ConfigLoader's
-    /// Enum.TryParse pathway). Throws ArgumentException for unknown values; the early-validation
-    /// gate at the top of Handle() prevents that path from being reachable in normal flow.
+    /// Parse the string-typed Model.Mode into the SerializerMode enum stored on
+    /// ProviderPredicateDefinition. Case-insensitive (matches ConfigLoader's Enum.TryParse
+    /// pathway). Throws ArgumentException for unknown values; the early-validation gate at the
+    /// top of Handle() prevents that path from being reachable in normal flow.
     /// </summary>
-    private static DeploymentMode ParseMode(string? raw)
+    private static SerializerMode ParseMode(string? raw)
     {
         if (string.IsNullOrWhiteSpace(raw))
-            throw new ArgumentException("Mode must be 'Deploy' or 'Seed' (case-insensitive); got empty value.");
-        return Enum.Parse<DeploymentMode>(raw, ignoreCase: true);
+            throw new ArgumentException("Mode must be 'Replace' or 'Merge' (case-insensitive); got empty value.");
+        return Enum.Parse<SerializerMode>(raw, ignoreCase: true);
     }
 
     /// <summary>

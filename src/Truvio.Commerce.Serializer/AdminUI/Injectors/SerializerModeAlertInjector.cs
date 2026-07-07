@@ -16,15 +16,15 @@ namespace Truvio.Commerce.Serializer.AdminUI.Injectors;
 /// badges, each editing screen (visual editor, paragraph dialog, grid-row dialog) gets one
 /// screen-level alert for the owning page:
 ///
-///   deploy → warning: edits here are overwritten by the next deploy;
-///   seed   → info: starter content, local edits are preserved.
+///   replace → warning: edits here are overwritten by the next replace run;
+///   merge   → info: starter content, local edits are preserved.
 ///
-/// Uses <see cref="ScreenLayout.Alert"/>, DW's native screen alert slot. The deploy warning
+/// Uses <see cref="ScreenLayout.Alert"/>, DW's native screen alert slot. The replace warning
 /// shows by default — at the moment of editing, "will my change survive?" is exactly the
-/// question being answered — and is gated by the showDeployIndicators setting (default on).
-/// The seed info alert is gated by the same showSeedIndicators setting as the tree's flower
-/// icons: with broad seed coverage it would appear on nearly every editing screen and dull
-/// the deploy warning's signal.
+/// question being answered — and is gated by the showReplaceIndicators setting (default on).
+/// The merge info alert is gated by the same showMergeIndicators setting as the tree's flower
+/// icons: with broad merge coverage it would appear on nearly every editing screen and dull
+/// the replace warning's signal.
 ///
 /// Field-level carve-outs (e.g. the cart page's eCom_CartV2 settings) render on their own
 /// line: a clickable chip in the screen's header info bar per carved-out type, opening the
@@ -52,42 +52,42 @@ internal static class ModeAlert
 
             var checkPath = TreeNodeDecorator.GetPredicateCheckPath(page);
 
-            var deployNames = evaluators.ShowDeployIndicators
-                ? evaluators.Deploy?.GetManagingPredicateNames(checkPath, page.AreaId)
+            var replaceNames = evaluators.ShowReplaceIndicators
+                ? evaluators.Replace?.GetManagingPredicateNames(checkPath, page.AreaId)
                 : null;
-            if (deployNames is { Count: > 0 })
+            if (replaceNames is { Count: > 0 })
             {
                 AddCarveOutChips(layout, TreeNodeDecorator.GetFieldCarveOuts(page, evaluators), "stay local");
-                var lastDeployNote = evaluators.LastDeployUtc is DateTime lastDeployUtc
-                    ? $" Last deploy received: {lastDeployUtc.ToLocalTime():dd MMM yyyy HH:mm}."
+                var lastReplaceNote = evaluators.LastReplaceUtc is DateTime lastReplaceUtc
+                    ? $" Last replace received: {lastReplaceUtc.ToLocalTime():dd MMM yyyy HH:mm}."
                     : "";
-                var driftNote = TreeNodeDecorator.IsEditedSinceLastDeploy(page, evaluators.LastDeployUtc)
-                    ? " This page changed on this environment after that deploy — the next deploy will overwrite those changes."
+                var driftNote = TreeNodeDecorator.IsEditedSinceLastReplace(page, evaluators.LastReplaceUtc)
+                    ? " This page changed on this environment after that replace run — the next replace run will overwrite those changes."
                     : "";
                 layout.Alert = new Alert
                 {
                     Type = AlertType.Warning,
                     Icon = Dynamicweb.CoreUI.Icons.Icon.Sync,
-                    Value = $"This page is managed at deploy by '{string.Join("', '", deployNames)}'. " +
-                            "Content here is overwritten by the next deploy — make lasting changes in the source environment." +
-                            lastDeployNote + driftNote
+                    Value = $"This page is replace-managed by '{string.Join("', '", replaceNames)}'. " +
+                            "Content here is overwritten by the next replace run — make lasting changes in the source environment." +
+                            lastReplaceNote + driftNote
                 };
                 return;
             }
 
-            if (!evaluators.ShowSeedIndicators)
+            if (!evaluators.ShowMergeIndicators)
                 return;
 
-            var seedNames = evaluators.Seed?.GetManagingPredicateNames(checkPath, page.AreaId);
-            if (seedNames is { Count: > 0 })
+            var mergeNames = evaluators.Merge?.GetManagingPredicateNames(checkPath, page.AreaId);
+            if (mergeNames is { Count: > 0 })
             {
                 AddCarveOutChips(layout, TreeNodeDecorator.GetFieldCarveOuts(page, evaluators), "never filled");
                 layout.Alert = new Alert
                 {
                     Type = AlertType.Info,
                     Icon = Dynamicweb.CoreUI.Icons.Icon.Flower,
-                    Value = $"Starter content seeded by '{string.Join("', '", seedNames)}'. " +
-                            "Edits on this environment are preserved; only fields left empty are filled by the next seed."
+                    Value = $"Starter content merge-managed by '{string.Join("', '", mergeNames)}'. " +
+                            "Edits on this environment are preserved; only fields left empty are filled by the next merge run."
                 };
             }
         }
@@ -132,7 +132,7 @@ public sealed class SerializerVisualEditAlertInjector : ScreenInjector<PageVisua
 }
 
 /// <summary>Mode alert on the page properties editor (General/Layout/SEO/Publication tabs) —
-/// page settings are page state and deploy/seed governs them exactly like paragraph content.</summary>
+/// page settings are page state and replace/merge governs them exactly like paragraph content.</summary>
 public sealed class SerializerPageEditAlertInjector : ScreenInjector<PageEditScreen>
 {
     public override void OnAfter(PageEditScreen screen, UiComponentBase content)

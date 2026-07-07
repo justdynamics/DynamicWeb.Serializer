@@ -13,10 +13,10 @@ public sealed class SaveSerializerSettingsCommand : CommandBase<SerializerSettin
             return new() { Status = CommandResult.ResultType.Invalid, Message = "Model data must be given" };
         if (string.IsNullOrWhiteSpace(Model.OutputDirectory))
             return new() { Status = CommandResult.ResultType.Invalid, Message = "Output Directory is required" };
-        if (!ConfigLoader.IsValidSubfolderName(Model.DeployOutputSubfolder))
-            return new() { Status = CommandResult.ResultType.Invalid, Message = $"Deploy subfolder '{Model.DeployOutputSubfolder}' is invalid — letters, digits, '-' and '_' only (max 32 chars)." };
-        if (!ConfigLoader.IsValidSubfolderName(Model.SeedOutputSubfolder))
-            return new() { Status = CommandResult.ResultType.Invalid, Message = $"Seed subfolder '{Model.SeedOutputSubfolder}' is invalid — letters, digits, '-' and '_' only (max 32 chars)." };
+        if (!ConfigLoader.IsValidSubfolderName(Model.ReplaceOutputSubfolder))
+            return new() { Status = CommandResult.ResultType.Invalid, Message = $"Replace subfolder '{Model.ReplaceOutputSubfolder}' is invalid — letters, digits, '-' and '_' only (max 32 chars)." };
+        if (!ConfigLoader.IsValidSubfolderName(Model.MergeOutputSubfolder))
+            return new() { Status = CommandResult.ResultType.Invalid, Message = $"Merge subfolder '{Model.MergeOutputSubfolder}' is invalid — letters, digits, '-' and '_' only (max 32 chars)." };
 
         try
         {
@@ -49,10 +49,10 @@ public sealed class SaveSerializerSettingsCommand : CommandBase<SerializerSettin
             var updatedConfig = existingConfig with
             {
                 OutputDirectory = Model.OutputDirectory,
-                DeployOutputSubfolder = Model.DeployOutputSubfolder,
-                SeedOutputSubfolder = Model.SeedOutputSubfolder,
-                ShowSeedIndicators = Model.ShowSeedIndicators,
-                ShowDeployIndicators = Model.ShowDeployIndicators
+                ReplaceOutputSubfolder = Model.ReplaceOutputSubfolder,
+                MergeOutputSubfolder = Model.MergeOutputSubfolder,
+                ShowMergeIndicators = Model.ShowMergeIndicators,
+                ShowReplaceIndicators = Model.ShowReplaceIndicators
             };
 
             ConfigWriter.Save(updatedConfig, configPath);

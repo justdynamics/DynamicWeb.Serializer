@@ -13,7 +13,7 @@ public sealed class PredicateNavigationNodePathProvider : NavigationNodePathProv
 
     protected override NavigationNodePath GetNavigationNodePathInternal(PredicateListModel? model)
     {
-        // Phase 40 D-06: single predicate subtree — no Deploy/Seed group split.
+        // Single predicate subtree — no Replace/Merge group split.
         // Path: Settings → System → Developer → Serialize → Predicates.
         return new NavigationNodePath(new[]
         {

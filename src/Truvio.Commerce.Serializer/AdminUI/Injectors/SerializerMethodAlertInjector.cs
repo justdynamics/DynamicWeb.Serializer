@@ -15,16 +15,16 @@ namespace Truvio.Commerce.Serializer.AdminUI.Injectors;
 /// <summary>
 /// Mode alerts for the commerce-settings edit screens whose data ships through SqlTable
 /// predicates — the SqlTable counterpart of the content editor alerts. Every entity edit
-/// screen backed by a deploy-managed table gets a cue: an editor changing a VAT rate, a
+/// screen backed by a replace-managed table gets a cue: an editor changing a VAT rate, a
 /// currency format or a payment method on a target environment is silently overwritten by
-/// the next deploy, and for payment/shipping the inverse trap exists too (excluded
+/// the next replace run, and for payment/shipping the inverse trap exists too (excluded
 /// credential columns/elements that do NOT sync). List/bulk surfaces (catalog rows, URL
-/// redirects) deliberately get no cue — see docs/swift-deploy-seed-analysis.md §7.
+/// redirects) deliberately get no cue — see docs/swift-replace-merge-analysis.md §7.
 ///
 /// Same shape as the content alerts: a single verdict sentence in the screen alert, the
 /// exception list as a clickable header chip navigating to the managing predicate (falls
-/// back to inline text when the screen has no info bar). Deploy warnings show when
-/// showDeployIndicators is on (default); seed info alerts when showSeedIndicators is on.
+/// back to inline text when the screen has no info bar). Replace warnings show when
+/// showReplaceIndicators is on (default); merge info alerts when showMergeIndicators is on.
 /// </summary>
 internal static class SqlTableModeAlert
 {
@@ -54,28 +54,28 @@ internal static class SqlTableModeAlert
             if (predicate.ExcludeXmlElements.Count > 0)
                 localParts.Add($"provider settings {string.Join(", ", predicate.ExcludeXmlElements)}");
 
-            var isDeploy = predicate.Mode == DeploymentMode.Deploy;
-            if (isDeploy && !config.ShowDeployIndicators)
+            var isReplace = predicate.Mode == SerializerMode.Replace;
+            if (isReplace && !config.ShowReplaceIndicators)
                 return;
-            if (!isDeploy && !config.ShowSeedIndicators)
+            if (!isReplace && !config.ShowMergeIndicators)
                 return;
 
             AddExclusionChip(layout, predicate, index, localParts);
 
-            layout.Alert = isDeploy
+            layout.Alert = isReplace
                 ? new Alert
                 {
                     Type = AlertType.Warning,
                     Icon = Dynamicweb.CoreUI.Icons.Icon.Sync,
-                    Value = $"This {entityNoun} is managed at deploy by '{predicate.Name}'. " +
-                            "Changes here are overwritten by the next deploy — make lasting changes in the source environment."
+                    Value = $"This {entityNoun} is replace-managed by '{predicate.Name}'. " +
+                            "Changes here are overwritten by the next replace run — make lasting changes in the source environment."
                 }
                 : new Alert
                 {
                     Type = AlertType.Info,
                     Icon = Dynamicweb.CoreUI.Icons.Icon.Flower,
-                    Value = $"This {entityNoun} is seeded by '{predicate.Name}'. " +
-                            "Edits on this environment are preserved; only fields left empty are filled by the next seed."
+                    Value = $"This {entityNoun} is merge-managed by '{predicate.Name}'. " +
+                            "Edits on this environment are preserved; only fields left empty are filled by the next merge run."
                 };
         }
         catch

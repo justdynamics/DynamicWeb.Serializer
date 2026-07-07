@@ -28,24 +28,24 @@ public sealed class SerializerSettingsQuery : DataQueryModelBase<SerializerSetti
         if (idx >= 0)
             relativePath = configPath[(idx + wwwrootMarker.Length)..];
 
-        var deployCount = config.Predicates.Count(p => p.Mode == DeploymentMode.Deploy);
-        var seedCount = config.Predicates.Count(p => p.Mode == DeploymentMode.Seed);
+        var replaceCount = config.Predicates.Count(p => p.Mode == SerializerMode.Replace);
+        var mergeCount = config.Predicates.Count(p => p.Mode == SerializerMode.Merge);
 
         return new SerializerSettingsModel
         {
             OutputDirectory = config.OutputDirectory,
-            DeployOutputSubfolder = config.DeployOutputSubfolder,
-            SeedOutputSubfolder = config.SeedOutputSubfolder,
-            ShowSeedIndicators = config.ShowSeedIndicators,
-            ShowDeployIndicators = config.ShowDeployIndicators,
+            ReplaceOutputSubfolder = config.ReplaceOutputSubfolder,
+            MergeOutputSubfolder = config.MergeOutputSubfolder,
+            ShowMergeIndicators = config.ShowMergeIndicators,
+            ShowReplaceIndicators = config.ShowReplaceIndicators,
             ConfigFilePath = relativePath,
             ItemTypeExcludesSummary = SummarizeExcludes(config.ExcludeFieldsByItemType,
                 "field", "No per-item-type field excludes configured — every field of every item type syncs."),
             XmlExcludesSummary = SummarizeExcludes(config.ExcludeXmlElementsByType,
                 "setting", "No embedded-XML excludes configured — module settings and provider parameters sync in full."),
-            PredicatesSummary = (deployCount + seedCount) == 0
+            PredicatesSummary = (replaceCount + mergeCount) == 0
                 ? "No predicates configured. Nothing will be synced."
-                : $"{deployCount} deploy predicate(s), {seedCount} seed predicate(s) configured. Manage via the Predicates sub-node.",
+                : $"{replaceCount} replace predicate(s), {mergeCount} merge predicate(s) configured. Manage via the Predicates sub-node.",
             LastRunsSummary = BuildLastRunsSummary(configPath),
             CoverageSummary = BuildCoverageSummary(config),
             NeedsSetup = config.Predicates.Count == 0
@@ -99,14 +99,14 @@ public sealed class SerializerSettingsQuery : DataQueryModelBase<SerializerSetti
         return $"These stay local per environment: {string.Join(", ", withExcludes)}.{tail}";
     }
 
-    /// <summary>"Last deploy received: … · Last seed received: …" from the run logs.</summary>
+    /// <summary>"Last replace received: … · Last merge received: …" from the run logs.</summary>
     private static string BuildLastRunsSummary(string configPath)
     {
         try
         {
             var logDir = LastRunResolver.GetLogDir(configPath);
-            return $"{Format(LastRunResolver.FindLastReceived(logDir, "deploy"), "Last deploy received")} · " +
-                   Format(LastRunResolver.FindLastReceived(logDir, "seed"), "Last seed received");
+            return $"{Format(LastRunResolver.FindLastReceived(logDir, "replace"), "Last replace received")} · " +
+                   Format(LastRunResolver.FindLastReceived(logDir, "merge"), "Last merge received");
         }
         catch
         {
@@ -120,7 +120,7 @@ public sealed class SerializerSettingsQuery : DataQueryModelBase<SerializerSetti
     }
 
     /// <summary>
-    /// One-line coverage picture: per content area, how many pages deploy / seed / are
+    /// One-line coverage picture: per content area, how many pages replace / merge / are
     /// unmanaged; plus SqlTable predicate counts per mode. Page counting walks the live
     /// tree through the same coverage evaluators as the tree icons — best-effort, and
     /// skipped with a note above <see cref="CoveragePageCap"/> pages.
@@ -132,21 +132,21 @@ public sealed class SerializerSettingsQuery : DataQueryModelBase<SerializerSetti
             var contentPredicates = config.Predicates
                 .Where(p => string.Equals(p.ProviderType, "Content", StringComparison.OrdinalIgnoreCase))
                 .ToList();
-            var sqlDeploy = config.Predicates.Count(p =>
-                string.Equals(p.ProviderType, "SqlTable", StringComparison.OrdinalIgnoreCase) && p.Mode == DeploymentMode.Deploy);
-            var sqlSeed = config.Predicates.Count(p =>
-                string.Equals(p.ProviderType, "SqlTable", StringComparison.OrdinalIgnoreCase) && p.Mode == DeploymentMode.Seed);
+            var sqlReplace = config.Predicates.Count(p =>
+                string.Equals(p.ProviderType, "SqlTable", StringComparison.OrdinalIgnoreCase) && p.Mode == SerializerMode.Replace);
+            var sqlMerge = config.Predicates.Count(p =>
+                string.Equals(p.ProviderType, "SqlTable", StringComparison.OrdinalIgnoreCase) && p.Mode == SerializerMode.Merge);
 
             var parts = new List<string>();
 
             foreach (var areaId in contentPredicates.Select(p => p.AreaId).Where(id => id > 0).Distinct().OrderBy(id => id))
             {
-                var deployEval = new ContentCoverageEvaluator(
-                    contentPredicates.Where(p => p.Mode == DeploymentMode.Deploy && p.AreaId == areaId));
-                var seedEval = new ContentCoverageEvaluator(
-                    contentPredicates.Where(p => p.Mode == DeploymentMode.Seed && p.AreaId == areaId), "seed");
+                var replaceEval = new ContentCoverageEvaluator(
+                    contentPredicates.Where(p => p.Mode == SerializerMode.Replace && p.AreaId == areaId));
+                var mergeEval = new ContentCoverageEvaluator(
+                    contentPredicates.Where(p => p.Mode == SerializerMode.Merge && p.AreaId == areaId), "merge");
 
-                int deployPages = 0, seedPages = 0, unmanaged = 0, total = 0;
+                int replacePages = 0, mergePages = 0, unmanaged = 0, total = 0;
                 var capped = false;
 
                 void Walk(Dynamicweb.Content.Page page, string path)
@@ -154,10 +154,10 @@ public sealed class SerializerSettingsQuery : DataQueryModelBase<SerializerSetti
                     if (capped) return;
                     if (++total > CoveragePageCap) { capped = true; return; }
 
-                    if (deployEval.GetManagingPredicateNames(path, areaId).Count > 0)
-                        deployPages++;
-                    else if (seedEval.GetManagingPredicateNames(path, areaId).Count > 0)
-                        seedPages++;
+                    if (replaceEval.GetManagingPredicateNames(path, areaId).Count > 0)
+                        replacePages++;
+                    else if (mergeEval.GetManagingPredicateNames(path, areaId).Count > 0)
+                        mergePages++;
                     else
                         unmanaged++;
 
@@ -170,10 +170,10 @@ public sealed class SerializerSettingsQuery : DataQueryModelBase<SerializerSetti
 
                 parts.Add(capped
                     ? $"Area {areaId}: more than {CoveragePageCap} pages — counts skipped"
-                    : $"Area {areaId}: {deployPages} pages deploy, {seedPages} seed, {unmanaged} unmanaged");
+                    : $"Area {areaId}: {replacePages} pages replace, {mergePages} merge, {unmanaged} unmanaged");
             }
 
-            parts.Add($"Tables: {sqlDeploy} deploy, {sqlSeed} seed");
+            parts.Add($"Tables: {sqlReplace} replace, {sqlMerge} merge");
             return string.Join(" · ", parts) + ".";
         }
         catch

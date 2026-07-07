@@ -67,7 +67,7 @@ public sealed class CarveOutDetailModel : DataViewModelBase
                     model.ExcludedFields = string.Join("\n", elements ?? new List<string>());
                     model.Summary =
                         $"Settings of '{typeName}' listed below stay local to this environment. " +
-                        "A deploy never overwrites them; a seed never fills them. Everything else on the page syncs normally.";
+                        "A replace run never overwrites them; a merge run never fills them. Everything else on the page syncs normally.";
                     model.SampleXml = TryGetSampleXml(typeName);
                     break;
 
@@ -76,7 +76,7 @@ public sealed class CarveOutDetailModel : DataViewModelBase
                     model.ExcludedFields = string.Join("\n", fields ?? new List<string>());
                     model.Summary =
                         $"Fields of item type '{typeName}' listed below stay local to this environment. " +
-                        "A deploy never overwrites them; a seed never fills them. Everything else syncs normally.";
+                        "A replace run never overwrites them; a merge run never fills them. Everything else syncs normally.";
                     break;
 
                 case KindPredicate:
@@ -176,7 +176,7 @@ public sealed class CarveOutDetailModel : DataViewModelBase
             model.ExcludedFields = string.Join("\n\n", sections);
             model.Summary =
                 $"Fields and settings on '{page.MenuText}' listed below stay local to this environment. " +
-                "A deploy never overwrites them; a seed never fills them. Everything else on the page syncs normally.";
+                "A replace run never overwrites them; a merge run never fills them. Everything else on the page syncs normally.";
         }
         catch (Exception ex)
         {

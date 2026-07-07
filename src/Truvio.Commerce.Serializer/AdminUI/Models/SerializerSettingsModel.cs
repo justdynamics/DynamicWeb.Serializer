@@ -15,17 +15,17 @@ public sealed class SerializerSettingsModel : DataViewModelBase
     [Required(ErrorMessage = "Output Directory is required")]
     public string OutputDirectory { get; set; } = string.Empty;
 
-    [ConfigurableProperty("Deploy subfolder", explanation: "Subfolder under SerializeRoot for Deploy-mode YAML. Letters, digits, '-' and '_' only.")]
-    public string DeployOutputSubfolder { get; set; } = "deploy";
+    [ConfigurableProperty("Replace subfolder", explanation: "Subfolder under SerializeRoot for Replace-mode YAML. Letters, digits, '-' and '_' only.")]
+    public string ReplaceOutputSubfolder { get; set; } = "replace";
 
-    [ConfigurableProperty("Seed subfolder", explanation: "Subfolder under SerializeRoot for Seed-mode YAML. Letters, digits, '-' and '_' only.")]
-    public string SeedOutputSubfolder { get; set; } = "seed";
+    [ConfigurableProperty("Merge subfolder", explanation: "Subfolder under SerializeRoot for Merge-mode YAML. Letters, digits, '-' and '_' only.")]
+    public string MergeOutputSubfolder { get; set; } = "merge";
 
-    [ConfigurableProperty("Show seed indicators", explanation: "Show seed cues in the admin UI: the flower icon on content-tree pages covered by a seed predicate, and the seed message on content editing screens. Off by default — with broad seed coverage these appear nearly everywhere and drown out the deploy warnings, which carry the actionable signal.")]
-    public bool ShowSeedIndicators { get; set; }
+    [ConfigurableProperty("Show merge indicators", explanation: "Show merge cues in the admin UI: the flower icon on content-tree pages covered by a merge predicate, and the merge message on content editing screens. Off by default — with broad merge coverage these appear nearly everywhere and drown out the replace warnings, which carry the actionable signal.")]
+    public bool ShowMergeIndicators { get; set; }
 
-    [ConfigurableProperty("Show deploy indicators", explanation: "Show deploy cues in the admin UI: the sync icon on content-tree pages covered by a deploy predicate, the deploy warning on content editing screens, and the deploy warning on commerce settings screens (payment methods, currencies, …) managed by a deploy predicate. On by default — they warn editors that changes are overwritten by the next deploy. Switch off on environments where the warnings are noise, e.g. the source environment itself.")]
-    public bool ShowDeployIndicators { get; set; } = true;
+    [ConfigurableProperty("Show replace indicators", explanation: "Show replace cues in the admin UI: the sync icon on content-tree pages covered by a replace predicate, the replace warning on content editing screens, and the replace warning on commerce settings screens (payment methods, currencies, …) managed by a replace predicate. On by default — they warn editors that changes are overwritten by the next replace run. Switch off on environments where the warnings are noise, e.g. the source environment itself.")]
+    public bool ShowReplaceIndicators { get; set; } = true;
 
     [ConfigurableProperty("Config File", explanation: "Location of the configuration file (relative to wwwroot). It lives inside the serializer folder so the folder travels as one unit — upload an example configuration (e.g. a Swift starter) into that folder via the file manager to start from it. You can also edit the file manually.")]
     public string ConfigFilePath { get; set; } = string.Empty;
@@ -36,10 +36,10 @@ public sealed class SerializerSettingsModel : DataViewModelBase
     [ConfigurableProperty("Embedded XML excludes", explanation: "Per-type XML elements (module settings, provider parameters) excluded from sync — they stay local to each environment. Manage via the Embedded XML Excludes sub-node. Content pages carrying these types show as partially managed in the content tree.")]
     public string XmlExcludesSummary { get; set; } = string.Empty;
 
-    [ConfigurableProperty("About Predicates", explanation: "Predicates define which content trees and SQL tables to synchronize, each in Deploy or Seed mode. Use the Predicates sub-node to add, edit, or remove predicates. Only content matching at least one predicate is serialized or deserialized. Terminology: see docs/glossary.md in the project repository.")]
+    [ConfigurableProperty("About Predicates", explanation: "Predicates define which content trees and SQL tables to synchronize, each in Replace or Merge mode. Use the Predicates sub-node to add, edit, or remove predicates. Only content matching at least one predicate is serialized or deserialized. Terminology: see docs/glossary.md in the project repository.")]
     public string PredicatesSummary { get; set; } = string.Empty;
 
-    [ConfigurableProperty("Sync history", explanation: "Most recent deploy and seed received by this environment, read from the run logs. Dry-run previews are not counted.")]
+    [ConfigurableProperty("Sync history", explanation: "Most recent replace and merge received by this environment, read from the run logs. Dry-run previews are not counted.")]
     public string LastRunsSummary { get; set; } = string.Empty;
 
     [ConfigurableProperty("Coverage", explanation: "How much of this environment the current predicates manage. Pages are counted per content area; tables per SqlTable predicate.")]

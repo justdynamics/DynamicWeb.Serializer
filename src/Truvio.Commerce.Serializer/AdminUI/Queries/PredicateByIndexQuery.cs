@@ -17,7 +17,7 @@ public sealed class PredicateByIndexQuery : DataQueryIdentifiableModelBase<Predi
     public override PredicateEditModel? GetModel()
     {
         if (Index < 0)
-            return new PredicateEditModel(); // new-predicate flow; Mode default = Deploy
+            return new PredicateEditModel(); // new-predicate flow; Mode default = Replace
 
         var configPath = ConfigPathResolver.FindConfigFile();
         if (configPath == null) return null;
@@ -29,7 +29,7 @@ public sealed class PredicateByIndexQuery : DataQueryIdentifiableModelBase<Predi
         return new PredicateEditModel
         {
             Index = Index,
-            Mode = pred.Mode.ToString(),  // Phase 41 D-13: string-typed for DW Select binding (was enum). DeploymentMode.ToString() returns "Deploy" / "Seed", matching the Value strings emitted by PredicateEditScreen's Mode Select.
+            Mode = pred.Mode.ToString(),  // String-typed for DW Select binding. SerializerMode.ToString() returns "Replace" / "Merge", matching the Value strings emitted by PredicateEditScreen's Mode Select.
             Name = pred.Name,
             ProviderType = pred.ProviderType,
             AreaId = pred.AreaId,
