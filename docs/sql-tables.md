@@ -339,7 +339,7 @@ is a targeted mitigation for the one DW-native case where the schema
 depends on row data in a separate table.
 
 For the broader "DW NuGet versions don't match" problem, see
-[`baselines/env-bucket.md`](baselines/env-bucket.md#dw-nuget-version-alignment).
+[`troubleshooting.md`](troubleshooting.md#source-column-tc-not-present-on-target-schema--skipping).
 
 ## See also
 

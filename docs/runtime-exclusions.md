@@ -173,7 +173,6 @@ The pre-commit grep above is the compensating control.
 
 - [SQL tables](sql-tables.md) — `excludeFields` and `xmlColumns` in context
 - [Configuration](configuration.md) — the full predicate schema
-- [Swift 2.2 baseline](baselines/Swift2.2-baseline.md) — the reference
-  payment / shipping predicate with XML handling
-- [Per-environment config](baselines/env-bucket.md) — where credentials
-  belong instead of in YAML
+- [SQL tables](sql-tables.md) — the payment / shipping predicate with XML handling
+- [Concepts](concepts.md#the-three-bucket-split-deployment-seed-not-serialized) —
+  where credentials belong (the NOT-SERIALIZED bucket) instead of in YAML

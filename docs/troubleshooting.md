@@ -215,8 +215,7 @@ target hosts. Align versions:
 3. `dotnet publish` and restart. DW runs any pending `UpdateProvider`
    classes at startup, which reconciles the schema.
 
-See [`baselines/env-bucket.md`](baselines/env-bucket.md#dw-nuget-version-alignment)
-for the full pattern. For Swift 2.2 specifically, the reference fix
+For Swift 2.2 specifically, the reference fix
 is `tools/swift22-cleanup/cleandb-align-schema.sql` (10 idempotent
 `ALTER TABLE` statements).
 
@@ -384,7 +383,7 @@ Don't run them against an arbitrary customer DB without reading each
 script's `@before` / `@after` assertions. They are targeted at the
 Swift 2.2 reference install — some assertions (e.g. "exactly 1 orphan
 row") may fail loud against other databases. See
-[`findings/swift22-cleanup-overview.md`](findings/swift22-cleanup-overview.md)
+[`tools/swift22-cleanup/README.md`](../tools/swift22-cleanup/README.md)
 for the complete inventory with per-script detect / fix / rollback
 recipes.
 
@@ -394,5 +393,5 @@ recipes.
 - [Link resolution](link-resolution.md) — `Unresolvable page ID` deep dive
 - [SQL tables](sql-tables.md) — `WHERE` clause validation rules
 - [Runtime exclusions](runtime-exclusions.md) — credential-leak checks
-- [`findings/swift22-cleanup-overview.md`](findings/swift22-cleanup-overview.md) — operational cleanup inventory
+- [`tools/swift22-cleanup/README.md`](../tools/swift22-cleanup/README.md) — operational cleanup inventory
 - [`tools/e2e/README.md`](../tools/e2e/README.md) — reference round-trip harness

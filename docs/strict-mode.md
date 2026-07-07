@@ -155,13 +155,13 @@ To diagnose:
    [`link-resolution.md`](link-resolution.md).
 2. **Missing template.** The template file is absent from
    `Files/Templates/`. Deploy the template file alongside the DLL, or
-   remove the reference from the source page. See
-   [`baselines/env-bucket.md`](baselines/env-bucket.md#swift-templates-filesystem)
-   for the "Swift templates are filesystem state, not DB state" pattern.
+   remove the reference from the source page. Templates are filesystem
+   state, not DB state — see
+   [`troubleshooting.md`](troubleshooting.md#template-t-not-found-at-filestemplatest).
 3. **Schema drift.** A source column doesn't exist on the target table.
    Align DW NuGet versions between source and target hosts, or drop the
    column on the source. See
-   [`baselines/env-bucket.md`](baselines/env-bucket.md#dw-nuget-version-alignment).
+   [`troubleshooting.md`](troubleshooting.md#source-column-tc-not-present-on-target-schema--skipping).
 4. **FK re-enable failure.** An orphan row references a parent that
    doesn't exist. Clean the source DB; the Swift 2.2 reference case is
    fixed by `tools/swift22-cleanup/06-delete-orphan-ecomshopgrouprelation.sql`.
@@ -194,8 +194,8 @@ new CacheClearEntry(
 Rules:
 
 - **No reflection at runtime.** Every entry is a compile-time-typed direct
-  call. If the DW service gets renamed or removed upstream, the build
-  fails here, which is the design intent.
+  call. If the DW service's type changes name or is removed upstream, the
+  build fails here, which is the design intent.
 - **Short name AND full type name.** Both are keys into the lookup map.
   The Swift 2.2 baseline config uses fully-qualified names; admin UI
   screens prefer short names. Resolution is case-insensitive.
