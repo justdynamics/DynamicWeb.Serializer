@@ -105,11 +105,11 @@ jobs:
           AZURE_STORAGE_SAS: ${{ secrets.AZURE_STORAGE_SAS }}
         run: |
           # Source host's Files volume is on an Azure Files share.
-          # Sync into baselines/ in the repo.
-          mkdir -p baselines/source
+          # Sync the SerializeRoot tree into the repo.
+          mkdir -p serialize-root
           azcopy sync \
             "https://$AZURE_STORAGE_ACCOUNT.file.core.windows.net/files/System/Serializer/SerializeRoot?$AZURE_STORAGE_SAS" \
-            "baselines/source/" \
+            "serialize-root/" \
             --recursive
 
       - name: Open PR with diff
@@ -157,13 +157,29 @@ jobs:
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
           package: ./publish
 
-      - name: Sync baseline YAML to target's Files volume
+      - name: Fetch the edition from the Distribution
+        run: |
+          # Git-clone consumption — no release archives. Pin the composition to
+          # an annotated edition tag so every deploy applies a byte-identical set.
+          git clone --depth 1 --branch editions/swift-demo/2.3.0 \
+            https://github.com/justdynamics/Truvio.Commerce.Distribution.git dist
+          # Compose the edition's layers into one SerializeRoot. Each layer ships
+          # replace/ (source-wins) + merge/ (field-level) mode trees; stage them
+          # under deploy/ and seed/ for the serializer.
+          mkdir -p edition-content/deploy edition-content/seed
+          for ref in $(jq -r '.from, .add[]?' dist/editions/swift-demo.json); do
+            layer="${ref%@*}"
+            [ -d "dist/layers/$layer/replace" ] && cp -R "dist/layers/$layer/replace/." edition-content/deploy/
+            [ -d "dist/layers/$layer/merge" ]   && cp -R "dist/layers/$layer/merge/."   edition-content/seed/
+          done
+
+      - name: Sync edition YAML to target's Files volume
         env:
           AZURE_STORAGE_ACCOUNT: ${{ secrets.AZURE_STORAGE_ACCOUNT }}
           AZURE_STORAGE_SAS: ${{ secrets.AZURE_STORAGE_SAS }}
         run: |
           azcopy sync \
-            "baselines/Swift2.2/" \
+            "edition-content/" \
             "https://$AZURE_STORAGE_ACCOUNT.file.core.windows.net/files/System/Serializer/SerializeRoot?$AZURE_STORAGE_SAS" \
             --recursive \
             --delete-destination true
@@ -243,23 +259,23 @@ steps:
       scriptType: bash
       scriptLocation: inlineScript
       inlineScript: |
-        mkdir -p baselines/source
+        mkdir -p serialize-root
         az storage file download-batch \
           --account-name $(AZURE_STORAGE_ACCOUNT) \
           --source files/System/Serializer/SerializeRoot \
-          --destination baselines/source \
+          --destination serialize-root \
           --pattern "*"
 
   - script: |
       git config user.email "ci@example.com"
       git config user.name  "Azure Pipelines"
       git checkout -b baseline/nightly-$(Build.BuildNumber)
-      git add baselines/source/
+      git add serialize-root/
       if git diff --cached --quiet; then
-        echo "No baseline changes — skipping PR"
+        echo "No content changes — skipping PR"
         exit 0
       fi
-      git commit -m "baseline: nightly serialize $(Build.BuildNumber)"
+      git commit -m "content: nightly serialize $(Build.BuildNumber)"
       git push --set-upstream origin baseline/nightly-$(Build.BuildNumber)
       az repos pr create \
         --source-branch baseline/nightly-$(Build.BuildNumber) \
@@ -302,8 +318,21 @@ stages:
               appName: $(AZURE_WEBAPP_NAME)
               package: ./publish
 
+          - script: |
+              # Git-clone consumption — no release archives. Pin to an annotated
+              # edition tag so every deploy applies a byte-identical set.
+              git clone --depth 1 --branch editions/swift-demo/2.3.0 \
+                https://github.com/justdynamics/Truvio.Commerce.Distribution.git dist
+              mkdir -p edition-content/deploy edition-content/seed
+              for ref in $(jq -r '.from, .add[]?' dist/editions/swift-demo.json); do
+                layer="${ref%@*}"
+                [ -d "dist/layers/$layer/replace" ] && cp -R "dist/layers/$layer/replace/." edition-content/deploy/
+                [ -d "dist/layers/$layer/merge" ]   && cp -R "dist/layers/$layer/merge/."   edition-content/seed/
+              done
+            displayName: Fetch edition from the Distribution
+
           - task: AzureCLI@2
-            displayName: Sync baseline YAML
+            displayName: Sync edition YAML
             inputs:
               azureSubscription: dw-subscription
               scriptType: bash
@@ -312,7 +341,7 @@ stages:
                 az storage file upload-batch \
                   --account-name $(AZURE_STORAGE_ACCOUNT) \
                   --destination files/System/Serializer/SerializeRoot \
-                  --source baselines/Swift2.2 \
+                  --source edition-content \
                   --pattern "*"
 
           - script: |
@@ -372,18 +401,18 @@ serialize:source:
         -o serialize-seed.log
       cat serialize-seed.log
     - |
-      mkdir -p baselines/source
+      mkdir -p serialize-root
       az storage file download-batch \
         --account-name "$AZURE_STORAGE_ACCOUNT" \
         --source files/System/Serializer/SerializeRoot \
-        --destination baselines/source
+        --destination serialize-root
     - |
       git config user.email "ci@example.com"
       git config user.name  "GitLab CI"
       git checkout -b "baseline/nightly-$CI_PIPELINE_ID"
-      git add baselines/source/
+      git add serialize-root/
       git diff --cached --quiet && exit 0
-      git commit -m "baseline: nightly serialize $CI_PIPELINE_ID"
+      git commit -m "content: nightly serialize $CI_PIPELINE_ID"
       git push -o merge_request.create \
                -o merge_request.target=main \
                --set-upstream origin "baseline/nightly-$CI_PIPELINE_ID"
@@ -417,13 +446,24 @@ deploy:target:
         --src-path src/Truvio.Commerce.Serializer/bin/Release/net8.0/Truvio.Commerce.Serializer.dll \
         --type static --target-path "site/wwwroot/bin/Truvio.Commerce.Serializer.dll"
 
-    # 2. Sync YAML into the target's Files volume
+    # 2. Fetch the edition from the Distribution (git-clone consumption, pinned
+    #    to an annotated edition tag) and compose its layers into a SerializeRoot.
+    - |
+      git clone --depth 1 --branch editions/swift-demo/2.3.0 \
+        https://github.com/justdynamics/Truvio.Commerce.Distribution.git dist
+      mkdir -p edition-content/deploy edition-content/seed
+      for ref in $(jq -r '.from, .add[]?' dist/editions/swift-demo.json); do
+        layer="${ref%@*}"
+        [ -d "dist/layers/$layer/replace" ] && cp -R "dist/layers/$layer/replace/." edition-content/deploy/
+        [ -d "dist/layers/$layer/merge" ]   && cp -R "dist/layers/$layer/merge/."   edition-content/seed/
+      done
+    # 3. Sync the composed YAML into the target's Files volume
     - az storage file upload-batch \
         --account-name "$AZURE_STORAGE_ACCOUNT" \
         --destination files/System/Serializer/SerializeRoot \
-        --source baselines/Swift2.2
+        --source edition-content
 
-    # 3. Deserialize under strict mode. -f fails the job on HTTP 4xx/5xx.
+    # 4. Deserialize under strict mode. -f fails the job on HTTP 4xx/5xx.
     - |
       curl -fsSL -X POST \
         "$DW_TARGET_HOST/Admin/Api/SerializerDeserialize?mode=deploy&strictMode=true" \
@@ -456,8 +496,8 @@ hook that triggers a serialize against the dev host and checks the HTTP code:
 #!/usr/bin/env bash
 set -e
 
-# Skip if no staged changes under src/ or baselines/
-if git diff --cached --quiet -- src/ baselines/; then
+# Skip if no staged changes under src/ or serialize-root/
+if git diff --cached --quiet -- src/ serialize-root/; then
   exit 0
 fi
 
@@ -532,7 +572,8 @@ have a different `Area` / `EcomProducts` schema shape than the source.
 `TargetSchemaCache` warn-and-skip handles missing columns at write time, but
 strict mode escalates the warning. Align DW NuGet versions between source
 and target hosts before the first deploy, or document the drift explicitly.
-See [`baselines/env-bucket.md`](baselines/env-bucket.md) for the full pattern.
+See [Troubleshooting](troubleshooting.md#source-column-tc-not-present-on-target-schema--skipping)
+for the full pattern.
 
 ## See also
 
