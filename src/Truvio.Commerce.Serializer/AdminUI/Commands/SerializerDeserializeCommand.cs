@@ -9,17 +9,17 @@ namespace Truvio.Commerce.Serializer.AdminUI.Commands;
 
 /// <summary>
 /// API-callable command that triggers deserialization for ALL configured providers in the given
-/// <see cref="Mode"/>. Phase 37-01 D-02/D-04: defaults to Deploy (source-wins); when Mode="seed",
+/// <see cref="Mode"/>. Defaults to Replace (source-wins); when Mode="merge",
 /// runs destination-wins — rows/pages whose natural key or PageUniqueId is already on target
 /// are preserved.
 ///
-/// Use via DW CLI: dw command SerializerDeserialize [mode=seed]
-/// Or via Management API: POST /Admin/Api/SerializerDeserialize?mode=seed
+/// Use via DW CLI: dw command SerializerDeserialize [mode=merge]
+/// Or via Management API: POST /Admin/Api/SerializerDeserialize?mode=merge
 /// </summary>
 public sealed class SerializerDeserializeCommand : CommandBase
 {
-    /// <summary>Deployment mode: "deploy" (default) or "seed". Case-insensitive.</summary>
-    public string Mode { get; set; } = "deploy";
+    /// <summary>Serializer mode: "replace" (default) or "merge". Case-insensitive.</summary>
+    public string Mode { get; set; } = "replace";
 
     /// <summary>
     /// Phase 37-04 STRICT-01: optional strict-mode override. Null = use config.StrictMode,
@@ -57,53 +57,33 @@ public sealed class SerializerDeserializeCommand : CommandBase
             File.AppendAllText(logFile, line + "\n");
     }
 
-    /// <summary>
-    /// DIST-04 accept-both: pick the on-disk subfolder for a deserialize run. Tries the
-    /// caller-requested label first, then the mode's candidate labels (legacy + alias), returning
-    /// the first whose directory exists. Falls back to the requested label when none exist, so the
-    /// downstream "Mode subfolder not found" error names what the caller asked for.
-    /// </summary>
-    private static string ResolveExistingModeLabel(string serializeRoot, string requestedLabel, DeploymentMode mode)
-    {
-        if (Directory.Exists(Path.Combine(serializeRoot, requestedLabel)))
-            return requestedLabel;
-        foreach (var candidate in DeploymentModeAlias.Candidates(mode))
-        {
-            if (Directory.Exists(Path.Combine(serializeRoot, candidate)))
-                return candidate;
-        }
-        return requestedLabel;
-    }
-
     public override CommandResult Handle()
     {
-        // T-37-01-03: parse mode string strictly before any path interpolation.
-        // DIST-04: replace/merge are accepted as aliases for deploy/seed (alias-first — both
-        // work). The resolver also yields the on-disk label the caller requested (modeLabel).
-        if (!DeploymentModeAlias.TryResolve(Mode, out var deploymentMode, out var modeLabel))
+        // Parse mode string strictly before any path interpolation.
+        if (!Enum.TryParse<SerializerMode>(Mode?.Trim(), ignoreCase: true, out var serializerMode))
         {
             return new()
             {
                 Status = CommandResult.ResultType.Invalid,
-                Message = $"Invalid mode '{Mode}'. Expected 'deploy'/'replace' or 'seed'/'merge' (case-insensitive)."
+                Message = $"Invalid mode '{Mode}'. Expected 'replace' or 'merge' (case-insensitive)."
             };
         }
 
         // D-38-11: DW CommandBase does not bind query params by default for POST.
-        // Fallback: if Mode stayed at the "deploy" default, check the query string.
+        // Fallback: if Mode stayed at the "replace" default, check the query string.
         // UNCONDITIONAL per D-38-11 + checker blocker B4 — no curl-probe escape hatch.
-        if (string.Equals(Mode, "deploy", StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(Mode, "replace", StringComparison.OrdinalIgnoreCase))
         {
             var fromQuery = Dynamicweb.Context.Current?.Request?["mode"];
             if (!string.IsNullOrEmpty(fromQuery))
             {
                 Mode = fromQuery;
-                if (!DeploymentModeAlias.TryResolve(Mode, out deploymentMode, out modeLabel))
+                if (!Enum.TryParse<SerializerMode>(Mode?.Trim(), ignoreCase: true, out serializerMode))
                 {
                     return new()
                     {
                         Status = CommandResult.ResultType.Invalid,
-                        Message = $"Invalid mode '{Mode}'. Expected 'deploy'/'replace' or 'seed'/'merge' (case-insensitive)."
+                        Message = $"Invalid mode '{Mode}'. Expected 'replace' or 'merge' (case-insensitive)."
                     };
                 }
             }
@@ -143,22 +123,19 @@ public sealed class SerializerDeserializeCommand : CommandBase
             var systemDir = Path.Combine(filesRoot, "System");
             var paths = SerializerPathResolver.EnsureDirectories(systemDir);
 
-            // DIST-04 accept-both: prefer the caller's requested label folder (e.g. "replace");
-            // fall back to the mode's legacy/alias candidate whose directory actually exists, so
-            // both new (replace/) and legacy (deploy/) trees deserialize. Old names keep working.
-            var modeName = ResolveExistingModeLabel(paths.SerializeRoot, modeLabel, deploymentMode);
+            // Mode subfolder is the lowercased mode name ("replace" / "merge").
+            var modeName = serializerMode.ToString().ToLowerInvariant();
             var modeRoot = Path.Combine(paths.SerializeRoot, modeName);
 
-            // Conflict strategy is hardcoded per mode (Deploy=SourceWins, Seed=DestinationWins).
-            // Pre-Phase-43 this lived on SerializerConfiguration; Phase 43 inlines it here.
-            var modeStrategy = DefaultConflictStrategyForMode(deploymentMode);
+            // Conflict strategy is hardcoded per mode (Replace=SourceWins, Merge=DestinationWins).
+            var modeStrategy = DefaultConflictStrategyForMode(serializerMode);
 
             // Phase 44 / WR-04: _logFile is created BEFORE the inner try region so the
             // outer-most catch can flush accumulated lines even if a downstream call throws
             // before reaching the inner try/finally.
             _logFile = LogFileWriter.CreateLogFile(paths.Log, "Deserialize",
                 IsDryRun ? $"{modeName}-dryrun" : modeName);
-            Log($"=== Serializer Deserialize (API) started [mode: {deploymentMode}{(IsDryRun ? " | DRY RUN" : "")}] ===");
+            Log($"=== Serializer Deserialize (API) started [mode: {serializerMode}{(IsDryRun ? " | DRY RUN" : "")}] ===");
 
             try
             {
@@ -187,13 +164,12 @@ public sealed class SerializerDeserializeCommand : CommandBase
                 var orchestrator = ProviderRegistry.CreateOrchestrator(filesRoot);
                 var result = orchestrator.DeserializeAll(
                     modeRoot,
-                    deploymentMode,
+                    serializerMode,
                     modeStrategy,
                     Log,
                     isDryRun: IsDryRun,
                     providerFilter: null,
-                    escalator: escalator,
-                    modeLabel: modeName);
+                    escalator: escalator);
 
                 // Build summary with advice and flush log. Phase 43 / REPORT-03: drive off
                 // result.EntryOutcomes (canonical) — Phase 44 / IN-01 deleted DeserializeResults.
@@ -226,9 +202,9 @@ public sealed class SerializerDeserializeCommand : CommandBase
                 FlushLog(_logFile, summary);
 
                 var message = IsDryRun
-                    ? $"[{deploymentMode} DRY RUN — nothing was written] {result.Summary} " +
+                    ? $"[{serializerMode} DRY RUN — nothing was written] {result.Summary} " +
                       $"Per-item [DRY-RUN] detail: Log Viewer > {Path.GetFileName(_logFile)}."
-                    : $"[{deploymentMode}] {result.Summary}";
+                    : $"[{serializerMode}] {result.Summary}";
                 if (result.HasErrors)
                     message += $" Errors: {string.Join("; ", result.Errors)}";
 
@@ -270,14 +246,11 @@ public sealed class SerializerDeserializeCommand : CommandBase
     }
 
     /// <summary>
-    /// Phase 43 / DESER-04: per-mode default conflict strategy. Replaces
-    /// <see cref="SerializerConfiguration.GetConflictStrategyForMode"/> on the deserialize path
-    /// (config is no longer consulted). Hardcoded per mode: Deploy=SourceWins,
-    /// Seed=DestinationWins. Per-call override is a Phase 44 candidate (D-38-11 ?strictMode=
-    /// query-string precedent).
+    /// Per-mode default conflict strategy on the deserialize path (config is not consulted).
+    /// Hardcoded per mode: Replace=SourceWins, Merge=DestinationWins.
     /// </summary>
-    private static ConflictStrategy DefaultConflictStrategyForMode(DeploymentMode mode) =>
-        mode == DeploymentMode.Seed ? ConflictStrategy.DestinationWins : ConflictStrategy.SourceWins;
+    private static ConflictStrategy DefaultConflictStrategyForMode(SerializerMode mode) =>
+        mode == SerializerMode.Merge ? ConflictStrategy.DestinationWins : ConflictStrategy.SourceWins;
 
     /// <summary>
     /// D-38-12 test seam: exposes the status-mapping branch of <see cref="Handle"/> so

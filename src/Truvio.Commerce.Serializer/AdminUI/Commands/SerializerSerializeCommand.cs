@@ -8,16 +8,16 @@ namespace Truvio.Commerce.Serializer.AdminUI.Commands;
 
 /// <summary>
 /// API-callable command that triggers serialization for ALL configured providers in the given
-/// <see cref="Mode"/>. Phase 37-01 D-02/D-04: defaults to Deploy; Seed requires explicit opt-in
-/// via <c>Mode="seed"</c> (query string, CLI arg, or admin UI action node).
+/// <see cref="Mode"/>. Defaults to Replace; Merge requires explicit opt-in
+/// via <c>Mode="merge"</c> (query string, CLI arg, or admin UI action node).
 ///
-/// Use via DW CLI: dw command SerializerSerialize [mode=seed]
-/// Or via Management API: POST /Admin/Api/SerializerSerialize?mode=seed
+/// Use via DW CLI: dw command SerializerSerialize [mode=merge]
+/// Or via Management API: POST /Admin/Api/SerializerSerialize?mode=merge
 /// </summary>
 public sealed class SerializerSerializeCommand : CommandBase
 {
-    /// <summary>Deployment mode: "deploy" (default) or "seed". Case-insensitive.</summary>
-    public string Mode { get; set; } = "deploy";
+    /// <summary>Serializer mode: "replace" (default) or "merge". Case-insensitive.</summary>
+    public string Mode { get; set; } = "replace";
 
     private string? _logFile;
     private readonly List<string> _logLines = new();
@@ -36,36 +36,33 @@ public sealed class SerializerSerializeCommand : CommandBase
 
     public override CommandResult Handle()
     {
-        // T-37-01-03: parse the mode string strictly; reject anything that isn't Deploy or Seed
+        // Parse the mode string strictly; reject anything that isn't Replace or Merge
         // BEFORE any path-interpolation so the string never reaches the filesystem.
-        // DIST-04: replace/merge accepted as aliases for deploy/seed (alias-first). The enum
-        // drives predicate filtering + conflict strategy; the on-disk subfolder/manifest name
-        // is config-driven (GetSubfolderForMode) below, so both names round-trip.
-        if (!DeploymentModeAlias.TryResolve(Mode, out var deploymentMode, out _))
+        if (!Enum.TryParse<SerializerMode>(Mode?.Trim(), ignoreCase: true, out var serializerMode))
         {
             return new()
             {
                 Status = CommandResult.ResultType.Invalid,
-                Message = $"Invalid mode '{Mode}'. Expected 'deploy'/'replace' or 'seed'/'merge' (case-insensitive)."
+                Message = $"Invalid mode '{Mode}'. Expected 'replace' or 'merge' (case-insensitive)."
             };
         }
 
         // D-38-11: DW CommandBase does not bind query params by default for POST.
-        // Fallback: if Mode stayed at the "deploy" default, check the query string.
+        // Fallback: if Mode stayed at the "replace" default, check the query string.
         // The fallback ALWAYS lands regardless of local curl probe results — D-38-11 is
-        // the locked decision that `?mode=seed` binding is broken today.
-        if (string.Equals(Mode, "deploy", StringComparison.OrdinalIgnoreCase))
+        // the locked decision that `?mode=merge` binding is broken today.
+        if (string.Equals(Mode, "replace", StringComparison.OrdinalIgnoreCase))
         {
             var fromQuery = Dynamicweb.Context.Current?.Request?["mode"];
             if (!string.IsNullOrEmpty(fromQuery))
             {
                 Mode = fromQuery;
-                if (!DeploymentModeAlias.TryResolve(Mode, out deploymentMode, out _))
+                if (!Enum.TryParse<SerializerMode>(Mode?.Trim(), ignoreCase: true, out serializerMode))
                 {
                     return new()
                     {
                         Status = CommandResult.ResultType.Invalid,
-                        Message = $"Invalid mode '{Mode}'. Expected 'deploy'/'replace' or 'seed'/'merge' (case-insensitive)."
+                        Message = $"Invalid mode '{Mode}'. Expected 'replace' or 'merge' (case-insensitive)."
                     };
                 }
             }
@@ -79,16 +76,16 @@ public sealed class SerializerSerializeCommand : CommandBase
 
             var config = ConfigLoader.Load(configPath);
 
-            // Phase 40 D-07: mode-filter the flat predicate list. Replaces the legacy per-mode accessor.
-            var modePredicates = config.Predicates.Where(p => p.Mode == deploymentMode).ToList();
-            var modeSubfolder = config.GetSubfolderForMode(deploymentMode);
-            var modeStrategy = config.GetConflictStrategyForMode(deploymentMode);
+            // Mode-filter the flat predicate list.
+            var modePredicates = config.Predicates.Where(p => p.Mode == serializerMode).ToList();
+            var modeSubfolder = config.GetSubfolderForMode(serializerMode);
+            var modeStrategy = config.GetConflictStrategyForMode(serializerMode);
 
             if (modePredicates.Count == 0)
                 return new()
                 {
                     Status = CommandResult.ResultType.Error,
-                    Message = $"No {deploymentMode} predicates configured"
+                    Message = $"No {serializerMode} predicates configured"
                 };
 
             var filesRoot = ConfigPathResolver.GetFilesRoot(configPath);
@@ -98,22 +95,21 @@ public sealed class SerializerSerializeCommand : CommandBase
             var modeRoot = Path.Combine(paths.SerializeRoot, modeSubfolder);
             Directory.CreateDirectory(modeRoot);
 
-            _logFile = LogFileWriter.CreateLogFile(paths.Log, "Serialize", deploymentMode.ToString().ToLowerInvariant());
-            Log($"=== Serializer Serialize (API) started [mode: {deploymentMode}] ===");
+            _logFile = LogFileWriter.CreateLogFile(paths.Log, "Serialize", serializerMode.ToString().ToLowerInvariant());
+            Log($"=== Serializer Serialize (API) started [mode: {serializerMode}] ===");
 
             var orchestrator = ProviderRegistry.CreateOrchestrator(filesRoot);
             var result = orchestrator.SerializeAll(
                 modePredicates,
                 modeRoot,
-                deploymentMode,
+                serializerMode,
                 modeStrategy,
                 Log,
                 providerFilter: null,
                 manifestWriter: new ManifestWriter(),
                 manifestCleaner: new ManifestCleaner(),
                 excludeFieldsByItemType: config.ExcludeFieldsByItemType,
-                excludeXmlElementsByType: config.ExcludeXmlElementsByType,
-                modeLabel: modeSubfolder);
+                excludeXmlElementsByType: config.ExcludeXmlElementsByType);
 
             var fileCount = Directory.Exists(modeRoot)
                 ? Directory.GetFiles(modeRoot, "*.yml", SearchOption.AllDirectories).Length
@@ -123,7 +119,7 @@ public sealed class SerializerSerializeCommand : CommandBase
             var summary = new LogFileSummary
             {
                 Operation = "Serialize",
-                Mode = deploymentMode.ToString().ToLowerInvariant(),
+                Mode = serializerMode.ToString().ToLowerInvariant(),
                 Timestamp = DateTime.UtcNow,
                 Predicates = result.SerializeResults.Select(r => new PredicateSummary
                 {
@@ -136,7 +132,7 @@ public sealed class SerializerSerializeCommand : CommandBase
             };
             FlushLog(_logFile, summary);
 
-            var message = $"Serialization complete ({deploymentMode}). {fileCount} YAML files written to {modeRoot}. {result.Summary}";
+            var message = $"Serialization complete ({serializerMode}). {fileCount} YAML files written to {modeRoot}. {result.Summary}";
             if (result.StaleFilesDeleted > 0)
                 message += $" Cleaned {result.StaleFilesDeleted} stale file(s).";
             if (result.HasErrors)

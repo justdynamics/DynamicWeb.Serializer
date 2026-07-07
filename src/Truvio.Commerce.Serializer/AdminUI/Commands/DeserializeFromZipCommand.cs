@@ -128,7 +128,7 @@ public sealed class DeserializeFromZipCommand : CommandBase<DeserializeFromZipMo
 
             // Create log file
             var logFile = LogFileWriter.CreateLogFile(paths.Log, "ZipImport",
-                IsDryRun ? "deploy-dryrun" : "deploy");
+                IsDryRun ? "replace-dryrun" : "replace");
             Log("=== Serializer ZipImport started ===");
             Log($"Source zip: {FilePath}");
             Log($"Target area: {TargetAreaId}");
@@ -143,7 +143,7 @@ public sealed class DeserializeFromZipCommand : CommandBase<DeserializeFromZipMo
             var manifest = new Manifest
             {
                 SchemaVersion = ManifestSchema.CurrentVersion,
-                Mode = "deploy",
+                Mode = "replace",
                 WrittenAtUtc = DateTime.UtcNow,
                 Complete = true,
                 ExcludeFieldsByItemType = new Dictionary<string, List<string>>(),
@@ -174,14 +174,14 @@ public sealed class DeserializeFromZipCommand : CommandBase<DeserializeFromZipMo
             // SerializerConfiguration path + direct ContentDeserializer call.
             var orchestrator = ProviderRegistry.CreateOrchestrator(filesRoot);
             var result = orchestrator.DeserializeAll(
-                manifest, zipImportDir, DeploymentMode.Deploy, ConflictStrategy.SourceWins,
+                manifest, zipImportDir, SerializerMode.Replace, ConflictStrategy.SourceWins,
                 Log, isDryRun: IsDryRun, providerFilter: null, escalator);
 
             // Build summary from EntryOutcomes (mirrors SerializerDeserializeCommand pattern).
             var summary = new LogFileSummary
             {
                 Operation = "ZipImport",
-                Mode = "deploy",
+                Mode = "replace",
                 DryRun = IsDryRun,
                 Timestamp = DateTime.UtcNow,
                 Predicates = result.EntryOutcomes

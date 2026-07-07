@@ -11,7 +11,7 @@ namespace Truvio.Commerce.Serializer.Providers;
 /// Central dispatch: iterates predicates, resolves providers via ProviderRegistry,
 /// validates each predicate, and aggregates results across all providers.
 /// Supports FK-ordered deserialization, per-predicate cache invalidation, and
-/// mode-aware (Deploy/Seed) execution per Phase 37-01.
+/// mode-aware (Replace/Merge) execution.
 /// </summary>
 public class SerializerOrchestrator
 {
@@ -60,15 +60,14 @@ public class SerializerOrchestrator
     public OrchestratorResult SerializeAll(
         List<ProviderPredicateDefinition> predicates,
         string outputRoot,
-        DeploymentMode mode,
+        SerializerMode mode,
         ConflictStrategy strategy,
         Action<string>? log = null,
         string? providerFilter = null,
         ManifestWriter? manifestWriter = null,
         ManifestCleaner? manifestCleaner = null,
         IReadOnlyDictionary<string, List<string>>? excludeFieldsByItemType = null,
-        IReadOnlyDictionary<string, List<string>>? excludeXmlElementsByType = null,
-        string? modeLabel = null)
+        IReadOnlyDictionary<string, List<string>>? excludeXmlElementsByType = null)
     {
         log?.Invoke($"=== Mode: {mode} | Strategy: {strategy} ===");
 
@@ -117,10 +116,8 @@ public class SerializerOrchestrator
         int stale = 0;
         if (manifestWriter != null || manifestCleaner != null)
         {
-            // DIST-04: manifest/subfolder label follows the caller's requested label when supplied
-            // (e.g. "replace" writes replace-manifest.json), else the legacy enum name. Default
-            // config still yields "deploy"/"seed", so existing output is byte-for-byte unchanged.
-            var modeName = modeLabel ?? mode.ToString().ToLowerInvariant();
+            // Manifest/subfolder label is the lowercased mode name ("replace" / "merge").
+            var modeName = mode.ToString().ToLowerInvariant();
             var allWritten = results.SelectMany(r => r.WrittenFiles).ToList();
 
             // Phase 42-03: collect non-null Entry instances across providers. Validation-failed
@@ -163,7 +160,7 @@ public class SerializerOrchestrator
     /// <summary>
     /// Phase 44 / CONVERGE-01 (D-01): manifest-driven deserialize accepting an in-memory
     /// <see cref="Manifest"/> directly. The on-disk-reading
-    /// <see cref="DeserializeAll(string, DeploymentMode, ConflictStrategy, Action{string}, bool, string, StrictModeEscalator, IReadOnlyDictionary{string, List{string}}, IReadOnlyDictionary{string, List{string}})"/>
+    /// <see cref="DeserializeAll(string, SerializerMode, ConflictStrategy, Action{string}, bool, string, StrictModeEscalator, IReadOnlyDictionary{string, List{string}}, IReadOnlyDictionary{string, List{string}})"/>
     /// becomes a thin wrapper that reads the manifest then forwards here. Zip-import builds
     /// an in-memory <see cref="Manifest"/> (one synthesised <see cref="ContentEntry"/>) and
     /// calls this overload directly — single canonical dispatch site for full-deserialize +
@@ -173,7 +170,7 @@ public class SerializerOrchestrator
     public OrchestratorResult DeserializeAll(
         Manifest manifest,
         string contentRoot,
-        DeploymentMode mode,
+        SerializerMode mode,
         ConflictStrategy strategy = ConflictStrategy.SourceWins,
         Action<string>? log = null,
         bool isDryRun = false,
@@ -204,9 +201,9 @@ public class SerializerOrchestrator
     /// </summary>
     /// <param name="modeRoot">Mode-scoped serialize directory (the dir containing
     /// <c>{mode}-manifest.json</c> + the per-provider subtrees).</param>
-    /// <param name="mode">Deployment mode. The lowercased form is used as the manifest filename
-    /// prefix (<c>"deploy"</c> / <c>"seed"</c>).</param>
-    /// <param name="strategy">Conflict strategy (Deploy=SourceWins, Seed=DestinationWins).</param>
+    /// <param name="mode">Serializer mode. The lowercased form is used as the manifest filename
+    /// prefix (<c>"replace"</c> / <c>"merge"</c>).</param>
+    /// <param name="strategy">Conflict strategy (Replace=SourceWins, Merge=DestinationWins).</param>
     /// <param name="log">Optional log sink — every entry emits a <c>[entryId] Status</c> line per
     /// REPORT-05 / SC-5.</param>
     /// <param name="isDryRun">When true, providers report would-be work without touching the DB.</param>
@@ -222,34 +219,23 @@ public class SerializerOrchestrator
     /// <param name="excludeXmlElementsByType">Same, for XML element exclusions.</param>
     public OrchestratorResult DeserializeAll(
         string modeRoot,
-        DeploymentMode mode,
+        SerializerMode mode,
         ConflictStrategy strategy = ConflictStrategy.SourceWins,
         Action<string>? log = null,
         bool isDryRun = false,
         string? providerFilter = null,
         StrictModeEscalator? escalator = null,
         IReadOnlyDictionary<string, List<string>>? excludeFieldsByItemType = null,
-        IReadOnlyDictionary<string, List<string>>? excludeXmlElementsByType = null,
-        string? modeLabel = null)
+        IReadOnlyDictionary<string, List<string>>? excludeXmlElementsByType = null)
     {
         // Phase 44 / D-01: thin wrapper over DeserializeAll(Manifest, ...). The disk read
         // happens here; everything past this point is identical to zip-import's in-memory
         // path. MANIFEST-05 envelope precedence is applied inside the Manifest-typed
         // overload, so the two paths agree on every dispatch invariant.
         //
-        // DIST-04 accept-both: read {label}-manifest.json using the caller's requested label
-        // first (e.g. "replace"), then fall back to the mode's candidate labels (legacy + alias)
-        // so a folder holding EITHER deploy-manifest.json or replace-manifest.json deserializes.
-        var modeName = modeLabel ?? mode.ToString().ToLowerInvariant();
+        // Read {mode}-manifest.json — the lowercased mode name ("replace" / "merge").
+        var modeName = mode.ToString().ToLowerInvariant();
         var manifest = _manifestWriter.Read(modeRoot, modeName);
-        if (manifest == null)
-        {
-            foreach (var cand in DeploymentModeAlias.Candidates(mode))
-            {
-                manifest = _manifestWriter.Read(modeRoot, cand);
-                if (manifest != null) { modeName = cand; break; }
-            }
-        }
         if (manifest == null)
             throw new InvalidOperationException(
                 $"Manifest not found at {Path.Combine(modeRoot, $"{modeName}-manifest.json")}. " +
@@ -262,13 +248,13 @@ public class SerializerOrchestrator
     /// <summary>
     /// Phase 43 internal test seam (per ARCHITECTURE.md §5): dispatch a pre-built entry list
     /// without touching the filesystem. Production callers go through the public
-    /// <see cref="DeserializeAll(string, DeploymentMode, ConflictStrategy, Action{string}, bool, string, StrictModeEscalator, IReadOnlyDictionary{string, List{string}}, IReadOnlyDictionary{string, List{string}})"/>
+    /// <see cref="DeserializeAll(string, SerializerMode, ConflictStrategy, Action{string}, bool, string, StrictModeEscalator, IReadOnlyDictionary{string, List{string}}, IReadOnlyDictionary{string, List{string}})"/>
     /// which reads the manifest and calls this. Tests construct entry fixtures directly.
     /// </summary>
     internal OrchestratorResult DeserializeEntries(
         IReadOnlyList<ManifestEntry> entries,
         string modeRoot,
-        DeploymentMode mode,
+        SerializerMode mode,
         ConflictStrategy strategy,
         Action<string>? log,
         bool isDryRun,
@@ -447,12 +433,12 @@ public class SerializerOrchestrator
             }
         }
 
-        // v2 split: area ITEM fields are deploy-owned but may reference pages that only
-        // arrive in the SEED pass (chrome bindings, legal-page links) — the deploy pass
-        // leaves those as source ids. Now that both modes' pages are on target, finalize
-        // them by re-writing from the deploy YAML and resolving with the complete map.
-        if (!isDryRun && mode == DeploymentMode.Seed && providerFilter is null)
-            FinalizeDeployAreaLinks(modeRoot, wrappedLog);
+        // Area ITEM fields are replace-owned but may reference pages that only arrive in the
+        // merge pass (chrome bindings, legal-page links) — the replace pass leaves those as
+        // source ids. Now that both modes' pages are on target, finalize them by re-writing
+        // from the replace YAML and resolving with the complete map.
+        if (!isDryRun && mode == SerializerMode.Merge && providerFilter is null)
+            FinalizeReplaceAreaLinks(modeRoot, wrappedLog);
 
         // Phase 37-04 STRICT-01: end-of-run gate. CONTEXT line 99-100 — strict-mode
         // CumulativeStrictModeException is routed into both the run-level errors list AND
@@ -476,23 +462,23 @@ public class SerializerOrchestrator
     }
 
     /// <summary>
-    /// Locates the sibling DEPLOY mode root next to the seed mode root and finalizes the
-    /// area item links of every whole-area deploy Content entry (see
+    /// Locates the sibling REPLACE mode root next to the merge mode root and finalizes the
+    /// area item links of every whole-area replace Content entry (see
     /// <see cref="Serialization.ContentDeserializer.FinalizeAreaItemLinks"/>). Best-effort:
     /// absent sibling roots / manifests are skipped silently (single-mode setups).
     /// </summary>
-    private void FinalizeDeployAreaLinks(string seedModeRoot, Action<string> log)
+    private void FinalizeReplaceAreaLinks(string mergeModeRoot, Action<string> log)
     {
         try
         {
             var serializeRoot = Path.GetDirectoryName(
-                Path.GetFullPath(seedModeRoot).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
+                Path.GetFullPath(mergeModeRoot).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
             if (serializeRoot is null || !Directory.Exists(serializeRoot))
                 return;
 
             foreach (var siblingRoot in Directory.GetDirectories(serializeRoot))
             {
-                if (string.Equals(Path.GetFullPath(siblingRoot), Path.GetFullPath(seedModeRoot), StringComparison.OrdinalIgnoreCase))
+                if (string.Equals(Path.GetFullPath(siblingRoot), Path.GetFullPath(mergeModeRoot), StringComparison.OrdinalIgnoreCase))
                     continue;
 
                 var manifest = _manifestWriter.Read(siblingRoot, Path.GetFileName(siblingRoot));
@@ -542,7 +528,7 @@ public class SerializerOrchestrator
         }
         catch (Exception ex)
         {
-            log($"WARNING: deploy area link finalization failed: {ex.Message}");
+            log($"WARNING: replace area link finalization failed: {ex.Message}");
         }
     }
 
