@@ -18,6 +18,8 @@ The serializer's vocabulary in one place. Every cue in the admin UI uses these t
 | **Drift** | A deploy-managed page edited on this environment after the last deploy landed — the next deploy will overwrite those edits. Flagged on the tree tooltip and editing-screen alert. |
 | **Manifest** | The envelope written next to the YAML describing what a serialize run produced (entries, exclusion maps); the deserialize side reads it to know what to apply. |
 | **Orphan (acknowledged)** | A page-id reference in source content pointing at a page that is not serialized. Acknowledged ids are logged instead of failing the run. |
+| **Distribution** | The companion repo of ready-made content — [justdynamics/Truvio.Commerce.Distribution](https://github.com/justdynamics/Truvio.Commerce.Distribution). Everything needed to make a DW10 host run as Truvio Commerce, consumed by git clone. |
+| **Layer / Edition** | A **layer** is one versioned unit in the Distribution: serialized mode trees (source-wins / field-level) plus an optional disk overlay. An **edition** is a gate-proven composition of a base layer plus additions. Consumed by git clone and pinned by annotated tag (`layers/<name>/<semver>`, `editions/<name>/<semver>`). |
 
 ## See also
 
