@@ -85,8 +85,8 @@ Every predicate must declare a `mode` value of `Deploy` or `Seed` (case-insensit
 | `Seed` | destination-wins via field-level merge | One-time bootstrap content the customer is expected to edit: product catalog, marketing copy, FAQ body text, newsletter templates. The serializer fills fields the target has NOT set, preserving customer edits. |
 
 The conflict strategy is hardcoded per mode and is not a config knob.
-[`MergePredicate`](../src/Truvio.Commerce.Serializer/Serialization/MergePredicate.cs) and
-[`XmlMergeHelper`](../src/Truvio.Commerce.Serializer/Serialization/XmlMergeHelper.cs) implement
+[`MergePredicate`](../src/Truvio.Commerce.Serializer/Infrastructure/MergePredicate.cs) and
+[`XmlMergeHelper`](../src/Truvio.Commerce.Serializer/Infrastructure/XmlMergeHelper.cs) implement
 the Seed-mode field-level merge.
 
 ```json
