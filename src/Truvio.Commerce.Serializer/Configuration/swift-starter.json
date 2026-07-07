@@ -1,7 +1,7 @@
 {
   "outputDirectory": "Serializer",
-  "deployOutputSubfolder": "deploy",
-  "seedOutputSubfolder": "seed",
+  "replaceOutputSubfolder": "replace",
+  "mergeOutputSubfolder": "merge",
   "excludeFieldsByItemType": {
     "Swift-v2_Master": [
       "GoogleTagManagerID",
@@ -89,7 +89,7 @@
   "predicates": [
     {
       "name": "Site framework",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "Content",
       "areaId": 3,
       "includeLanguageLayers": true,
@@ -166,7 +166,7 @@
     },
     {
       "name": "EcomCountries",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomCountries",
       "serviceCaches": [
@@ -176,7 +176,7 @@
     },
     {
       "name": "EcomCountryText",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomCountryText",
       "serviceCaches": [
@@ -185,7 +185,7 @@
     },
     {
       "name": "EcomCurrencies",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomCurrencies",
       "serviceCaches": [
@@ -194,7 +194,7 @@
     },
     {
       "name": "EcomLanguages",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomLanguages",
       "serviceCaches": [
@@ -203,7 +203,7 @@
     },
     {
       "name": "EcomVatGroups",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomVatGroups",
       "nameColumn": "VatGroupName",
@@ -213,7 +213,7 @@
     },
     {
       "name": "EcomVatCountryRelations",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomVatCountryRelations",
       "serviceCaches": [
@@ -222,25 +222,25 @@
     },
     {
       "name": "EcomShops",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomShops"
     },
     {
       "name": "EcomShopLanguageRelation",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomShopLanguageRelation"
     },
     {
       "name": "EcomShopGroupRelation",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomShopGroupRelation"
     },
     {
       "name": "EcomPayments",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomPayments",
       "nameColumn": "PaymentName",
@@ -254,7 +254,7 @@
     },
     {
       "name": "EcomShippings",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomShippings",
       "nameColumn": "ShippingName",
@@ -267,33 +267,33 @@
     },
     {
       "name": "EcomMethodCountryRelation",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomMethodCountryRelation"
     },
     {
       "name": "EcomOrderFlow",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomOrderFlow",
       "nameColumn": "OrderFlowName"
     },
     {
       "name": "EcomOrderStates",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomOrderStates",
       "nameColumn": "OrderStateName"
     },
     {
       "name": "EcomOrderStateRules",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomOrderStateRules"
     },
     {
       "name": "UrlPath",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "UrlPath",
       "resolveLinksInColumns": [
@@ -302,7 +302,7 @@
     },
     {
       "name": "Homepage",
-      "mode": "Seed",
+      "mode": "Merge",
       "providerType": "Content",
       "areaId": 3,
       "includeLanguageLayers": true,
@@ -350,7 +350,7 @@
     },
     {
       "name": "Homepage (machines)",
-      "mode": "Seed",
+      "mode": "Merge",
       "providerType": "Content",
       "areaId": 3,
       "includeLanguageLayers": true,
@@ -398,7 +398,7 @@
     },
     {
       "name": "Site chrome",
-      "mode": "Seed",
+      "mode": "Merge",
       "providerType": "Content",
       "areaId": 3,
       "includeLanguageLayers": true,
@@ -446,7 +446,7 @@
     },
     {
       "name": "About pages",
-      "mode": "Seed",
+      "mode": "Merge",
       "providerType": "Content",
       "areaId": 3,
       "includeLanguageLayers": true,
@@ -494,7 +494,7 @@
     },
     {
       "name": "Starter blog posts",
-      "mode": "Seed",
+      "mode": "Merge",
       "providerType": "Content",
       "areaId": 3,
       "includeLanguageLayers": true,
@@ -542,7 +542,7 @@
     },
     {
       "name": "Find dealers",
-      "mode": "Seed",
+      "mode": "Merge",
       "providerType": "Content",
       "areaId": 3,
       "includeLanguageLayers": true,
@@ -590,7 +590,7 @@
     },
     {
       "name": "Footer: about the shop",
-      "mode": "Seed",
+      "mode": "Merge",
       "providerType": "Content",
       "areaId": 3,
       "includeLanguageLayers": true,
@@ -638,7 +638,7 @@
     },
     {
       "name": "Footer: help and info",
-      "mode": "Seed",
+      "mode": "Merge",
       "providerType": "Content",
       "areaId": 3,
       "includeLanguageLayers": true,
@@ -686,7 +686,7 @@
     },
     {
       "name": "Newsletter examples (light)",
-      "mode": "Seed",
+      "mode": "Merge",
       "providerType": "Content",
       "areaId": 3,
       "includeLanguageLayers": true,
@@ -734,7 +734,7 @@
     },
     {
       "name": "Newsletter examples (dark)",
-      "mode": "Seed",
+      "mode": "Merge",
       "providerType": "Content",
       "areaId": 3,
       "includeLanguageLayers": true,
@@ -782,54 +782,54 @@
     },
     {
       "name": "EcomGroups",
-      "mode": "Seed",
+      "mode": "Merge",
       "providerType": "SqlTable",
       "table": "EcomGroups",
       "nameColumn": "GroupName"
     },
     {
       "name": "EcomProducts",
-      "mode": "Seed",
+      "mode": "Merge",
       "providerType": "SqlTable",
       "table": "EcomProducts",
       "nameColumn": "ProductName"
     },
     {
       "name": "EcomGroupProductRelation",
-      "mode": "Seed",
+      "mode": "Merge",
       "providerType": "SqlTable",
       "table": "EcomGroupProductRelation"
     },
     {
       "name": "EcomVariantGroups",
-      "mode": "Seed",
+      "mode": "Merge",
       "providerType": "SqlTable",
       "table": "EcomVariantGroups",
       "nameColumn": "VariantGroupName"
     },
     {
       "name": "EcomVariantsOptions",
-      "mode": "Seed",
+      "mode": "Merge",
       "providerType": "SqlTable",
       "table": "EcomVariantsOptions",
       "nameColumn": "VariantOptionName"
     },
     {
       "name": "EcomVariantOptionsProductRelation",
-      "mode": "Seed",
+      "mode": "Merge",
       "providerType": "SqlTable",
       "table": "EcomVariantOptionsProductRelation"
     },
     {
       "name": "EcomDiscount",
-      "mode": "Seed",
+      "mode": "Merge",
       "providerType": "SqlTable",
       "table": "EcomDiscount",
       "nameColumn": "DiscountName"
     },
     {
       "name": "EcomDiscountTranslation",
-      "mode": "Seed",
+      "mode": "Merge",
       "providerType": "SqlTable",
       "table": "EcomDiscountTranslation"
     }

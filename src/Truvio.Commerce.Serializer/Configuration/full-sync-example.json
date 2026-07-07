@@ -5,7 +5,7 @@
   "predicates": [
     {
       "name": "AccessUser",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "AccessUser",
       "nameColumn": null,
@@ -19,7 +19,7 @@
     },
     {
       "name": "AccessUserAddress",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "AccessUserAddress",
       "nameColumn": null,
@@ -33,7 +33,7 @@
     },
     {
       "name": "AccessUserGroupRelation",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "AccessUserGroupRelation",
       "nameColumn": null,
@@ -47,7 +47,7 @@
     },
     {
       "name": "AccessUserPassword",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "AccessUserPassword",
       "nameColumn": null,
@@ -61,7 +61,7 @@
     },
     {
       "name": "AccessUserSecondaryRelation",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "AccessUserSecondaryRelation",
       "nameColumn": null,
@@ -75,7 +75,7 @@
     },
     {
       "name": "AiGeneratorConfiguration",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "AiGeneratorConfiguration",
       "nameColumn": null,
@@ -89,7 +89,7 @@
     },
     {
       "name": "Area",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "Area",
       "nameColumn": null,
@@ -105,7 +105,7 @@
     },
     {
       "name": "AreaColorSwatch",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "AreaColorSwatch",
       "nameColumn": null,
@@ -119,7 +119,7 @@
     },
     {
       "name": "AreaEncoding",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "AreaEncoding",
       "nameColumn": null,
@@ -133,7 +133,7 @@
     },
     {
       "name": "ColumnHeadersPreset",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "ColumnHeadersPreset",
       "nameColumn": null,
@@ -147,7 +147,7 @@
     },
     {
       "name": "ColumnHeadersPresetFields",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "ColumnHeadersPresetFields",
       "nameColumn": null,
@@ -161,7 +161,7 @@
     },
     {
       "name": "ContentModuleConfiguration",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "ContentModuleConfiguration",
       "nameColumn": null,
@@ -175,7 +175,7 @@
     },
     {
       "name": "Dashboard",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "Dashboard",
       "nameColumn": null,
@@ -189,7 +189,7 @@
     },
     {
       "name": "DashboardAccessUserRelation",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "DashboardAccessUserRelation",
       "nameColumn": null,
@@ -203,7 +203,7 @@
     },
     {
       "name": "DashboardWidget",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "DashboardWidget",
       "nameColumn": null,
@@ -217,7 +217,7 @@
     },
     {
       "name": "DMViewSetting",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "DMViewSetting",
       "nameColumn": null,
@@ -231,7 +231,7 @@
     },
     {
       "name": "DynamicStructureLevels",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "DynamicStructureLevels",
       "nameColumn": null,
@@ -245,7 +245,7 @@
     },
     {
       "name": "DynamicStructures",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "DynamicStructures",
       "nameColumn": null,
@@ -259,7 +259,7 @@
     },
     {
       "name": "Ecom7Tree",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "Ecom7Tree",
       "nameColumn": null,
@@ -273,7 +273,7 @@
     },
     {
       "name": "EcomAssortmentGroupRelations",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomAssortmentGroupRelations",
       "nameColumn": null,
@@ -287,7 +287,7 @@
     },
     {
       "name": "EcomAssortmentProductRelations",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomAssortmentProductRelations",
       "nameColumn": null,
@@ -301,7 +301,7 @@
     },
     {
       "name": "EcomAssortments",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomAssortments",
       "nameColumn": null,
@@ -315,7 +315,7 @@
     },
     {
       "name": "EcomCompletionRules",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomCompletionRules",
       "nameColumn": null,
@@ -329,7 +329,7 @@
     },
     {
       "name": "EcomConsolidatedOrderPayments",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomConsolidatedOrderPayments",
       "nameColumn": null,
@@ -343,7 +343,7 @@
     },
     {
       "name": "EcomCountries",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomCountries",
       "nameColumn": null,
@@ -357,7 +357,7 @@
     },
     {
       "name": "EcomCountryText",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomCountryText",
       "nameColumn": null,
@@ -371,7 +371,7 @@
     },
     {
       "name": "EcomCurrencies",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomCurrencies",
       "nameColumn": null,
@@ -385,7 +385,7 @@
     },
     {
       "name": "EcomCustomerFavoriteLists",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomCustomerFavoriteLists",
       "nameColumn": null,
@@ -399,7 +399,7 @@
     },
     {
       "name": "EcomCustomerFavoriteProducts",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomCustomerFavoriteProducts",
       "nameColumn": null,
@@ -413,7 +413,7 @@
     },
     {
       "name": "EcomDetails",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomDetails",
       "nameColumn": null,
@@ -427,7 +427,7 @@
     },
     {
       "name": "EcomDetailsGroup",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomDetailsGroup",
       "nameColumn": null,
@@ -441,7 +441,7 @@
     },
     {
       "name": "EcomDetailsGroupTranslation",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomDetailsGroupTranslation",
       "nameColumn": null,
@@ -455,7 +455,7 @@
     },
     {
       "name": "EcomDiscount",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomDiscount",
       "nameColumn": null,
@@ -469,7 +469,7 @@
     },
     {
       "name": "EcomDiscountTranslation",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomDiscountTranslation",
       "nameColumn": null,
@@ -483,7 +483,7 @@
     },
     {
       "name": "EcomDynamicRelationGroupCategories",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomDynamicRelationGroupCategories",
       "nameColumn": null,
@@ -497,7 +497,7 @@
     },
     {
       "name": "EcomFeed",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomFeed",
       "nameColumn": null,
@@ -511,7 +511,7 @@
     },
     {
       "name": "EcomFees",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomFees",
       "nameColumn": null,
@@ -525,7 +525,7 @@
     },
     {
       "name": "EcomFieldDisplayGroupFields",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomFieldDisplayGroupFields",
       "nameColumn": null,
@@ -539,7 +539,7 @@
     },
     {
       "name": "EcomFieldDisplayGroups",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomFieldDisplayGroups",
       "nameColumn": null,
@@ -553,7 +553,7 @@
     },
     {
       "name": "EcomFieldDisplayGroupShops",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomFieldDisplayGroupShops",
       "nameColumn": null,
@@ -567,7 +567,7 @@
     },
     {
       "name": "EcomFieldDisplayGroupTranslation",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomFieldDisplayGroupTranslation",
       "nameColumn": null,
@@ -581,7 +581,7 @@
     },
     {
       "name": "EcomFieldOption",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomFieldOption",
       "nameColumn": null,
@@ -595,7 +595,7 @@
     },
     {
       "name": "EcomFieldOptionTranslation",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomFieldOptionTranslation",
       "nameColumn": null,
@@ -609,7 +609,7 @@
     },
     {
       "name": "EcomFieldValueConversion",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomFieldValueConversion",
       "nameColumn": null,
@@ -623,7 +623,7 @@
     },
     {
       "name": "EcomFieldValueConversionGroup",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomFieldValueConversionGroup",
       "nameColumn": null,
@@ -637,7 +637,7 @@
     },
     {
       "name": "EcomFieldValueConversionRule",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomFieldValueConversionRule",
       "nameColumn": null,
@@ -651,7 +651,7 @@
     },
     {
       "name": "EcomGlobalIso",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomGlobalIso",
       "nameColumn": null,
@@ -665,7 +665,7 @@
     },
     {
       "name": "EcomGroupFacetRelation",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomGroupFacetRelation",
       "nameColumn": null,
@@ -679,7 +679,7 @@
     },
     {
       "name": "EcomGroupProductRelation",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomGroupProductRelation",
       "nameColumn": null,
@@ -693,7 +693,7 @@
     },
     {
       "name": "EcomGroupRelations",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomGroupRelations",
       "nameColumn": null,
@@ -707,7 +707,7 @@
     },
     {
       "name": "EcomGroups",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomGroups",
       "nameColumn": null,
@@ -721,7 +721,7 @@
     },
     {
       "name": "EcomLanguages",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomLanguages",
       "nameColumn": null,
@@ -735,7 +735,7 @@
     },
     {
       "name": "EcomLedgerTypes",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomLedgerTypes",
       "nameColumn": null,
@@ -749,7 +749,7 @@
     },
     {
       "name": "EcomManufacturers",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomManufacturers",
       "nameColumn": null,
@@ -763,7 +763,7 @@
     },
     {
       "name": "EcomMethodCountryRelation",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomMethodCountryRelation",
       "nameColumn": null,
@@ -777,7 +777,7 @@
     },
     {
       "name": "EcomNumbers",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomNumbers",
       "nameColumn": null,
@@ -791,7 +791,7 @@
     },
     {
       "name": "EcomOrderContextAccessUserRelation",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomOrderContextAccessUserRelation",
       "nameColumn": null,
@@ -805,7 +805,7 @@
     },
     {
       "name": "EcomOrderContexts",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomOrderContexts",
       "nameColumn": null,
@@ -819,7 +819,7 @@
     },
     {
       "name": "EcomOrderField",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomOrderField",
       "nameColumn": null,
@@ -833,7 +833,7 @@
     },
     {
       "name": "EcomOrderFlow",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomOrderFlow",
       "nameColumn": null,
@@ -847,7 +847,7 @@
     },
     {
       "name": "EcomOrderStateRules",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomOrderStateRules",
       "nameColumn": null,
@@ -861,7 +861,7 @@
     },
     {
       "name": "EcomOrderStates",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomOrderStates",
       "nameColumn": null,
@@ -875,7 +875,7 @@
     },
     {
       "name": "EcomOrderStateTranslations",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomOrderStateTranslations",
       "nameColumn": null,
@@ -889,7 +889,7 @@
     },
     {
       "name": "EcomPayments",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomPayments",
       "nameColumn": null,
@@ -903,7 +903,7 @@
     },
     {
       "name": "EcomPeriods",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomPeriods",
       "nameColumn": null,
@@ -917,7 +917,7 @@
     },
     {
       "name": "EcomPrices",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomPrices",
       "nameColumn": null,
@@ -931,7 +931,7 @@
     },
     {
       "name": "EcomProductAssignmentRule",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomProductAssignmentRule",
       "nameColumn": null,
@@ -945,7 +945,7 @@
     },
     {
       "name": "EcomProductAssignmentRuleMapping",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomProductAssignmentRuleMapping",
       "nameColumn": null,
@@ -959,7 +959,7 @@
     },
     {
       "name": "EcomProductAssignmentRuleShop",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomProductAssignmentRuleShop",
       "nameColumn": null,
@@ -973,7 +973,7 @@
     },
     {
       "name": "EcomProductCategory",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomProductCategory",
       "nameColumn": null,
@@ -987,7 +987,7 @@
     },
     {
       "name": "EcomProductCategoryField",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomProductCategoryField",
       "nameColumn": null,
@@ -1001,7 +1001,7 @@
     },
     {
       "name": "EcomProductCategoryFieldGroupValue",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomProductCategoryFieldGroupValue",
       "nameColumn": null,
@@ -1015,7 +1015,7 @@
     },
     {
       "name": "EcomProductCategoryFieldTranslation",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomProductCategoryFieldTranslation",
       "nameColumn": null,
@@ -1029,7 +1029,7 @@
     },
     {
       "name": "EcomProductCategoryFieldValue",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomProductCategoryFieldValue",
       "nameColumn": null,
@@ -1043,7 +1043,7 @@
     },
     {
       "name": "EcomProductCategoryTranslation",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomProductCategoryTranslation",
       "nameColumn": null,
@@ -1057,7 +1057,7 @@
     },
     {
       "name": "EcomProductField",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomProductField",
       "nameColumn": null,
@@ -1071,7 +1071,7 @@
     },
     {
       "name": "EcomProductFieldTranslation",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomProductFieldTranslation",
       "nameColumn": null,
@@ -1085,7 +1085,7 @@
     },
     {
       "name": "EcomProductGroupField",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomProductGroupField",
       "nameColumn": null,
@@ -1099,7 +1099,7 @@
     },
     {
       "name": "EcomProductItems",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomProductItems",
       "nameColumn": null,
@@ -1113,7 +1113,7 @@
     },
     {
       "name": "EcomProducts",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomProducts",
       "nameColumn": null,
@@ -1127,7 +1127,7 @@
     },
     {
       "name": "EcomProductsRelated",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomProductsRelated",
       "nameColumn": null,
@@ -1141,7 +1141,7 @@
     },
     {
       "name": "EcomProductsRelatedGroups",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomProductsRelatedGroups",
       "nameColumn": null,
@@ -1155,7 +1155,7 @@
     },
     {
       "name": "EcomProductUnitOfMeasure",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomProductUnitOfMeasure",
       "nameColumn": null,
@@ -1169,7 +1169,7 @@
     },
     {
       "name": "EcomProductVatGroups",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomProductVatGroups",
       "nameColumn": null,
@@ -1183,7 +1183,7 @@
     },
     {
       "name": "EcomRmaStateTranslations",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomRmaStateTranslations",
       "nameColumn": null,
@@ -1197,7 +1197,7 @@
     },
     {
       "name": "EcomSavedForLater",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomSavedForLater",
       "nameColumn": null,
@@ -1211,7 +1211,7 @@
     },
     {
       "name": "EcomShippings",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomShippings",
       "nameColumn": null,
@@ -1225,7 +1225,7 @@
     },
     {
       "name": "EcomShopGroupRelation",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomShopGroupRelation",
       "nameColumn": null,
@@ -1239,7 +1239,7 @@
     },
     {
       "name": "EcomShopLanguageRelation",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomShopLanguageRelation",
       "nameColumn": null,
@@ -1253,7 +1253,7 @@
     },
     {
       "name": "EcomShops",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomShops",
       "nameColumn": null,
@@ -1267,7 +1267,7 @@
     },
     {
       "name": "EcomShopStockLocationRelation",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomShopStockLocationRelation",
       "nameColumn": null,
@@ -1281,7 +1281,7 @@
     },
     {
       "name": "EcomStockGroups",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomStockGroups",
       "nameColumn": null,
@@ -1295,7 +1295,7 @@
     },
     {
       "name": "EcomStockLocation",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomStockLocation",
       "nameColumn": null,
@@ -1309,7 +1309,7 @@
     },
     {
       "name": "EcomStockLocationCategory",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomStockLocationCategory",
       "nameColumn": null,
@@ -1323,7 +1323,7 @@
     },
     {
       "name": "EcomStockStatusLanguageValue",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomStockStatusLanguageValue",
       "nameColumn": null,
@@ -1337,7 +1337,7 @@
     },
     {
       "name": "EcomStockStatusLine",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomStockStatusLine",
       "nameColumn": null,
@@ -1351,7 +1351,7 @@
     },
     {
       "name": "EcomStockUnit",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomStockUnit",
       "nameColumn": null,
@@ -1365,7 +1365,7 @@
     },
     {
       "name": "EcomTaxSettings",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomTaxSettings",
       "nameColumn": null,
@@ -1379,7 +1379,7 @@
     },
     {
       "name": "EcomTree",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomTree",
       "nameColumn": null,
@@ -1393,7 +1393,7 @@
     },
     {
       "name": "EcomUnits",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomUnits",
       "nameColumn": null,
@@ -1407,7 +1407,7 @@
     },
     {
       "name": "EcomUnitTranslations",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomUnitTranslations",
       "nameColumn": null,
@@ -1421,7 +1421,7 @@
     },
     {
       "name": "EcomValidationGroups",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomValidationGroups",
       "nameColumn": null,
@@ -1435,7 +1435,7 @@
     },
     {
       "name": "EcomValidationGroupsTranslation",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomValidationGroupsTranslation",
       "nameColumn": null,
@@ -1449,7 +1449,7 @@
     },
     {
       "name": "EcomValidationRules",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomValidationRules",
       "nameColumn": null,
@@ -1463,7 +1463,7 @@
     },
     {
       "name": "EcomValidations",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomValidations",
       "nameColumn": null,
@@ -1477,7 +1477,7 @@
     },
     {
       "name": "EcomVariantGroupProductRelation",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomVariantGroupProductRelation",
       "nameColumn": null,
@@ -1491,7 +1491,7 @@
     },
     {
       "name": "EcomVariantGroupProperty",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomVariantGroupProperty",
       "nameColumn": null,
@@ -1505,7 +1505,7 @@
     },
     {
       "name": "EcomVariantGroups",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomVariantGroups",
       "nameColumn": null,
@@ -1519,7 +1519,7 @@
     },
     {
       "name": "EcomVariantOptionsProductRelation",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomVariantOptionsProductRelation",
       "nameColumn": null,
@@ -1533,7 +1533,7 @@
     },
     {
       "name": "EcomVariantsOptions",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomVariantsOptions",
       "nameColumn": null,
@@ -1547,7 +1547,7 @@
     },
     {
       "name": "EcomVatCountryRelations",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomVatCountryRelations",
       "nameColumn": null,
@@ -1561,7 +1561,7 @@
     },
     {
       "name": "EcomVatGroups",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomVatGroups",
       "nameColumn": null,
@@ -1575,7 +1575,7 @@
     },
     {
       "name": "EmailMarketingEmail",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EmailMarketingEmail",
       "nameColumn": null,
@@ -1589,7 +1589,7 @@
     },
     {
       "name": "EmailMarketingEngagementIndex",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EmailMarketingEngagementIndex",
       "nameColumn": null,
@@ -1603,7 +1603,7 @@
     },
     {
       "name": "EmailMarketingFolder",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EmailMarketingFolder",
       "nameColumn": null,
@@ -1617,7 +1617,7 @@
     },
     {
       "name": "EmailMarketingTopFolder",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EmailMarketingTopFolder",
       "nameColumn": null,
@@ -1631,7 +1631,7 @@
     },
     {
       "name": "EmailMessage",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EmailMessage",
       "nameColumn": null,
@@ -1645,7 +1645,7 @@
     },
     {
       "name": "EmailMessageTag",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EmailMessageTag",
       "nameColumn": null,
@@ -1659,7 +1659,7 @@
     },
     {
       "name": "EmailRecipient",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EmailRecipient",
       "nameColumn": null,
@@ -1673,7 +1673,7 @@
     },
     {
       "name": "ExportPreset",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "ExportPreset",
       "nameColumn": null,
@@ -1687,7 +1687,7 @@
     },
     {
       "name": "ExportPresetAccessUserRelation",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "ExportPresetAccessUserRelation",
       "nameColumn": null,
@@ -1701,7 +1701,7 @@
     },
     {
       "name": "ExternalTranslationProvider",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "ExternalTranslationProvider",
       "nameColumn": null,
@@ -1715,7 +1715,7 @@
     },
     {
       "name": "Form",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "Form",
       "nameColumn": null,
@@ -1729,7 +1729,7 @@
     },
     {
       "name": "FormField",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "FormField",
       "nameColumn": null,
@@ -1743,7 +1743,7 @@
     },
     {
       "name": "FormOptions",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "FormOptions",
       "nameColumn": null,
@@ -1757,7 +1757,7 @@
     },
     {
       "name": "ItemList",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "ItemList",
       "nameColumn": null,
@@ -1771,7 +1771,7 @@
     },
     {
       "name": "ItemListRelation",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "ItemListRelation",
       "nameColumn": null,
@@ -1785,7 +1785,7 @@
     },
     {
       "name": "Languages",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "Languages",
       "nameColumn": null,
@@ -1799,7 +1799,7 @@
     },
     {
       "name": "OMCContentRestriction",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "OMCContentRestriction",
       "nameColumn": null,
@@ -1813,7 +1813,7 @@
     },
     {
       "name": "OMCEmailProfile",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "OMCEmailProfile",
       "nameColumn": null,
@@ -1827,7 +1827,7 @@
     },
     {
       "name": "OMCLink",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "OMCLink",
       "nameColumn": null,
@@ -1841,7 +1841,7 @@
     },
     {
       "name": "OMCLinkClick",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "OMCLinkClick",
       "nameColumn": null,
@@ -1855,7 +1855,7 @@
     },
     {
       "name": "OMCProfileDynamics",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "OMCProfileDynamics",
       "nameColumn": null,
@@ -1869,7 +1869,7 @@
     },
     {
       "name": "PersonalSettings",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "PersonalSettings",
       "nameColumn": null,
@@ -1883,7 +1883,7 @@
     },
     {
       "name": "ScreenPreset",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "ScreenPreset",
       "nameColumn": null,
@@ -1897,7 +1897,7 @@
     },
     {
       "name": "ScreenPresetAccessUserRelation",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "ScreenPresetAccessUserRelation",
       "nameColumn": null,
@@ -1911,7 +1911,7 @@
     },
     {
       "name": "ScreenPresetColumns",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "ScreenPresetColumns",
       "nameColumn": null,
@@ -1925,7 +1925,7 @@
     },
     {
       "name": "SocialFolder",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "SocialFolder",
       "nameColumn": null,
@@ -1939,7 +1939,7 @@
     },
     {
       "name": "UrlPath",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "UrlPath",
       "nameColumn": null,
@@ -1953,7 +1953,7 @@
     },
     {
       "name": "VersionData",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "VersionData",
       "nameColumn": null,
@@ -1967,7 +1967,7 @@
     },
     {
       "name": "Workflow",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "Workflow",
       "nameColumn": null,
@@ -1981,7 +1981,7 @@
     },
     {
       "name": "WorkflowGoToState",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "WorkflowGoToState",
       "nameColumn": null,
@@ -1995,7 +1995,7 @@
     },
     {
       "name": "WorkflowState",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "WorkflowState",
       "nameColumn": null,
@@ -2009,7 +2009,7 @@
     },
     {
       "name": "Content - Swift 2",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "Content",
       "table": null,
       "nameColumn": null,
@@ -2023,7 +2023,7 @@
     },
     {
       "name": "Content - Digital Assets Portal",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "Content",
       "table": null,
       "nameColumn": null,

@@ -5,7 +5,7 @@
     "Each table is configured once regardless of which DataGroup it appears in (per D-07).",
     "FK ordering is handled automatically at runtime by FkDependencyResolver (per D-04).",
     "serviceCaches lists are sourced from DW10 DataGroup XML files (Settings_Ecommerce_*).",
-    "Phase 40: each predicate must declare 'mode' (Deploy or Seed). All entries below are tagged 'Deploy' — change to 'Seed' for tables that should use field-level merge per Phase 39."
+    "Each predicate must declare 'mode' (Replace or Merge). All entries below are tagged 'Replace' — change to 'Merge' for tables that should use field-level fill."
   ],
   "outputDirectory": "Serializer",
   "logLevel": "info",
@@ -13,7 +13,7 @@
   "predicates": [
     {
       "name": "EcomFieldType",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomFieldType",
       "nameColumn": "FieldTypeName",
@@ -22,7 +22,7 @@
     },
     {
       "name": "EcomProductGroupField",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomProductGroupField",
       "nameColumn": "ProductGroupFieldSystemName",
@@ -32,7 +32,7 @@
     },
     {
       "name": "EcomOrderFlow",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomOrderFlow",
       "nameColumn": "OrderFlowName",
@@ -41,7 +41,7 @@
     },
     {
       "name": "EcomOrderStates",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomOrderStates",
       "nameColumn": "OrderStateName",
@@ -50,7 +50,7 @@
     },
     {
       "name": "EcomOrderStateRules",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomOrderStateRules",
       "nameColumn": "",
@@ -59,7 +59,7 @@
     },
     {
       "name": "EcomPayments",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomPayments",
       "nameColumn": "PaymentName",
@@ -70,7 +70,7 @@
     },
     {
       "name": "EcomShippings",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomShippings",
       "nameColumn": "ShippingName",
@@ -81,7 +81,7 @@
     },
     {
       "name": "EcomMethodCountryRelation",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomMethodCountryRelation",
       "nameColumn": "MethodCountryRelMethodId",
@@ -93,7 +93,7 @@
     },
     {
       "name": "EcomStockGroups",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomStockGroups",
       "nameColumn": "StockGroupName",
@@ -102,7 +102,7 @@
     },
     {
       "name": "EcomStockStatusLine",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomStockStatusLine",
       "nameColumn": "",
@@ -111,7 +111,7 @@
     },
     {
       "name": "EcomStockStatusLanguageValue",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomStockStatusLanguageValue",
       "nameColumn": "StockStatusLanguageValueText",
@@ -120,7 +120,7 @@
     },
     {
       "name": "EcomOrderField",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomOrderField",
       "nameColumn": "OrderFieldName",
@@ -129,7 +129,7 @@
     },
     {
       "name": "EcomOrderLineFields",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomOrderLineFields",
       "nameColumn": "OrderLineFieldName",
@@ -138,7 +138,7 @@
     },
     {
       "name": "EcomOrderContexts",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomOrderContexts",
       "nameColumn": "OrderContextName",
@@ -147,7 +147,7 @@
     },
     {
       "name": "EcomOrderContextShopRelation",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomOrderContextShopRelation",
       "nameColumn": "",
@@ -156,7 +156,7 @@
     },
     {
       "name": "EcomOrderContextAccessUserRelation",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomOrderContextAccessUserRelation",
       "nameColumn": "",
@@ -165,7 +165,7 @@
     },
     {
       "name": "EcomTrackAndTrace",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomTrackAndTrace",
       "nameColumn": "TrackAndTraceName",
@@ -174,7 +174,7 @@
     },
     {
       "name": "EcomAddressValidatorSettings",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomAddressValidatorSettings",
       "nameColumn": "AddressValidatorName",
@@ -183,7 +183,7 @@
     },
     {
       "name": "EcomValidationGroups",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomValidationGroups",
       "nameColumn": "ValidationGroupName",
@@ -192,7 +192,7 @@
     },
     {
       "name": "EcomValidationGroupsTranslation",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomValidationGroupsTranslation",
       "nameColumn": "",
@@ -201,7 +201,7 @@
     },
     {
       "name": "EcomValidations",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomValidations",
       "nameColumn": "ValidationId",
@@ -210,7 +210,7 @@
     },
     {
       "name": "EcomValidationRules",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomValidationRules",
       "nameColumn": "",
@@ -219,7 +219,7 @@
     },
     {
       "name": "EcomCountries",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomCountries",
       "nameColumn": "",
@@ -233,7 +233,7 @@
     },
     {
       "name": "EcomCountryText",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomCountryText",
       "nameColumn": "CountryTextName",
@@ -247,7 +247,7 @@
     },
     {
       "name": "EcomLanguages",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomLanguages",
       "nameColumn": "LanguageName",
@@ -258,7 +258,7 @@
     },
     {
       "name": "EcomCurrencies",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomCurrencies",
       "nameColumn": "CurrencyName",
@@ -269,7 +269,7 @@
     },
     {
       "name": "EcomVatGroups",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomVatGroups",
       "nameColumn": "VatGroupName",
@@ -281,7 +281,7 @@
     },
     {
       "name": "EcomVatCountryRelations",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomVatCountryRelations",
       "nameColumn": "",
