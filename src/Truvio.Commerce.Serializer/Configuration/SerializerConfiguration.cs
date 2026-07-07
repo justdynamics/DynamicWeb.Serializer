@@ -3,17 +3,15 @@ using Truvio.Commerce.Serializer.Models;
 namespace Truvio.Commerce.Serializer.Configuration;
 
 /// <summary>
-/// Top-level serializer configuration. Phase 40 (D-01..D-04) replaces the section-level Deploy/Seed
-/// structural split with a single flat predicate list where each predicate carries its own
-/// <see cref="ProviderPredicateDefinition.Mode"/>. The two modes are still semantically distinct —
-/// Deploy is source-wins and ships deployment data, Seed is destination-wins and ships one-time
-/// content — but the configuration shape is now flat. Per-mode subfolder names live as top-level
-/// keys; ConflictStrategy is hardcoded per mode (Deploy=SourceWins, Seed=DestinationWins) and is
+/// Top-level serializer configuration. A single flat predicate list where each predicate carries
+/// its own <see cref="ProviderPredicateDefinition.Mode"/>. The two modes are semantically distinct —
+/// Replace is source-wins (the source overwrites the destination), Merge is destination-wins and
+/// fills only empty destination fields. Per-mode subfolder names live as top-level keys;
+/// ConflictStrategy is hardcoded per mode (Replace=SourceWins, Merge=DestinationWins) and is
 /// resolved at runtime via <see cref="GetConflictStrategyForMode"/>.
 ///
-/// The legacy section-level shape (top-level <c>deploy</c> / <c>seed</c> objects) is HARD-REJECTED
-/// by <see cref="ConfigLoader"/>; <see cref="ConfigWriter"/> never emits it. No backcompat per
-/// project policy.
+/// The section-level shape (top-level <c>replace</c> / <c>merge</c> objects) is HARD-REJECTED
+/// by <see cref="ConfigLoader"/>; <see cref="ConfigWriter"/> never emits it.
 /// </summary>
 public record SerializerConfiguration
 {
@@ -24,20 +22,20 @@ public record SerializerConfiguration
     public required string OutputDirectory { get; init; }
 
     // -------------------------------------------------------------------------
-    // Phase 40 D-02: top-level per-mode subfolder names. ConflictStrategy is hardcoded per mode
-    // (Deploy=SourceWins, Seed=DestinationWins) and not exposed as a config knob anymore — there's
-    // no real use case for inverting it. Phase 39 runtime reads ConflictStrategy through
+    // Top-level per-mode subfolder names. ConflictStrategy is hardcoded per mode
+    // (Replace=SourceWins, Merge=DestinationWins) and not exposed as a config knob — there's
+    // no real use case for inverting it. Runtime reads ConflictStrategy through
     // GetConflictStrategyForMode below.
     // -------------------------------------------------------------------------
 
-    /// <summary>Subfolder under <see cref="SerializeRoot"/> for Deploy-mode YAML output. Default "deploy".</summary>
-    public string DeployOutputSubfolder { get; init; } = "deploy";
+    /// <summary>Subfolder under <see cref="SerializeRoot"/> for Replace-mode YAML output. Default "replace".</summary>
+    public string ReplaceOutputSubfolder { get; init; } = "replace";
 
-    /// <summary>Subfolder under <see cref="SerializeRoot"/> for Seed-mode YAML output. Default "seed".</summary>
-    public string SeedOutputSubfolder { get; init; } = "seed";
+    /// <summary>Subfolder under <see cref="SerializeRoot"/> for Merge-mode YAML output. Default "merge".</summary>
+    public string MergeOutputSubfolder { get; init; } = "merge";
 
     // -------------------------------------------------------------------------
-    // Phase 40 D-04: top-level (mode-agnostic) field/element exclusions by type.
+    // Top-level (mode-agnostic) field/element exclusions by type.
     // -------------------------------------------------------------------------
 
     /// <summary>Global per-item-type field exclusions, applied to every predicate regardless of mode.</summary>
@@ -47,43 +45,43 @@ public record SerializerConfiguration
     public Dictionary<string, List<string>> ExcludeXmlElementsByType { get; init; } = new();
 
     /// <summary>
-    /// Admin UI: show seed indicators — the seed (flower) annotation on content-tree pages
-    /// AND the seed info message on content editing screens. Off by default — broad seed
-    /// coverage marks nearly every node/page and drowns out the deploy warnings, which carry
-    /// the actionable signal ("edits here are overwritten by the next deploy").
+    /// Admin UI: show merge indicators — the merge (flower) annotation on content-tree pages
+    /// AND the merge info message on content editing screens. Off by default — broad merge
+    /// coverage marks nearly every node/page and drowns out the replace warnings, which carry
+    /// the actionable signal ("edits here are overwritten by the next replace run").
     /// </summary>
-    public bool ShowSeedIndicators { get; init; } = false;
+    public bool ShowMergeIndicators { get; init; } = false;
 
     /// <summary>
-    /// Admin UI: show deploy indicators — the sync annotation on content-tree pages, the
-    /// deploy warning on content editing screens, and the deploy warning on commerce
-    /// settings screens backed by deploy-managed SqlTable predicates. On by default — these
-    /// carry the actionable "edits here are overwritten by the next deploy" signal — but
-    /// can be switched off (e.g. on a source environment where every page is deploy-managed
+    /// Admin UI: show replace indicators — the sync annotation on content-tree pages, the
+    /// replace warning on content editing screens, and the replace warning on commerce
+    /// settings screens backed by replace-managed SqlTable predicates. On by default — these
+    /// carry the actionable "edits here are overwritten by the next replace run" signal — but
+    /// can be switched off (e.g. on a source environment where every page is replace-managed
     /// and the warnings are noise).
     /// </summary>
-    public bool ShowDeployIndicators { get; init; } = true;
+    public bool ShowReplaceIndicators { get; init; } = true;
 
     // -------------------------------------------------------------------------
-    // Phase 40 D-02: SINGLE flat predicate list. Each predicate carries its own .Mode.
+    // SINGLE flat predicate list. Each predicate carries its own .Mode.
     // -------------------------------------------------------------------------
 
     /// <summary>
-    /// All predicates, deploy and seed mixed. Consumers filter by
+    /// All predicates, replace and merge mixed. Consumers filter by
     /// <see cref="ProviderPredicateDefinition.Mode"/> when iterating per mode.
     /// </summary>
     public List<ProviderPredicateDefinition> Predicates { get; init; } = new();
 
-    /// <summary>Resolve the per-mode subfolder string by <see cref="DeploymentMode"/>.</summary>
-    public string GetSubfolderForMode(DeploymentMode mode) =>
-        mode == DeploymentMode.Deploy ? DeployOutputSubfolder : SeedOutputSubfolder;
+    /// <summary>Resolve the per-mode subfolder string by <see cref="SerializerMode"/>.</summary>
+    public string GetSubfolderForMode(SerializerMode mode) =>
+        mode == SerializerMode.Replace ? ReplaceOutputSubfolder : MergeOutputSubfolder;
 
     /// <summary>
-    /// Resolve the conflict strategy by <see cref="DeploymentMode"/>. Hardcoded per mode:
-    /// Deploy → SourceWins (YAML overwrites target), Seed → DestinationWins (preserve customer edits).
+    /// Resolve the conflict strategy by <see cref="SerializerMode"/>. Hardcoded per mode:
+    /// Replace → SourceWins (YAML overwrites target), Merge → DestinationWins (preserve destination edits).
     /// </summary>
-    public ConflictStrategy GetConflictStrategyForMode(DeploymentMode mode) =>
-        mode == DeploymentMode.Deploy ? ConflictStrategy.SourceWins : ConflictStrategy.DestinationWins;
+    public ConflictStrategy GetConflictStrategyForMode(SerializerMode mode) =>
+        mode == SerializerMode.Replace ? ConflictStrategy.SourceWins : ConflictStrategy.DestinationWins;
 
     // -------------------------------------------------------------------------
     // Paths
@@ -103,7 +101,7 @@ public record SerializerConfiguration
 
     /// <summary>
     /// Resolves all subfolder paths relative to Files/System and ensures they exist on disk,
-    /// including the per-mode Deploy / Seed serialize subfolders.
+    /// including the per-mode Replace / Merge serialize subfolders.
     /// </summary>
     public ResolvedPaths EnsureDirectories(string filesSystemDir)
     {
@@ -122,9 +120,9 @@ public record SerializerConfiguration
         Directory.CreateDirectory(resolved.Download);
         Directory.CreateDirectory(resolved.Log);
 
-        // Phase 40 D-02: per-mode subfolders sit beneath SerializeRoot.
-        Directory.CreateDirectory(Path.Combine(resolved.SerializeRoot, DeployOutputSubfolder));
-        Directory.CreateDirectory(Path.Combine(resolved.SerializeRoot, SeedOutputSubfolder));
+        // Per-mode subfolders sit beneath SerializeRoot.
+        Directory.CreateDirectory(Path.Combine(resolved.SerializeRoot, ReplaceOutputSubfolder));
+        Directory.CreateDirectory(Path.Combine(resolved.SerializeRoot, MergeOutputSubfolder));
 
         return resolved;
     }

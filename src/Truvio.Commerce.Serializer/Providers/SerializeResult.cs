@@ -13,7 +13,7 @@ public record SerializeResult
 
     /// <summary>
     /// Absolute paths of every file this predicate emitted during the run.
-    /// Aggregated by <see cref="SerializerOrchestrator.SerializeAll(System.Collections.Generic.List{Models.ProviderPredicateDefinition}, string, Configuration.DeploymentMode, Configuration.ConflictStrategy, System.Action{string}?, string?)"/>
+    /// Aggregated by <see cref="SerializerOrchestrator.SerializeAll(System.Collections.Generic.List{Models.ProviderPredicateDefinition}, string, Configuration.SerializerMode, Configuration.ConflictStrategy, System.Action{string}?, string?)"/>
     /// and handed to <see cref="Truvio.Commerce.Serializer.Infrastructure.ManifestWriter"/> + the
     /// <see cref="Truvio.Commerce.Serializer.Infrastructure.ManifestCleaner"/> post-run (Phase 37-01 Task 2).
     /// </summary>

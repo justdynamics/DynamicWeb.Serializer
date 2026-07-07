@@ -6,12 +6,12 @@ using Truvio.Commerce.Serializer.Models;
 namespace Truvio.Commerce.Serializer.Configuration;
 
 /// <summary>
-/// Reads <see cref="SerializerConfiguration"/> from JSON. Phase 40 (D-01..D-04) flat shape:
+/// Reads <see cref="SerializerConfiguration"/> from JSON. Flat shape:
 /// a single top-level <c>predicates</c> array where every entry carries its own <c>mode</c>
-/// (Deploy/Seed). Top-level <c>deploy</c> / <c>seed</c> objects are HARD-REJECTED with a clear
-/// actionable error — no silent migration. Top-level <c>predicates</c> entries missing the
+/// (Replace/Merge). Top-level <c>replace</c> / <c>merge</c> objects are HARD-REJECTED with a clear
+/// actionable error. Top-level <c>predicates</c> entries missing the
 /// <c>mode</c> field are likewise rejected. Per-predicate <c>mode</c> values must parse
-/// case-insensitively to <see cref="DeploymentMode"/> (i.e. "Deploy" or "Seed").
+/// case-insensitively to <see cref="SerializerMode"/> (i.e. "Replace" or "Merge").
 /// </summary>
 public static class ConfigLoader
 {
@@ -118,12 +118,12 @@ public static class ConfigLoader
         var config = new SerializerConfiguration
         {
             OutputDirectory = raw.OutputDirectory!,
-            DeployOutputSubfolder = string.IsNullOrEmpty(raw.DeployOutputSubfolder) ? "deploy" : raw.DeployOutputSubfolder!,
-            SeedOutputSubfolder = string.IsNullOrEmpty(raw.SeedOutputSubfolder) ? "seed" : raw.SeedOutputSubfolder!,
+            ReplaceOutputSubfolder = string.IsNullOrEmpty(raw.ReplaceOutputSubfolder) ? "replace" : raw.ReplaceOutputSubfolder!,
+            MergeOutputSubfolder = string.IsNullOrEmpty(raw.MergeOutputSubfolder) ? "merge" : raw.MergeOutputSubfolder!,
             ExcludeFieldsByItemType = raw.ExcludeFieldsByItemType ?? new Dictionary<string, List<string>>(),
             ExcludeXmlElementsByType = raw.ExcludeXmlElementsByType ?? new Dictionary<string, List<string>>(),
-            ShowSeedIndicators = raw.ShowSeedIndicators,
-            ShowDeployIndicators = raw.ShowDeployIndicators ?? true,
+            ShowMergeIndicators = raw.ShowMergeIndicators,
+            ShowReplaceIndicators = raw.ShowReplaceIndicators ?? true,
             Predicates = predicates
         };
 
@@ -257,25 +257,25 @@ public static class ConfigLoader
         if (string.IsNullOrWhiteSpace(raw.OutputDirectory))
             throw new InvalidOperationException("Configuration is invalid: 'outputDirectory' is required and must not be empty.");
 
-        // Phase 40 D-03: legacy section-level shape (top-level 'deploy' or 'seed' object) is
-        // hard-rejected. No silent migration. Users must rewrite their config to the flat shape
-        // with per-predicate 'mode' fields. See docs/baselines/Swift2.2-baseline.md.
-        if (raw.Deploy != null)
+        // A section-level shape (top-level 'replace' or 'merge' object) is hard-rejected.
+        // Configs use the flat shape: a single top-level 'predicates' array where each entry
+        // carries its own 'mode' field. See docs/baselines/Swift2.2-baseline.md.
+        if (raw.Replace != null)
             throw new InvalidOperationException(
-                "Configuration is invalid: Legacy section-level shape detected — top-level 'deploy' object is no longer supported (Phase 40, per-predicate mode). " +
-                "Move every predicate from 'deploy.predicates' into the top-level 'predicates' array and add \"mode\": \"Deploy\" to each. " +
-                "See docs/baselines/Swift2.2-baseline.md for the new shape.");
-        if (raw.Seed != null)
+                "Configuration is invalid: Section-level shape detected — a top-level 'replace' object is not supported. " +
+                "Use the flat shape: put every predicate in the top-level 'predicates' array and add \"mode\": \"Replace\" to each. " +
+                "See docs/baselines/Swift2.2-baseline.md for the shape.");
+        if (raw.Merge != null)
             throw new InvalidOperationException(
-                "Configuration is invalid: Legacy section-level shape detected — top-level 'seed' object is no longer supported (Phase 40, per-predicate mode). " +
-                "Move every predicate from 'seed.predicates' into the top-level 'predicates' array and add \"mode\": \"Seed\" to each. " +
-                "See docs/baselines/Swift2.2-baseline.md for the new shape.");
+                "Configuration is invalid: Section-level shape detected — a top-level 'merge' object is not supported. " +
+                "Use the flat shape: put every predicate in the top-level 'predicates' array and add \"mode\": \"Merge\" to each. " +
+                "See docs/baselines/Swift2.2-baseline.md for the shape.");
 
         if (raw.Predicates != null)
             ValidatePredicates(raw.Predicates, "predicates");
 
-        ValidateSubfolder(raw.DeployOutputSubfolder, "deployOutputSubfolder");
-        ValidateSubfolder(raw.SeedOutputSubfolder, "seedOutputSubfolder");
+        ValidateSubfolder(raw.ReplaceOutputSubfolder, "replaceOutputSubfolder");
+        ValidateSubfolder(raw.MergeOutputSubfolder, "mergeOutputSubfolder");
     }
 
     private static void ValidatePredicates(List<RawPredicateDefinition> predicates, string scope)
@@ -286,15 +286,14 @@ public static class ConfigLoader
             if (string.IsNullOrWhiteSpace(p.Name))
                 throw new InvalidOperationException($"Configuration is invalid: {scope}[{i}] is missing required field 'name'.");
 
-            // Phase 40 D-01: every predicate must declare its mode.
+            // Every predicate must declare its mode.
             if (string.IsNullOrWhiteSpace(p.Mode))
                 throw new InvalidOperationException(
                     $"Configuration is invalid: {scope}[{i}] (name='{p.Name}') is missing required field 'mode' " +
-                    "(expected 'Deploy' or 'Seed', case-insensitive).");
-            if (!Enum.TryParse<DeploymentMode>(p.Mode, ignoreCase: true, out _))
+                    "(expected 'Replace' or 'Merge', case-insensitive).");
+            if (!Enum.TryParse<SerializerMode>(p.Mode, ignoreCase: true, out _))
                 throw new InvalidOperationException(
-                    $"Configuration is invalid: {scope}[{i}] (name='{p.Name}') has invalid mode '{p.Mode}' " +
-                    "(expected 'Deploy' or 'Seed', case-insensitive).");
+                    $"Unknown mode '{p.Mode}' for predicate '{p.Name}' — valid values: Replace, Merge.");
 
             var isContentPredicate = string.IsNullOrEmpty(p.ProviderType)
                 || string.Equals(p.ProviderType, "Content", StringComparison.OrdinalIgnoreCase);
@@ -322,7 +321,7 @@ public static class ConfigLoader
     private static ProviderPredicateDefinition BuildPredicate(RawPredicateDefinition raw)
     {
         // Mode parse is safe — ValidatePredicates already verified the value parses.
-        Enum.TryParse<DeploymentMode>(raw.Mode, ignoreCase: true, out var mode);
+        Enum.TryParse<SerializerMode>(raw.Mode, ignoreCase: true, out var mode);
         return new ProviderPredicateDefinition
         {
             Name = raw.Name!,
@@ -358,30 +357,30 @@ public static class ConfigLoader
     {
         public string? OutputDirectory { get; set; }
 
-        // Phase 40 D-02: top-level subfolder names + flat exclusion dictionaries.
-        public string? DeployOutputSubfolder { get; set; }
-        public string? SeedOutputSubfolder { get; set; }
+        // Top-level subfolder names + flat exclusion dictionaries.
+        public string? ReplaceOutputSubfolder { get; set; }
+        public string? MergeOutputSubfolder { get; set; }
         public Dictionary<string, List<string>>? ExcludeFieldsByItemType { get; set; }
         public Dictionary<string, List<string>>? ExcludeXmlElementsByType { get; set; }
 
-        /// <summary>Admin UI: show seed indicators (tree flower icons + seed message on edit
-        /// screens). Off by default — broad seed coverage turns every node green and drowns
-        /// the deploy icons, which are the ones that signal "your edit will be overwritten".</summary>
-        public bool ShowSeedIndicators { get; set; }
+        /// <summary>Admin UI: show merge indicators (tree flower icons + merge message on edit
+        /// screens). Off by default — broad merge coverage turns every node green and drowns
+        /// the replace icons, which are the ones that signal "your edit will be overwritten".</summary>
+        public bool ShowMergeIndicators { get; set; }
 
-        /// <summary>Admin UI: show deploy indicators (tree sync icons + deploy warnings on
+        /// <summary>Admin UI: show replace indicators (tree sync icons + replace warnings on
         /// content and commerce edit screens). Nullable so an absent key defaults to ON.</summary>
-        public bool? ShowDeployIndicators { get; set; }
+        public bool? ShowReplaceIndicators { get; set; }
 
-        // Phase 40 D-02: SINGLE flat predicate list with per-entry Mode.
+        // SINGLE flat predicate list with per-entry Mode.
         public List<RawPredicateDefinition>? Predicates { get; set; }
 
-        // Phase 40 D-03: detection-only fields. If either is non-null after deserialize the
-        // legacy section shape was used and Validate() throws. They are NEVER read for content.
-        // Using `object?` makes them match any JSON shape (object, array, primitive) without
-        // us caring about contents — Validate() throws on any non-null value.
-        public object? Deploy { get; set; }
-        public object? Seed { get; set; }
+        // Detection-only fields. If either is non-null after deserialize the section shape
+        // was used and Validate() throws. They are NEVER read for content. Using `object?`
+        // makes them match any JSON shape (object, array, primitive) without us caring about
+        // contents — Validate() throws on any non-null value.
+        public object? Replace { get; set; }
+        public object? Merge { get; set; }
     }
 
     private sealed class RawPredicateDefinition
@@ -389,7 +388,7 @@ public static class ConfigLoader
         public string? Name { get; set; }
         public string? ProviderType { get; set; }
 
-        /// <summary>Phase 40 D-01: required per-predicate mode ("Deploy" or "Seed", case-insensitive).</summary>
+        /// <summary>Required per-predicate mode ("Replace" or "Merge", case-insensitive).</summary>
         public string? Mode { get; set; }
 
         public string? Path { get; set; }

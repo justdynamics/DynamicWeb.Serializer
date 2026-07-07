@@ -16,14 +16,13 @@ public record ProviderPredicateDefinition
     public required string ProviderType { get; init; }
 
     /// <summary>
-    /// Phase 40 D-01: which DeploymentMode this predicate runs under. Replaces the section-level
-    /// Deploy/Seed split — predicates now declare their own mode and the orchestrator filters
-    /// `config.Predicates` by `p.Mode == DeploymentMode.Deploy` (or Seed) when iterating.
-    /// JSON key is "mode" (lowercase, camelCase convention); on-disk values are "Deploy" / "Seed"
-    /// (read case-insensitively).
+    /// Which SerializerMode this predicate runs under. Each predicate declares its own mode and
+    /// the orchestrator filters `config.Predicates` by `p.Mode == SerializerMode.Replace`
+    /// (or Merge) when iterating. JSON key is "mode" (camelCase convention); on-disk values are
+    /// "Replace" / "Merge" (read case-insensitively).
     /// </summary>
     [JsonConverter(typeof(JsonStringEnumConverter))]
-    public DeploymentMode Mode { get; init; } = DeploymentMode.Deploy;
+    public SerializerMode Mode { get; init; } = SerializerMode.Replace;
 
     /// <summary>SQL table name for SqlTable predicates (e.g., "EcomOrderFlow").</summary>
     public string? Table { get; init; }
@@ -103,7 +102,7 @@ public record ProviderPredicateDefinition
     /// applied at deserialize. Default.aspx?ID=N references in these columns are rewritten
     /// source→target page ID using the cross-environment map built from Content-provider runs.
     /// Example: <c>UrlPath</c> predicate with <c>ResolveLinksInColumns = ["UrlPathRedirect"]</c>
-    /// lets the <c>UrlPathRedirect</c> field survive cross-env deploys. Empty = no link
+    /// lets the <c>UrlPathRedirect</c> field survive cross-environment syncs. Empty = no link
     /// resolution for this table's columns.
     /// </summary>
     public List<string> ResolveLinksInColumns { get; init; } = new();

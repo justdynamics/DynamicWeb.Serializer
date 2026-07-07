@@ -2,14 +2,14 @@ using Truvio.Commerce.Serializer.Models;
 
 namespace Truvio.Commerce.Serializer.Configuration;
 
-/// <summary>Deploy-coverage state of a single content node.</summary>
+/// <summary>Coverage state of a single content node.</summary>
 public enum ContentCoverage
 {
-    /// <summary>Not covered by any deploy predicate, and nothing below it is.</summary>
+    /// <summary>Not covered by any predicate, and nothing below it is.</summary>
     None,
     /// <summary>
     /// Either the node is covered but part of its subtree is carved out by an exclude,
-    /// or the node itself is not covered while a deploy predicate targets a subtree below it.
+    /// or the node itself is not covered while a predicate targets a subtree below it.
     /// </summary>
     Partial,
     /// <summary>The node and (as far as path algebra can tell) its entire subtree are covered.</summary>
@@ -23,25 +23,29 @@ public sealed record ContentCoverageResult(ContentCoverage Coverage, string Expl
 }
 
 /// <summary>
-/// Pure path-algebra evaluation of how deploy-mode Content predicates cover a content node:
+/// Pure path-algebra evaluation of how one mode's Content predicates cover a content node:
 /// fully managed, partially managed (excluded descendants, or managed subtrees below an
 /// unmanaged page), or not managed. The explanation names the predicate and the exclude /
-/// subtree paths responsible, so a developer can see WHY a page deploys or not straight
+/// subtree paths responsible, so a developer can see WHY a page is managed or not straight
 /// from the tree tooltip.
 /// </summary>
 public class ContentCoverageEvaluator
 {
     private readonly List<ProviderPredicateDefinition> _predicates;
     private readonly string _modeWord;
+    private readonly string _modeWordCapitalized;
 
     /// <param name="contentPredicates">
     /// Content predicates of ONE mode (already expanded for language layers when applicable).
     /// </param>
-    /// <param name="modeWord">Word used in explanations: "deploy" (default) or "seed".</param>
-    public ContentCoverageEvaluator(IEnumerable<ProviderPredicateDefinition> contentPredicates, string modeWord = "deploy")
+    /// <param name="modeWord">Word used in explanations: "replace" (default) or "merge".</param>
+    public ContentCoverageEvaluator(IEnumerable<ProviderPredicateDefinition> contentPredicates, string modeWord = "replace")
     {
         _predicates = contentPredicates.ToList();
         _modeWord = modeWord;
+        _modeWordCapitalized = string.IsNullOrEmpty(modeWord)
+            ? modeWord
+            : char.ToUpperInvariant(modeWord[0]) + modeWord.Substring(1);
     }
 
     public ContentCoverageResult Evaluate(string contentPath, int areaId)
@@ -67,13 +71,13 @@ public class ContentCoverageEvaluator
             var names = string.Join("', '", includedBy.Select(p => p.Name));
             if (carvedOut.Count == 0)
                 return new ContentCoverageResult(ContentCoverage.Full,
-                    $"Managed at {_modeWord} by '{names}'");
+                    $"{_modeWordCapitalized}-managed by '{names}'");
 
             return new ContentCoverageResult(ContentCoverage.Partial,
-                $"Partially managed at {_modeWord} by '{names}' — excluded below this page: {string.Join(", ", carvedOut)}");
+                $"Partially {_modeWord}-managed by '{names}' — excluded below this page: {string.Join(", ", carvedOut)}");
         }
 
-        // Node itself is not covered. Is a deploy predicate targeting a subtree below it?
+        // Node itself is not covered. Is a predicate targeting a subtree below it?
         var managedBelow = areaPredicates
             .Where(p => IsStrictlyUnder(p.Path, contentPath))
             .Select(p => $"{p.Path} ('{p.Name}')")

@@ -5,10 +5,10 @@ using Truvio.Commerce.Serializer.Models;
 namespace Truvio.Commerce.Serializer.Configuration;
 
 /// <summary>
-/// Phase 40: writes <see cref="SerializerConfiguration"/> as a flat JSON document with
-/// per-predicate <c>mode</c> field. Never emits the legacy section-level
-/// <c>deploy</c> / <c>seed</c> shape. <see cref="ConfigLoader"/> hard-rejects any file
-/// containing those keys (D-03, no backcompat).
+/// Writes <see cref="SerializerConfiguration"/> as a flat JSON document with a
+/// per-predicate <c>mode</c> field. Never emits a section-level
+/// <c>replace</c> / <c>merge</c> shape. <see cref="ConfigLoader"/> hard-rejects any file
+/// containing those keys.
 /// </summary>
 public static class ConfigWriter
 {
@@ -27,12 +27,12 @@ public static class ConfigWriter
         var dto = new PersistedConfiguration
         {
             OutputDirectory = config.OutputDirectory,
-            DeployOutputSubfolder = config.DeployOutputSubfolder,
-            SeedOutputSubfolder = config.SeedOutputSubfolder,
+            ReplaceOutputSubfolder = config.ReplaceOutputSubfolder,
+            MergeOutputSubfolder = config.MergeOutputSubfolder,
             ExcludeFieldsByItemType = config.ExcludeFieldsByItemType.Count > 0 ? config.ExcludeFieldsByItemType : null,
             ExcludeXmlElementsByType = config.ExcludeXmlElementsByType.Count > 0 ? config.ExcludeXmlElementsByType : null,
-            ShowSeedIndicators = config.ShowSeedIndicators,
-            ShowDeployIndicators = config.ShowDeployIndicators,
+            ShowMergeIndicators = config.ShowMergeIndicators,
+            ShowReplaceIndicators = config.ShowReplaceIndicators,
             Predicates = config.Predicates
         };
 
@@ -46,12 +46,12 @@ public static class ConfigWriter
     private sealed class PersistedConfiguration
     {
         public string OutputDirectory { get; init; } = "";
-        public string DeployOutputSubfolder { get; init; } = "deploy";
-        public string SeedOutputSubfolder { get; init; } = "seed";
+        public string ReplaceOutputSubfolder { get; init; } = "replace";
+        public string MergeOutputSubfolder { get; init; } = "merge";
         public Dictionary<string, List<string>>? ExcludeFieldsByItemType { get; init; }
         public Dictionary<string, List<string>>? ExcludeXmlElementsByType { get; init; }
-        public bool ShowSeedIndicators { get; init; }
-        public bool ShowDeployIndicators { get; init; } = true;
+        public bool ShowMergeIndicators { get; init; }
+        public bool ShowReplaceIndicators { get; init; } = true;
         public List<ProviderPredicateDefinition> Predicates { get; init; } = new();
     }
 }

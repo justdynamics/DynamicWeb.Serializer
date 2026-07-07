@@ -5,8 +5,8 @@ namespace Truvio.Commerce.Serializer.Configuration;
 
 /// <summary>
 /// How to handle conflicts between YAML source and DB target during deserialize.
-/// SourceWins (default for Deploy): YAML overwrites target.
-/// DestinationWins (default for Seed, Phase 37 CONTEXT.md D-06): rows/pages whose natural key
+/// SourceWins (default for Replace): YAML overwrites target.
+/// DestinationWins (default for Merge): rows/pages whose natural key
 /// or PageUniqueId is already present on target are NOT modified — preserves customer edits.
 /// </summary>
 [JsonConverter(typeof(ConflictStrategyJsonConverter))]
