@@ -72,9 +72,9 @@ predicates — to rows identified by `nameColumn` or by composite primary key.
 
 ## The three-bucket split: Deployment, Seed, Not-Serialized
 
-Every piece of DW state belongs to one of three buckets. This is the mental
-framework the reference Swift 2.2 baseline is built on, documented in full at
-[`baselines/Swift2.2-baseline.md`](baselines/Swift2.2-baseline.md).
+Every piece of DW state belongs to one of three buckets. Ready-made,
+gate-proven applications of this split ship as layers and editions in the
+[Truvio.Commerce.Distribution](https://github.com/justdynamics/Truvio.Commerce.Distribution).
 
 | Bucket | Owned by | Captured in | Example contents |
 |--------|----------|-------------|------------------|
@@ -88,9 +88,9 @@ must not be overwritten on the next deploy. Not-serialized data is owned by
 the target host's operator and never lives in YAML.
 
 Getting the bucket wrong is the main source of "my deploy overwrote customer
-edits" or "my credentials leaked into git" incidents. The Swift 2.2 reference
-baseline at [`baselines/env-bucket.md`](baselines/env-bucket.md) enumerates
-exactly what belongs in each bucket for a typical Swift install.
+edits" or "my credentials leaked into git" incidents. The Distribution's
+editions enumerate exactly what belongs in each bucket for a typical Swift
+install.
 
 ## Deploy and Seed modes
 
@@ -243,5 +243,3 @@ key derived from the primary key if `nameColumn` is unset).
 - [SQL tables](sql-tables.md) — SqlTable predicate surface in depth
 - [Link resolution](link-resolution.md) — the three passes of cross-env rewriting
 - [Permissions](permissions.md) — role and group permission handling
-- [Swift 2.2 baseline](baselines/Swift2.2-baseline.md) — the reference implementation
-  of the three-bucket split
