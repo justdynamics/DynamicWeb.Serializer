@@ -1,4 +1,4 @@
--- Purge Swift-CleanDB for a fresh Deploy+Seed round-trip test (2026-04-20).
+-- Purge Swift-CleanDB for a fresh Replace+Merge round-trip test (2026-04-20).
 -- Iterates all ItemType_* tables via INFORMATION_SCHEMA then wipes core Content + Ecom.
 
 -- Database is selected by the caller (sqlcmd -d) - a hardcoded USE here silently
@@ -30,7 +30,7 @@ DELETE FROM [EcomShopLanguageRelation];
 DELETE FROM [EcomMethodCountryRelation];
 DELETE FROM [EcomVatCountryRelations];
 
--- Ecom core tables covered by the Deploy+Seed config
+-- Ecom core tables covered by the Replace+Merge config
 DELETE FROM [EcomDiscountTranslation];
 DELETE FROM [EcomDiscount];
 DELETE FROM [EcomVariantsOptions];

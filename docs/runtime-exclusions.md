@@ -3,7 +3,7 @@
 Some SQL columns hold values that are either recomputed at runtime,
 environment-specific, or credentials. Serializing them into a baseline
 either dirties diffs with meaningless per-run variation, overwrites
-target state on deploy, or leaks secrets into Git. This page documents
+target state on a replace run, or leaks secrets into Git. This page documents
 what the serializer auto-excludes, what it deliberately does NOT
 auto-exclude, and the pre-commit checks to run before pushing a baseline.
 
@@ -23,7 +23,7 @@ whether or not the predicate lists them in `excludeFields`.
 
 | Table     | Column                  | Rationale |
 |-----------|-------------------------|-----------|
-| `UrlPath` | `UrlPathVisitsCount`    | Visit counter. Recomputed at runtime; overwrites target on deploy with a stale snapshot. |
+| `UrlPath` | `UrlPathVisitsCount`    | Visit counter. Recomputed at runtime; overwrites target on a replace run with a stale snapshot. |
 | `EcomShops` | `ShopIndexRepository` | Env-specific search-index repository name. Differs between Azure dev / test / QA / prod. |
 | `EcomShops` | `ShopIndexName`       | Env-specific search-index name. |
 | `EcomShops` | `ShopIndexDocumentType` | Env-specific document type. |
@@ -174,5 +174,5 @@ The pre-commit grep above is the compensating control.
 - [SQL tables](sql-tables.md) — `excludeFields` and `xmlColumns` in context
 - [Configuration](configuration.md) — the full predicate schema
 - [SQL tables](sql-tables.md) — the payment / shipping predicate with XML handling
-- [Concepts](concepts.md#the-three-bucket-split-deployment-seed-not-serialized) —
+- [Concepts](concepts.md#the-three-bucket-split-replace-merge-not-serialized) —
   where credentials belong (the NOT-SERIALIZED bucket) instead of in YAML

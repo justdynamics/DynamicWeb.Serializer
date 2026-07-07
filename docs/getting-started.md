@@ -67,7 +67,7 @@ For a first round-trip, create the following at
   "predicates": [
     {
       "name": "EcomOrderFlow",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomOrderFlow",
       "nameColumn": "OrderFlowName"
@@ -98,15 +98,15 @@ Expected response:
 ```
 HTTP/1.1 200 OK
 
-Serialization complete (Deploy). 3 YAML files written to
-/path/to/your-dw-host/Files/System/Serializer/SerializeRoot/deploy.
+Serialization complete (Replace). 3 YAML files written to
+/path/to/your-dw-host/Files/System/Serializer/SerializeRoot/replace.
 predicates=1 rows=3.
 ```
 
 Look at the output directory:
 
 ```bash
-ls /path/to/your-dw-host/Files/System/Serializer/SerializeRoot/deploy/_sql/EcomOrderFlow/
+ls /path/to/your-dw-host/Files/System/Serializer/SerializeRoot/replace/_sql/EcomOrderFlow/
 # Default.yml
 # Quote.yml
 # ... (one file per row, named by nameColumn)
@@ -133,22 +133,22 @@ stable path:
 
 ```bash
 mkdir -p serialize-root/
-cp -R /path/to/your-dw-host/Files/System/Serializer/SerializeRoot/deploy \
+cp -R /path/to/your-dw-host/Files/System/Serializer/SerializeRoot/replace \
       serialize-root/
 
 git add serialize-root/
-git commit -m "content: Deploy snapshot"
+git commit -m "content: Replace snapshot"
 git push
 ```
 
-The `deploy/` and `seed/` subfolders match the config's `deployOutputSubfolder`
-and `seedOutputSubfolder` settings. Downstream environments read from the same
+The `replace/` and `merge/` subfolders match the config's `replaceOutputSubfolder`
+and `mergeOutputSubfolder` settings. Downstream environments read from the same
 layout.
 
 ## Deserialize into the target
 
 Get the committed YAML onto the target host's filesystem at
-`Files/System/Serializer/SerializeRoot/deploy/`. Any mechanism works: rsync
+`Files/System/Serializer/SerializeRoot/replace/`. Any mechanism works: rsync
 from a CI agent, `git pull` on the host, an Azure Files share, a
 `cp` during an App Service deployment step.
 
@@ -164,7 +164,7 @@ Expected response:
 ```
 HTTP/1.1 200 OK
 
-[Deploy] predicates=1 created=0 updated=3 skipped=0 failed=0.
+[Replace] predicates=1 created=0 updated=3 skipped=0 failed=0.
 ```
 
 If this is the first run on an empty target, you'll see `created=3` instead.
@@ -183,8 +183,8 @@ Two quick checks prove end-to-end fidelity:
      -H "Authorization: Bearer CLD.your-target-api-key"
 
    diff -r \
-     serialize-root/deploy/_sql/EcomOrderFlow/ \
-     /path/to/target-dw-host/Files/System/Serializer/SerializeRoot/deploy/_sql/EcomOrderFlow/
+     serialize-root/replace/_sql/EcomOrderFlow/ \
+     /path/to/target-dw-host/Files/System/Serializer/SerializeRoot/replace/_sql/EcomOrderFlow/
    # empty output = round-trip clean
    ```
 
@@ -205,10 +205,10 @@ serialize → commit → deserialize → serialize.
 ## What next
 
 - **Expand the config.** Start with the shipped starter config at
-  `src/Truvio.Commerce.Serializer/Configuration/swift-starter.json` — a Deploy-mode
+  `src/Truvio.Commerce.Serializer/Configuration/swift-starter.json` — a Replace-mode
   site-framework Content predicate plus the commerce-framework SqlTable predicates
   (countries, currencies, languages, VAT, shops, payments, shippings, order flow,
-  URL paths), and Seed-mode predicates for the customer-owned content surfaces and
+  URL paths), and Merge-mode predicates for the customer-owned content surfaces and
   the starter catalog. Trim to what your project needs.
 - **Start from ready-made content.** The
   [Truvio.Commerce.Distribution](https://github.com/justdynamics/Truvio.Commerce.Distribution)
@@ -218,7 +218,7 @@ serialize → commit → deserialize → serialize.
   `?strictMode=true` on the API call, so any warning fails the run. See
   [`strict-mode.md`](strict-mode.md).
 - **Wire a pipeline.** [`cicd.md`](cicd.md) has complete GitHub Actions, Azure
-  DevOps, and GitLab CI examples including the Deploy/Seed split.
+  DevOps, and GitLab CI examples including the Replace/Merge split.
 - **Understand the mental model.** [`concepts.md`](concepts.md) covers predicates,
   GUID identity, folder layout, and the three-pass link resolution.
 

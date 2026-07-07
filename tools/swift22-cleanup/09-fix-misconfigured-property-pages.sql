@@ -5,7 +5,7 @@
 -- Context:
 --   Phase 38.1-01's live Swift 2.2 → CleanDB E2E round-trip escalated 10
 --   "Could not load PropertyItem for page <GUID>" warnings on Deserialize
---   Deploy under strictMode: true, contributing to HTTP 400. Direct
+--   Replace under strictMode: true, contributing to HTTP 400. Direct
 --   inspection of the fresh SerializeRoot YAML tree (Plan 38.1-02 Task 1
 --   §Part C) shows the 10 pages ALL share the same misconfiguration:
 --     PagePropertyItemId  = <set to some value>  (non-null / non-empty)
@@ -20,7 +20,7 @@
 --   exists on 8 MORE pages: 106 (Contact), 107 (About), 108 (Terms), 109
 --   (Delivery), 111 (Sign in), 116 (About us), 121 (Desktop Header),
 --   122 (Mobile Header). All 10 fire "Could not load PropertyItem" warnings
---   on Deserialize Deploy. Rule-2 deviation (D-38.1-02-01): extending the
+--   on Deserialize Replace. Rule-2 deviation (D-38.1-02-01): extending the
 --   scope from 2 → 10 pages is required to close the HTTP 400 gate.
 --
 --   The predicate retains the substring `PageID IN (88, 103,` at the head

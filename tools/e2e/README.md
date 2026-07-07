@@ -52,14 +52,14 @@ pwsh tools/e2e/full-clean-roundtrip.ps1 -SkipBacpacRestore
 | 8  | Purge CleanDB (`tools/purge-cleandb.sql`)                            | COMMIT, no ROLLBACK |
 | 9  | Apply `cleandb-align-schema.sql`                                     | 10 ALTER or SKIP log lines |
 | 10 | Start CleanDB host                                                   | `/Admin/` ready within 180s |
-| 11 | POST SerializerSerialize?mode=deploy                                 | HTTP 200, zero escalations |
-| 12 | POST SerializerSerialize?mode=seed                                   | HTTP 200, zero escalations |
-| 13 | Mirror Swift-2.2's SerializeRoot -> CleanDB's filesystem             | `deploy/` + `seed/` dirs mirrored (Phase 38.1-01 Dev 1) |
-| 14 | POST SerializerDeserialize?mode=deploy                               | HTTP 200, zero escalations |
-| 15 | POST SerializerDeserialize?mode=seed                                 | HTTP 200, zero escalations |
+| 11 | POST SerializerSerialize?mode=replace                                 | HTTP 200, zero escalations |
+| 12 | POST SerializerSerialize?mode=merge                                   | HTTP 200, zero escalations |
+| 13 | Mirror Swift-2.2's SerializeRoot -> CleanDB's filesystem             | `replace/` + `merge/` dirs mirrored (Phase 38.1-01 Dev 1) |
+| 14 | POST SerializerDeserialize?mode=replace                               | HTTP 200, zero escalations |
+| 15 | POST SerializerDeserialize?mode=merge                                 | HTTP 200, zero escalations |
 | 16 | Smoke tool (`Test-BaselineFrontend.ps1`)                             | exit 0 AND non-vacuous (no 'Nothing to test') |
 | 17 | `SELECT COUNT(*) FROM EcomProducts` on both DBs                      | Swift-2.2 = 2051 AND CleanDB = 2051 |
-| 18 | Orphan YAML assertion                                                | `SerializeRoot/deploy/_sql/EcomShopGroupRelation/GROUP253$$SHOP19.yml` absent |
+| 18 | Orphan YAML assertion                                                | `SerializeRoot/replace/_sql/EcomShopGroupRelation/GROUP253$$SHOP19.yml` absent |
 | 19 | Stop both hosts                                                      | clean shutdown via taskkill |
 | 20 | Emit `summary.json` in run dir                                       | `Disposition: CLOSED` |
 
@@ -83,8 +83,8 @@ Expected contents:
 - `purge-cleandb.log` — Step 8
 - `schema-align.log` — Step 9
 - `host-cleandb.log`, `host-cleandb.log.err` — Step 10
-- `serialize-deploy.log`, `serialize-seed.log` — Steps 11-12
-- `deserialize-deploy.log`, `deserialize-seed.log` — Steps 14-15
+- `serialize-replace.log`, `serialize-merge.log` — Steps 11-12
+- `deserialize-replace.log`, `deserialize-merge.log` — Steps 14-15
 - `smoke.log` — Step 16
 - `summary.json` — Step 20 (only present on full success)
 
@@ -155,7 +155,7 @@ directory to see the concrete count and compare to the script's expectations.
 
 **"CleanDB EcomProducts expected 2051, got N"**
 C.1 preservation regression — deserialize dropped products. This is a serious
-bug and should block release; gather the `deserialize-seed.log` + per-predicate
+bug and should block release; gather the `deserialize-merge.log` + per-predicate
 counts before re-running.
 
 ## Related

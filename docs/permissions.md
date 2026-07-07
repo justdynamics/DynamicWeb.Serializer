@@ -90,7 +90,7 @@ the target environment, the serializer applies a defensive fallback:
    ```
 
 Under strict mode, the warning escalates. Under lenient mode, the page
-stays locked down to anonymous users while the deploy completes; an
+stays locked down to anonymous users while the deserialize completes; an
 operator can create the group and re-deserialize afterwards.
 
 The fallback is deliberately conservative. A page that loses its intended
@@ -112,7 +112,7 @@ cumulative count of skipped-and-fallback-triggered permissions.
 ## Pre-create groups on target
 
 The recommended operational posture is to ensure user groups exist on
-every environment **before** a baseline deploy that references them.
+every environment **before** a baseline deserialize that references them.
 Group creation is not in the baseline's scope because groups are often
 coupled to per-environment identity-provider syncs, impersonation-chain
 policies, or customer-managed membership lists.
@@ -125,14 +125,14 @@ Two practical patterns:
   one-time bootstrap.
 - **Run a bootstrap script** after the first DW install on a new env
   that creates the documented groups before the first serializer
-  deserialize runs. Subsequent deploys then apply permissions cleanly
+  deserialize runs. Subsequent deserialize runs then apply permissions cleanly
   because the groups resolve by name.
 
 If you adopt the pattern of serializing `AccessUser` + `AccessUserGroup`
 tables via SqlTable predicates, confirm that:
 
 - The group rows come *before* the permission-assignment deserialize.
-  The ordering is predicate-list order in the Deploy mode config, so
+  The ordering is predicate-list order in the Replace mode config, so
   put `AccessUser` / `AccessUserGroup` predicates first.
 - The predicates use appropriate `excludeFields` to strip
   environment-specific columns like `AccessUserLastLoginDate`.
@@ -182,4 +182,4 @@ baseline is adopted.
 - [Concepts](concepts.md) — where permissions fit in the deserialize flow
 - [Configuration](configuration.md) — permission-related predicate fields
 - [Strict mode](strict-mode.md) — how the safety-fallback warning escalates
-- [Troubleshooting](troubleshooting.md) — debugging missing-group deploys
+- [Troubleshooting](troubleshooting.md) — debugging missing-group deserialize runs

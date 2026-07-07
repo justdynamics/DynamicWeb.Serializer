@@ -134,7 +134,7 @@
                                 - generic [ref=e163]: 
                               - 'generic "Navigation tag: Shop" [ref=e164]':
                                 - generic [ref=e165]: 
-                              - generic "Managed at deploy by 'Site framework'" [ref=e166]:
+                              - generic "Replace-managed by 'Site framework'" [ref=e166]:
                                 - generic [ref=e167]: 
                           - generic [ref=e168]:
                             - 'generic "ID: 50" [ref=e170]':
@@ -187,7 +187,7 @@
                             - generic [ref=e216]:
                               - generic "URL ignore for children" [ref=e217]:
                                 - generic [ref=e218]: 
-                              - 'generic "Partially managed at deploy by ''Site framework'' — excluded below this page: /Navigation/Footer Navigation/About the shop, /Navigation/Footer Navigation/Help and info, /Navigation/Secondary Navigation/Find dealers" [ref=e219]':
+                              - 'generic "Partially replace-managed by ''Site framework'' — excluded below this page: /Navigation/Footer Navigation/About the shop, /Navigation/Footer Navigation/Help and info, /Navigation/Secondary Navigation/Find dealers" [ref=e219]':
                                 - generic [ref=e220]: 
                           - generic [ref=e221]:
                             - 'generic "ID: 25" [ref=e223]':
@@ -208,7 +208,7 @@
                             - generic [ref=e237]:
                               - generic "Unpublished" [ref=e238]:
                                 - generic [ref=e239]: 
-                              - generic "Managed at deploy by 'Site framework'" [ref=e240]:
+                              - generic "Replace-managed by 'Site framework'" [ref=e240]:
                                 - generic [ref=e241]: 
                           - generic [ref=e242]:
                             - 'generic "ID: 33" [ref=e244]':
@@ -238,7 +238,7 @@
                             - generic [ref=e266]:
                               - generic "URL ignore for children" [ref=e267]:
                                 - generic [ref=e268]: 
-                              - 'generic "Partially managed at deploy by ''Site framework'' — excluded below this page: /Newsletter Emails/Swift Newsletters - Dark, /Newsletter Emails/Swift Newsletters - Light" [ref=e269]':
+                              - 'generic "Partially replace-managed by ''Site framework'' — excluded below this page: /Newsletter Emails/Swift Newsletters - Dark, /Newsletter Emails/Swift Newsletters - Light" [ref=e269]':
                                 - generic [ref=e270]: 
                           - generic [ref=e271]:
                             - 'generic "ID: 31" [ref=e273]':
@@ -259,7 +259,7 @@
                             - generic [ref=e287]:
                               - generic "URL ignore for children" [ref=e288]:
                                 - generic [ref=e289]: 
-                              - generic "Managed at deploy by 'Site framework'" [ref=e290]:
+                              - generic "Replace-managed by 'Site framework'" [ref=e290]:
                                 - generic [ref=e291]: 
                           - generic [ref=e292]:
                             - 'generic "ID: 66" [ref=e294]':
@@ -291,7 +291,7 @@
                             - generic [ref=e318]:
                               - generic "Shortcut to another page or file" [ref=e319]:
                                 - generic [ref=e320]: 
-                              - generic "Managed at deploy by 'Site framework'" [ref=e321]:
+                              - generic "Replace-managed by 'Site framework'" [ref=e321]:
                                 - generic [ref=e322]: 
                           - generic [ref=e323]:
                             - 'generic "ID: 60" [ref=e325]':
@@ -314,7 +314,7 @@
                                 - generic [ref=e341]: 
                               - generic "URL ignore for children" [ref=e342]:
                                 - generic [ref=e343]: 
-                              - generic "Managed at deploy by 'Site framework'" [ref=e344]:
+                              - generic "Replace-managed by 'Site framework'" [ref=e344]:
                                 - generic [ref=e345]: 
                           - generic [ref=e346]:
                             - 'generic "ID: 1" [ref=e348]':
@@ -335,7 +335,7 @@
                             - generic [ref=e362]:
                               - generic "URL ignore for children" [ref=e363]:
                                 - generic [ref=e364]: 
-                              - generic "Managed at deploy by 'Site framework'" [ref=e365]:
+                              - generic "Replace-managed by 'Site framework'" [ref=e365]:
                                 - generic [ref=e366]: 
                           - generic [ref=e367]:
                             - 'generic "ID: 53" [ref=e369]':
@@ -385,7 +385,7 @@
                             - generic [ref=e412]:
                               - generic "URL ignore for children" [ref=e413]:
                                 - generic [ref=e414]: 
-                              - generic "Managed at deploy by 'Site framework'" [ref=e415]:
+                              - generic "Replace-managed by 'Site framework'" [ref=e415]:
                                 - generic [ref=e416]: 
                           - generic [ref=e417]:
                             - 'generic "ID: 36" [ref=e419]':
@@ -406,7 +406,7 @@
                             - generic [ref=e433]:
                               - generic "Hidden in menu" [ref=e434]:
                                 - generic [ref=e435]: 
-                              - generic "Managed at deploy by 'Site framework'" [ref=e436]:
+                              - generic "Replace-managed by 'Site framework'" [ref=e436]:
                                 - generic [ref=e437]: 
                           - generic [ref=e438]:
                             - 'generic "ID: 41" [ref=e440]':
@@ -429,7 +429,7 @@
                                 - generic [ref=e454]: 
                               - 'generic "Navigation tag: ContentSearch" [ref=e455]':
                                 - generic [ref=e456]: 
-                              - generic "Managed at deploy by 'Site framework'" [ref=e457]:
+                              - generic "Replace-managed by 'Site framework'" [ref=e457]:
                                 - generic [ref=e458]: 
                           - generic [ref=e459]:
                             - 'generic "ID: 40" [ref=e461]':

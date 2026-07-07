@@ -117,7 +117,7 @@ Two useful patterns:
 A strict-mode deserialize that hits two escalated warnings produces a log like this:
 
 ```
-=== Serializer Deserialize (API) started [mode: Deploy] ===
+=== Serializer Deserialize (API) started [mode: Replace] ===
 === Strict mode: True (entry-point: Api) ===
 Loading predicate 'Content - Swift 2 (full baseline as shipped)'
 Loading predicate 'EcomCountries'
@@ -175,7 +175,7 @@ If config-load fails with:
 
 ```
 Configuration is invalid — ServiceCaches validation failed:
-  - deploy.predicates 'EcomSomething': cache service 'Dynamicweb.Ecommerce.New.XService'
+  - predicates 'EcomSomething': cache service 'Dynamicweb.Ecommerce.New.XService'
     is not in DwCacheServiceRegistry.
     Supported (18 total): AreaService, CountryRelationService, CountryService, ...
 ```

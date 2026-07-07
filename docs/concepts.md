@@ -8,8 +8,8 @@ concepts.
 
 - [Predicates select what to sync](#predicates-select-what-to-sync)
 - [Identity is GUID-based, not numeric](#identity-is-guid-based-not-numeric)
-- [The three-bucket split: Deployment, Seed, Not-Serialized](#the-three-bucket-split-deployment-seed-not-serialized)
-- [Deploy and Seed modes](#deploy-and-seed-modes)
+- [The three-bucket split: Replace, Merge, Not-Serialized](#the-three-bucket-split-replace-merge-not-serialized)
+- [Replace and Merge modes](#replace-and-merge-modes)
 - [Folder layout](#folder-layout)
 - [The serialize flow](#the-serialize-flow)
 - [The deserialize flow](#the-deserialize-flow)
@@ -70,7 +70,7 @@ freely; the GUID keeps the two environments aligned.
 The same applies to paragraphs (`ParagraphUniqueId`) and — for SqlTable
 predicates — to rows identified by `nameColumn` or by composite primary key.
 
-## The three-bucket split: Deployment, Seed, Not-Serialized
+## The three-bucket split: Replace, Merge, Not-Serialized
 
 Every piece of DW state belongs to one of three buckets. Ready-made,
 gate-proven applications of this split ship as layers and editions in the
@@ -78,45 +78,45 @@ gate-proven applications of this split ship as layers and editions in the
 
 | Bucket | Owned by | Captured in | Example contents |
 |--------|----------|-------------|------------------|
-| **DEPLOYMENT** | Developer / template | YAML, Deploy mode | Shop structure, item types, VAT rates, country list, payment method definitions |
-| **SEED** | Developer initially, end-user thereafter | YAML, Seed mode | Customer Center welcome copy, FAQ body text, newsletter templates |
+| **REPLACE** | Developer / template | YAML, Replace mode | Shop structure, item types, VAT rates, country list, payment method definitions |
+| **MERGE** | Developer initially, end-user thereafter | YAML, Merge mode | Customer Center welcome copy, FAQ body text, newsletter templates |
 | **NOT-SERIALIZED** | Per-env operator | Filesystem config, Azure Key Vault, per-env Area fields | `GlobalSettings.config`, payment gateway credentials, `AreaDomain`, GTM IDs |
 
-Deployment data must be identical across environments. Seed data is a
+Replace data must be identical across environments. Merge data is a
 bootstrap — a fresh install gets the values, and subsequent edits by end users
-must not be overwritten on the next deploy. Not-serialized data is owned by
+must not be overwritten on the next replace run. Not-serialized data is owned by
 the target host's operator and never lives in YAML.
 
-Getting the bucket wrong is the main source of "my deploy overwrote customer
+Getting the bucket wrong is the main source of "my replace run overwrote customer
 edits" or "my credentials leaked into git" incidents. The Distribution's
 editions enumerate exactly what belongs in each bucket for a typical Swift
 install.
 
-## Deploy and Seed modes
+## Replace and Merge modes
 
 The two buckets map to two modes the serializer supports natively.
 
-**Deploy mode** is source-wins. Re-running deserialize overwrites whatever the
-target has. This is correct for pure deployment data: developer-owned,
+**Replace mode** is source-wins. Re-running deserialize overwrites whatever the
+target has. This is correct for pure structural data: developer-owned,
 identical-across-envs, never customer-edited.
 
-**Seed mode** is destination-wins. Rows whose natural key or `PageUniqueId` is
-already present on target are preserved, not overwritten. This is safe for
-first-run content that transitions to customer ownership after the initial
-install.
+**Merge mode** is destination-wins, field-level fill. Rows whose natural key or
+`PageUniqueId` is already present on target are preserved, not overwritten. This
+is safe for first-run content that transitions to customer ownership after the
+initial install.
 
 Each mode has its own predicate list, its own exclusion maps, and its own
 output subfolder:
 
 ```
 Files/System/Serializer/SerializeRoot/
-  deploy/              <- ModeConfig with conflictStrategy: source-wins
-  seed/                <- ModeConfig with conflictStrategy: destination-wins
+  replace/             <- source-wins
+  merge/               <- destination-wins, field-level fill
 ```
 
-The Management API and CLI both accept `?mode=deploy` (default) and
-`?mode=seed`. Most pipelines run them as two sequential steps: deploy first
-(structural data), seed second (first-run content).
+The Management API and CLI both accept `?mode=replace` (default) and
+`?mode=merge`. Most pipelines run them as two sequential steps: replace first
+(structural data), merge second (first-run content).
 
 ## Folder layout
 
@@ -129,7 +129,7 @@ Files/
 
   System/Serializer/                 <- root set by outputDirectory
     SerializeRoot/
-      deploy/                        <- Deploy mode output
+      replace/                       <- Replace mode output
         Content predicate files live in area-mirror form:
         Swift 2/
           area.yml
@@ -144,14 +144,14 @@ Files/
         EcomOrderFlow/
           Default.yml
           Quote.yml
-      seed/                          <- Seed mode output
+      merge/                         <- Merge mode output
         (same shape, different predicates)
     Upload/                          <- zip files dropped here for import
     Download/                        <- ad-hoc zip exports
     Log/                             <- per-run logs
 ```
 
-Content predicates produce a mirror tree: the folder hierarchy under `SerializeRoot/deploy/`
+Content predicates produce a mirror tree: the folder hierarchy under `SerializeRoot/replace/`
 matches the content tree in DW admin. SqlTable predicates produce a flat
 directory per table, with one file per row named by `nameColumn` (or a composite
 key derived from the primary key if `nameColumn` is unset).
@@ -159,7 +159,7 @@ key derived from the primary key if `nameColumn` is unset).
 ## The serialize flow
 
 1. `SerializerSerialize` reads `Files/System/Serializer/Serializer.config.json` and resolves the
-   requested mode (Deploy or Seed).
+   requested mode (Replace or Merge).
 2. `SerializerOrchestrator` iterates the mode's predicates in order.
 3. Content predicates: `ContentSerializer` walks the DW area → pages tree,
    applying exclude rules and field/column filters. Writes one YAML file per

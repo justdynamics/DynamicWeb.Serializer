@@ -4,7 +4,7 @@
 --
 -- Context:
 --   Phase 38.1-01's live Swift 2.2 → CleanDB E2E round-trip escalated 47
---   "Unresolvable page ID <N> in link" warnings on Deserialize Deploy under
+--   "Unresolvable page ID <N> in link" warnings on Deserialize Replace under
 --   strictMode: true, causing HTTP 400. The 20 distinct orphan IDs:
 --     1, 2, 4, 16, 19, 21, 23, 33, 34, 37, 40, 41, 42, 44, 48, 60, 97, 98, 104, 113
 --   These IDs point to pages that do not exist in source.
@@ -42,7 +42,7 @@
 --   Safe to re-run (idempotent — zero-count path commits empty transaction).
 --
 -- Closes Phase 38.1 VERIFICATION gap truth[0] (47 unresolvable page-ID
--- occurrences escalation on Deserialize Deploy).
+-- occurrences escalation on Deserialize Replace).
 --
 -- Investigation: .planning/phases/38.1-close-phase-38-deferrals/38.1-02-orphan-investigation.md
 --

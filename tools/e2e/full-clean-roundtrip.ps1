@@ -17,17 +17,17 @@ End-to-end, unattended execution of the Phase 38.1 gap-closure pipeline:
   8. Purge CleanDB via tools/purge-cleandb.sql
   9. Apply tools/swift22-cleanup/cleandb-align-schema.sql
  10. Start CleanDB host on https://localhost:58217 and wait for ready
- 11. POST SerializerSerialize?mode=deploy against Swift-2.2 (expect HTTP 200)
- 12. POST SerializerSerialize?mode=seed against Swift-2.2 (expect HTTP 200)
+ 11. POST SerializerSerialize?mode=replace against Swift-2.2 (expect HTTP 200)
+ 12. POST SerializerSerialize?mode=merge against Swift-2.2 (expect HTTP 200)
  13. Mirror Swift-2.2 wwwroot/Files/System/Serializer/SerializeRoot to
      CleanDB's filesystem (per Phase 38.1-01 Deviation 1)
- 14. POST SerializerDeserialize?mode=deploy against CleanDB (expect HTTP 200)
- 15. POST SerializerDeserialize?mode=seed against CleanDB (expect HTTP 200)
+ 14. POST SerializerDeserialize?mode=replace against CleanDB (expect HTTP 200)
+ 15. POST SerializerDeserialize?mode=merge against CleanDB (expect HTTP 200)
  16. Run tools/smoke/Test-BaselineFrontend.ps1 (expect exit 0 AND non-vacuous)
  17. Assert EcomProducts row count: 2051 on Swift-2.2 AND 2051 on CleanDB
  18. Assert no baselines/Swift2.2/_sql/EcomShopGroupRelation/GROUP253$$SHOP19.yml
  19. Language-layer round-trip contract: every source area with
-     AreaMasterAreaId > 0 must have a deploy-manifest entry, exist on the
+     AreaMasterAreaId > 0 must have a replace-manifest entry, exist on the
      target with the same id + master link, and match the source on page
      count, restored (non-dangling) master-page links, and the multiset of
      page menu texts (translated content). Skipped with a log line when the
@@ -533,25 +533,25 @@ try {
 }
 Ensure-DwLicense -HostUrl $CleanDbHostUrl -Label 'target'
 
-# ----- Steps 11-12: Serialize Deploy + Seed against Swift-2.2 -----------------
-Write-Step 'Steps 11-12: Serialize Deploy + Seed (Swift-2.2 -> YAML)'
-$serDeploy = Invoke-DwApi -HostUrl $SwiftHostUrl -Endpoint '/Admin/Api/SerializerSerialize?mode=deploy' -LogPath (Join-Path $script:runDir 'serialize-deploy.log')
-if ($serDeploy.Code -ne 200) {
-    throw "Serialize Deploy: expected HTTP 200, got $($serDeploy.Code). See serialize-deploy.log"
+# ----- Steps 11-12: Serialize Replace + Merge against Swift-2.2 -----------------
+Write-Step 'Steps 11-12: Serialize Replace + Merge (Swift-2.2 -> YAML)'
+$serReplace = Invoke-DwApi -HostUrl $SwiftHostUrl -Endpoint '/Admin/Api/SerializerSerialize?mode=replace' -LogPath (Join-Path $script:runDir 'serialize-replace.log')
+if ($serReplace.Code -ne 200) {
+    throw "Serialize Replace: expected HTTP 200, got $($serReplace.Code). See serialize-replace.log"
 }
-if (Select-String -Path (Join-Path $script:runDir 'serialize-deploy.log') -Pattern 'escalated|CumulativeStrictModeException' -Quiet) {
-    throw "Serialize Deploy emitted strict-mode escalations. See serialize-deploy.log"
+if (Select-String -Path (Join-Path $script:runDir 'serialize-replace.log') -Pattern 'escalated|CumulativeStrictModeException' -Quiet) {
+    throw "Serialize Replace emitted strict-mode escalations. See serialize-replace.log"
 }
-Write-Host '  Serialize Deploy HTTP 200 OK'
+Write-Host '  Serialize Replace HTTP 200 OK'
 
-$serSeed = Invoke-DwApi -HostUrl $SwiftHostUrl -Endpoint '/Admin/Api/SerializerSerialize?mode=seed' -LogPath (Join-Path $script:runDir 'serialize-seed.log')
-if ($serSeed.Code -ne 200) {
-    throw "Serialize Seed: expected HTTP 200, got $($serSeed.Code). See serialize-seed.log"
+$serMerge = Invoke-DwApi -HostUrl $SwiftHostUrl -Endpoint '/Admin/Api/SerializerSerialize?mode=merge' -LogPath (Join-Path $script:runDir 'serialize-merge.log')
+if ($serMerge.Code -ne 200) {
+    throw "Serialize Merge: expected HTTP 200, got $($serMerge.Code). See serialize-merge.log"
 }
-if (Select-String -Path (Join-Path $script:runDir 'serialize-seed.log') -Pattern 'escalated|CumulativeStrictModeException' -Quiet) {
-    throw "Serialize Seed emitted strict-mode escalations. See serialize-seed.log"
+if (Select-String -Path (Join-Path $script:runDir 'serialize-merge.log') -Pattern 'escalated|CumulativeStrictModeException' -Quiet) {
+    throw "Serialize Merge emitted strict-mode escalations. See serialize-merge.log"
 }
-Write-Host '  Serialize Seed HTTP 200 OK'
+Write-Host '  Serialize Merge HTTP 200 OK'
 
 # ----- Step 13: Cross-host SerializeRoot mirror -------------------------------
 Write-Step 'Step 13: Mirror Swift-2.2 SerializeRoot -> CleanDB'
@@ -561,34 +561,34 @@ if (-not (Test-Path $swSerRoot)) {
     throw "Source SerializeRoot not found after serialize: $swSerRoot"
 }
 New-Item -ItemType Directory -Force -Path $cdSerRoot | Out-Null
-# Remove prior stale mirror (specific deploy/seed subdirs only — never blanket delete)
-$cdDeploy = Join-Path $cdSerRoot 'deploy'
-$cdSeed   = Join-Path $cdSerRoot 'seed'
-if (Test-Path $cdDeploy) { Remove-Item -Recurse -Force $cdDeploy }
-if (Test-Path $cdSeed)   { Remove-Item -Recurse -Force $cdSeed }
-Copy-Item -Recurse -Force (Join-Path $swSerRoot 'deploy') $cdSerRoot
-Copy-Item -Recurse -Force (Join-Path $swSerRoot 'seed')   $cdSerRoot
+# Remove prior stale mirror (specific replace/merge subdirs only — never blanket delete)
+$cdReplace = Join-Path $cdSerRoot 'replace'
+$cdMerge   = Join-Path $cdSerRoot 'merge'
+if (Test-Path $cdReplace) { Remove-Item -Recurse -Force $cdReplace }
+if (Test-Path $cdMerge)   { Remove-Item -Recurse -Force $cdMerge }
+Copy-Item -Recurse -Force (Join-Path $swSerRoot 'replace') $cdSerRoot
+Copy-Item -Recurse -Force (Join-Path $swSerRoot 'merge')   $cdSerRoot
 Write-Host "  Mirrored $swSerRoot -> $cdSerRoot"
 
-# ----- Steps 14-15: Deserialize Deploy + Seed against CleanDB -----------------
-Write-Step 'Steps 14-15: Deserialize Deploy + Seed (YAML -> CleanDB)'
-$desDeploy = Invoke-DwApi -HostUrl $CleanDbHostUrl -Endpoint '/Admin/Api/SerializerDeserialize?mode=deploy' -LogPath (Join-Path $script:runDir 'deserialize-deploy.log')
-if ($desDeploy.Code -ne 200) {
-    throw "Deserialize Deploy: expected HTTP 200, got $($desDeploy.Code). See deserialize-deploy.log"
+# ----- Steps 14-15: Deserialize Replace + Merge against CleanDB -----------------
+Write-Step 'Steps 14-15: Deserialize Replace + Merge (YAML -> CleanDB)'
+$desReplace = Invoke-DwApi -HostUrl $CleanDbHostUrl -Endpoint '/Admin/Api/SerializerDeserialize?mode=replace' -LogPath (Join-Path $script:runDir 'deserialize-replace.log')
+if ($desReplace.Code -ne 200) {
+    throw "Deserialize Replace: expected HTTP 200, got $($desReplace.Code). See deserialize-replace.log"
 }
-if (Select-String -Path (Join-Path $script:runDir 'deserialize-deploy.log') -Pattern 'escalated|CumulativeStrictModeException' -Quiet) {
-    throw "Deserialize Deploy emitted strict-mode escalations. See deserialize-deploy.log"
+if (Select-String -Path (Join-Path $script:runDir 'deserialize-replace.log') -Pattern 'escalated|CumulativeStrictModeException' -Quiet) {
+    throw "Deserialize Replace emitted strict-mode escalations. See deserialize-replace.log"
 }
-Write-Host '  Deserialize Deploy HTTP 200 OK'
+Write-Host '  Deserialize Replace HTTP 200 OK'
 
-$desSeed = Invoke-DwApi -HostUrl $CleanDbHostUrl -Endpoint '/Admin/Api/SerializerDeserialize?mode=seed' -LogPath (Join-Path $script:runDir 'deserialize-seed.log')
-if ($desSeed.Code -ne 200) {
-    throw "Deserialize Seed: expected HTTP 200, got $($desSeed.Code). See deserialize-seed.log"
+$desMerge = Invoke-DwApi -HostUrl $CleanDbHostUrl -Endpoint '/Admin/Api/SerializerDeserialize?mode=merge' -LogPath (Join-Path $script:runDir 'deserialize-merge.log')
+if ($desMerge.Code -ne 200) {
+    throw "Deserialize Merge: expected HTTP 200, got $($desMerge.Code). See deserialize-merge.log"
 }
-if (Select-String -Path (Join-Path $script:runDir 'deserialize-seed.log') -Pattern 'escalated|CumulativeStrictModeException' -Quiet) {
-    throw "Deserialize Seed emitted strict-mode escalations. See deserialize-seed.log"
+if (Select-String -Path (Join-Path $script:runDir 'deserialize-merge.log') -Pattern 'escalated|CumulativeStrictModeException' -Quiet) {
+    throw "Deserialize Merge emitted strict-mode escalations. See deserialize-merge.log"
 }
-Write-Host '  Deserialize Seed HTTP 200 OK'
+Write-Host '  Deserialize Merge HTTP 200 OK'
 
 # ----- Step 16: Smoke tool ----------------------------------------------------
 Write-Step 'Step 16: Frontend smoke tool'
@@ -620,17 +620,17 @@ if ($tgtCount -ne 2051) {
 }
 
 # ----- Step 18: Exclusion contract assertions ----------------------------------
-# v2 split: every customer-owned subtree is carved out of the deploy predicate and ships
-# via its own seed predicate. Assert per subtree (relative dirs under the MASTER area dir
+# v2 split: every customer-owned subtree is carved out of the replace predicate and ships
+# via its own merge predicate. Assert per subtree (relative dirs under the MASTER area dir
 # 'Swift 2' — layer dirs use translated menu texts and are covered by Step 19's whole-area
-# comparison): absent from deploy YAML, present in seed YAML. Then assert the seed pass
-# landed the roots on target, and the unsubscribe page (deploy-owned inside an otherwise
-# seeded folder) is present in DEPLOY yaml — the carve-at-folder-level guard.
-Write-Step 'Step 18: Exclusion contract (v2 seed subtrees deploy-excluded, seed-shipped)'
-$masterDeploy = Join-Path $SwiftHostPath 'wwwroot/Files/System/Serializer/SerializeRoot/deploy/_content/Swift 2'
-$masterSeed   = Join-Path $SwiftHostPath 'wwwroot/Files/System/Serializer/SerializeRoot/seed/_content/Swift 2'
-# Relative directory per seed subtree ('/' in menu texts is sanitized to '_' on disk)
-$seedSubtrees = @(
+# comparison): absent from replace YAML, present in merge YAML. Then assert the merge pass
+# landed the roots on target, and the unsubscribe page (replace-owned inside an otherwise
+# merge-owned folder) is present in REPLACE yaml — the carve-at-folder-level guard.
+Write-Step 'Step 18: Exclusion contract (v2 merge subtrees replace-excluded, merge-shipped)'
+$masterReplace = Join-Path $SwiftHostPath 'wwwroot/Files/System/Serializer/SerializeRoot/replace/_content/Swift 2'
+$masterMerge   = Join-Path $SwiftHostPath 'wwwroot/Files/System/Serializer/SerializeRoot/merge/_content/Swift 2'
+# Relative directory per merge subtree ('/' in menu texts is sanitized to '_' on disk)
+$mergeSubtrees = @(
     'Home',
     'Home Machines',
     'About',
@@ -642,22 +642,22 @@ $seedSubtrees = @(
     'Newsletter Emails/Swift Newsletters - Light',
     'Newsletter Emails/Swift Newsletters - Dark'
 )
-foreach ($subtree in $seedSubtrees) {
-    if (Test-Path (Join-Path $masterDeploy $subtree)) {
-        throw "Exclusion violated: seed subtree '$subtree' present in DEPLOY YAML"
+foreach ($subtree in $mergeSubtrees) {
+    if (Test-Path (Join-Path $masterReplace $subtree)) {
+        throw "Exclusion violated: merge subtree '$subtree' present in REPLACE YAML"
     }
-    if (-not (Test-Path (Join-Path $masterSeed $subtree))) {
-        throw "Seed YAML missing subtree '$subtree' — seed Content serialization incomplete"
+    if (-not (Test-Path (Join-Path $masterMerge $subtree))) {
+        throw "Merge YAML missing subtree '$subtree' — merge Content serialization incomplete"
     }
 }
-if (-not (Test-Path (Join-Path $masterDeploy 'Newsletter Emails/Unsubscribe confirmation page'))) {
-    throw 'Unsubscribe confirmation page missing from DEPLOY YAML — the folder-level newsletter carve-out regressed (page would ship nowhere)'
+if (-not (Test-Path (Join-Path $masterReplace 'Newsletter Emails/Unsubscribe confirmation page'))) {
+    throw 'Unsubscribe confirmation page missing from REPLACE YAML — the folder-level newsletter carve-out regressed (page would ship nowhere)'
 }
 foreach ($menu in @('Home', 'About', 'Posts', 'Find dealers', 'Desktop Header')) {
     $n = Invoke-Sqlcmd-Scalar -Server $SqlServer -Database $CleanDb -Query "SELECT COUNT(*) FROM Page p JOIN Area a ON a.AreaID = p.PageAreaID WHERE a.AreaMasterAreaId = 0 AND p.PageMenuText = '$menu'"
-    if ($n -lt 1) { throw "Seed-shipped page '$menu' missing on target master area" }
+    if ($n -lt 1) { throw "Merge-shipped page '$menu' missing on target master area" }
 }
-Write-Host "  Exclusion contract OK: $($seedSubtrees.Count) seed subtrees deploy-excluded + seed-shipped + landed; unsubscribe page stays deploy"
+Write-Host "  Exclusion contract OK: $($mergeSubtrees.Count) merge subtrees replace-excluded + merge-shipped + landed; unsubscribe page stays replace"
 
 # ----- Step 19: Language-layer round-trip contract -----------------------------
 # Auto-detected: every area on the source with AreaMasterAreaId > 0 is a language
@@ -672,14 +672,14 @@ $layersVerified = 0
 if ($layerIds.Count -eq 0) {
     Write-Host '  Source has no language-layer areas — contract skipped (vacuous)'
 } else {
-    $deployManifestPath = Join-Path $SwiftHostPath 'wwwroot/Files/System/Serializer/SerializeRoot/deploy/deploy-manifest.json'
-    $deployManifest = Get-Content $deployManifestPath -Raw | ConvertFrom-Json
+    $replaceManifestPath = Join-Path $SwiftHostPath 'wwwroot/Files/System/Serializer/SerializeRoot/replace/replace-manifest.json'
+    $replaceManifest = Get-Content $replaceManifestPath -Raw | ConvertFrom-Json
     foreach ($layerId in $layerIds) {
         $masterId = Invoke-Sqlcmd-Scalar -Server $SqlServer -Database $SwiftDb -Query "SELECT AreaMasterAreaId FROM Area WHERE AreaID = $layerId"
         # v2: one entry per Content predicate (entryId carries the path suffix) — match by areaId.
-        $entry = $deployManifest.entries | Where-Object { $_.providerType -eq 'Content' -and $_.areaId -eq $layerId } | Select-Object -First 1
+        $entry = $replaceManifest.entries | Where-Object { $_.providerType -eq 'Content' -and $_.areaId -eq $layerId } | Select-Object -First 1
         if (-not $entry) {
-            throw "Layer area ${layerId}: no Content entry for the layer in deploy manifest — includeLanguageLayers expansion did not serialize the layer"
+            throw "Layer area ${layerId}: no Content entry for the layer in replace manifest — includeLanguageLayers expansion did not serialize the layer"
         }
         $tgtMaster = Invoke-Sqlcmd-Scalar -Server $SqlServer -Database $CleanDb -Query "SELECT ISNULL((SELECT AreaMasterAreaId FROM Area WHERE AreaID = $layerId), -1)"
         if ($tgtMaster -ne $masterId) {
@@ -725,10 +725,10 @@ $summary = @{
     EndUtc      = $pipelineEndUtc.ToString('o')
     DurationSec = [int]$duration
     HttpCodes = @{
-        SerializeDeploy   = $serDeploy.Code
-        SerializeSeed     = $serSeed.Code
-        DeserializeDeploy = $desDeploy.Code
-        DeserializeSeed   = $desSeed.Code
+        SerializeReplace   = $serReplace.Code
+        SerializeMerge     = $serMerge.Code
+        DeserializeReplace = $desReplace.Code
+        DeserializeMerge   = $desMerge.Code
     }
     EcomProducts = @{ Src = $srcCount; Tgt = $tgtCount }
     LanguageLayersVerified = $layersVerified

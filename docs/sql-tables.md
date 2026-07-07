@@ -2,7 +2,7 @@
 
 `SqlTable` predicates capture arbitrary SQL tables as YAML, one file per row.
 Use them for reference data, ecommerce configuration, URL redirects,
-user groups, or any table whose rows map naturally to deployment or seed
+user groups, or any table whose rows map naturally to replace or merge
 content. This page covers when to reach for them, the full field surface,
 and the validation guarantees.
 
@@ -58,7 +58,7 @@ normalization. Use the Content predicate.
 
 This captures every row in `EcomOrderFlow`, writes one YAML file per row
 named by the `OrderFlowName` value, and will deserialize back into the
-target matching rows by `OrderFlowName` (source-wins overwrite in Deploy
+target matching rows by `OrderFlowName` (source-wins overwrite in Replace
 mode).
 
 ## Row identity: nameColumn vs composite key
@@ -240,7 +240,7 @@ own consumer of the XML column is the final arbiter of correctness.
 DW caches many domain objects in process memory:
 `CountryService`, `VatGroupService`, `PaymentService`. When
 deserialize writes to the underlying SQL tables, those caches go stale
-until the next TTL expiry. Pages rendering immediately after a deploy
+until the next TTL expiry. Pages rendering immediately after a deserialize
 can serve cached values that no longer match the DB.
 
 `serviceCaches` lists service types to clear after the predicate's

@@ -40,9 +40,9 @@ becomes `git revert` followed by a redeploy.
 - **Cross-environment link rewriting.** `Default.aspx?ID=N`, paragraph anchors,
   and `ButtonEditor` `SelectedValue` JSON are rewritten source → target on content
   deserialize. SqlTable columns opt in via `resolveLinksInColumns`.
-- **Deploy and Seed modes.** `Deploy` is source-wins (baseline overwrites target).
-  `Seed` is destination-wins (field-level merge: only fields the target left empty are
-  filled) — customer content lands once and is never trampled by re-deploys.
+- **Replace and Merge modes.** `Replace` is source-wins (baseline overwrites target).
+  `Merge` is destination-wins (field-level fill: only fields the target left empty are
+  filled) — customer content lands once and is never trampled by later replace runs.
 - **Strict mode for CI/CD.** Recoverable warnings (unresolvable links, missing
   templates, schema drift, FK orphans, cache invalidation failures) accumulate and
   throw one `CumulativeStrictModeException` at end-of-run. HTTP 4xx on the API.
@@ -111,14 +111,14 @@ For a Swift site, copy
 to `Files/System/Serializer/Serializer.config.json`. App-store installs drop the same file
 into `Files/System/Serializer/swift-starter.example.json` — rename it to
 `Serializer.config.json` to activate it. It encodes the analysed split (full rationale per
-content item: [Swift deploy/seed analysis](docs/swift-deploy-seed-analysis.md)):
+content item: [Swift replace/merge analysis](docs/swift-replace-merge-analysis.md)):
 
-- **Deploy** — `Site framework`: the platform-wired site (Shop + PLP/PDP, customer
+- **Replace** — `Site framework`: the platform-wired site (Shop + PLP/PDP, customer
   center, checkout, service pages, product components, system emails, navigation
   scaffold, page presets) plus the commerce framework tables (countries, currencies,
   languages, VAT, shops, payments, shippings, order flow, URL paths). Identical on
-  every environment; re-deploys overwrite.
-- **Seed** — the customer-owned content surfaces, one predicate per subtree: Home,
+  every environment; later replace runs overwrite.
+- **Merge** — the customer-owned content surfaces, one predicate per subtree: Home,
   the site chrome (Header / Footer), About, blog posts, footer legal/help pages,
   Find dealers and the example newsletters — plus starter catalog data (groups,
   products, variants, discounts). Lands once; afterwards the receiving environment
@@ -127,23 +127,23 @@ content item: [Swift deploy/seed analysis](docs/swift-deploy-seed-analysis.md)):
 
 ### Reading the content tree
 
-The admin content tree shows per-page coverage so you can see what deploys without opening
-the config:
+The admin content tree shows per-page coverage so you can see which pages are managed without
+opening the config:
 
 | Icon | Meaning |
 |---|---|
-| sync | Fully managed at deploy — tooltip names the predicate |
-| sync-slash | Partially managed — tooltip lists the excluded paths below this page, the deploy-managed subtrees under an unmanaged page, or the fields/settings on this page that are excluded by type and stay local (e.g. the cart page's `eCom_CartV2` module settings) |
-| flower | Seeded starter content — lands once, local edits on the target are preserved. **Off by default** (broad seed coverage would mark nearly every page); enable via Settings > Developer > Serialize > "Show seed indicators" or `showSeedIndicators` in the config |
+| sync | Replace-managed — tooltip names the predicate |
+| sync-slash | Partially managed — tooltip lists the excluded paths below this page, the replace-managed subtrees under an unmanaged page, or the fields/settings on this page that are excluded by type and stay local (e.g. the cart page's `eCom_CartV2` module settings) |
+| flower | Merge-managed starter content — lands once, local edits on the target are preserved. **Off by default** (broad merge coverage would mark nearly every page); enable via Settings > Developer > Serialize > "Show merge indicators" or `showMergeIndicators` in the config |
 | *(none)* | Not serialized (environment-owned) |
 
 The editing screens carry the same signal where it matters most: the visual editor, the
 page properties editor, the paragraph dialog and the grid-row dialog show a screen alert
 for the owning page — a warning
-on deploy-managed pages ("content here is overwritten by the next deploy") and, when
-seed indicators are enabled, an info note on seeded pages ("your edits are preserved").
-The `showSeedIndicators` setting gates both seed cues — tree icons and the editor note —
-while the deploy warning always shows. Both alerts name any fields excluded by type on
+on replace-managed pages ("content here is overwritten by the next replace run") and, when
+merge indicators are enabled, an info note on merge-managed pages ("your edits are preserved").
+The `showMergeIndicators` setting gates both merge cues — tree icons and the editor note —
+while the replace warning always shows. Both alerts name any fields excluded by type on
 the page, so a partially managed page (like the cart) says exactly which settings stay
 local. Field-level carve-outs (like the cart settings) appear as a clickable header chip —
 "eCom_CartV2 — 21 settings stay local — view" — that opens the exact exclusion list, and
@@ -168,15 +168,15 @@ Every page also gets right-click **Serialize subtree** (zip download) and
             v                                          |
     Files/System/Serializer/                    Files/System/Serializer/
       SerializeRoot/                              SerializeRoot/
-        deploy/                 2. git add  .       deploy/
-        seed/       ----------> 3. git push  ---->  seed/
+        replace/                2. git add  .       replace/
+        merge/      ----------> 3. git push  ---->  merge/
                                 4. deploy pipeline
                                    copies YAML into
                                    target's Files volume
 ```
 
-Predicates (configured per-mode) select what gets serialized. The Deploy mode is
-for data the developer owns (shop definitions, VAT groups, item types). The Seed
+Predicates (configured per-mode) select what gets serialized. The Replace mode is
+for data the developer owns (shop definitions, VAT groups, item types). The Merge
 mode is for data the customer owns after first run (pages, product catalog). Both
 modes sit in the same config and run through the same pipeline — they differ only
 in conflict strategy and output subfolder.
@@ -193,7 +193,7 @@ in conflict strategy and output subfolder.
 | Cross-environment `Default.aspx?ID=N` rewriting | [Link resolution](docs/link-resolution.md) |
 | Role and group permission handling | [Permissions](docs/permissions.md) |
 | `SqlTable` predicates, WHERE clauses, field filters | [SQL tables](docs/sql-tables.md) |
-| Per-content-item deploy/seed decisions for Swift | [Swift deploy/seed analysis](docs/swift-deploy-seed-analysis.md) |
+| Per-content-item replace/merge decisions for Swift | [Swift replace/merge analysis](docs/swift-replace-merge-analysis.md) |
 | Auto-excluded runtime columns and credential caveats | [Runtime exclusions](docs/runtime-exclusions.md) |
 | Common errors and remedies | [Troubleshooting](docs/troubleshooting.md) |
 | Ready-made layers and editions for Swift / headless / DAP | [Truvio.Commerce.Distribution](https://github.com/justdynamics/Truvio.Commerce.Distribution) |
@@ -212,12 +212,12 @@ A minimal GitHub Actions job that applies a baseline on deploy:
     # Deploy has already copied YAML into the target's Files volume.
     # Strict mode makes any warning (unresolvable link, missing template,
     # schema drift) fail the job.
-    curl -f -X POST "$DW_HOST/Admin/Api/SerializerDeserialize?mode=deploy&strictMode=true" \
+    curl -f -X POST "$DW_HOST/Admin/Api/SerializerDeserialize?mode=replace&strictMode=true" \
       -H "Authorization: Bearer $DW_API_KEY"
 ```
 
 Complete pipelines for GitHub Actions, Azure DevOps, and GitLab CI — including
-secret management, pre-commit link sweeps, and the Seed-vs-Deploy split — are in
+secret management, pre-commit link sweeps, and the Merge-vs-Replace split — are in
 [`docs/cicd.md`](docs/cicd.md).
 
 ## Supported environments

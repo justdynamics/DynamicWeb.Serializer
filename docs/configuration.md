@@ -41,16 +41,16 @@ Management API commands also read the same file on each call.
 ## Top-level config schema
 
 The config is a single flat `predicates: [...]` list where each predicate carries its own
-`mode`. Section-level `deploy: { ... }` / `seed: { ... }` keys are rejected by ConfigLoader
+`mode`. Section-level `replace: { ... }` / `merge: { ... }` keys are rejected by ConfigLoader
 with a clear actionable error.
 
 ```json
 {
   "outputDirectory": "Serializer",
-  "deployOutputSubfolder": "deploy",
-  "seedOutputSubfolder": "seed",
-  "showSeedIndicators": false,
-  "showDeployIndicators": true,
+  "replaceOutputSubfolder": "replace",
+  "mergeOutputSubfolder": "merge",
+  "showMergeIndicators": false,
+  "showReplaceIndicators": true,
   "excludeFieldsByItemType": {
     "Swift_Content": ["SystemName_Internal"]
   },
@@ -58,8 +58,8 @@ with a clear actionable error.
     "eCom_CartV2": ["Mail1Recipient", "DefaultPaymentId"]
   },
   "predicates": [
-    { "name": "...", "mode": "Deploy", "providerType": "Content", "areaId": 3, "path": "/" },
-    { "name": "...", "mode": "Seed", "providerType": "SqlTable", "table": "EcomGroups" }
+    { "name": "...", "mode": "Replace", "providerType": "Content", "areaId": 3, "path": "/" },
+    { "name": "...", "mode": "Merge", "providerType": "SqlTable", "table": "EcomGroups" }
   ]
 }
 ```
@@ -67,32 +67,32 @@ with a clear actionable error.
 | Field | Type | Description |
 |-------|------|-------------|
 | `outputDirectory` | string (required) | Top-level folder relative to `Files/System`. Subfolders `SerializeRoot/`, `Upload/`, `Download/`, `Log/` are created automatically. |
-| `deployOutputSubfolder` | string | Subfolder under `SerializeRoot/` for Deploy-mode YAML output. Default: `deploy`. Validated against a safe-name regex to prevent path traversal. |
-| `seedOutputSubfolder` | string | Subfolder under `SerializeRoot/` for Seed-mode YAML output. Default: `seed`. Same regex check. |
-| `showSeedIndicators` | boolean | Show seed cues in the admin UI: the flower icon on content-tree pages covered by a seed predicate and the seed info message on content editing screens. Default: `false` — with broad seed coverage these would appear nearly everywhere and drown out the deploy warnings. |
-| `showDeployIndicators` | boolean | Show deploy cues in the admin UI: the sync icon on content-tree pages covered by a deploy predicate, the deploy warning on content editing screens, and the deploy warning on commerce settings screens (payment methods, currencies, …) backed by a deploy-managed SqlTable predicate. Default: `true` — these warn editors that changes are overwritten by the next deploy. Switch off where the warnings are noise, e.g. on the source environment itself. |
+| `replaceOutputSubfolder` | string | Subfolder under `SerializeRoot/` for Replace-mode YAML output. Default: `replace`. Validated against a safe-name regex to prevent path traversal. |
+| `mergeOutputSubfolder` | string | Subfolder under `SerializeRoot/` for Merge-mode YAML output. Default: `merge`. Same regex check. |
+| `showMergeIndicators` | boolean | Show merge cues in the admin UI: the flower icon on content-tree pages covered by a merge predicate and the merge info message on content editing screens. Default: `false` — with broad merge coverage these would appear nearly everywhere and drown out the replace warnings. |
+| `showReplaceIndicators` | boolean | Show replace cues in the admin UI: the sync icon on content-tree pages covered by a replace predicate, the replace warning on content editing screens, and the replace warning on commerce settings screens (payment methods, currencies, …) backed by a replace-managed SqlTable predicate. Default: `true` — these warn editors that changes are overwritten by the next replace run. Switch off where the warnings are noise, e.g. on the source environment itself. |
 | `excludeFieldsByItemType` | map | Global per-item-type field exclusions, applied to every predicate regardless of mode. Key: item-type system name. Value: list of field names to strip. |
 | `excludeXmlElementsByType` | map | Global per-XML-type element exclusions, applied to every predicate regardless of mode. Key: XML type name (paragraph module system name or URL provider type). Value: list of element names to strip. |
-| `predicates` | list | The predicates serialized and deserialized. Each entry must carry its own `mode` (Deploy or Seed). The orchestrator filters on `predicate.Mode` when iterating per mode. |
+| `predicates` | list | The predicates serialized and deserialized. Each entry must carry its own `mode` (Replace or Merge). The orchestrator filters on `predicate.Mode` when iterating per mode. |
 
 ## Per-predicate mode
 
-Every predicate must declare a `mode` value of `Deploy` or `Seed` (case-insensitive on disk).
+Every predicate must declare a `mode` value of `Replace` or `Merge` (case-insensitive on disk).
 
 | Mode | Conflict strategy | When to use |
 |------|-------------------|-------------|
-| `Deploy` | source-wins (YAML overwrites target on every deploy) | Reference data and structural deployment items: countries, currencies, shop definitions, payment methods, page templates, item-type schemas. |
-| `Seed` | destination-wins via field-level merge | One-time bootstrap content the customer is expected to edit: product catalog, marketing copy, FAQ body text, newsletter templates. The serializer fills fields the target has NOT set, preserving customer edits. |
+| `Replace` | source-wins (YAML overwrites target on every replace run) | Reference data and structural items: countries, currencies, shop definitions, payment methods, page templates, item-type schemas. |
+| `Merge` | destination-wins via field-level fill | One-time bootstrap content the customer is expected to edit: product catalog, marketing copy, FAQ body text, newsletter templates. The serializer fills fields the target has NOT set, preserving customer edits. |
 
 The conflict strategy is hardcoded per mode and is not a config knob.
 [`MergePredicate`](../src/Truvio.Commerce.Serializer/Infrastructure/MergePredicate.cs) and
 [`XmlMergeHelper`](../src/Truvio.Commerce.Serializer/Infrastructure/XmlMergeHelper.cs) implement
-the Seed-mode field-level merge.
+the Merge-mode field-level fill.
 
 ```json
 {
   "name": "EcomCountries",
-  "mode": "Deploy",
+  "mode": "Replace",
   "providerType": "SqlTable",
   "table": "EcomCountries"
 }
@@ -101,7 +101,7 @@ the Seed-mode field-level merge.
 ```json
 {
   "name": "EcomProducts",
-  "mode": "Seed",
+  "mode": "Merge",
   "providerType": "SqlTable",
   "table": "EcomProducts",
   "nameColumn": "ProductName"
@@ -176,7 +176,7 @@ the Seed-mode field-level merge.
 
 Two dictionaries live at the top level of the config and apply across every predicate
 regardless of mode. These live at the top level because
-the same exclusions almost always apply to both Deploy and Seed.
+the same exclusions almost always apply to both Replace and Merge.
 
 ```json
 {
@@ -189,7 +189,7 @@ the same exclusions almost always apply to both Deploy and Seed.
     "PageItem": ["EmptyCartRedirectPage", "ShoppingCartLink"]
   },
   "predicates": [
-    { "name": "...", "mode": "Deploy", "providerType": "Content", "areaId": 3, "path": "/" }
+    { "name": "...", "mode": "Replace", "providerType": "Content", "areaId": 3, "path": "/" }
   ]
 }
 ```
@@ -208,7 +208,7 @@ carved-out type ("eCom_CartV2 — 21 settings stay local — view") next to the
 verdict alert. Both click-throughs open a read-only **"Stays local"** panel
 listing the exact excluded fields — visible to every backend user, no Settings
 access needed; administrators additionally get a "Manage exclusions" shortcut
-into the editor. The cart page is the canonical case: covered by the deploy
+into the editor. The cart page is the canonical case: covered by the replace
 predicate, but its `eCom_CartV2` module settings (mail recipients, error
 messages, default payment/shipping ids) stay local per environment.
 
@@ -218,8 +218,8 @@ Navigation: `Settings > Developer > Serialize`.
 
 | Node | Purpose |
 |------|---------|
-| **Serialize** | Top-level settings screen. Every top-level config value is visible here: output directory, deploy/seed subfolders and the deploy/seed indicator toggles are editable; the config file location, sync history (last deploy/seed received), coverage counts, the two exclusion maps and the predicate list show as read-only summaries. Actions per mode: **Serialize (Deploy/Seed)**, **Preview deserialize (Deploy/Seed)** — the full pipeline without writing, per-field `[DRY-RUN]` detail in the Log Viewer — and **Deserialize (Deploy/Seed)**. A **Permissions** group opens DW's permission management for the Download/Upload Package functions. With no predicates configured the actions are replaced by a **Get started** group (apply the embedded Swift starter to a chosen website, or create an empty configuration). Per-mode conflict strategy is hardcoded — Deploy=source-wins, Seed=destination-wins — and is not an admin-editable setting. |
-| **Predicates** | CRUD for Content and SqlTable predicates. Each predicate carries its own `mode` field (Deploy or Seed) — pick the mode on the predicate edit screen. Fields match the JSON schema above with dual-list pickers populated from the live DB schema. |
+| **Serialize** | Top-level settings screen. Every top-level config value is visible here: output directory, replace/merge subfolders and the replace/merge indicator toggles are editable; the config file location, sync history (last replace/merge received), coverage counts, the two exclusion maps and the predicate list show as read-only summaries. Actions per mode: **Serialize (Replace/Merge)**, **Preview deserialize (Replace/Merge)** — the full pipeline without writing, per-field `[DRY-RUN]` detail in the Log Viewer — and **Deserialize (Replace/Merge)**. A **Permissions** group opens DW's permission management for the Download/Upload Package functions. With no predicates configured the actions are replaced by a **Get started** group (apply the embedded Swift starter to a chosen website, or create an empty configuration). Per-mode conflict strategy is hardcoded — Replace=source-wins, Merge=destination-wins — and is not an admin-editable setting. |
+| **Predicates** | CRUD for Content and SqlTable predicates. Each predicate carries its own `mode` field (Replace or Merge) — pick the mode on the predicate edit screen. Fields match the JSON schema above with dual-list pickers populated from the live DB schema. |
 | **Item Types** | Browse item types by category, edit global per-type field exclusions (mode-agnostic). |
 | **Embedded XML** | Browse XML types, edit global per-type element exclusions (mode-agnostic). |
 | **Log Viewer** | Per-run logs with summary headers, per-predicate counts, and `AdviceGenerator` remediation hints. |
@@ -240,7 +240,7 @@ for upload.
 
 The commerce settings edit screens — payment, shipping, country, currency,
 ecommerce language, shop, order flow and order state — show the same
-deploy/seed alert as the content editors when a SqlTable predicate manages
+replace/merge alert as the content editors when a SqlTable predicate manages
 their table. A predicate with exclusions adds a clickable "Stays local" header
 chip that opens the predicate editor.
 
@@ -253,12 +253,12 @@ and seventeen SqlTable predicates. Lives at
 ```json
 {
   "outputDirectory": "Serializer",
-  "deployOutputSubfolder": "deploy",
-  "seedOutputSubfolder": "seed",
+  "replaceOutputSubfolder": "replace",
+  "mergeOutputSubfolder": "merge",
   "predicates": [
     {
       "name": "Content - Swift 2 (full baseline as shipped)",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "Content",
       "areaId": 3,
       "path": "/",
@@ -273,7 +273,7 @@ and seventeen SqlTable predicates. Lives at
     },
     {
       "name": "EcomVatGroups",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomVatGroups",
       "nameColumn": "VatGroupName",
@@ -283,7 +283,7 @@ and seventeen SqlTable predicates. Lives at
     },
     {
       "name": "EcomPayments",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "EcomPayments",
       "nameColumn": "PaymentName",
@@ -297,14 +297,14 @@ and seventeen SqlTable predicates. Lives at
     },
     {
       "name": "UrlPath",
-      "mode": "Deploy",
+      "mode": "Replace",
       "providerType": "SqlTable",
       "table": "UrlPath",
       "resolveLinksInColumns": ["UrlPathRedirect"]
     },
     {
       "name": "EcomProducts",
-      "mode": "Seed",
+      "mode": "Merge",
       "providerType": "SqlTable",
       "table": "EcomProducts",
       "nameColumn": "ProductName"
@@ -314,9 +314,9 @@ and seventeen SqlTable predicates. Lives at
 ```
 
 Open the full file to see every predicate the Swift 2.2 storefront needs. The
-Deploy list covers reference data (countries, currencies, languages, VAT),
+Replace list covers reference data (countries, currencies, languages, VAT),
 shop structure, payment and shipping definitions, order flows, and URL
-redirects. The Seed list covers product catalog content.
+redirects. The Merge list covers product catalog content.
 
 ## Config validation at load time
 
@@ -347,8 +347,8 @@ Management API. No SQL runs until the config is clean.
 ## See also
 
 - [Getting started](getting-started.md) — minimal working config
-- [Glossary](glossary.md) — baseline, predicate, deploy/seed, drift, dry run
-- [Concepts](concepts.md) — predicate semantics, Deploy/Seed modes
+- [Glossary](glossary.md) — baseline, predicate, replace/merge, drift, dry run
+- [Concepts](concepts.md) — predicate semantics, Replace/Merge modes
 - [SQL tables](sql-tables.md) — `WHERE` clauses, field filters, credentials
 - [Strict mode](strict-mode.md) — warning escalation and entry-point defaults
 - [Runtime exclusions](runtime-exclusions.md) — what's auto-excluded and why

@@ -87,17 +87,17 @@ jobs:
           DW_HOST: ${{ secrets.DW_SOURCE_HOST }}
           DW_API_KEY: ${{ secrets.DW_SOURCE_API_KEY }}
         run: |
-          # mode=deploy runs first for structural data
-          curl -fsSL -X POST "$DW_HOST/Admin/Api/SerializerSerialize?mode=deploy" \
+          # mode=replace runs first for structural data
+          curl -fsSL -X POST "$DW_HOST/Admin/Api/SerializerSerialize?mode=replace" \
             -H "Authorization: Bearer $DW_API_KEY" \
-            -o serialize-deploy.log
-          cat serialize-deploy.log
+            -o serialize-replace.log
+          cat serialize-replace.log
 
-          # mode=seed runs second for customer-owned content
-          curl -fsSL -X POST "$DW_HOST/Admin/Api/SerializerSerialize?mode=seed" \
+          # mode=merge runs second for customer-owned content
+          curl -fsSL -X POST "$DW_HOST/Admin/Api/SerializerSerialize?mode=merge" \
             -H "Authorization: Bearer $DW_API_KEY" \
-            -o serialize-seed.log
-          cat serialize-seed.log
+            -o serialize-merge.log
+          cat serialize-merge.log
 
       - name: Pull YAML from source host
         env:
@@ -165,12 +165,12 @@ jobs:
             https://github.com/justdynamics/Truvio.Commerce.Distribution.git dist
           # Compose the edition's layers into one SerializeRoot. Each layer ships
           # replace/ (source-wins) + merge/ (field-level) mode trees; stage them
-          # under deploy/ and seed/ for the serializer.
-          mkdir -p edition-content/deploy edition-content/seed
+          # under replace/ and merge/ for the serializer.
+          mkdir -p edition-content/replace edition-content/merge
           for ref in $(jq -r '.from, .add[]?' dist/editions/swift-demo.json); do
             layer="${ref%@*}"
-            [ -d "dist/layers/$layer/replace" ] && cp -R "dist/layers/$layer/replace/." edition-content/deploy/
-            [ -d "dist/layers/$layer/merge" ]   && cp -R "dist/layers/$layer/merge/."   edition-content/seed/
+            [ -d "dist/layers/$layer/replace" ] && cp -R "dist/layers/$layer/replace/." edition-content/replace/
+            [ -d "dist/layers/$layer/merge" ]   && cp -R "dist/layers/$layer/merge/."   edition-content/merge/
           done
 
       - name: Sync edition YAML to target's Files volume
@@ -184,7 +184,7 @@ jobs:
             --recursive \
             --delete-destination true
 
-      - name: Deserialize on target (Deploy mode, strict)
+      - name: Deserialize on target (Replace mode, strict)
         env:
           DW_HOST: ${{ secrets.DW_TARGET_HOST }}
           DW_API_KEY: ${{ secrets.DW_TARGET_API_KEY }}
@@ -192,21 +192,21 @@ jobs:
           # ?strictMode=true escalates every recoverable warning to HTTP 4xx.
           # -f makes curl exit non-zero on 4xx/5xx, failing the pipeline.
           curl -fsSL -X POST \
-            "$DW_HOST/Admin/Api/SerializerDeserialize?mode=deploy&strictMode=true" \
+            "$DW_HOST/Admin/Api/SerializerDeserialize?mode=replace&strictMode=true" \
             -H "Authorization: Bearer $DW_API_KEY" \
-            -o deserialize-deploy.log
-          cat deserialize-deploy.log
+            -o deserialize-replace.log
+          cat deserialize-replace.log
 
-      - name: Deserialize on target (Seed mode, strict)
+      - name: Deserialize on target (Merge mode, strict)
         env:
           DW_HOST: ${{ secrets.DW_TARGET_HOST }}
           DW_API_KEY: ${{ secrets.DW_TARGET_API_KEY }}
         run: |
           curl -fsSL -X POST \
-            "$DW_HOST/Admin/Api/SerializerDeserialize?mode=seed&strictMode=true" \
+            "$DW_HOST/Admin/Api/SerializerDeserialize?mode=merge&strictMode=true" \
             -H "Authorization: Bearer $DW_API_KEY" \
-            -o deserialize-seed.log
-          cat deserialize-seed.log
+            -o deserialize-merge.log
+          cat deserialize-merge.log
 
       - name: Archive logs
         if: always()
@@ -241,15 +241,15 @@ steps:
     persistCredentials: true
 
   - script: |
-      curl -fsSL -X POST "$(DW_SOURCE_HOST)/Admin/Api/SerializerSerialize?mode=deploy" \
+      curl -fsSL -X POST "$(DW_SOURCE_HOST)/Admin/Api/SerializerSerialize?mode=replace" \
         -H "Authorization: Bearer $(DW_SOURCE_API_KEY)" \
-        -o serialize-deploy.log
-      cat serialize-deploy.log
+        -o serialize-replace.log
+      cat serialize-replace.log
 
-      curl -fsSL -X POST "$(DW_SOURCE_HOST)/Admin/Api/SerializerSerialize?mode=seed" \
+      curl -fsSL -X POST "$(DW_SOURCE_HOST)/Admin/Api/SerializerSerialize?mode=merge" \
         -H "Authorization: Bearer $(DW_SOURCE_API_KEY)" \
-        -o serialize-seed.log
-      cat serialize-seed.log
+        -o serialize-merge.log
+      cat serialize-merge.log
     displayName: Serialize source
 
   - task: AzureCLI@2
@@ -323,11 +323,11 @@ stages:
               # edition tag so every deploy applies a byte-identical set.
               git clone --depth 1 --branch editions/swift-demo/2.3.0 \
                 https://github.com/justdynamics/Truvio.Commerce.Distribution.git dist
-              mkdir -p edition-content/deploy edition-content/seed
+              mkdir -p edition-content/replace edition-content/merge
               for ref in $(jq -r '.from, .add[]?' dist/editions/swift-demo.json); do
                 layer="${ref%@*}"
-                [ -d "dist/layers/$layer/replace" ] && cp -R "dist/layers/$layer/replace/." edition-content/deploy/
-                [ -d "dist/layers/$layer/merge" ]   && cp -R "dist/layers/$layer/merge/."   edition-content/seed/
+                [ -d "dist/layers/$layer/replace" ] && cp -R "dist/layers/$layer/replace/." edition-content/replace/
+                [ -d "dist/layers/$layer/merge" ]   && cp -R "dist/layers/$layer/merge/."   edition-content/merge/
               done
             displayName: Fetch edition from the Distribution
 
@@ -346,16 +346,16 @@ stages:
 
           - script: |
               curl -fsSL -X POST \
-                "$(DW_TARGET_HOST)/Admin/Api/SerializerDeserialize?mode=deploy&strictMode=true" \
+                "$(DW_TARGET_HOST)/Admin/Api/SerializerDeserialize?mode=replace&strictMode=true" \
                 -H "Authorization: Bearer $(DW_TARGET_API_KEY)" \
-                -o deserialize-deploy.log
-              cat deserialize-deploy.log
+                -o deserialize-replace.log
+              cat deserialize-replace.log
 
               curl -fsSL -X POST \
-                "$(DW_TARGET_HOST)/Admin/Api/SerializerDeserialize?mode=seed&strictMode=true" \
+                "$(DW_TARGET_HOST)/Admin/Api/SerializerDeserialize?mode=merge&strictMode=true" \
                 -H "Authorization: Bearer $(DW_TARGET_API_KEY)" \
-                -o deserialize-seed.log
-              cat deserialize-seed.log
+                -o deserialize-merge.log
+              cat deserialize-merge.log
             displayName: Deserialize under strict mode
 
           - task: PublishPipelineArtifact@1
@@ -391,15 +391,15 @@ serialize:source:
     - schedules
   script:
     - |
-      curl -fsSL -X POST "$DW_SOURCE_HOST/Admin/Api/SerializerSerialize?mode=deploy" \
+      curl -fsSL -X POST "$DW_SOURCE_HOST/Admin/Api/SerializerSerialize?mode=replace" \
         -H "Authorization: Bearer $DW_SOURCE_API_KEY" \
-        -o serialize-deploy.log
-      cat serialize-deploy.log
+        -o serialize-replace.log
+      cat serialize-replace.log
     - |
-      curl -fsSL -X POST "$DW_SOURCE_HOST/Admin/Api/SerializerSerialize?mode=seed" \
+      curl -fsSL -X POST "$DW_SOURCE_HOST/Admin/Api/SerializerSerialize?mode=merge" \
         -H "Authorization: Bearer $DW_SOURCE_API_KEY" \
-        -o serialize-seed.log
-      cat serialize-seed.log
+        -o serialize-merge.log
+      cat serialize-merge.log
     - |
       mkdir -p serialize-root
       az storage file download-batch \
@@ -451,11 +451,11 @@ deploy:target:
     - |
       git clone --depth 1 --branch editions/swift-demo/2.3.0 \
         https://github.com/justdynamics/Truvio.Commerce.Distribution.git dist
-      mkdir -p edition-content/deploy edition-content/seed
+      mkdir -p edition-content/replace edition-content/merge
       for ref in $(jq -r '.from, .add[]?' dist/editions/swift-demo.json); do
         layer="${ref%@*}"
-        [ -d "dist/layers/$layer/replace" ] && cp -R "dist/layers/$layer/replace/." edition-content/deploy/
-        [ -d "dist/layers/$layer/merge" ]   && cp -R "dist/layers/$layer/merge/."   edition-content/seed/
+        [ -d "dist/layers/$layer/replace" ] && cp -R "dist/layers/$layer/replace/." edition-content/replace/
+        [ -d "dist/layers/$layer/merge" ]   && cp -R "dist/layers/$layer/merge/."   edition-content/merge/
       done
     # 3. Sync the composed YAML into the target's Files volume
     - az storage file upload-batch \
@@ -466,16 +466,16 @@ deploy:target:
     # 4. Deserialize under strict mode. -f fails the job on HTTP 4xx/5xx.
     - |
       curl -fsSL -X POST \
-        "$DW_TARGET_HOST/Admin/Api/SerializerDeserialize?mode=deploy&strictMode=true" \
+        "$DW_TARGET_HOST/Admin/Api/SerializerDeserialize?mode=replace&strictMode=true" \
         -H "Authorization: Bearer $DW_TARGET_API_KEY" \
-        -o deserialize-deploy.log
-      cat deserialize-deploy.log
+        -o deserialize-replace.log
+      cat deserialize-replace.log
     - |
       curl -fsSL -X POST \
-        "$DW_TARGET_HOST/Admin/Api/SerializerDeserialize?mode=seed&strictMode=true" \
+        "$DW_TARGET_HOST/Admin/Api/SerializerDeserialize?mode=merge&strictMode=true" \
         -H "Authorization: Bearer $DW_TARGET_API_KEY" \
-        -o deserialize-seed.log
-      cat deserialize-seed.log
+        -o deserialize-merge.log
+      cat deserialize-merge.log
   artifacts:
     when: always
     paths:
@@ -502,7 +502,7 @@ if git diff --cached --quiet -- src/ serialize-root/; then
 fi
 
 status=$(curl -o /tmp/serialize.log -s -w "%{http_code}" \
-  -X POST "${DW_LOCAL_HOST:-https://localhost:54035}/Admin/Api/SerializerSerialize?mode=deploy&strictMode=true" \
+  -X POST "${DW_LOCAL_HOST:-https://localhost:54035}/Admin/Api/SerializerSerialize?mode=replace&strictMode=true" \
   -H "Authorization: Bearer $DW_LOCAL_API_KEY")
 
 if [ "$status" != "200" ]; then
@@ -519,11 +519,11 @@ Use it as a heavyweight pre-release gate.
 
 ## Gotchas
 
-### `?mode=seed` query-param binding
+### `?mode=merge` query-param binding
 
 Query-string binding for POST requests on DW's `CommandBase` does not bind by
 default. The serializer has an explicit query-param fallback (D-38-11) so
-`?mode=seed` works, but be explicit in scripts — ambiguity here caused real
+`?mode=merge` works, but be explicit in scripts — ambiguity here caused real
 incidents before the fallback shipped. When in doubt, send the JSON body
 variant:
 
@@ -531,7 +531,7 @@ variant:
 curl -X POST "$DW_HOST/Admin/Api/SerializerDeserialize" \
   -H "Authorization: Bearer $DW_API_KEY" \
   -H "Content-Type: application/json" \
-  -d '{"Mode":"seed","StrictMode":true}'
+  -d '{"Mode":"merge","StrictMode":true}'
 ```
 
 ### Exit code vs. HTTP status
@@ -548,12 +548,12 @@ API/CLI default is on; admin UI default is off. For CI, either set
 `?strictMode=true` on every call. Passing is more defensive because config
 errors that flip the value to `null` still fail the pipeline.
 
-### Deploy order matters
+### Mode order matters
 
 Inside a mode, predicates run in the order they appear in config. For
-cross-mode ordering, Deploy runs before Seed in the pipeline — run the API
-calls in that order. Seed-mode link resolution (for `Default.aspx?ID=N` in
-Seed predicates) depends on the Deploy-mode page map being built first.
+cross-mode ordering, Replace runs before Merge in the pipeline — run the API
+calls in that order. Merge-mode link resolution (for `Default.aspx?ID=N` in
+Merge predicates) depends on the Replace-mode page map being built first.
 
 ### Secrets in deserialize logs
 

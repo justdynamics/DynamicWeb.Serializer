@@ -94,7 +94,7 @@ passes — only unquoted identifiers are checked.
 
 ```
 Configuration is invalid — ServiceCaches validation failed:
-  - deploy.predicates 'EcomSomething': cache service
+  - predicates 'EcomSomething': cache service
     'Dynamicweb.Ecommerce.New.XService' is not in DwCacheServiceRegistry.
     Supported (18 total): AreaService, CountryRelationService, CountryService, ...
 ```
@@ -137,17 +137,17 @@ pages that aren't in the baseline. Three resolutions:
 ### Serialize fails with no predicates configured
 
 ```
-No Deploy predicates configured
+No Replace predicates configured
 ```
 
 No predicate carries the requested mode. Either you're running
-`?mode=seed` when every predicate is `"mode": "Deploy"`, or the predicate list
+`?mode=merge` when every predicate is `"mode": "Replace"`, or the predicate list
 didn't save correctly through the admin UI. Confirm in
 `Files/System/Serializer/Serializer.config.json`:
 
 ```json
 "predicates": [
-  { "name": "...", "mode": "Deploy", ... }  // at least one with the requested mode
+  { "name": "...", "mode": "Replace", ... }  // at least one with the requested mode
 ]
 ```
 
@@ -162,8 +162,8 @@ for the escalation mechanics.
 A page referenced via `Default.aspx?ID=N` is in the baseline YAML, but
 its target-environment page ID couldn't be resolved. Two possible causes:
 
-- **The source page wasn't included in the Deploy mode baseline.** The
-  page is in the Seed mode or excluded entirely. Move the referencing
+- **The source page wasn't included in the Replace mode baseline.** The
+  page is in the Merge mode or excluded entirely. Move the referencing
   page (or the referenced page) so they're both in the same mode.
 - **The source page has no `SourcePageId` or no `PageUniqueId`.** Older
   baseline YAML may lack `SourcePageId`. Re-serialize from a current
@@ -304,7 +304,7 @@ Token format is `CLD.<random-chars>`.
 ### SerializeRoot directory not found
 
 ```
-Mode subfolder not found: /path/to/Files/System/Serializer/SerializeRoot/deploy
+Mode subfolder not found: /path/to/Files/System/Serializer/SerializeRoot/replace
 ```
 
 The YAML wasn't copied to the target. Your deploy pipeline's YAML-sync
@@ -319,12 +319,12 @@ YAML was copied to the wrong subfolder. Confirm:
 
 ```bash
 # YAML lives in the mode's outputSubfolder
-ls Files/System/Serializer/SerializeRoot/deploy/
-ls Files/System/Serializer/SerializeRoot/seed/
+ls Files/System/Serializer/SerializeRoot/replace/
+ls Files/System/Serializer/SerializeRoot/merge/
 ```
 
-Both directories should contain YAML if both modes ran. If `deploy/`
-has files but `seed/` is empty, and you only POST `?mode=seed`, the
+Both directories should contain YAML if both modes ran. If `replace/`
+has files but `merge/` is empty, and you only POST `?mode=merge`, the
 call reports `0 rows`.
 
 ## Round-trip fidelity issues
