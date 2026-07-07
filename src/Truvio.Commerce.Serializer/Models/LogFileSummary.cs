@@ -4,7 +4,7 @@ public record LogFileSummary
 {
     public string Operation { get; init; } = "";
 
-    /// <summary>Deployment mode of the run: "deploy" or "seed" (lowercase).</summary>
+    /// <summary>Serializer mode of the run: "replace" or "merge" (lowercase).</summary>
     public string Mode { get; init; } = "";
 
     /// <summary>True when the run was a dry-run preview — nothing was written.</summary>

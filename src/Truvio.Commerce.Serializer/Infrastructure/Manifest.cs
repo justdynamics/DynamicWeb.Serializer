@@ -14,7 +14,7 @@ public sealed record Manifest
     /// <summary>Schema version — must equal <see cref="ManifestSchema.CurrentVersion"/> on read.</summary>
     public required int SchemaVersion { get; init; }
 
-    /// <summary>"deploy" or "seed" — matches the on-disk subfolder name.</summary>
+    /// <summary>"replace" or "merge" — matches the on-disk subfolder name.</summary>
     public required string Mode { get; init; }
 
     /// <summary>UTC timestamp when serialize completed.</summary>

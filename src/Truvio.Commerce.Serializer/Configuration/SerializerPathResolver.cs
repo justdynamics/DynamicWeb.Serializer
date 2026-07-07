@@ -13,7 +13,7 @@ namespace Truvio.Commerce.Serializer.Configuration;
 /// <item><c>Upload/</c> — zip files uploaded for import</item>
 /// <item><c>Download/</c> — zip files produced by ad-hoc serialize</item>
 /// <item><c>Log/</c> — log files</item>
-/// <item><c>SerializeRoot/deploy/</c> + <c>SerializeRoot/seed/</c> — per-mode subfolders</item>
+/// <item><c>SerializeRoot/replace/</c> + <c>SerializeRoot/merge/</c> — per-mode subfolders</item>
 /// </list>
 /// </summary>
 public static class SerializerPathResolver
@@ -47,8 +47,8 @@ public static class SerializerPathResolver
         Directory.CreateDirectory(log);
 
         // Per-mode subfolders sit beneath SerializeRoot.
-        Directory.CreateDirectory(Path.Combine(serializeRoot, "deploy"));
-        Directory.CreateDirectory(Path.Combine(serializeRoot, "seed"));
+        Directory.CreateDirectory(Path.Combine(serializeRoot, "replace"));
+        Directory.CreateDirectory(Path.Combine(serializeRoot, "merge"));
 
         return new SerializerPaths(root, serializeRoot, upload, download, log);
     }
