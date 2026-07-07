@@ -9,7 +9,7 @@ namespace Truvio.Commerce.Serializer.Tests.AdminUI;
 
 /// <summary>
 /// Phase 40 D-06 — SerializerSettingsNodeProvider emits a single flat predicate subtree (no
-/// Deploy/Seed group split). Each predicate carries its own Mode (D-01) and exclusion dicts are
+/// Replace/Merge group split). Each predicate carries its own Mode (D-01) and exclusion dicts are
 /// top-level mode-agnostic (D-04). Class name preserved (rather than renamed to
 /// SerializerSettingsNodeProviderTreeTests) to keep test runner identity stable.
 /// </summary>
@@ -55,7 +55,7 @@ public class SerializerSettingsNodeProviderModeTreeTests : ConfigLoaderValidator
 
     // -------------------------------------------------------------------------
     // Phase 40 D-06: Serialize node has 4 children — Predicates, Item Types, Embedded XML, Log Viewer.
-    // No Deploy/Seed group split.
+    // No Replace/Merge group split.
     // -------------------------------------------------------------------------
 
     [Fact]
@@ -102,8 +102,8 @@ public class SerializerSettingsNodeProviderModeTreeTests : ConfigLoaderValidator
     {
         WriteConfig(predicates: new List<ProviderPredicateDefinition>
         {
-            new() { Name = "FirstDeploy", Mode = DeploymentMode.Deploy, ProviderType = "Content", Path = "/d", AreaId = 1, PageId = 10 },
-            new() { Name = "SecondSeed", Mode = DeploymentMode.Seed, ProviderType = "SqlTable", Table = "EcomShops" }
+            new() { Name = "FirstReplace", Mode = SerializerMode.Replace, ProviderType = "Content", Path = "/d", AreaId = 1, PageId = 10 },
+            new() { Name = "SecondMerge", Mode = SerializerMode.Merge, ProviderType = "SqlTable", Table = "EcomShops" }
         });
         var provider = new SerializerSettingsNodeProvider();
 
@@ -112,8 +112,8 @@ public class SerializerSettingsNodeProviderModeTreeTests : ConfigLoaderValidator
             .ToList();
 
         Assert.Equal(2, nodes.Count);
-        Assert.Contains(nodes, n => n.Name == "FirstDeploy (Deploy)");
-        Assert.Contains(nodes, n => n.Name == "SecondSeed (Seed)");
+        Assert.Contains(nodes, n => n.Name == "FirstReplace (Replace)");
+        Assert.Contains(nodes, n => n.Name == "SecondMerge (Merge)");
     }
 
     // -------------------------------------------------------------------------

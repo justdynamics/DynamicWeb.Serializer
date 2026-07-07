@@ -249,7 +249,7 @@ public class FileSystemStoreTests : IDisposable
     [Fact]
     public void WriteTree_RemovesStaleGridRowFolders_FromPriorRuns()
     {
-        // Pre-seed the page directory with a stale grid-row folder containing a leftover
+        // Pre-merge the page directory with a stale grid-row folder containing a leftover
         // paragraph file from a previous (buggy) serialize run. After WriteTree, the stale
         // folder must be gone — otherwise deserialize would pick it up and attach the
         // stale paragraph to the wrong row.

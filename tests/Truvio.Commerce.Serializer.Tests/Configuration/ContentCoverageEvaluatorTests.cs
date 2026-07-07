@@ -16,7 +16,7 @@ public class ContentCoverageEvaluatorTests
     {
         Name = name,
         ProviderType = "Content",
-        Mode = DeploymentMode.Deploy,
+        Mode = SerializerMode.Replace,
         AreaId = areaId,
         Path = path,
         Excludes = excludes.ToList()
@@ -168,18 +168,18 @@ public class ContentCoverageEvaluatorTests
     }
 
     [Fact]
-    public void SeedModeWord_AppearsInExplanations()
+    public void MergeModeWord_AppearsInExplanations()
     {
         var evaluator = new ContentCoverageEvaluator(
-            new[] { Predicate("starter-posts", path: "/Posts") }, modeWord: "seed");
+            new[] { Predicate("starter-posts", path: "/Posts") }, modeWord: "merge");
 
         var full = evaluator.Evaluate("/Posts", 3);
         Assert.Equal(ContentCoverage.Full, full.Coverage);
-        Assert.Contains("Managed at seed by 'starter-posts'", full.Explanation);
+        Assert.Contains("Merge-managed by 'starter-posts'", full.Explanation);
 
         var ancestor = evaluator.Evaluate("/", 3);
         Assert.Equal(ContentCoverage.Partial, ancestor.Coverage);
-        Assert.Contains("seed-managed subtree", ancestor.Explanation);
+        Assert.Contains("merge-managed subtree", ancestor.Explanation);
     }
 
     [Fact]

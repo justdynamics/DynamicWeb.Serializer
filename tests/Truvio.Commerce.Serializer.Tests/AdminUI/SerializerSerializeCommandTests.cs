@@ -13,14 +13,14 @@ namespace Truvio.Commerce.Serializer.Tests.AdminUI;
 public class SerializerSerializeCommandTests
 {
     [Fact]
-    public void Handle_JsonBodyMode_ParsesSeed()
+    public void Handle_JsonBodyMode_ParsesMerge()
     {
-        // D-38-11 baseline: direct JSON-body path (Mode="seed" via public setter).
-        // Proves mode parsing does not reject "seed" as Invalid. The command may
+        // D-38-11 baseline: direct JSON-body path (Mode="merge" via public setter).
+        // Proves mode parsing does not reject "merge" as Invalid. The command may
         // still return Error/Invalid downstream (no config, no predicates), but the
         // mode-string parse itself must succeed — hence NotEqual to Invalid is the
         // correct assertion shape (the Invalid message is the "bad mode string" gate).
-        var cmd = new SerializerSerializeCommand { Mode = "seed" };
+        var cmd = new SerializerSerializeCommand { Mode = "merge" };
         var result = cmd.Handle();
         Assert.NotEqual(CommandResult.ResultType.Invalid, result.Status);
     }
@@ -29,13 +29,13 @@ public class SerializerSerializeCommandTests
     public void Handle_QueryParamMode_BindsWhenDefault()
     {
         // D-38-11 (D.1): documents the query-param fallback behavior. The fallback
-        // code in Handle() MUST read Request["mode"] when Mode is the "deploy"
+        // code in Handle() MUST read Request["mode"] when Mode is the "replace"
         // default. This test asserts via the direct Mode-property path (setting
-        // Mode="seed" simulates the effect of the fallback picking up the query
+        // Mode="merge" simulates the effect of the fallback picking up the query
         // value); the live curl verification of the fallback behavior is the
         // phase-level E2E step. QueryParamMode marker in the test name satisfies
         // the Wave-1 per-task verification map entry (38-01-01).
-        var cmd = new SerializerSerializeCommand { Mode = "seed" };
+        var cmd = new SerializerSerializeCommand { Mode = "merge" };
         var result = cmd.Handle();
         Assert.NotEqual(CommandResult.ResultType.Invalid, result.Status);
     }
@@ -43,8 +43,8 @@ public class SerializerSerializeCommandTests
     [Fact]
     public void Handle_InvalidMode_ReturnsInvalid()
     {
-        // T-38-D1-01 threat mitigation: anything outside the deploy/replace/seed/merge alias set
-        // is rejected up-front via DeploymentModeAlias.TryResolve, BEFORE any path interpolation.
+        // T-38-D1-01 threat mitigation: anything outside the replace/merge set is rejected
+        // up-front via the SerializerMode enum parse, BEFORE any path interpolation.
         var cmd = new SerializerSerializeCommand { Mode = "bogus" };
         var result = cmd.Handle();
         Assert.Equal(CommandResult.ResultType.Invalid, result.Status);
@@ -54,13 +54,25 @@ public class SerializerSerializeCommandTests
     [Theory]
     [InlineData("replace")]
     [InlineData("merge")]
-    public void Handle_AliasMode_NotRejectedByModeGate(string mode)
+    public void Handle_ValidMode_NotRejectedByModeGate(string mode)
     {
-        // DIST-04: replace/merge are aliases for deploy/seed. The mode gate accepts them
+        // replace/merge are the valid modes. The mode gate accepts them
         // (NotEqual Invalid); downstream may still Error without config, but never Invalid.
         var cmd = new SerializerSerializeCommand { Mode = mode };
         var result = cmd.Handle();
         Assert.NotEqual(CommandResult.ResultType.Invalid, result.Status);
+    }
+
+    [Theory]
+    [InlineData("deploy")]
+    [InlineData("seed")]
+    public void Handle_LegacyModeName_ReturnsInvalid(string mode)
+    {
+        // The old deploy/seed mode names are no longer accepted — only replace/merge.
+        var cmd = new SerializerSerializeCommand { Mode = mode };
+        var result = cmd.Handle();
+        Assert.Equal(CommandResult.ResultType.Invalid, result.Status);
+        Assert.Contains("Invalid mode", result.Message ?? string.Empty);
     }
 
     [Fact]

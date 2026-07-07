@@ -63,9 +63,9 @@ public class ManifestEntryDiscriminatorReorderTests : IDisposable
         };
 
         var writer = new ManifestWriter();
-        writer.Write(_tempDir, "deploy", new ManifestEntry[] { content, sql });
+        writer.Write(_tempDir, "replace", new ManifestEntry[] { content, sql });
 
-        var manifestPath = Path.Combine(_tempDir, "deploy-manifest.json");
+        var manifestPath = Path.Combine(_tempDir, "replace-manifest.json");
         Assert.True(File.Exists(manifestPath));
 
         using var doc = JsonDocument.Parse(File.ReadAllText(manifestPath));
@@ -107,7 +107,7 @@ public class ManifestEntryDiscriminatorReorderTests : IDisposable
         var manifestJson = """
         {
           "schemaVersion": 2,
-          "mode": "deploy",
+          "mode": "replace",
           "writtenAtUtc": "2026-05-08T00:00:00Z",
           "complete": true,
           "excludeFieldsByItemType": {},
@@ -125,16 +125,16 @@ public class ManifestEntryDiscriminatorReorderTests : IDisposable
           ]
         }
         """;
-        File.WriteAllText(Path.Combine(_tempDir, "deploy-manifest.json"), manifestJson);
+        File.WriteAllText(Path.Combine(_tempDir, "replace-manifest.json"), manifestJson);
 
         var writer = new ManifestWriter();
-        var ex = Record.Exception(() => writer.Read(_tempDir, "deploy"));
+        var ex = Record.Exception(() => writer.Read(_tempDir, "replace"));
 
         if (ex is null)
         {
             // STJ tolerated out-of-order metadata — verify it bound the correct concrete type
             // (not silently fell through to base-type instantiation, which would have thrown).
-            var manifest = writer.Read(_tempDir, "deploy");
+            var manifest = writer.Read(_tempDir, "replace");
             Assert.NotNull(manifest);
             Assert.Single(manifest!.Entries);
             Assert.IsType<ContentEntry>(manifest.Entries[0]);
@@ -162,7 +162,7 @@ public class ManifestEntryDiscriminatorReorderTests : IDisposable
         var manifestJson = """
         {
           "schemaVersion": 2,
-          "mode": "deploy",
+          "mode": "replace",
           "writtenAtUtc": "2026-05-08T00:00:00Z",
           "complete": true,
           "excludeFieldsByItemType": {},
@@ -176,10 +176,10 @@ public class ManifestEntryDiscriminatorReorderTests : IDisposable
           ]
         }
         """;
-        File.WriteAllText(Path.Combine(_tempDir, "deploy-manifest.json"), manifestJson);
+        File.WriteAllText(Path.Combine(_tempDir, "replace-manifest.json"), manifestJson);
 
         var writer = new ManifestWriter();
-        var ex = Record.Exception(() => writer.Read(_tempDir, "deploy"));
+        var ex = Record.Exception(() => writer.Read(_tempDir, "replace"));
 
         Assert.NotNull(ex);
         Assert.False(

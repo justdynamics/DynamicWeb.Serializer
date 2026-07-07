@@ -38,13 +38,13 @@ public class LastRunResolverTests : IDisposable
     }
 
     [Fact]
-    public void FindLastReceived_ReturnsNewestRealDeployRun()
+    public void FindLastReceived_ReturnsNewestRealReplaceRun()
     {
-        var older = WriteLog("Deserialize", "deploy", dryRun: false, new DateTime(2026, 6, 10, 10, 0, 0, DateTimeKind.Utc), created: 5);
+        var older = WriteLog("Deserialize", "replace", dryRun: false, new DateTime(2026, 6, 10, 10, 0, 0, DateTimeKind.Utc), created: 5);
         File.SetLastWriteTime(older, DateTime.Now.AddMinutes(-30));
-        WriteLog("Deserialize", "deploy", dryRun: false, new DateTime(2026, 6, 11, 12, 0, 0, DateTimeKind.Utc), created: 9);
+        WriteLog("Deserialize", "replace", dryRun: false, new DateTime(2026, 6, 11, 12, 0, 0, DateTimeKind.Utc), created: 9);
 
-        var result = LastRunResolver.FindLastReceived(_logDir, "deploy");
+        var result = LastRunResolver.FindLastReceived(_logDir, "replace");
 
         Assert.NotNull(result);
         Assert.Equal(9, result!.TotalCreated);
@@ -53,11 +53,11 @@ public class LastRunResolverTests : IDisposable
     [Fact]
     public void FindLastReceived_SkipsDryRuns()
     {
-        var real = WriteLog("Deserialize", "deploy", dryRun: false, new DateTime(2026, 6, 10, 10, 0, 0, DateTimeKind.Utc), created: 3);
+        var real = WriteLog("Deserialize", "replace", dryRun: false, new DateTime(2026, 6, 10, 10, 0, 0, DateTimeKind.Utc), created: 3);
         File.SetLastWriteTime(real, DateTime.Now.AddMinutes(-30));
-        WriteLog("Deserialize", "deploy", dryRun: true, new DateTime(2026, 6, 11, 12, 0, 0, DateTimeKind.Utc), created: 99);
+        WriteLog("Deserialize", "replace", dryRun: true, new DateTime(2026, 6, 11, 12, 0, 0, DateTimeKind.Utc), created: 99);
 
-        var result = LastRunResolver.FindLastReceived(_logDir, "deploy");
+        var result = LastRunResolver.FindLastReceived(_logDir, "replace");
 
         Assert.NotNull(result);
         Assert.Equal(3, result!.TotalCreated);
@@ -66,26 +66,26 @@ public class LastRunResolverTests : IDisposable
     [Fact]
     public void FindLastReceived_FiltersByMode_AndIgnoresSerializeRuns()
     {
-        WriteLog("Deserialize", "seed", dryRun: false, DateTime.UtcNow, created: 7);
-        WriteLog("Serialize", "deploy", dryRun: false, DateTime.UtcNow, created: 50);
+        WriteLog("Deserialize", "merge", dryRun: false, DateTime.UtcNow, created: 7);
+        WriteLog("Serialize", "replace", dryRun: false, DateTime.UtcNow, created: 50);
 
-        Assert.Null(LastRunResolver.FindLastReceived(_logDir, "deploy"));
-        Assert.Equal(7, LastRunResolver.FindLastReceived(_logDir, "seed")!.TotalCreated);
+        Assert.Null(LastRunResolver.FindLastReceived(_logDir, "replace"));
+        Assert.Equal(7, LastRunResolver.FindLastReceived(_logDir, "merge")!.TotalCreated);
     }
 
     [Fact]
-    public void FindLastReceived_AcceptsZipImportAsDeployReceived()
+    public void FindLastReceived_AcceptsZipImportAsReplaceReceived()
     {
-        WriteLog("ZipImport", "deploy", dryRun: false, DateTime.UtcNow, created: 4);
+        WriteLog("ZipImport", "replace", dryRun: false, DateTime.UtcNow, created: 4);
 
-        Assert.Equal(4, LastRunResolver.FindLastReceived(_logDir, "deploy")!.TotalCreated);
+        Assert.Equal(4, LastRunResolver.FindLastReceived(_logDir, "replace")!.TotalCreated);
     }
 
     [Fact]
     public void FindLastReceived_EmptyOrMissingDir_ReturnsNull()
     {
-        Assert.Null(LastRunResolver.FindLastReceived(_logDir, "deploy"));
-        Assert.Null(LastRunResolver.FindLastReceived(Path.Combine(_logDir, "nope"), "deploy"));
+        Assert.Null(LastRunResolver.FindLastReceived(_logDir, "replace"));
+        Assert.Null(LastRunResolver.FindLastReceived(Path.Combine(_logDir, "nope"), "replace"));
     }
 
     [Fact]
@@ -98,6 +98,6 @@ public class LastRunResolverTests : IDisposable
             Timestamp = DateTime.UtcNow
         });
 
-        Assert.Null(LastRunResolver.FindLastReceived(_logDir, "deploy"));
+        Assert.Null(LastRunResolver.FindLastReceived(_logDir, "replace"));
     }
 }

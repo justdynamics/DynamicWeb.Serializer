@@ -58,13 +58,13 @@ public class XmlMergeHelperTests
     public void Merge_ElementSetOnTarget_PreservesTarget()
     {
         const string target = "<Root><A>customer</A></Root>";
-        const string source = "<Root><A>seed</A></Root>";
+        const string source = "<Root><A>merge</A></Root>";
 
         var merged = XmlMergeHelper.Merge(target, source);
 
         Assert.NotNull(merged);
         Assert.Contains(">customer<", merged);
-        Assert.DoesNotContain(">seed<", merged!);
+        Assert.DoesNotContain(">merge<", merged!);
     }
 
     // -----------------------------------------------------------------------
@@ -144,7 +144,7 @@ public class XmlMergeHelperTests
             "</Settings>";
         const string source =
             "<Settings>" +
-            "<Parameter name=\"Mail1SenderName\">Seed Name</Parameter>" +
+            "<Parameter name=\"Mail1SenderName\">Merge Name</Parameter>" +
             "<Parameter name=\"Mail1SenderEmail\">no-reply@x</Parameter>" +
             "</Settings>";
 
@@ -153,7 +153,7 @@ public class XmlMergeHelperTests
         Assert.NotNull(merged);
         // Target's Mail1SenderName preserved (already set).
         Assert.Contains(">Existing Name<", merged);
-        Assert.DoesNotContain(">Seed Name<", merged!);
+        Assert.DoesNotContain(">Merge Name<", merged!);
         // Mail1SenderEmail filled from source.
         Assert.Contains("name=\"Mail1SenderEmail\"", merged);
         Assert.Contains(">no-reply@x<", merged);

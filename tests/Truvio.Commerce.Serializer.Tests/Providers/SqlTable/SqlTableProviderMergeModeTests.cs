@@ -11,11 +11,11 @@ namespace Truvio.Commerce.Serializer.Tests.Providers.SqlTable;
 
 /// <summary>
 /// Phase 39 D-01..D-19 + D-21..D-27 integration coverage for the SqlTableProvider
-/// Seed-merge branch. Harness copied from <see cref="SqlTableProviderDeserializeTests"/>
+/// Merge-fill branch. Harness copied from <see cref="SqlTableProviderDeserializeTests"/>
 /// and extended with column-type hints for <see cref="MergePredicate.IsUnsetForMergeBySqlType"/>.
 /// </summary>
 [Trait("Category", "Phase39")]
-public class SqlTableProviderSeedMergeTests
+public class SqlTableProviderMergeModeTests
 {
     private static readonly TableMetadata TestMetadata = new()
     {
@@ -50,9 +50,9 @@ public class SqlTableProviderSeedMergeTests
     // -----------------------------------------------------------------------
 
     [Fact]
-    public void Seed_IdentityMatchTargetColumnNull_YamlHasValue_UpdateColumnSubsetCalled()
+    public void Merge_IdentityMatchTargetColumnNull_YamlHasValue_UpdateColumnSubsetCalled()
     {
-        var yamlRow = Row("FLOW-1", "Checkout", "seeded description");
+        var yamlRow = Row("FLOW-1", "Checkout", "merged description");
         var existingRow = Row("FLOW-1", "Checkout", null); // null description — unset per D-01
 
         var (provider, executor, writer, inputRoot) = CreateProviderWithFiles(
@@ -94,11 +94,11 @@ public class SqlTableProviderSeedMergeTests
     // -----------------------------------------------------------------------
 
     [Fact]
-    public void Seed_IdentityMatchAllColumnsSet_NoWrite_SkippedCounterIncremented()
+    public void Merge_IdentityMatchAllColumnsSet_NoWrite_SkippedCounterIncremented()
     {
         // Identity (NameColumn=OrderFlowName) matches; description differs so checksums
         // differ (merge branch engages, not the fast-path). All columns set on target -> 0 fills.
-        var yamlRow = Row("FLOW-1", "Checkout", "seed desc");
+        var yamlRow = Row("FLOW-1", "Checkout", "merge desc");
         var existingRow = Row("FLOW-1", "Checkout", "customer desc");
 
         var (provider, _, writer, inputRoot) = CreateProviderWithFiles(
@@ -115,7 +115,7 @@ public class SqlTableProviderSeedMergeTests
                 It.IsAny<bool>(), It.IsAny<Action<string>?>()),
             Times.Never);
         Assert.Equal(1, result.Skipped);
-        Assert.Contains(logs, l => l.Contains("Seed-merge:") && l.Contains("0 filled"));
+        Assert.Contains(logs, l => l.Contains("Merge-fill:") && l.Contains("0 filled"));
     }
 
     // -----------------------------------------------------------------------
@@ -123,11 +123,11 @@ public class SqlTableProviderSeedMergeTests
     // -----------------------------------------------------------------------
 
     [Fact]
-    public void Seed_IdentityMatchPartialSet_UpdateColumnSubsetFiresForUnsetSubsetOnly()
+    public void Merge_IdentityMatchPartialSet_UpdateColumnSubsetFiresForUnsetSubsetOnly()
     {
         // Identity (NameColumn=OrderFlowName) matches; description unset on target ->
         // only Description should be in the fill subset.
-        var yamlRow = Row("FLOW-1", "Checkout", "SeedDesc");
+        var yamlRow = Row("FLOW-1", "Checkout", "MergeDesc");
         var existingRow = Row("FLOW-1", "Checkout", null);
 
         var (provider, _, writer, inputRoot) = CreateProviderWithFiles(
@@ -161,7 +161,7 @@ public class SqlTableProviderSeedMergeTests
     // -----------------------------------------------------------------------
 
     [Fact]
-    public void Seed_IdentityUnmatched_WriteRowFallthrough()
+    public void Merge_IdentityUnmatched_WriteRowFallthrough()
     {
         var yamlRow = Row("FLOW-NEW", "New flow", "New desc");
         // No matching identity in DB.
@@ -197,7 +197,7 @@ public class SqlTableProviderSeedMergeTests
     // -----------------------------------------------------------------------
 
     [Fact]
-    public void Seed_ChecksumMatches_FastPathSkip_BeforeMergeBranch()
+    public void Merge_ChecksumMatches_FastPathSkip_BeforeMergeBranch()
     {
         var sameRow = Row("FLOW-1", "Checkout", "same desc");
 
@@ -224,7 +224,7 @@ public class SqlTableProviderSeedMergeTests
     // -----------------------------------------------------------------------
 
     [Fact]
-    public void Seed_MissingTargetColumn_SilentlyDropsFromMergePlan()
+    public void Merge_MissingTargetColumn_SilentlyDropsFromMergePlan()
     {
         // YAML carries an extra column that isn't on target schema — target filter drops it
         // before merge runs, so the fill subset must never reference it.
@@ -232,7 +232,7 @@ public class SqlTableProviderSeedMergeTests
         {
             ["OrderFlowId"] = "FLOW-1",
             ["OrderFlowName"] = "Checkout",
-            ["OrderFlowDescription"] = "seeded",
+            ["OrderFlowDescription"] = "merged",
             ["PhantomColumn"] = "ghost"
         };
         var existingRow = Row("FLOW-1", "Checkout", null);
@@ -267,9 +267,9 @@ public class SqlTableProviderSeedMergeTests
     // -----------------------------------------------------------------------
 
     [Fact]
-    public void Seed_DryRun_EmitsWouldFillPerColumn_NoSqlExecuted()
+    public void Merge_DryRun_EmitsWouldFillPerColumn_NoSqlExecuted()
     {
-        var yamlRow = Row("FLOW-1", "Checkout", "seed desc");
+        var yamlRow = Row("FLOW-1", "Checkout", "merge desc");
         var existingRow = Row("FLOW-1", "Checkout", null);
 
         var (provider, executor, writer, inputRoot) = CreateProviderWithFiles(
@@ -295,13 +295,13 @@ public class SqlTableProviderSeedMergeTests
     // -----------------------------------------------------------------------
 
     [Fact]
-    public void Seed_Rerun_AllRowsAlreadyFilled_AllSkipped()
+    public void Merge_Rerun_AllRowsAlreadyFilled_AllSkipped()
     {
-        // Same data — after previous seed, YAML == DB exactly (checksum fast-path domain),
+        // Same data — after previous merge, YAML == DB exactly (checksum fast-path domain),
         // OR at minimum every column is set (merge path with zero fills). Both paths yield
         // Skipped=1, zero calls to UpdateColumnSubset.
-        var yamlRow = Row("FLOW-1", "Checkout", "seeded desc");
-        var existingRow = Row("FLOW-1", "Checkout", "seeded desc");
+        var yamlRow = Row("FLOW-1", "Checkout", "merged desc");
+        var existingRow = Row("FLOW-1", "Checkout", "merged desc");
 
         var (provider, _, writer, inputRoot) = CreateProviderWithFiles(
             yamlRows: new[] { yamlRow },
@@ -319,13 +319,13 @@ public class SqlTableProviderSeedMergeTests
     }
 
     // -----------------------------------------------------------------------
-    // D-11 log format — Seed-merge line shape
+    // D-11 log format — Merge-fill line shape
     // -----------------------------------------------------------------------
 
     [Fact]
-    public void Seed_LogLineShape_SeedMerge_FilledAndLeft()
+    public void Merge_LogLineShape_MergeFill_FilledAndLeft()
     {
-        var yamlRow = Row("FLOW-1", "Checkout", "seeded");
+        var yamlRow = Row("FLOW-1", "Checkout", "merged");
         var existingRow = Row("FLOW-1", "Checkout", null);
 
         var (provider, _, writer, inputRoot) = CreateProviderWithFiles(
@@ -343,7 +343,7 @@ public class SqlTableProviderSeedMergeTests
             strategy: ConflictStrategy.DestinationWins);
 
         Assert.Contains(logs, l =>
-            l.Contains("Seed-merge:")
+            l.Contains("Merge-fill:")
             && l.Contains("EcomOrderFlow")
             && l.Contains("filled"));
     }
@@ -353,7 +353,7 @@ public class SqlTableProviderSeedMergeTests
     // -----------------------------------------------------------------------
 
     [Fact]
-    public void Seed_XmlColumn_TargetMissingElement_XmlMerged_UpdateColumnSubsetCalledWithMergedXml()
+    public void Merge_XmlColumn_TargetMissingElement_XmlMerged_UpdateColumnSubsetCalledWithMergedXml()
     {
         // Switch to an EcomPayments-ish shape: identity column + XML column.
         var metadata = new TableMetadata
@@ -379,7 +379,7 @@ public class SqlTableProviderSeedMergeTests
 
         const string targetXml =
             "<Settings><Parameter name=\"Language\">en</Parameter></Settings>";
-        const string seedXml =
+        const string mergeXml =
             "<Settings>" +
             "<Parameter name=\"Language\">en</Parameter>" +
             "<Parameter name=\"Mail1SenderEmail\">no-reply@swift.com</Parameter>" +
@@ -388,7 +388,7 @@ public class SqlTableProviderSeedMergeTests
         var yamlRow = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase)
         {
             ["PaymentId"] = "PAY-1",
-            ["PaymentGatewayParameters"] = seedXml
+            ["PaymentGatewayParameters"] = mergeXml
         };
         var existingRow = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase)
         {
@@ -424,7 +424,7 @@ public class SqlTableProviderSeedMergeTests
     }
 
     [Fact]
-    public void Seed_XmlColumn_TargetElementSet_ElementPreserved()
+    public void Merge_XmlColumn_TargetElementSet_ElementPreserved()
     {
         var metadata = new TableMetadata
         {
@@ -447,12 +447,12 @@ public class SqlTableProviderSeedMergeTests
             ["PaymentGatewayParameters"] = "xml"
         };
 
-        // Target already has Mail1SenderEmail — seed must not overwrite.
+        // Target already has Mail1SenderEmail — merge must not overwrite.
         const string targetXml =
             "<Settings>" +
             "<Parameter name=\"Mail1SenderEmail\">customer@customer.com</Parameter>" +
             "</Settings>";
-        const string seedXml =
+        const string mergeXml =
             "<Settings>" +
             "<Parameter name=\"Mail1SenderEmail\">no-reply@swift.com</Parameter>" +
             "</Settings>";
@@ -460,7 +460,7 @@ public class SqlTableProviderSeedMergeTests
         var yamlRow = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase)
         {
             ["PaymentId"] = "PAY-1",
-            ["PaymentGatewayParameters"] = seedXml
+            ["PaymentGatewayParameters"] = mergeXml
         };
         var existingRow = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase)
         {
@@ -477,7 +477,7 @@ public class SqlTableProviderSeedMergeTests
         provider.Deserialize(entry, inputRoot,
             strategy: ConflictStrategy.DestinationWins);
 
-        // Zero columns needed filling — Seed-merge recognized no changes.
+        // Zero columns needed filling — Merge-fill recognized no changes.
         writer.Verify(w => w.UpdateColumnSubset(
                 It.IsAny<string>(), It.IsAny<IReadOnlyList<string>>(),
                 It.IsAny<Dictionary<string, object?>>(), It.IsAny<IEnumerable<string>>(),
@@ -486,7 +486,7 @@ public class SqlTableProviderSeedMergeTests
     }
 
     [Fact]
-    public void Seed_XmlColumn_TargetOnlyElements_Preserved()
+    public void Merge_XmlColumn_TargetOnlyElements_Preserved()
     {
         // Target has elements NOT present in YAML — D-24 preservation.
         var metadata = new TableMetadata
@@ -514,7 +514,7 @@ public class SqlTableProviderSeedMergeTests
             "<Settings>" +
             "<Parameter name=\"CustomLocal\">my-val</Parameter>" +
             "</Settings>";
-        const string seedXml =
+        const string mergeXml =
             "<Settings>" +
             "<Parameter name=\"Mail1SenderEmail\">no-reply@swift.com</Parameter>" +
             "</Settings>";
@@ -522,7 +522,7 @@ public class SqlTableProviderSeedMergeTests
         var yamlRow = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase)
         {
             ["PaymentId"] = "PAY-1",
-            ["PaymentGatewayParameters"] = seedXml
+            ["PaymentGatewayParameters"] = mergeXml
         };
         var existingRow = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase)
         {
@@ -545,7 +545,7 @@ public class SqlTableProviderSeedMergeTests
         provider.Deserialize(entry, inputRoot,
             strategy: ConflictStrategy.DestinationWins);
 
-        // Merged XML must contain both the target-only CustomLocal AND the seed-added Mail1SenderEmail.
+        // Merged XML must contain both the target-only CustomLocal AND the merge-added Mail1SenderEmail.
         writer.Verify(w => w.UpdateColumnSubset(
                 "EcomPayments",
                 It.IsAny<IReadOnlyList<string>>(),
@@ -559,7 +559,7 @@ public class SqlTableProviderSeedMergeTests
     }
 
     [Fact]
-    public void Seed_XmlColumn_DryRun_EmitsPerElementWouldFill()
+    public void Merge_XmlColumn_DryRun_EmitsPerElementWouldFill()
     {
         var metadata = new TableMetadata
         {
@@ -583,7 +583,7 @@ public class SqlTableProviderSeedMergeTests
         };
 
         const string targetXml = "<Settings></Settings>";
-        const string seedXml =
+        const string mergeXml =
             "<Settings>" +
             "<Parameter name=\"Mail1SenderEmail\">no-reply@swift.com</Parameter>" +
             "</Settings>";
@@ -591,7 +591,7 @@ public class SqlTableProviderSeedMergeTests
         var yamlRow = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase)
         {
             ["PaymentId"] = "PAY-1",
-            ["PaymentGatewayParameters"] = seedXml
+            ["PaymentGatewayParameters"] = mergeXml
         };
         var existingRow = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase)
         {
@@ -616,7 +616,7 @@ public class SqlTableProviderSeedMergeTests
     }
 
     [Fact]
-    public void Seed_XmlColumn_IdentifiedByColumnType_xml()
+    public void Merge_XmlColumn_IdentifiedByColumnType_xml()
     {
         // Baseline correctness: a column whose SQL type is "xml" is routed through
         // XmlMergeHelper, not through scalar MergePredicate. Negative test: same data
@@ -644,13 +644,13 @@ public class SqlTableProviderSeedMergeTests
             ["PaymentGatewayParameters"] = "xml"
         };
 
-        // Target is empty XML container → leaf is unset. Seed has <Parameter name="X">v</Parameter>.
+        // Target is empty XML container → leaf is unset. Merge has <Parameter name="X">v</Parameter>.
         // If XML path runs, the outer Settings container on target gets filled with children.
-        // If scalar path ran, the empty-string scalar would be filled with the raw seed XML string.
+        // If scalar path ran, the empty-string scalar would be filled with the raw merge XML string.
         // Either way the fill fires — we test the XML fill signature (merged XML contains the
         // source element structure).
         const string targetXml = "<Settings></Settings>";
-        const string seedXml =
+        const string mergeXml =
             "<Settings>" +
             "<Parameter name=\"Mail1SenderEmail\">x@y</Parameter>" +
             "</Settings>";
@@ -658,7 +658,7 @@ public class SqlTableProviderSeedMergeTests
         var yamlRow = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase)
         {
             ["PaymentId"] = "PAY-1",
-            ["PaymentGatewayParameters"] = seedXml
+            ["PaymentGatewayParameters"] = mergeXml
         };
         var existingRow = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase)
         {
@@ -694,7 +694,7 @@ public class SqlTableProviderSeedMergeTests
     }
 
     [Fact]
-    public void Seed_XmlColumn_MalformedSourceOrTarget_FallbackToStandardUnsetRule()
+    public void Merge_XmlColumn_MalformedSourceOrTarget_FallbackToStandardUnsetRule()
     {
         // Both target and source malformed — XmlMergeHelper returns the target unchanged.
         // Because target XML is non-empty (though malformed), the merge predicate sees no
@@ -721,12 +721,12 @@ public class SqlTableProviderSeedMergeTests
         };
 
         const string targetXml = "<broken";
-        const string seedXml = "<Settings><Parameter name=\"X\">y</Parameter></Settings>";
+        const string mergeXml = "<Settings><Parameter name=\"X\">y</Parameter></Settings>";
 
         var yamlRow = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase)
         {
             ["PaymentId"] = "PAY-1",
-            ["PaymentGatewayParameters"] = seedXml
+            ["PaymentGatewayParameters"] = mergeXml
         };
         var existingRow = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase)
         {
@@ -802,7 +802,7 @@ public class SqlTableProviderSeedMergeTests
         var tableReader = new SqlTableReader(mockExecutor.Object);
         var fileStore = new FlatFileStore();
 
-        var tempDir = Path.Combine(Path.GetTempPath(), $"contentsync_seedmerge_{Guid.NewGuid():N}");
+        var tempDir = Path.Combine(Path.GetTempPath(), $"contentsync_mergefill_{Guid.NewGuid():N}");
         Directory.CreateDirectory(tempDir);
 
         var mockExecForIdentity = new Mock<ISqlExecutor>();

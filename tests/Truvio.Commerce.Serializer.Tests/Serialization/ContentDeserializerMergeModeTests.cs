@@ -10,7 +10,7 @@ namespace Truvio.Commerce.Serializer.Tests.Serialization;
 
 /// <summary>
 /// Phase 39 D-01..D-11, D-19 structural + helper-level coverage for
-/// <see cref="ContentDeserializer"/>'s Seed-mode field-level merge branch.
+/// <see cref="ContentDeserializer"/>'s Merge-mode field-level merge branch.
 ///
 /// Full end-to-end integration tests of the DestinationWins UPDATE path require a
 /// live DW runtime (see <c>tests/Truvio.Commerce.Serializer.IntegrationTests/Deserialization/
@@ -18,12 +18,12 @@ namespace Truvio.Commerce.Serializer.Tests.Serialization;
 /// (a) legacy row-skip is removed, (b) new merge helpers exist with the right
 /// signatures, (c) the pure helpers (<see cref="ContentDeserializer.ApplyPagePropertiesWithMerge"/>,
 /// <see cref="ContentDeserializer.MergePageScalars"/>) produce the D-01 behavior
-/// on real <see cref="Page"/> instances, (d) the <c>Seed-merge:</c> log format is
-/// present and the old <c>Seed-skip:</c> line is gone (D-11), (e) permissions are
-/// not touched from the Seed branch (D-06).
+/// on real <see cref="Page"/> instances, (d) the <c>Merge-fill:</c> log format is
+/// present and the old <c>Merge-skip:</c> line is gone (D-11), (e) permissions are
+/// not touched from the Merge branch (D-06).
 /// </summary>
 [Trait("Category", "Phase39")]
-public class ContentDeserializerSeedMergeTests
+public class ContentDeserializerMergeModeTests
 {
     private static readonly string ContentDeserializerSource = File.ReadAllText(
         Path.Combine(FindRepoRoot(), "src", "Truvio.Commerce.Serializer", "Serialization", "ContentDeserializer.cs"));
@@ -44,25 +44,26 @@ public class ContentDeserializerSeedMergeTests
     };
 
     // -----------------------------------------------------------------------
-    // D-11: Legacy row-skip removed; new Seed-merge: log format present.
+    // D-11: Legacy row-skip removed; new Merge-fill: log format present.
     // -----------------------------------------------------------------------
 
     [Fact]
-    public void SeedMerge_RemovesSeedSkipLogLine_NoSuchLineInSource()
+    public void MergeMode_NoWholeRowSkipLogLine_InSource()
     {
-        // D-11 regression guard: the old "Seed-skip:" line must be gone from the source.
-        Assert.DoesNotContain("Seed-skip:", ContentDeserializerSource);
+        // D-11 regression guard: the merge branch fills field-by-field; it does not emit a
+        // whole-row skip line.
+        Assert.DoesNotContain("Merge-skip:", ContentDeserializerSource);
     }
 
     [Fact]
-    public void SeedMerge_EmitsSeedMergeLogFormat_SourceContainsNewPrefix()
+    public void MergeMode_EmitsMergeFillLogFormat_SourceContainsNewPrefix()
     {
-        // D-11: new log format "Seed-merge: ... N filled, M left" replaces Seed-skip.
-        Assert.Contains("Seed-merge:", ContentDeserializerSource);
+        // D-11: log format "Merge-fill: ... N filled, M left".
+        Assert.Contains("Merge-fill:", ContentDeserializerSource);
     }
 
     [Fact]
-    public void SeedMerge_EmitsFilledAndLeftInLog_D11Format()
+    public void MergeMode_EmitsFilledAndLeftInLog_D11Format()
     {
         // D-11 shape: "N filled, M left" counter phrasing.
         Assert.Contains("filled", ContentDeserializerSource);
@@ -70,17 +71,17 @@ public class ContentDeserializerSeedMergeTests
     }
 
     // -----------------------------------------------------------------------
-    // D-06: Permissions are NOT reachable from the Seed merge branch.
+    // D-06: Permissions are NOT reachable from the Merge-mode field-level fill branch.
     // -----------------------------------------------------------------------
 
     [Fact]
-    public void SeedMerge_Permissions_NotTouched_MarkerPresent()
+    public void MergeMode_Permissions_NotTouched_MarkerPresent()
     {
         // D-06: An explicit code comment marker anchors the permissions-bypass test.
         // The comment lives inside the DestinationWins merge branch so that a future
         // accidental re-introduction of _permissionMapper.ApplyPermissions there will
         // fail this assertion.
-        Assert.Contains("D-06: permissions NOT applied on Seed", ContentDeserializerSource);
+        Assert.Contains("Permissions NOT applied on Merge", ContentDeserializerSource);
     }
 
     // -----------------------------------------------------------------------
@@ -88,7 +89,7 @@ public class ContentDeserializerSeedMergeTests
     // -----------------------------------------------------------------------
 
     [Fact]
-    public void SeedMerge_ConsumesMergePredicate_MultipleCallSites()
+    public void MergeMode_ConsumesMergePredicate_MultipleCallSites()
     {
         // D-08: shared helper gates every scalar/sub-object/ItemField decision.
         var count = CountOccurrences(ContentDeserializerSource, "MergePredicate.IsUnsetForMerge");
@@ -96,7 +97,7 @@ public class ContentDeserializerSeedMergeTests
     }
 
     [Fact]
-    public void SeedMerge_ImportsMergePredicateNamespace()
+    public void MergeMode_ImportsMergePredicateNamespace()
     {
         // Shared helper lives in Truvio.Commerce.Serializer.Infrastructure; importing namespace ensures
         // the call sites compile. (Infrastructure was already a using; re-check just in case.)
@@ -108,7 +109,7 @@ public class ContentDeserializerSeedMergeTests
     // -----------------------------------------------------------------------
 
     [Fact]
-    public void SeedMerge_MergePageScalarsMethod_Exists()
+    public void MergeMode_MergePageScalarsMethod_Exists()
     {
         var t = typeof(ContentDeserializer);
         var flags = BindingFlags.Static | BindingFlags.Instance | BindingFlags.NonPublic;
@@ -117,7 +118,7 @@ public class ContentDeserializerSeedMergeTests
     }
 
     [Fact]
-    public void SeedMerge_ApplyPagePropertiesWithMergeMethod_Exists()
+    public void MergeMode_ApplyPagePropertiesWithMergeMethod_Exists()
     {
         var t = typeof(ContentDeserializer);
         var flags = BindingFlags.Static | BindingFlags.Instance | BindingFlags.NonPublic;
@@ -126,7 +127,7 @@ public class ContentDeserializerSeedMergeTests
     }
 
     [Fact]
-    public void SeedMerge_MergeItemFieldsMethod_Exists()
+    public void MergeMode_MergeItemFieldsMethod_Exists()
     {
         var t = typeof(ContentDeserializer);
         var flags = BindingFlags.Static | BindingFlags.Instance | BindingFlags.NonPublic;
@@ -135,7 +136,7 @@ public class ContentDeserializerSeedMergeTests
     }
 
     [Fact]
-    public void SeedMerge_MergePropertyItemFieldsMethod_Exists()
+    public void MergeMode_MergePropertyItemFieldsMethod_Exists()
     {
         var t = typeof(ContentDeserializer);
         var flags = BindingFlags.Static | BindingFlags.Instance | BindingFlags.NonPublic;
@@ -144,11 +145,11 @@ public class ContentDeserializerSeedMergeTests
     }
 
     [Fact]
-    public void SeedMerge_LogSeedMergeDryRunMethod_Exists()
+    public void MergeMode_LogMergeFillDryRunMethod_Exists()
     {
         var t = typeof(ContentDeserializer);
         var flags = BindingFlags.Static | BindingFlags.Instance | BindingFlags.NonPublic;
-        var m = t.GetMethod("LogSeedMergeDryRun", flags);
+        var m = t.GetMethod("LogMergeFillDryRun", flags);
         Assert.NotNull(m);
     }
 

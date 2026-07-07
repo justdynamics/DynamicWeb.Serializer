@@ -25,7 +25,7 @@ public class ItemTypeCommandTests : IDisposable
             Directory.Delete(_tempDir, recursive: true);
     }
 
-    private void CreateSeedConfig(Dictionary<string, List<string>>? excludeFieldsByItemType = null)
+    private void CreateMergeConfig(Dictionary<string, List<string>>? excludeFieldsByItemType = null)
     {
         // Phase 40 D-04: ExcludeFieldsByItemType is a top-level dict on SerializerConfiguration.
         var config = new SerializerConfiguration
@@ -33,7 +33,7 @@ public class ItemTypeCommandTests : IDisposable
             OutputDirectory = @"\System\Serializer",
             Predicates = new List<ProviderPredicateDefinition>
             {
-                new() { Name = "Default", Mode = DeploymentMode.Deploy, ProviderType = "Content", Path = "/", AreaId = 1 }
+                new() { Name = "Default", Mode = SerializerMode.Replace, ProviderType = "Content", Path = "/", AreaId = 1 }
             },
             ExcludeFieldsByItemType = excludeFieldsByItemType ?? new()
         };
@@ -70,7 +70,7 @@ public class ItemTypeCommandTests : IDisposable
     [Fact]
     public void Save_ValidModel_PersistsExclusions()
     {
-        CreateSeedConfig(new Dictionary<string, List<string>>
+        CreateMergeConfig(new Dictionary<string, List<string>>
         {
             ["TestType"] = new List<string>()
         });
@@ -95,7 +95,7 @@ public class ItemTypeCommandTests : IDisposable
     [Fact]
     public void Save_UpdateExisting_ReplacesExclusions()
     {
-        CreateSeedConfig(new Dictionary<string, List<string>>
+        CreateMergeConfig(new Dictionary<string, List<string>>
         {
             ["TestType"] = new List<string> { "field1" }
         });
@@ -120,7 +120,7 @@ public class ItemTypeCommandTests : IDisposable
     [Fact]
     public void Save_EmptyExclusions_PersistsEmptyList()
     {
-        CreateSeedConfig(new Dictionary<string, List<string>>
+        CreateMergeConfig(new Dictionary<string, List<string>>
         {
             ["TestType"] = new List<string> { "field1" }
         });
@@ -145,7 +145,7 @@ public class ItemTypeCommandTests : IDisposable
     [Fact]
     public void Save_PreservesOtherItemTypes()
     {
-        CreateSeedConfig(new Dictionary<string, List<string>>
+        CreateMergeConfig(new Dictionary<string, List<string>>
         {
             ["TypeA"] = new List<string> { "f1" },
             ["TypeB"] = new List<string> { "f2" }

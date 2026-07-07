@@ -124,7 +124,7 @@ public class SerializerOrchestratorTests
     {
         var predicates = new List<ProviderPredicateDefinition> { ContentPred1, ContentPred2 };
 
-        var result = _orchestrator.SerializeAll(predicates, "/output", DeploymentMode.Deploy, ConflictStrategy.SourceWins);
+        var result = _orchestrator.SerializeAll(predicates, "/output", SerializerMode.Replace, ConflictStrategy.SourceWins);
 
         _contentProvider.Verify(p => p.Serialize(ContentPred1, "/output", It.IsAny<Action<string>?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>()), Times.Once);
         _contentProvider.Verify(p => p.Serialize(ContentPred2, "/output", It.IsAny<Action<string>?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>()), Times.Once);
@@ -137,7 +137,7 @@ public class SerializerOrchestratorTests
     {
         var predicates = new List<ProviderPredicateDefinition> { ContentPred1, SqlTablePred };
 
-        var result = _orchestrator.SerializeAll(predicates, "/output", DeploymentMode.Deploy, ConflictStrategy.SourceWins);
+        var result = _orchestrator.SerializeAll(predicates, "/output", SerializerMode.Replace, ConflictStrategy.SourceWins);
 
         _contentProvider.Verify(p => p.Serialize(ContentPred1, "/output", It.IsAny<Action<string>?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>()), Times.Once);
         _sqlTableProvider.Verify(p => p.Serialize(SqlTablePred, "/output", It.IsAny<Action<string>?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>()), Times.Once);
@@ -149,7 +149,7 @@ public class SerializerOrchestratorTests
     {
         var predicates = new List<ProviderPredicateDefinition> { ContentPred1, SqlTablePred };
 
-        var result = _orchestrator.SerializeAll(predicates, "/output", DeploymentMode.Deploy, ConflictStrategy.SourceWins, providerFilter: "Content");
+        var result = _orchestrator.SerializeAll(predicates, "/output", SerializerMode.Replace, ConflictStrategy.SourceWins, providerFilter: "Content");
 
         _contentProvider.Verify(p => p.Serialize(ContentPred1, "/output", It.IsAny<Action<string>?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>()), Times.Once);
         _sqlTableProvider.Verify(p => p.Serialize(It.IsAny<ProviderPredicateDefinition>(), It.IsAny<string>(), It.IsAny<Action<string>?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>()), Times.Never);
@@ -161,7 +161,7 @@ public class SerializerOrchestratorTests
     {
         var predicates = new List<ProviderPredicateDefinition> { ContentPred1, SqlTablePred };
 
-        var result = _orchestrator.SerializeAll(predicates, "/output", DeploymentMode.Deploy, ConflictStrategy.SourceWins, providerFilter: "SqlTable");
+        var result = _orchestrator.SerializeAll(predicates, "/output", SerializerMode.Replace, ConflictStrategy.SourceWins, providerFilter: "SqlTable");
 
         _contentProvider.Verify(p => p.Serialize(It.IsAny<ProviderPredicateDefinition>(), It.IsAny<string>(), It.IsAny<Action<string>?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>()), Times.Never);
         _sqlTableProvider.Verify(p => p.Serialize(SqlTablePred, "/output", It.IsAny<Action<string>?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>()), Times.Once);
@@ -173,7 +173,7 @@ public class SerializerOrchestratorTests
     {
         var predicates = new List<ProviderPredicateDefinition> { ContentPred1, SqlTablePred };
 
-        var result = _orchestrator.SerializeAll(predicates, "/output", DeploymentMode.Deploy, ConflictStrategy.SourceWins, providerFilter: null);
+        var result = _orchestrator.SerializeAll(predicates, "/output", SerializerMode.Replace, ConflictStrategy.SourceWins, providerFilter: null);
 
         _contentProvider.Verify(p => p.Serialize(ContentPred1, "/output", It.IsAny<Action<string>?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>()), Times.Once);
         _sqlTableProvider.Verify(p => p.Serialize(SqlTablePred, "/output", It.IsAny<Action<string>?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>()), Times.Once);
@@ -191,7 +191,7 @@ public class SerializerOrchestratorTests
         var predicates = new List<ProviderPredicateDefinition> { unknownPred, ContentPred1 };
         var logs = new List<string>();
 
-        var result = _orchestrator.SerializeAll(predicates, "/output", DeploymentMode.Deploy, ConflictStrategy.SourceWins, log: msg => logs.Add(msg));
+        var result = _orchestrator.SerializeAll(predicates, "/output", SerializerMode.Replace, ConflictStrategy.SourceWins, log: msg => logs.Add(msg));
 
         // Unknown predicate should be skipped with error, Content should still be processed
         Assert.Single(result.SerializeResults);
@@ -228,7 +228,7 @@ public class SerializerOrchestratorTests
         var orchestrator = new SerializerOrchestrator(registry);
 
         var entries = new List<ManifestEntry> { unknownEntry, ContentEntry1 };
-        var result = orchestrator.DeserializeEntries(entries, "/input", DeploymentMode.Deploy,
+        var result = orchestrator.DeserializeEntries(entries, "/input", SerializerMode.Replace,
             ConflictStrategy.SourceWins, log: null, isDryRun: false, providerFilter: null,
             escalator: null, excludeFieldsByItemType: null, excludeXmlElementsByType: null);
 
@@ -342,7 +342,7 @@ public class SerializerOrchestratorTests
         var orchestrator = new SerializerOrchestrator(registry, fkResolver);
         orchestrator.DeserializeEntries(
             new List<ManifestEntry> { SqlEntry("A"), SqlEntry("B"), SqlEntry("C") },
-            "/input", DeploymentMode.Deploy, ConflictStrategy.SourceWins,
+            "/input", SerializerMode.Replace, ConflictStrategy.SourceWins,
             log: null, isDryRun: false, providerFilter: null, escalator: null,
             excludeFieldsByItemType: null, excludeXmlElementsByType: null);
 
@@ -388,7 +388,7 @@ public class SerializerOrchestratorTests
         var orchestrator = new SerializerOrchestrator(registry, fkResolver);
         orchestrator.DeserializeEntries(
             new List<ManifestEntry> { SqlEntry("A"), ContentEntry1, SqlEntry("B") },
-            "/input", DeploymentMode.Deploy, ConflictStrategy.SourceWins,
+            "/input", SerializerMode.Replace, ConflictStrategy.SourceWins,
             log: null, isDryRun: false, providerFilter: null, escalator: null,
             excludeFieldsByItemType: null, excludeXmlElementsByType: null);
 
@@ -433,7 +433,7 @@ public class SerializerOrchestratorTests
 
         var orchestrator = new SerializerOrchestrator(registry, cacheInvalidator: cacheInvalidator);
         orchestrator.DeserializeEntries(
-            new List<ManifestEntry> { entry1, entry2 }, "/input", DeploymentMode.Deploy,
+            new List<ManifestEntry> { entry1, entry2 }, "/input", SerializerMode.Replace,
             ConflictStrategy.SourceWins, log: null, isDryRun: false, providerFilter: null,
             escalator: null, excludeFieldsByItemType: null, excludeXmlElementsByType: null);
 
@@ -467,7 +467,7 @@ public class SerializerOrchestratorTests
 
         var orchestrator = new SerializerOrchestrator(registry, cacheInvalidator: cacheInvalidator);
         orchestrator.DeserializeEntries(
-            new List<ManifestEntry> { entry }, "/input", DeploymentMode.Deploy,
+            new List<ManifestEntry> { entry }, "/input", SerializerMode.Replace,
             ConflictStrategy.SourceWins, log: null, isDryRun: true, providerFilter: null,
             escalator: null, excludeFieldsByItemType: null, excludeXmlElementsByType: null);
 
@@ -499,7 +499,7 @@ public class SerializerOrchestratorTests
         registry.Register(sqlProvider.Object);
 
         var orchestrator = new SerializerOrchestrator(registry, fkResolver);
-        orchestrator.SerializeAll(new List<ProviderPredicateDefinition> { predA, predB }, "/output", DeploymentMode.Deploy, ConflictStrategy.SourceWins);
+        orchestrator.SerializeAll(new List<ProviderPredicateDefinition> { predA, predB }, "/output", SerializerMode.Replace, ConflictStrategy.SourceWins);
 
         // Original order preserved: A, B (not reordered to B, A)
         Assert.Equal(new[] { "A", "B" }, callOrder);
@@ -534,7 +534,7 @@ public class SerializerOrchestratorTests
 
         var orchestrator = new SerializerOrchestrator(registry, cacheInvalidator: cacheInvalidator);
         var result = orchestrator.DeserializeEntries(
-            new List<ManifestEntry> { entry }, "/input", DeploymentMode.Deploy,
+            new List<ManifestEntry> { entry }, "/input", SerializerMode.Replace,
             ConflictStrategy.SourceWins, log: null, isDryRun: false, providerFilter: null,
             escalator: null, excludeFieldsByItemType: null, excludeXmlElementsByType: null);
 
@@ -571,7 +571,7 @@ public class SerializerOrchestratorTests
 
         var orchestrator = new SerializerOrchestrator(registry, ecomSchemaSync: mockSchemaSync.Object);
         orchestrator.DeserializeEntries(
-            new List<ManifestEntry> { entry }, "/input", DeploymentMode.Deploy,
+            new List<ManifestEntry> { entry }, "/input", SerializerMode.Replace,
             ConflictStrategy.SourceWins, log: null, isDryRun: false, providerFilter: null,
             escalator: null, excludeFieldsByItemType: null, excludeXmlElementsByType: null);
 
@@ -602,7 +602,7 @@ public class SerializerOrchestratorTests
 
         var orchestrator = new SerializerOrchestrator(registry, ecomSchemaSync: mockSchemaSync.Object);
         orchestrator.DeserializeEntries(
-            new List<ManifestEntry> { entry }, "/input", DeploymentMode.Deploy,
+            new List<ManifestEntry> { entry }, "/input", SerializerMode.Replace,
             ConflictStrategy.SourceWins, log: null, isDryRun: true, providerFilter: null,
             escalator: null, excludeFieldsByItemType: null, excludeXmlElementsByType: null);
 
@@ -633,7 +633,7 @@ public class SerializerOrchestratorTests
 
         var orchestrator = new SerializerOrchestrator(registry, ecomSchemaSync: mockSchemaSync.Object);
         orchestrator.DeserializeEntries(
-            new List<ManifestEntry> { entry }, "/input", DeploymentMode.Deploy,
+            new List<ManifestEntry> { entry }, "/input", SerializerMode.Replace,
             ConflictStrategy.SourceWins, log: null, isDryRun: false, providerFilter: null,
             escalator: null, excludeFieldsByItemType: null, excludeXmlElementsByType: null);
 
@@ -676,7 +676,7 @@ public class SerializerOrchestratorTests
         var logs = new List<string>();
         var orchestrator = new SerializerOrchestrator(registry, cacheInvalidator: cacheInvalidator);
         var result = orchestrator.DeserializeEntries(
-            new List<ManifestEntry> { entry1, entry2 }, "/input", DeploymentMode.Deploy,
+            new List<ManifestEntry> { entry1, entry2 }, "/input", SerializerMode.Replace,
             ConflictStrategy.SourceWins, log: msg => logs.Add(msg), isDryRun: false,
             providerFilter: null, escalator: null,
             excludeFieldsByItemType: null, excludeXmlElementsByType: null);
@@ -708,7 +708,7 @@ public class SerializerOrchestratorTests
         var result = _orchestrator.DeserializeEntries(
             entries,
             modeRoot: "/tmp/modeRoot",
-            mode: DeploymentMode.Deploy,
+            mode: SerializerMode.Replace,
             strategy: ConflictStrategy.SourceWins,
             log: null,
             isDryRun: false,
@@ -736,7 +736,7 @@ public class SerializerOrchestratorTests
         var result = _orchestrator.DeserializeEntries(
             entries,
             modeRoot: "/tmp/modeRoot",
-            mode: DeploymentMode.Deploy,
+            mode: SerializerMode.Replace,
             strategy: ConflictStrategy.SourceWins,
             log: null,
             isDryRun: false,
@@ -826,7 +826,7 @@ public class SerializerOrchestratorTests
 
         // Run with ABC ordering.
         var unshuffled = new List<ManifestEntry> { entryA, entryB, entryC };
-        orchestrator.DeserializeEntries(unshuffled, "/tmp", DeploymentMode.Deploy, ConflictStrategy.SourceWins,
+        orchestrator.DeserializeEntries(unshuffled, "/tmp", SerializerMode.Replace, ConflictStrategy.SourceWins,
             log: null, isDryRun: false, providerFilter: null, escalator: null,
             excludeFieldsByItemType: null, excludeXmlElementsByType: null);
         var orderUnshuffled = dispatchedOrder.ToList();
@@ -834,7 +834,7 @@ public class SerializerOrchestratorTests
 
         // Run with shuffled ordering — FK reorder must produce the same dispatch sequence.
         var shuffled = new List<ManifestEntry> { entryC, entryA, entryB };
-        orchestrator.DeserializeEntries(shuffled, "/tmp", DeploymentMode.Deploy, ConflictStrategy.SourceWins,
+        orchestrator.DeserializeEntries(shuffled, "/tmp", SerializerMode.Replace, ConflictStrategy.SourceWins,
             log: null, isDryRun: false, providerFilter: null, escalator: null,
             excludeFieldsByItemType: null, excludeXmlElementsByType: null);
         var orderShuffled = dispatchedOrder.ToList();

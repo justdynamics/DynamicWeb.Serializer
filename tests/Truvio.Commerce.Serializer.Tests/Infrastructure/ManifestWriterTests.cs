@@ -84,15 +84,15 @@ public class ManifestWriterTests : IDisposable
             BuildSqlTableEntry()
         };
 
-        _writer.Write(_tempDir, "deploy", entries);
+        _writer.Write(_tempDir, "replace", entries);
 
-        var manifestPath = Path.Combine(_tempDir, "deploy-manifest.json");
+        var manifestPath = Path.Combine(_tempDir, "replace-manifest.json");
         Assert.True(File.Exists(manifestPath));
 
         using var doc = JsonDocument.Parse(File.ReadAllText(manifestPath));
         var root = doc.RootElement;
         Assert.Equal(2, root.GetProperty("schemaVersion").GetInt32());
-        Assert.Equal("deploy", root.GetProperty("mode").GetString());
+        Assert.Equal("replace", root.GetProperty("mode").GetString());
         Assert.True(root.GetProperty("complete").GetBoolean());
         Assert.Equal(2, root.GetProperty("entries").GetArrayLength());
     }
@@ -109,18 +109,18 @@ public class ManifestWriterTests : IDisposable
         // PLUS a truncated {mode}-manifest.json.tmp next to it. Read opens only the final path
         // and is unaffected by the .tmp.
         var entries = new ManifestEntry[] { BuildContentEntry() };
-        _writer.Write(_tempDir, "deploy", entries);
+        _writer.Write(_tempDir, "replace", entries);
 
-        var tmpPath = Path.Combine(_tempDir, "deploy-manifest.json.tmp");
+        var tmpPath = Path.Combine(_tempDir, "replace-manifest.json.tmp");
         File.WriteAllText(tmpPath, "{ TRUNCATED-PARTIAL-JSON-FROM-PRIOR-CRASH");
 
         // act
-        var manifest = _writer.Read(_tempDir, "deploy");
+        var manifest = _writer.Read(_tempDir, "replace");
 
         // assert
         Assert.NotNull(manifest);
         Assert.Equal(2, manifest!.SchemaVersion);
-        Assert.Equal("deploy", manifest.Mode);
+        Assert.Equal("replace", manifest.Mode);
         Assert.True(manifest.Complete);
         Assert.Single(manifest.Entries);
         Assert.True(File.Exists(tmpPath), ".tmp byproduct should still be on disk after Read");
@@ -140,7 +140,7 @@ public class ManifestWriterTests : IDisposable
             serviceCaches: new[] { "Dynamicweb.Ecommerce.Services.OrderFlowService" },
             schemaSync: "EcomGroupFields");
 
-        _writer.Write(_tempDir, "deploy", new ManifestEntry[] { content, sql },
+        _writer.Write(_tempDir, "replace", new ManifestEntry[] { content, sql },
             excludeFieldsByItemType: new Dictionary<string, List<string>>
             {
                 ["Swift_Page"] = new() { "Title", "Description" }
@@ -150,10 +150,10 @@ public class ManifestWriterTests : IDisposable
                 ["Swift_Section"] = new() { "ColumnGap" }
             });
 
-        var manifest = _writer.Read(_tempDir, "deploy");
+        var manifest = _writer.Read(_tempDir, "replace");
         Assert.NotNull(manifest);
         Assert.Equal(2, manifest!.SchemaVersion);
-        Assert.Equal("deploy", manifest.Mode);
+        Assert.Equal("replace", manifest.Mode);
         Assert.True(manifest.Complete);
         Assert.Equal(2, manifest.Entries.Count);
 
@@ -198,10 +198,10 @@ public class ManifestWriterTests : IDisposable
     [Fact]
     public void Read_SchemaVersion1_ThrowsInvalidOperationExceptionNamingMismatch()
     {
-        var manifestPath = Path.Combine(_tempDir, "deploy-manifest.json");
-        File.WriteAllText(manifestPath, "{\"schemaVersion\":1,\"mode\":\"deploy\",\"complete\":true,\"entries\":[]}");
+        var manifestPath = Path.Combine(_tempDir, "replace-manifest.json");
+        File.WriteAllText(manifestPath, "{\"schemaVersion\":1,\"mode\":\"replace\",\"complete\":true,\"entries\":[]}");
 
-        var ex = Assert.Throws<InvalidOperationException>(() => _writer.Read(_tempDir, "deploy"));
+        var ex = Assert.Throws<InvalidOperationException>(() => _writer.Read(_tempDir, "replace"));
         Assert.Contains("schemaVersion=1", ex.Message);
         Assert.Contains("expected 2", ex.Message);
     }
@@ -211,10 +211,10 @@ public class ManifestWriterTests : IDisposable
     [Fact]
     public void Read_MissingSchemaVersion_ThrowsInvalidOperationException()
     {
-        var manifestPath = Path.Combine(_tempDir, "deploy-manifest.json");
-        File.WriteAllText(manifestPath, "{\"mode\":\"deploy\",\"complete\":true,\"entries\":[]}");
+        var manifestPath = Path.Combine(_tempDir, "replace-manifest.json");
+        File.WriteAllText(manifestPath, "{\"mode\":\"replace\",\"complete\":true,\"entries\":[]}");
 
-        var ex = Assert.Throws<InvalidOperationException>(() => _writer.Read(_tempDir, "deploy"));
+        var ex = Assert.Throws<InvalidOperationException>(() => _writer.Read(_tempDir, "replace"));
         Assert.Contains("missing", ex.Message, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("schemaVersion", ex.Message);
     }
@@ -227,16 +227,16 @@ public class ManifestWriterTests : IDisposable
         // hand-write a syntactically valid v2 manifest with complete=false. Required envelope
         // fields are present so the strict-mode typed deserialize succeeds; the post-deserialize
         // sentinel check is what fires.
-        var manifestPath = Path.Combine(_tempDir, "deploy-manifest.json");
+        var manifestPath = Path.Combine(_tempDir, "replace-manifest.json");
         File.WriteAllText(manifestPath,
-            "{\"schemaVersion\":2,\"mode\":\"deploy\"," +
+            "{\"schemaVersion\":2,\"mode\":\"replace\"," +
             "\"writtenAtUtc\":\"2026-05-08T00:00:00Z\"," +
             "\"complete\":false," +
             "\"excludeFieldsByItemType\":{}," +
             "\"excludeXmlElementsByType\":{}," +
             "\"entries\":[]}");
 
-        var ex = Assert.Throws<JsonException>(() => _writer.Read(_tempDir, "deploy"));
+        var ex = Assert.Throws<JsonException>(() => _writer.Read(_tempDir, "replace"));
         Assert.Contains("Complete", ex.Message);
         Assert.Contains("torn", ex.Message);
     }
@@ -249,9 +249,9 @@ public class ManifestWriterTests : IDisposable
         // Strict-mode (UnmappedMemberHandling.Disallow) on the options bag AND the type catches
         // unknown top-level properties at typed-deserialize time with a JsonException naming the
         // offender.
-        var manifestPath = Path.Combine(_tempDir, "deploy-manifest.json");
+        var manifestPath = Path.Combine(_tempDir, "replace-manifest.json");
         File.WriteAllText(manifestPath,
-            "{\"schemaVersion\":2,\"mode\":\"deploy\"," +
+            "{\"schemaVersion\":2,\"mode\":\"replace\"," +
             "\"writtenAtUtc\":\"2026-05-08T00:00:00Z\"," +
             "\"complete\":true," +
             "\"excludeFieldsByItemType\":{}," +
@@ -259,7 +259,7 @@ public class ManifestWriterTests : IDisposable
             "\"entries\":[]," +
             "\"bogus\":1}");
 
-        var ex = Assert.Throws<JsonException>(() => _writer.Read(_tempDir, "deploy"));
+        var ex = Assert.Throws<JsonException>(() => _writer.Read(_tempDir, "replace"));
         Assert.Contains("bogus", ex.Message, StringComparison.OrdinalIgnoreCase);
     }
 
@@ -278,11 +278,11 @@ public class ManifestWriterTests : IDisposable
             ["EcomCart"] = new() { "FormFields" }
         };
 
-        _writer.Write(_tempDir, "deploy", Array.Empty<ManifestEntry>(),
+        _writer.Write(_tempDir, "replace", Array.Empty<ManifestEntry>(),
             excludeFieldsByItemType: excludeFields,
             excludeXmlElementsByType: excludeXml);
 
-        var json = File.ReadAllText(Path.Combine(_tempDir, "deploy-manifest.json"));
+        var json = File.ReadAllText(Path.Combine(_tempDir, "replace-manifest.json"));
         using var doc = JsonDocument.Parse(json);
 
         var fieldsMap = doc.RootElement.GetProperty("excludeFieldsByItemType");
@@ -313,9 +313,9 @@ public class ManifestWriterTests : IDisposable
         var content = BuildContentEntry(files: new[] { "swift/nested/page.yml", "swift/index.yml" });
         var sql = BuildSqlTableEntry(files: new[] { "sql/EcomOrderFlow/standard.yml" });
 
-        _writer.Write(_tempDir, "deploy", new ManifestEntry[] { content, sql });
+        _writer.Write(_tempDir, "replace", new ManifestEntry[] { content, sql });
 
-        var json = File.ReadAllText(Path.Combine(_tempDir, "deploy-manifest.json"));
+        var json = File.ReadAllText(Path.Combine(_tempDir, "replace-manifest.json"));
         Assert.Contains("swift/nested/page.yml", json);
         Assert.Contains("swift/index.yml", json);
         Assert.Contains("sql/EcomOrderFlow/standard.yml", json);

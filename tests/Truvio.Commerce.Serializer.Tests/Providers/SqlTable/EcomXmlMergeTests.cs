@@ -12,7 +12,7 @@ namespace Truvio.Commerce.Serializer.Tests.Providers.SqlTable;
 /// <summary>
 /// Phase 39 D-25 acceptance coverage at the integration layer: prove the
 /// <see cref="SqlTableProvider"/> merge branch + <see cref="XmlMergeHelper"/>
-/// together deliver the CONTEXT.md scope-expansion requirement — Seed fills
+/// together deliver the CONTEXT.md scope-expansion requirement — Merge fills
 /// <c>Mail1SenderEmail</c> inside <c>EcomPayments.PaymentGatewayParameters</c>
 /// and <c>EcomShippings.ShippingServiceParameters</c> XML without overwriting
 /// already-set XML elements, and without stripping target-only elements.
@@ -51,7 +51,7 @@ public class EcomXmlMergeTests
         "<Parameter name=\"Language\">en</Parameter>" +
         "</Settings>";
 
-    private const string PaymentSeedXmlWithMail =
+    private const string PaymentMergeXmlWithMail =
         "<Settings>" +
         "<Parameter name=\"Mail1SenderEmail\">no-reply@swift.com</Parameter>" +
         "<Parameter name=\"Mail1SenderName\">Swift Demo</Parameter>" +
@@ -82,7 +82,7 @@ public class EcomXmlMergeTests
         "<Parameter name=\"CustomRate\">12.50</Parameter>" +
         "</Settings>";
 
-    private const string ShippingSeedXmlWithMail =
+    private const string ShippingMergeXmlWithMail =
         "<Settings>" +
         "<Parameter name=\"Mail1SenderEmail\">no-reply@swift.com</Parameter>" +
         "<Parameter name=\"Mail1SenderName\">Swift Demo</Parameter>" +
@@ -92,9 +92,9 @@ public class EcomXmlMergeTests
     // ====== EcomPayments scenarios ======
 
     [Fact]
-    public void EcomPayments_TargetMissingMail1SenderEmail_Seed_FillsIt()
+    public void EcomPayments_TargetMissingMail1SenderEmail_Merge_FillsIt()
     {
-        var yamlRow = PaymentRow("PAY-1", PaymentSeedXmlWithMail);
+        var yamlRow = PaymentRow("PAY-1", PaymentMergeXmlWithMail);
         var existingRow = PaymentRow("PAY-1", PaymentTargetXmlMissingMail);
 
         var (provider, _, writer, inputRoot) = CreatePaymentsProvider(
@@ -125,9 +125,9 @@ public class EcomXmlMergeTests
     }
 
     [Fact]
-    public void EcomPayments_TargetEmptyMail1SenderEmail_Seed_FillsIt()
+    public void EcomPayments_TargetEmptyMail1SenderEmail_Merge_FillsIt()
     {
-        var yamlRow = PaymentRow("PAY-1", PaymentSeedXmlWithMail);
+        var yamlRow = PaymentRow("PAY-1", PaymentMergeXmlWithMail);
         var existingRow = PaymentRow("PAY-1", PaymentTargetXmlEmptyMail);
 
         var (provider, _, writer, inputRoot) = CreatePaymentsProvider(
@@ -153,9 +153,9 @@ public class EcomXmlMergeTests
     }
 
     [Fact]
-    public void EcomPayments_TargetCustomerEmail_Seed_PreservesIt()
+    public void EcomPayments_TargetCustomerEmail_Merge_PreservesIt()
     {
-        var yamlRow = PaymentRow("PAY-1", PaymentSeedXmlWithMail);
+        var yamlRow = PaymentRow("PAY-1", PaymentMergeXmlWithMail);
         var existingRow = PaymentRow("PAY-1", PaymentTargetXmlCustomerMail);
 
         var (provider, _, writer, inputRoot) = CreatePaymentsProvider(
@@ -171,10 +171,10 @@ public class EcomXmlMergeTests
             strategy: ConflictStrategy.DestinationWins);
 
         // Target's Mail1SenderEmail is set -> merge preserves it. But Mail1SenderName is
-        // missing on target -> that element fills from seed. Either:
+        // missing on target -> that element fills from merge. Either:
         //  - (a) Both already set -> no write
         //  - (b) Name fills only -> single UpdateColumnSubset call, but the merged XML
-        //    still contains the customer's Mail1SenderEmail (not the seed's).
+        //    still contains the customer's Mail1SenderEmail (not the merge's).
         writer.Verify(w => w.UpdateColumnSubset(
                 "EcomPayments",
                 It.IsAny<IReadOnlyList<string>>(),
@@ -187,9 +187,9 @@ public class EcomXmlMergeTests
     }
 
     [Fact]
-    public void EcomPayments_TargetExtraCustomParameter_Preserved_AfterSeed()
+    public void EcomPayments_TargetExtraCustomParameter_Preserved_AfterMerge()
     {
-        var yamlRow = PaymentRow("PAY-1", PaymentSeedXmlWithMail);
+        var yamlRow = PaymentRow("PAY-1", PaymentMergeXmlWithMail);
         var existingRow = PaymentRow("PAY-1", PaymentTargetXmlWithCustomParam);
 
         var (provider, _, writer, inputRoot) = CreatePaymentsProvider(
@@ -211,7 +211,7 @@ public class EcomXmlMergeTests
                     // Target-only element preserved (D-24)
                     ((string)d["PaymentGatewayParameters"]!).Contains("CustomLocal")
                     && ((string)d["PaymentGatewayParameters"]!).Contains("target-custom")
-                    // Seed-added element present
+                    // Merge-added element present
                     && ((string)d["PaymentGatewayParameters"]!).Contains("Mail1SenderEmail")
                     && ((string)d["PaymentGatewayParameters"]!).Contains("no-reply@swift.com")),
                 It.IsAny<IEnumerable<string>>(),
@@ -222,9 +222,9 @@ public class EcomXmlMergeTests
     // ====== EcomShippings scenarios ======
 
     [Fact]
-    public void EcomShippings_TargetMissingMail1SenderEmail_Seed_FillsIt()
+    public void EcomShippings_TargetMissingMail1SenderEmail_Merge_FillsIt()
     {
-        var yamlRow = ShippingRow("SHIP-1", ShippingSeedXmlWithMail);
+        var yamlRow = ShippingRow("SHIP-1", ShippingMergeXmlWithMail);
         var existingRow = ShippingRow("SHIP-1", ShippingTargetXmlMissingMail);
 
         var (provider, _, writer, inputRoot) = CreateShippingsProvider(
@@ -253,9 +253,9 @@ public class EcomXmlMergeTests
     }
 
     [Fact]
-    public void EcomShippings_TargetEmptyMail1SenderName_Seed_FillsIt()
+    public void EcomShippings_TargetEmptyMail1SenderName_Merge_FillsIt()
     {
-        var yamlRow = ShippingRow("SHIP-1", ShippingSeedXmlWithMail);
+        var yamlRow = ShippingRow("SHIP-1", ShippingMergeXmlWithMail);
         var existingRow = ShippingRow("SHIP-1", ShippingTargetXmlEmptyName);
 
         var (provider, _, writer, inputRoot) = CreateShippingsProvider(
@@ -283,7 +283,7 @@ public class EcomXmlMergeTests
     [Fact]
     public void EcomShippings_TargetCustomerTweaks_Preserved()
     {
-        var yamlRow = ShippingRow("SHIP-1", ShippingSeedXmlWithMail);
+        var yamlRow = ShippingRow("SHIP-1", ShippingMergeXmlWithMail);
         var existingRow = ShippingRow("SHIP-1", ShippingTargetXmlCustomerTweaks);
 
         var (provider, _, writer, inputRoot) = CreateShippingsProvider(
@@ -292,7 +292,7 @@ public class EcomXmlMergeTests
         provider.Deserialize(ShippingEntry, inputRoot,
             strategy: ConflictStrategy.DestinationWins);
 
-        // Every seed element has a target counterpart already set -> no write fires.
+        // Every merge element has a target counterpart already set -> no write fires.
         writer.Verify(w => w.UpdateColumnSubset(
                 It.IsAny<string>(), It.IsAny<IReadOnlyList<string>>(),
                 It.IsAny<Dictionary<string, object?>>(), It.IsAny<IEnumerable<string>>(),
@@ -303,7 +303,7 @@ public class EcomXmlMergeTests
     [Fact]
     public void EcomShippings_TargetOnlyParameter_Preserved()
     {
-        var yamlRow = ShippingRow("SHIP-1", ShippingSeedXmlWithMail);
+        var yamlRow = ShippingRow("SHIP-1", ShippingMergeXmlWithMail);
         var existingRow = ShippingRow("SHIP-1", ShippingTargetXmlOnlyCustom);
 
         var (provider, _, writer, inputRoot) = CreateShippingsProvider(
@@ -325,7 +325,7 @@ public class EcomXmlMergeTests
                     // D-24 target-only CustomRate element retained.
                     ((string)d["ShippingServiceParameters"]!).Contains("CustomRate")
                     && ((string)d["ShippingServiceParameters"]!).Contains("12.50")
-                    // Seed Mail1SenderEmail added.
+                    // Merge Mail1SenderEmail added.
                     && ((string)d["ShippingServiceParameters"]!).Contains("Mail1SenderEmail")),
                 It.IsAny<IEnumerable<string>>(),
                 false, It.IsAny<Action<string>?>()),
@@ -339,7 +339,7 @@ public class EcomXmlMergeTests
     [InlineData("EcomShippings", "ShippingServiceParameters")]
     public void Both_Tables_SameBehavior_NoDivergence(string tableName, string xmlColumn)
     {
-        var seedXml =
+        var mergeXml =
             "<Settings>" +
             "<Parameter name=\"Mail1SenderEmail\">no-reply@x.com</Parameter>" +
             "</Settings>";
@@ -369,7 +369,7 @@ public class EcomXmlMergeTests
         var yamlRow = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase)
         {
             ["Id"] = "1",
-            [xmlColumn] = seedXml
+            [xmlColumn] = mergeXml
         };
         var existingRow = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase)
         {
@@ -401,20 +401,20 @@ public class EcomXmlMergeTests
     }
 
     [Fact]
-    public void Integration_Rerun_Seed_Idempotent_NoWrites()
+    public void Integration_Rerun_Merge_Idempotent_NoWrites()
     {
-        // After a successful first Seed run, the target XML already contains the seeded
-        // elements. A second Seed run sees target == seed (fast-path or zero-fills) — no
+        // After a successful first Merge run, the target XML already contains the merged
+        // elements. A second Merge run sees target == merge (fast-path or zero-fills) — no
         // UpdateColumnSubset / ExecuteNonQuery invocation.
-        var seedXml =
+        var mergeXml =
             "<Settings>" +
             "<Parameter name=\"Mail1SenderEmail\">no-reply@swift.com</Parameter>" +
             "<Parameter name=\"Mail1SenderName\">Swift Demo</Parameter>" +
             "<Parameter name=\"Language\">en</Parameter>" +
             "</Settings>";
 
-        var yamlRow = PaymentRow("PAY-1", seedXml);
-        var existingRow = PaymentRow("PAY-1", seedXml); // already seeded
+        var yamlRow = PaymentRow("PAY-1", mergeXml);
+        var existingRow = PaymentRow("PAY-1", mergeXml); // already merged
 
         var (provider, _, writer, inputRoot) = CreatePaymentsProvider(
             new[] { yamlRow }, new[] { existingRow });
@@ -514,7 +514,7 @@ public class EcomXmlMergeTests
     }
 
     /// <summary>
-    /// Harness copied from <see cref="SqlTableProviderSeedMergeTests.CreateProviderWithFiles"/>
+    /// Harness copied from <see cref="SqlTableProviderMergeMergeTests.CreateProviderWithFiles"/>
     /// to keep this test file self-contained. Same semantics: stubbed metadata reader, mocked
     /// IDataReader for existing rows, schema cache loader returning <paramref name="columnTypes"/>
     /// so the merge branch's <c>IsXmlColumn</c> + <c>MergePredicate.IsUnsetForMergeBySqlType</c>

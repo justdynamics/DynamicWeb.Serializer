@@ -95,10 +95,10 @@ public class ManifestRoundTripTests : IDisposable
             : null;
 
         // 4. Atomic-write the manifest.
-        _writer.Write(_tempDir, "deploy", new[] { entry }, excludeFieldsByItemType, excludeXmlElementsByType);
+        _writer.Write(_tempDir, "replace", new[] { entry }, excludeFieldsByItemType, excludeXmlElementsByType);
 
         // 5. Read it back.
-        var manifest = _writer.Read(_tempDir, "deploy");
+        var manifest = _writer.Read(_tempDir, "replace");
         Assert.NotNull(manifest);
         Assert.Single(manifest!.Entries);
         var roundTrippedEntry = manifest.Entries[0];

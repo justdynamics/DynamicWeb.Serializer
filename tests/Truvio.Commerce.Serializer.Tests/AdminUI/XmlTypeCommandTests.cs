@@ -27,7 +27,7 @@ public class XmlTypeCommandTests : IDisposable
             Directory.Delete(_tempDir, recursive: true);
     }
 
-    private void CreateSeedConfig(Dictionary<string, List<string>>? excludeXmlElementsByType = null)
+    private void CreateMergeConfig(Dictionary<string, List<string>>? excludeXmlElementsByType = null)
     {
         // Phase 40 D-04: ExcludeXmlElementsByType is a top-level dict on SerializerConfiguration.
         var config = new SerializerConfiguration
@@ -35,7 +35,7 @@ public class XmlTypeCommandTests : IDisposable
             OutputDirectory = @"\System\Serializer",
             Predicates = new List<ProviderPredicateDefinition>
             {
-                new() { Name = "Default", Mode = DeploymentMode.Deploy, ProviderType = "Content", Path = "/", AreaId = 1, PageId = 10 }
+                new() { Name = "Default", Mode = SerializerMode.Replace, ProviderType = "Content", Path = "/", AreaId = 1, PageId = 10 }
             },
             ExcludeXmlElementsByType = excludeXmlElementsByType ?? new()
         };
@@ -51,8 +51,8 @@ public class XmlTypeCommandTests : IDisposable
     [Fact]
     public void Scan_AddsNewTypes_PreservesExisting()
     {
-        // Seed config with TypeA having existing exclusions
-        CreateSeedConfig(new Dictionary<string, List<string>>
+        // Merge config with TypeA having existing exclusions
+        CreateMergeConfig(new Dictionary<string, List<string>>
         {
             ["TypeA"] = new List<string> { "el1" }
         });
@@ -85,7 +85,7 @@ public class XmlTypeCommandTests : IDisposable
     [Fact]
     public void Scan_EmptyConfig_AddsAllDiscoveredTypes()
     {
-        CreateSeedConfig();
+        CreateMergeConfig();
 
         var executor = new FakeSqlExecutor();
         executor.AddMapping("PageUrlDataProvider",
@@ -112,7 +112,7 @@ public class XmlTypeCommandTests : IDisposable
     [Fact]
     public void Scan_NoNewTypes_ConfigUnchanged()
     {
-        CreateSeedConfig(new Dictionary<string, List<string>>
+        CreateMergeConfig(new Dictionary<string, List<string>>
         {
             ["TypeA"] = new List<string> { "el1", "el2" }
         });
@@ -170,7 +170,7 @@ public class XmlTypeCommandTests : IDisposable
     [Fact]
     public void Save_ValidModel_PersistsExclusions()
     {
-        CreateSeedConfig(new Dictionary<string, List<string>>
+        CreateMergeConfig(new Dictionary<string, List<string>>
         {
             ["TypeA"] = new List<string>()
         });
@@ -195,7 +195,7 @@ public class XmlTypeCommandTests : IDisposable
     [Fact]
     public void Save_UpdateExisting_ReplacesExclusions()
     {
-        CreateSeedConfig(new Dictionary<string, List<string>>
+        CreateMergeConfig(new Dictionary<string, List<string>>
         {
             ["TypeA"] = new List<string> { "el1" }
         });
@@ -220,7 +220,7 @@ public class XmlTypeCommandTests : IDisposable
     [Fact]
     public void Save_EmptyExclusions_PersistsEmptyList()
     {
-        CreateSeedConfig(new Dictionary<string, List<string>>
+        CreateMergeConfig(new Dictionary<string, List<string>>
         {
             ["TypeA"] = new List<string> { "el1" }
         });

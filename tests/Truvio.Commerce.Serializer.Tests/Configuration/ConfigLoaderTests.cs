@@ -8,8 +8,8 @@ namespace Truvio.Commerce.Serializer.Tests.Configuration;
 /// <summary>
 /// Phase 40 (D-01..D-04) flat-shape ConfigLoader tests. Every test fixture uses the new
 /// flat shape — single top-level <c>predicates</c> array with per-entry <c>mode</c>. Tests
-/// covering the legacy section shape behaviors (Deploy/Seed sections, legacy migration,
-/// section-level rejection) live in <see cref="DeployModeConfigLoaderTests"/>.
+/// covering the legacy section shape behaviors (Replace/Merge sections, legacy migration,
+/// section-level rejection) live in <see cref="ReplaceModeConfigLoaderTests"/>.
 /// </summary>
 public class ConfigLoaderTests : ConfigLoaderValidatorFixtureBase
 {
@@ -49,7 +49,7 @@ public class ConfigLoaderTests : ConfigLoaderValidatorFixtureBase
               "predicates": [
                 {
                   "name": "Customer Center",
-                  "mode": "Deploy",
+                  "mode": "Replace",
                   "path": "/Customer Center",
                   "areaId": 1,
                   "excludes": ["/Customer Center/Archive"]
@@ -64,7 +64,7 @@ public class ConfigLoaderTests : ConfigLoaderValidatorFixtureBase
         Assert.Equal("/serialization", config.OutputDirectory);
         Assert.Single(config.Predicates);
         Assert.Equal("Customer Center", config.Predicates[0].Name);
-        Assert.Equal(DeploymentMode.Deploy, config.Predicates[0].Mode);
+        Assert.Equal(SerializerMode.Replace, config.Predicates[0].Mode);
         Assert.Equal("/Customer Center", config.Predicates[0].Path);
         Assert.Equal(1, config.Predicates[0].AreaId);
         Assert.Single(config.Predicates[0].Excludes);
@@ -80,14 +80,14 @@ public class ConfigLoaderTests : ConfigLoaderValidatorFixtureBase
               "predicates": [
                 {
                   "name": "Site",
-                  "mode": "Deploy",
+                  "mode": "Replace",
                   "path": "/",
                   "areaId": 3,
                   "includeLanguageLayers": true
                 },
                 {
                   "name": "Posts",
-                  "mode": "Seed",
+                  "mode": "Merge",
                   "path": "/Posts",
                   "areaId": 3
                 }
@@ -111,7 +111,7 @@ public class ConfigLoaderTests : ConfigLoaderValidatorFixtureBase
               "predicates": [
                 {
                   "name": "Customer Center",
-                  "mode": "Deploy",
+                  "mode": "Replace",
                   "path": "/Customer Center",
                   "areaId": 1
                 }
@@ -152,7 +152,7 @@ public class ConfigLoaderTests : ConfigLoaderValidatorFixtureBase
               "predicates": [
                 {
                   "name": "Customer Center",
-                  "mode": "Deploy",
+                  "mode": "Replace",
                   "path": "/Customer Center",
                   "areaId": 1
                 }
@@ -208,7 +208,7 @@ public class ConfigLoaderTests : ConfigLoaderValidatorFixtureBase
               "predicates": [
                 {
                   "name": "Customer Center",
-                  "mode": "Deploy",
+                  "mode": "Replace",
                   "areaId": 1
                 }
               ]
@@ -230,7 +230,7 @@ public class ConfigLoaderTests : ConfigLoaderValidatorFixtureBase
               "predicates": [
                 {
                   "name": "Customer Center",
-                  "mode": "Deploy",
+                  "mode": "Replace",
                   "path": "/Customer Center"
                 }
               ]
@@ -251,7 +251,7 @@ public class ConfigLoaderTests : ConfigLoaderValidatorFixtureBase
               "outputDirectory": "/serialization",
               "predicates": [
                 {
-                  "mode": "Deploy",
+                  "mode": "Replace",
                   "path": "/Customer Center",
                   "areaId": 1
                 }
@@ -279,7 +279,7 @@ public class ConfigLoaderTests : ConfigLoaderValidatorFixtureBase
               "predicates": [
                 {
                   "name": "Test",
-                  "mode": "Deploy",
+                  "mode": "Replace",
                   "path": "/Test",
                   "areaId": 1
                 }
@@ -317,7 +317,7 @@ public class ConfigLoaderTests : ConfigLoaderValidatorFixtureBase
               "predicates": [
                 {
                   "name": "Test",
-                  "mode": "Deploy",
+                  "mode": "Replace",
                   "path": "/Test",
                   "areaId": 1
                 }
@@ -356,7 +356,7 @@ public class ConfigLoaderTests : ConfigLoaderValidatorFixtureBase
               "predicates": [
                 {
                   "name": "Customer Center",
-                  "mode": "Deploy",
+                  "mode": "Replace",
                   "path": "/Customer Center",
                   "areaId": 1
                 }
@@ -383,7 +383,7 @@ public class ConfigLoaderTests : ConfigLoaderValidatorFixtureBase
               "predicates": [
                 {
                   "name": "Order Flows",
-                  "mode": "Deploy",
+                  "mode": "Replace",
                   "providerType": "SqlTable",
                   "table": "EcomOrderFlow",
                   "nameColumn": "OrderFlowName",
@@ -412,13 +412,13 @@ public class ConfigLoaderTests : ConfigLoaderValidatorFixtureBase
               "predicates": [
                 {
                   "name": "Customer Center",
-                  "mode": "Deploy",
+                  "mode": "Replace",
                   "path": "/Customer Center",
                   "areaId": 1
                 },
                 {
                   "name": "Order Flows",
-                  "mode": "Deploy",
+                  "mode": "Replace",
                   "providerType": "SqlTable",
                   "table": "EcomOrderFlow",
                   "nameColumn": "OrderFlowName"
@@ -444,7 +444,7 @@ public class ConfigLoaderTests : ConfigLoaderValidatorFixtureBase
               "predicates": [
                 {
                   "name": "Order Flows",
-                  "mode": "Deploy",
+                  "mode": "Replace",
                   "providerType": "SqlTable",
                   "table": "EcomOrderFlow",
                   "nameColumn": "OrderFlowName",
@@ -471,7 +471,7 @@ public class ConfigLoaderTests : ConfigLoaderValidatorFixtureBase
               "predicates": [
                 {
                   "name": "Order Flows",
-                  "mode": "Deploy",
+                  "mode": "Replace",
                   "providerType": "SqlTable",
                   "table": "EcomOrderFlow",
                   "nameColumn": "OrderFlowName"
@@ -496,7 +496,7 @@ public class ConfigLoaderTests : ConfigLoaderValidatorFixtureBase
               "predicates": [
                 {
                   "name": "Order Flows",
-                  "mode": "Deploy",
+                  "mode": "Replace",
                   "providerType": "SqlTable",
                   "table": "EcomOrderFlow",
                   "nameColumn": "OrderFlowName"
@@ -523,7 +523,7 @@ public class ConfigLoaderTests : ConfigLoaderValidatorFixtureBase
               "predicates": [
                 {
                   "name": "Shipping Methods",
-                  "mode": "Deploy",
+                  "mode": "Replace",
                   "providerType": "SqlTable",
                   "table": "EcomShippings",
                   "nameColumn": "ShippingName",
@@ -550,7 +550,7 @@ public class ConfigLoaderTests : ConfigLoaderValidatorFixtureBase
               "predicates": [
                 {
                   "name": "Order Flows",
-                  "mode": "Deploy",
+                  "mode": "Replace",
                   "providerType": "SqlTable",
                   "table": "EcomOrderFlow",
                   "nameColumn": "OrderFlowName"
@@ -579,7 +579,7 @@ public class ConfigLoaderTests : ConfigLoaderValidatorFixtureBase
               "predicates": [
                 {
                   "name": "Customer Center",
-                  "mode": "Deploy",
+                  "mode": "Replace",
                   "path": "/Customer Center",
                   "areaId": 1,
                   "excludeFields": ["NavigationTag", "AreaDomain"]
@@ -605,7 +605,7 @@ public class ConfigLoaderTests : ConfigLoaderValidatorFixtureBase
               "predicates": [
                 {
                   "name": "Customer Center",
-                  "mode": "Deploy",
+                  "mode": "Replace",
                   "path": "/Customer Center",
                   "areaId": 1,
                   "excludeXmlElements": ["sort", "pagesize"]
@@ -631,7 +631,7 @@ public class ConfigLoaderTests : ConfigLoaderValidatorFixtureBase
               "predicates": [
                 {
                   "name": "Customer Center",
-                  "mode": "Deploy",
+                  "mode": "Replace",
                   "path": "/Customer Center",
                   "areaId": 1
                 }
@@ -752,7 +752,7 @@ public class ConfigLoaderTests : ConfigLoaderValidatorFixtureBase
               "predicates": [
                 {
                   "name": "AccessUser-Roles",
-                  "mode": "Deploy",
+                  "mode": "Replace",
                   "providerType": "SqlTable",
                   "table": "AccessUser",
                   "where": "AccessUserType = 2 AND AccessUserUserName IN ('Admin','Editors')",
@@ -782,7 +782,7 @@ public class ConfigLoaderTests : ConfigLoaderValidatorFixtureBase
             {
               "outputDirectory": "/serialization",
               "predicates": [
-                { "name": "Bad", "mode": "Deploy", "providerType": "SqlTable", "table": "NotARealTable" }
+                { "name": "Bad", "mode": "Replace", "providerType": "SqlTable", "table": "NotARealTable" }
               ]
             }
             """;
@@ -806,7 +806,7 @@ public class ConfigLoaderTests : ConfigLoaderValidatorFixtureBase
               "outputDirectory": "/serialization",
               "predicates": [
                 {
-                  "name": "X", "mode": "Deploy", "providerType": "SqlTable", "table": "AccessUser",
+                  "name": "X", "mode": "Replace", "providerType": "SqlTable", "table": "AccessUser",
                   "excludeFields": ["NonExistentColumn"]
                 }
               ]
@@ -831,7 +831,7 @@ public class ConfigLoaderTests : ConfigLoaderValidatorFixtureBase
               "outputDirectory": "/serialization",
               "predicates": [
                 {
-                  "name": "X", "mode": "Deploy", "providerType": "SqlTable", "table": "AccessUser",
+                  "name": "X", "mode": "Replace", "providerType": "SqlTable", "table": "AccessUser",
                   "where": "NonExistentColumn = 1"
                 }
               ]
@@ -855,9 +855,9 @@ public class ConfigLoaderTests : ConfigLoaderValidatorFixtureBase
             {
               "outputDirectory": "/serialization",
               "predicates": [
-                { "name": "A", "mode": "Deploy", "providerType": "SqlTable", "table": "UnknownTableA" },
-                { "name": "B", "mode": "Deploy", "providerType": "SqlTable", "table": "UnknownTableB" },
-                { "name": "C", "mode": "Deploy", "providerType": "SqlTable", "table": "UnknownTableC" }
+                { "name": "A", "mode": "Replace", "providerType": "SqlTable", "table": "UnknownTableA" },
+                { "name": "B", "mode": "Replace", "providerType": "SqlTable", "table": "UnknownTableB" },
+                { "name": "C", "mode": "Replace", "providerType": "SqlTable", "table": "UnknownTableC" }
               ]
             }
             """;
@@ -882,7 +882,7 @@ public class ConfigLoaderTests : ConfigLoaderValidatorFixtureBase
               "outputDirectory": "/serialization",
               "predicates": [
                 {
-                  "name": "AU", "mode": "Deploy", "providerType": "SqlTable", "table": "AccessUser",
+                  "name": "AU", "mode": "Replace", "providerType": "SqlTable", "table": "AccessUser",
                   "where": "AccessUserType = 2 AND AccessUserUserName IN ('Admin','Editors')",
                   "excludeFields": ["AccessUserPassword"],
                   "includeFields": ["AccessUserHostingName"]
@@ -913,7 +913,7 @@ public class ConfigLoaderTests : ConfigLoaderValidatorFixtureBase
               "predicates": [
                 {
                   "name": "Plain",
-                  "mode": "Deploy",
+                  "mode": "Replace",
                   "providerType": "SqlTable",
                   "table": "AccessUser"
                 }
@@ -944,7 +944,7 @@ public class ConfigLoaderTests : ConfigLoaderValidatorFixtureBase
               "predicates": [
                 {
                   "name": "Payments",
-                  "mode": "Deploy",
+                  "mode": "Replace",
                   "providerType": "SqlTable",
                   "table": "EcomPayments",
                   "serviceCaches": ["Dynamicweb.Ecommerce.Orders.NotARealService"]
@@ -971,7 +971,7 @@ public class ConfigLoaderTests : ConfigLoaderValidatorFixtureBase
               "predicates": [
                 {
                   "name": "Payments",
-                  "mode": "Deploy",
+                  "mode": "Replace",
                   "providerType": "SqlTable",
                   "table": "EcomPayments",
                   "serviceCaches": [
@@ -991,9 +991,9 @@ public class ConfigLoaderTests : ConfigLoaderValidatorFixtureBase
 
     [Fact]
     [Trait("Category", "Phase37-04")]
-    public void Load_UnknownServiceCacheInBothDeployAndSeedPredicates_AggregatesErrors()
+    public void Load_UnknownServiceCacheInBothReplaceAndMergePredicates_AggregatesErrors()
     {
-        // Phase 40: scope is "predicates" (not "deploy.predicates" / "seed.predicates"). Each
+        // Phase 40: scope is "predicates" (not "replace.predicates" / "merge.predicates"). Each
         // predicate's mode is irrelevant to ServiceCaches validation — a single flat loop reports
         // both predicates with their names.
         var json = """
@@ -1001,18 +1001,18 @@ public class ConfigLoaderTests : ConfigLoaderValidatorFixtureBase
               "outputDirectory": "/serialization",
               "predicates": [
                 {
-                  "name": "BadDeploy",
-                  "mode": "Deploy",
+                  "name": "BadReplace",
+                  "mode": "Replace",
                   "providerType": "SqlTable",
                   "table": "EcomPayments",
-                  "serviceCaches": ["Nonexistent.DeployCache"]
+                  "serviceCaches": ["Nonexistent.ReplaceCache"]
                 },
                 {
-                  "name": "BadSeed",
-                  "mode": "Seed",
+                  "name": "BadMerge",
+                  "mode": "Merge",
                   "providerType": "SqlTable",
                   "table": "EcomShippings",
-                  "serviceCaches": ["Nonexistent.SeedCache"]
+                  "serviceCaches": ["Nonexistent.MergeCache"]
                 }
               ]
             }
@@ -1021,10 +1021,10 @@ public class ConfigLoaderTests : ConfigLoaderValidatorFixtureBase
 
         var ex = Assert.Throws<InvalidOperationException>(() => ConfigLoader.Load(path));
 
-        Assert.Contains("predicates 'BadDeploy'", ex.Message);
-        Assert.Contains("predicates 'BadSeed'", ex.Message);
-        Assert.Contains("Nonexistent.DeployCache", ex.Message);
-        Assert.Contains("Nonexistent.SeedCache", ex.Message);
+        Assert.Contains("predicates 'BadReplace'", ex.Message);
+        Assert.Contains("predicates 'BadMerge'", ex.Message);
+        Assert.Contains("Nonexistent.ReplaceCache", ex.Message);
+        Assert.Contains("Nonexistent.MergeCache", ex.Message);
     }
 
     [Fact]
@@ -1037,7 +1037,7 @@ public class ConfigLoaderTests : ConfigLoaderValidatorFixtureBase
               "predicates": [
                 {
                   "name": "Plain",
-                  "mode": "Deploy",
+                  "mode": "Replace",
                   "providerType": "SqlTable",
                   "table": "EcomOrderFlow",
                   "serviceCaches": []
@@ -1071,7 +1071,7 @@ public class ConfigLoaderTests : ConfigLoaderValidatorFixtureBase
                   "predicates": [
                     {
                       "name": "MaliciousSqlTable",
-                      "mode": "Deploy",
+                      "mode": "Replace",
                       "providerType": "SqlTable",
                       "table": "EcomOrders] WHERE 1=1; DROP TABLE Users; --"
                     }
@@ -1110,7 +1110,7 @@ public class ConfigLoaderTests : ConfigLoaderValidatorFixtureBase
                   "predicates": [
                     {
                       "name": "StructuralProof",
-                      "mode": "Deploy",
+                      "mode": "Replace",
                       "providerType": "SqlTable",
                       "table": "NotARealTable"
                     }

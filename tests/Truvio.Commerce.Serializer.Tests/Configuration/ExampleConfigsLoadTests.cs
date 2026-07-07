@@ -37,7 +37,7 @@ public class ExampleConfigsLoadTests
         var config = ConfigLoader.Load(path, identifierValidator: null);
 
         Assert.NotEmpty(config.Predicates);
-        Assert.All(config.Predicates, p => Assert.Equal(DeploymentMode.Deploy, p.Mode));
+        Assert.All(config.Predicates, p => Assert.Equal(SerializerMode.Replace, p.Mode));
     }
 
     [Fact]
@@ -49,7 +49,7 @@ public class ExampleConfigsLoadTests
         var config = ConfigLoader.Load(path, identifierValidator: null);
 
         Assert.NotEmpty(config.Predicates);
-        Assert.All(config.Predicates, p => Assert.Equal(DeploymentMode.Deploy, p.Mode));
+        Assert.All(config.Predicates, p => Assert.Equal(SerializerMode.Replace, p.Mode));
     }
 
     [Fact]
@@ -61,6 +61,22 @@ public class ExampleConfigsLoadTests
         var config = ConfigLoader.Load(path, identifierValidator: null);
 
         Assert.NotEmpty(config.Predicates);
-        Assert.All(config.Predicates, p => Assert.Equal(DeploymentMode.Deploy, p.Mode));
+        Assert.All(config.Predicates, p => Assert.Equal(SerializerMode.Replace, p.Mode));
+    }
+
+    [Fact]
+    public void Load_SwiftStarter_ResolvesReplaceAndMerge_WithReplaceMergeSubfolders()
+    {
+        var path = ResolveConfigPath("swift-starter.json");
+        Assert.True(File.Exists(path), $"Example file not found at: {path}");
+
+        var config = ConfigLoader.Load(path, identifierValidator: null);
+
+        Assert.Contains(config.Predicates, p => p.Mode == SerializerMode.Replace);
+        Assert.Contains(config.Predicates, p => p.Mode == SerializerMode.Merge);
+        Assert.Equal("replace", config.ReplaceOutputSubfolder);
+        Assert.Equal("merge", config.MergeOutputSubfolder);
+        Assert.Equal("replace", config.GetSubfolderForMode(SerializerMode.Replace));
+        Assert.Equal("merge", config.GetSubfolderForMode(SerializerMode.Merge));
     }
 }

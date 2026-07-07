@@ -7,7 +7,7 @@ namespace Truvio.Commerce.Serializer.Tests.Configuration;
 
 /// <summary>
 /// Phase 40 ConfigWriter tests. Writer emits a single flat <c>predicates</c> array
-/// where each entry carries its own <c>mode</c>. Legacy <c>deploy</c> / <c>seed</c>
+/// where each entry carries its own <c>mode</c>. Legacy <c>replace</c> / <c>merge</c>
 /// section keys are NEVER emitted.
 ///
 /// Inherits <see cref="ConfigLoaderValidatorFixtureBase"/> so the round-trip tests
@@ -39,7 +39,7 @@ public class ConfigWriterTests : ConfigLoaderValidatorFixtureBase
             new()
             {
                 Name = "Customer Center",
-                Mode = DeploymentMode.Deploy,
+                Mode = SerializerMode.Replace,
                 ProviderType = "Content",
                 Path = "/Customer Center",
                 AreaId = 1,
@@ -116,7 +116,7 @@ public class ConfigWriterTests : ConfigLoaderValidatorFixtureBase
                 new()
                 {
                     Name = "Test",
-                    Mode = DeploymentMode.Deploy,
+                    Mode = SerializerMode.Replace,
                     ProviderType = "Content",
                     Path = "/Test",
                     AreaId = 2,
@@ -135,19 +135,19 @@ public class ConfigWriterTests : ConfigLoaderValidatorFixtureBase
     }
 
     // -------------------------------------------------------------------------
-    // Phase 40: writer never emits the legacy deploy/seed section keys.
+    // Phase 40: writer never emits the legacy replace/merge section keys.
     // -------------------------------------------------------------------------
 
     [Fact]
-    public void Save_NeverEmits_LegacyDeploySectionKey()
+    public void Save_NeverEmits_LegacyReplaceSectionKey()
     {
         var config = new SerializerConfiguration
         {
             OutputDirectory = "/out",
             Predicates = new List<ProviderPredicateDefinition>
             {
-                new() { Name = "P1", Mode = DeploymentMode.Deploy, ProviderType = "Content", Path = "/", AreaId = 1 },
-                new() { Name = "P2", Mode = DeploymentMode.Seed, ProviderType = "SqlTable", Table = "EcomShops" }
+                new() { Name = "P1", Mode = SerializerMode.Replace, ProviderType = "Content", Path = "/", AreaId = 1 },
+                new() { Name = "P2", Mode = SerializerMode.Merge, ProviderType = "SqlTable", Table = "EcomShops" }
             }
         };
         var filePath = Path.Combine(_tempDir, "no_legacy.json");
@@ -155,20 +155,20 @@ public class ConfigWriterTests : ConfigLoaderValidatorFixtureBase
         ConfigWriter.Save(config, filePath);
         var json = File.ReadAllText(filePath);
 
-        Assert.DoesNotContain("\"deploy\":", json);
-        Assert.DoesNotContain("\"seed\":", json);
+        Assert.DoesNotContain("\"replace\":", json);
+        Assert.DoesNotContain("\"merge\":", json);
         Assert.Contains("\"predicates\":", json);
         Assert.Contains("\"mode\":", json);
     }
 
     [Fact]
-    public void Save_EmitsTopLevelDeployAndSeedOutputSubfolders()
+    public void Save_EmitsTopLevelReplaceAndMergeOutputSubfolders()
     {
         var config = new SerializerConfiguration
         {
             OutputDirectory = "/out",
-            DeployOutputSubfolder = "shipped",
-            SeedOutputSubfolder = "fixtures",
+            ReplaceOutputSubfolder = "shipped",
+            MergeOutputSubfolder = "fixtures",
             Predicates = new List<ProviderPredicateDefinition>()
         };
         var filePath = Path.Combine(_tempDir, "subfolders.json");
@@ -176,9 +176,9 @@ public class ConfigWriterTests : ConfigLoaderValidatorFixtureBase
         ConfigWriter.Save(config, filePath);
         var json = File.ReadAllText(filePath);
 
-        Assert.Contains("\"deployOutputSubfolder\":", json);
+        Assert.Contains("\"replaceOutputSubfolder\":", json);
         Assert.Contains("\"shipped\"", json);
-        Assert.Contains("\"seedOutputSubfolder\":", json);
+        Assert.Contains("\"mergeOutputSubfolder\":", json);
         Assert.Contains("\"fixtures\"", json);
     }
 
@@ -190,8 +190,8 @@ public class ConfigWriterTests : ConfigLoaderValidatorFixtureBase
             OutputDirectory = "/out",
             Predicates = new List<ProviderPredicateDefinition>
             {
-                new() { Name = "P1", Mode = DeploymentMode.Deploy, ProviderType = "Content", Path = "/", AreaId = 1 },
-                new() { Name = "P2", Mode = DeploymentMode.Seed, ProviderType = "Content", Path = "/", AreaId = 1 }
+                new() { Name = "P1", Mode = SerializerMode.Replace, ProviderType = "Content", Path = "/", AreaId = 1 },
+                new() { Name = "P2", Mode = SerializerMode.Merge, ProviderType = "Content", Path = "/", AreaId = 1 }
             }
         };
         var filePath = Path.Combine(_tempDir, "per_predicate_mode.json");
@@ -199,9 +199,9 @@ public class ConfigWriterTests : ConfigLoaderValidatorFixtureBase
         ConfigWriter.Save(config, filePath);
         var json = File.ReadAllText(filePath);
 
-        // Each predicate's "mode" key — exact strings "Deploy" / "Seed".
-        Assert.Contains("\"mode\": \"Deploy\"", json);
-        Assert.Contains("\"mode\": \"Seed\"", json);
+        // Each predicate's "mode" key — exact strings "Replace" / "Merge".
+        Assert.Contains("\"mode\": \"Replace\"", json);
+        Assert.Contains("\"mode\": \"Merge\"", json);
     }
 
     [Fact]
@@ -258,10 +258,10 @@ public class ConfigWriterTests : ConfigLoaderValidatorFixtureBase
             OutputDirectory = "/out",
             Predicates = new List<ProviderPredicateDefinition>
             {
-                new() { Name = "A", Mode = DeploymentMode.Deploy, ProviderType = "Content", Path = "/A", AreaId = 1 },
-                new() { Name = "B", Mode = DeploymentMode.Seed,   ProviderType = "Content", Path = "/B", AreaId = 1 },
-                new() { Name = "C", Mode = DeploymentMode.Seed,   ProviderType = "Content", Path = "/C", AreaId = 1 },
-                new() { Name = "D", Mode = DeploymentMode.Deploy, ProviderType = "Content", Path = "/D", AreaId = 1 }
+                new() { Name = "A", Mode = SerializerMode.Replace, ProviderType = "Content", Path = "/A", AreaId = 1 },
+                new() { Name = "B", Mode = SerializerMode.Merge,   ProviderType = "Content", Path = "/B", AreaId = 1 },
+                new() { Name = "C", Mode = SerializerMode.Merge,   ProviderType = "Content", Path = "/C", AreaId = 1 },
+                new() { Name = "D", Mode = SerializerMode.Replace, ProviderType = "Content", Path = "/D", AreaId = 1 }
             }
         };
         var filePath = Path.Combine(_tempDir, "full_roundtrip.json");
@@ -278,35 +278,35 @@ public class ConfigWriterTests : ConfigLoaderValidatorFixtureBase
     }
 
     [Fact]
-    public void Save_ThenLoad_RoundTripsShowSeedIndicators()
+    public void Save_ThenLoad_RoundTripsShowMergeIndicators()
     {
         var config = new SerializerConfiguration
         {
             OutputDirectory = "/out",
-            ShowSeedIndicators = true,
+            ShowMergeIndicators = true,
             Predicates = new List<ProviderPredicateDefinition>()
         };
-        var filePath = Path.Combine(_tempDir, "seed_indicators.json");
+        var filePath = Path.Combine(_tempDir, "merge_indicators.json");
 
         ConfigWriter.Save(config, filePath);
         var reloaded = ConfigLoader.Load(filePath);
 
-        Assert.True(reloaded.ShowSeedIndicators);
+        Assert.True(reloaded.ShowMergeIndicators);
     }
 
     [Fact]
-    public void Load_ShowSeedIndicatorsAbsent_DefaultsToFalse()
+    public void Load_ShowMergeIndicatorsAbsent_DefaultsToFalse()
     {
         var config = new SerializerConfiguration
         {
             OutputDirectory = "/out",
             Predicates = new List<ProviderPredicateDefinition>()
         };
-        var filePath = Path.Combine(_tempDir, "seed_indicators_default.json");
+        var filePath = Path.Combine(_tempDir, "merge_indicators_default.json");
 
         ConfigWriter.Save(config, filePath);
         var reloaded = ConfigLoader.Load(filePath);
 
-        Assert.False(reloaded.ShowSeedIndicators);
+        Assert.False(reloaded.ShowMergeIndicators);
     }
 }

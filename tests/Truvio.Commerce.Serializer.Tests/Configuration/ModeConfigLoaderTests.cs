@@ -6,20 +6,17 @@ using Xunit;
 namespace Truvio.Commerce.Serializer.Tests.Configuration;
 
 /// <summary>
-/// Phase 40 (D-01..D-04) flat config-shape tests. Replaces the section-level Deploy/Seed split
-/// with a single flat predicate list where each predicate carries its own <c>mode</c>.
-/// Hard-rejects the legacy section shape (no backcompat per project policy).
-///
-/// Class name kept as <c>DeployModeConfigLoaderTests</c> to preserve the existing test-runner
-/// identity / fixture inheritance; subject under test is the flat shape, not the legacy one.
+/// Flat config-shape tests: a single flat predicate list where each predicate carries its own
+/// <c>mode</c> (Replace/Merge). A section-level shape (top-level <c>replace</c>/<c>merge</c>
+/// objects) is hard-rejected.
 /// </summary>
-public class DeployModeConfigLoaderTests : ConfigLoaderValidatorFixtureBase
+public class ModeConfigLoaderTests : ConfigLoaderValidatorFixtureBase
 {
     private readonly string _tempDir;
 
-    public DeployModeConfigLoaderTests()
+    public ModeConfigLoaderTests()
     {
-        _tempDir = Path.Combine(Path.GetTempPath(), "DeployModeConfigLoaderTests_" + Guid.NewGuid().ToString("N")[..8]);
+        _tempDir = Path.Combine(Path.GetTempPath(), "ModeConfigLoaderTests_" + Guid.NewGuid().ToString("N")[..8]);
         Directory.CreateDirectory(_tempDir);
     }
 
@@ -38,16 +35,16 @@ public class DeployModeConfigLoaderTests : ConfigLoaderValidatorFixtureBase
     }
 
     // -------------------------------------------------------------------------
-    // Phase 40 D-03: hard-reject the legacy section-level shape
+    // Hard-reject the section-level shape (top-level 'replace' / 'merge' object)
     // -------------------------------------------------------------------------
 
     [Fact]
-    public void Load_LegacyDeploySection_Throws()
+    public void Load_ReplaceSection_Throws()
     {
         var json = """
             {
               "outputDirectory": "/serialization",
-              "deploy": {
+              "replace": {
                 "predicates": [
                   { "name": "X", "path": "/Shop", "areaId": 1 }
                 ]
@@ -58,19 +55,18 @@ public class DeployModeConfigLoaderTests : ConfigLoaderValidatorFixtureBase
 
         var ex = Assert.Throws<InvalidOperationException>(() => ConfigLoader.Load(path));
 
-        Assert.Contains("Legacy section-level shape", ex.Message);
-        Assert.Contains("'deploy'", ex.Message);
-        Assert.Contains("Phase 40", ex.Message);
-        Assert.Contains("per-predicate mode", ex.Message);
+        Assert.Contains("Section-level shape", ex.Message);
+        Assert.Contains("'replace'", ex.Message);
+        Assert.Contains("flat shape", ex.Message);
     }
 
     [Fact]
-    public void Load_LegacySeedSection_Throws()
+    public void Load_MergeSection_Throws()
     {
         var json = """
             {
               "outputDirectory": "/serialization",
-              "seed": {
+              "merge": {
                 "predicates": [
                   { "name": "X", "path": "/Shop", "areaId": 1 }
                 ]
@@ -81,28 +77,28 @@ public class DeployModeConfigLoaderTests : ConfigLoaderValidatorFixtureBase
 
         var ex = Assert.Throws<InvalidOperationException>(() => ConfigLoader.Load(path));
 
-        Assert.Contains("Legacy section-level shape", ex.Message);
-        Assert.Contains("'seed'", ex.Message);
+        Assert.Contains("Section-level shape", ex.Message);
+        Assert.Contains("'merge'", ex.Message);
     }
 
     [Fact]
-    public void Load_LegacyDeployValue_AnyShape_Throws()
+    public void Load_ReplaceValue_AnyShape_Throws()
     {
-        // T-40-01-01 detection trap: object? on Deploy/Seed catches any JSON shape — array, primitive, object.
+        // Detection trap: object? on Replace/Merge catches any JSON shape — array, primitive, object.
         var json = """
             {
               "outputDirectory": "/serialization",
-              "deploy": []
+              "replace": []
             }
             """;
         var path = WriteConfigFile(json);
 
         var ex = Assert.Throws<InvalidOperationException>(() => ConfigLoader.Load(path));
-        Assert.Contains("Legacy section-level shape", ex.Message);
+        Assert.Contains("Section-level shape", ex.Message);
     }
 
     // -------------------------------------------------------------------------
-    // Phase 40 D-01: per-predicate mode is required + must parse to DeploymentMode
+    // Per-predicate mode is required + must parse to SerializerMode
     // -------------------------------------------------------------------------
 
     [Fact]
@@ -122,7 +118,7 @@ public class DeployModeConfigLoaderTests : ConfigLoaderValidatorFixtureBase
 
         Assert.Contains("missing required field 'mode'", ex.Message);
         Assert.Contains("NoMode", ex.Message);
-        Assert.Contains("expected 'Deploy' or 'Seed'", ex.Message);
+        Assert.Contains("expected 'Replace' or 'Merge'", ex.Message);
     }
 
     [Fact]
@@ -140,9 +136,9 @@ public class DeployModeConfigLoaderTests : ConfigLoaderValidatorFixtureBase
 
         var ex = Assert.Throws<InvalidOperationException>(() => ConfigLoader.Load(path));
 
-        Assert.Contains("invalid mode 'Garbage'", ex.Message);
+        Assert.Contains("Unknown mode 'Garbage'", ex.Message);
         Assert.Contains("BadMode", ex.Message);
-        Assert.Contains("expected 'Deploy' or 'Seed'", ex.Message);
+        Assert.Contains("valid values: Replace, Merge", ex.Message);
     }
 
     [Fact]
@@ -153,24 +149,62 @@ public class DeployModeConfigLoaderTests : ConfigLoaderValidatorFixtureBase
             {
               "outputDirectory": "/serialization",
               "predicates": [
-                { "name": "Inj", "mode": "Deploy; DROP TABLE X", "path": "/Shop", "areaId": 1 }
+                { "name": "Inj", "mode": "Replace; DROP TABLE X", "path": "/Shop", "areaId": 1 }
               ]
             }
             """;
         var path = WriteConfigFile(json);
 
         var ex = Assert.Throws<InvalidOperationException>(() => ConfigLoader.Load(path));
-        Assert.Contains("invalid mode", ex.Message);
+        Assert.Contains("Unknown mode", ex.Message);
     }
 
     [Fact]
-    public void Load_LowercaseDeployMode_AcceptedAsDeploy()
+    public void Load_LegacyDeployModeValue_Throws()
+    {
+        // The old 'Deploy' mode value is no longer accepted — only Replace/Merge.
+        var json = """
+            {
+              "outputDirectory": "/serialization",
+              "predicates": [
+                { "name": "Old", "mode": "Deploy", "path": "/Shop", "areaId": 1 }
+              ]
+            }
+            """;
+        var path = WriteConfigFile(json);
+
+        var ex = Assert.Throws<InvalidOperationException>(() => ConfigLoader.Load(path));
+        Assert.Contains("Unknown mode 'Deploy'", ex.Message);
+        Assert.Contains("valid values: Replace, Merge", ex.Message);
+    }
+
+    [Fact]
+    public void Load_LegacySeedModeValue_Throws()
+    {
+        // The old 'Seed' mode value is no longer accepted — only Replace/Merge.
+        var json = """
+            {
+              "outputDirectory": "/serialization",
+              "predicates": [
+                { "name": "Old", "mode": "Seed", "path": "/Shop", "areaId": 1 }
+              ]
+            }
+            """;
+        var path = WriteConfigFile(json);
+
+        var ex = Assert.Throws<InvalidOperationException>(() => ConfigLoader.Load(path));
+        Assert.Contains("Unknown mode 'Seed'", ex.Message);
+        Assert.Contains("valid values: Replace, Merge", ex.Message);
+    }
+
+    [Fact]
+    public void Load_LowercaseReplaceMode_AcceptedAsReplace()
     {
         var json = """
             {
               "outputDirectory": "/serialization",
               "predicates": [
-                { "name": "L", "mode": "deploy", "path": "/Shop", "areaId": 1 }
+                { "name": "L", "mode": "replace", "path": "/Shop", "areaId": 1 }
               ]
             }
             """;
@@ -179,17 +213,17 @@ public class DeployModeConfigLoaderTests : ConfigLoaderValidatorFixtureBase
         var config = ConfigLoader.Load(path);
 
         Assert.Single(config.Predicates);
-        Assert.Equal(DeploymentMode.Deploy, config.Predicates[0].Mode);
+        Assert.Equal(SerializerMode.Replace, config.Predicates[0].Mode);
     }
 
     [Fact]
-    public void Load_UppercaseSeedMode_AcceptedAsSeed()
+    public void Load_UppercaseMergeMode_AcceptedAsMerge()
     {
         var json = """
             {
               "outputDirectory": "/serialization",
               "predicates": [
-                { "name": "U", "mode": "SEED", "path": "/Shop", "areaId": 1 }
+                { "name": "U", "mode": "MERGE", "path": "/Shop", "areaId": 1 }
               ]
             }
             """;
@@ -198,11 +232,11 @@ public class DeployModeConfigLoaderTests : ConfigLoaderValidatorFixtureBase
         var config = ConfigLoader.Load(path);
 
         Assert.Single(config.Predicates);
-        Assert.Equal(DeploymentMode.Seed, config.Predicates[0].Mode);
+        Assert.Equal(SerializerMode.Merge, config.Predicates[0].Mode);
     }
 
     // -------------------------------------------------------------------------
-    // Phase 40 D-02: new flat-shape success cases with mixed Deploy/Seed predicates
+    // Flat-shape success cases with mixed Replace/Merge predicates
     // -------------------------------------------------------------------------
 
     [Fact]
@@ -212,9 +246,9 @@ public class DeployModeConfigLoaderTests : ConfigLoaderValidatorFixtureBase
             {
               "outputDirectory": "/serialization",
               "predicates": [
-                { "name": "EcomShops",  "mode": "Deploy", "providerType": "SqlTable", "table": "EcomShops" },
-                { "name": "EcomOrderFlow", "mode": "Seed", "providerType": "SqlTable", "table": "EcomOrderFlow", "nameColumn": "OrderFlowName" },
-                { "name": "ContentDeploy", "mode": "Deploy", "path": "/Shop", "areaId": 1 }
+                { "name": "EcomShops",  "mode": "Replace", "providerType": "SqlTable", "table": "EcomShops" },
+                { "name": "EcomOrderFlow", "mode": "Merge", "providerType": "SqlTable", "table": "EcomOrderFlow", "nameColumn": "OrderFlowName" },
+                { "name": "ContentReplace", "mode": "Replace", "path": "/Shop", "areaId": 1 }
               ]
             }
             """;
@@ -223,13 +257,13 @@ public class DeployModeConfigLoaderTests : ConfigLoaderValidatorFixtureBase
         var config = ConfigLoader.Load(path);
 
         Assert.Equal(3, config.Predicates.Count);
-        Assert.Equal(2, config.Predicates.Count(p => p.Mode == DeploymentMode.Deploy));
-        Assert.Equal(1, config.Predicates.Count(p => p.Mode == DeploymentMode.Seed));
-        Assert.Equal("EcomOrderFlow", config.Predicates.Single(p => p.Mode == DeploymentMode.Seed).Name);
+        Assert.Equal(2, config.Predicates.Count(p => p.Mode == SerializerMode.Replace));
+        Assert.Equal(1, config.Predicates.Count(p => p.Mode == SerializerMode.Merge));
+        Assert.Equal("EcomOrderFlow", config.Predicates.Single(p => p.Mode == SerializerMode.Merge).Name);
     }
 
     [Fact]
-    public void Load_FlatShape_DefaultSubfolders_AreDeployAndSeed()
+    public void Load_FlatShape_DefaultSubfolders_AreReplaceAndMerge()
     {
         var json = """
             {
@@ -241,8 +275,8 @@ public class DeployModeConfigLoaderTests : ConfigLoaderValidatorFixtureBase
 
         var config = ConfigLoader.Load(path);
 
-        Assert.Equal("deploy", config.DeployOutputSubfolder);
-        Assert.Equal("seed", config.SeedOutputSubfolder);
+        Assert.Equal("replace", config.ReplaceOutputSubfolder);
+        Assert.Equal("merge", config.MergeOutputSubfolder);
     }
 
     [Fact]
@@ -251,8 +285,8 @@ public class DeployModeConfigLoaderTests : ConfigLoaderValidatorFixtureBase
         var json = """
             {
               "outputDirectory": "/serialization",
-              "deployOutputSubfolder": "shipped",
-              "seedOutputSubfolder": "fixtures",
+              "replaceOutputSubfolder": "shipped",
+              "mergeOutputSubfolder": "fixtures",
               "predicates": []
             }
             """;
@@ -260,8 +294,8 @@ public class DeployModeConfigLoaderTests : ConfigLoaderValidatorFixtureBase
 
         var config = ConfigLoader.Load(path);
 
-        Assert.Equal("shipped", config.DeployOutputSubfolder);
-        Assert.Equal("fixtures", config.SeedOutputSubfolder);
+        Assert.Equal("shipped", config.ReplaceOutputSubfolder);
+        Assert.Equal("fixtures", config.MergeOutputSubfolder);
     }
 
     [Fact]
@@ -309,7 +343,7 @@ public class DeployModeConfigLoaderTests : ConfigLoaderValidatorFixtureBase
     }
 
     // -------------------------------------------------------------------------
-    // Round-trip via ConfigWriter — the writer never emits the legacy shape
+    // Round-trip via ConfigWriter — the writer never emits the section shape
     // -------------------------------------------------------------------------
 
     [Fact]
@@ -320,8 +354,8 @@ public class DeployModeConfigLoaderTests : ConfigLoaderValidatorFixtureBase
             OutputDirectory = "/out",
             Predicates = new List<ProviderPredicateDefinition>
             {
-                new() { Name = "DeployP", Mode = DeploymentMode.Deploy, ProviderType = "Content", Path = "/Shop", AreaId = 1 },
-                new() { Name = "SeedP",   Mode = DeploymentMode.Seed,   ProviderType = "Content", Path = "/Customer", AreaId = 1 }
+                new() { Name = "ReplaceP", Mode = SerializerMode.Replace, ProviderType = "Content", Path = "/Shop", AreaId = 1 },
+                new() { Name = "MergeP",   Mode = SerializerMode.Merge,   ProviderType = "Content", Path = "/Customer", AreaId = 1 }
             },
             ExcludeFieldsByItemType = new Dictionary<string, List<string>>
             {
@@ -334,8 +368,8 @@ public class DeployModeConfigLoaderTests : ConfigLoaderValidatorFixtureBase
         var reloaded = ConfigLoader.Load(path);
 
         Assert.Equal(2, reloaded.Predicates.Count);
-        Assert.Equal(DeploymentMode.Deploy, reloaded.Predicates.Single(p => p.Name == "DeployP").Mode);
-        Assert.Equal(DeploymentMode.Seed, reloaded.Predicates.Single(p => p.Name == "SeedP").Mode);
+        Assert.Equal(SerializerMode.Replace, reloaded.Predicates.Single(p => p.Name == "ReplaceP").Mode);
+        Assert.Equal(SerializerMode.Merge, reloaded.Predicates.Single(p => p.Name == "MergeP").Mode);
         Assert.Single(reloaded.ExcludeFieldsByItemType);
     }
 }

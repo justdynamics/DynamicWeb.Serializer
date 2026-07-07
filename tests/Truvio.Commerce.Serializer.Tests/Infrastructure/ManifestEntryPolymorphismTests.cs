@@ -18,7 +18,7 @@ public class ManifestEntryPolymorphismTests
         var entry = new ContentEntry
         {
             EntryId = "content-1",
-            Files = new[] { "deploy/area-1/page-a.yml", "deploy/area-1/page-b.yml" },
+            Files = new[] { "replace/area-1/page-a.yml", "replace/area-1/page-b.yml" },
             AreaId = 7,
             AreaName = "Customer Center",
             Path = "/customer-center",
@@ -53,7 +53,7 @@ public class ManifestEntryPolymorphismTests
         var entry = new SqlTableEntry
         {
             EntryId = "sql-1",
-            Files = new[] { "deploy/sql/eccomorderflow/draft.yml" },
+            Files = new[] { "replace/sql/eccomorderflow/draft.yml" },
             Table = "EcomOrderFlow",
             NameColumn = "OrderFlowName",
             CompareColumns = "OrderFlowName,OrderFlowDescription",
@@ -146,7 +146,7 @@ public class ManifestEntryPolymorphismTests
     public void SchemaVersionGate_WrongVersion_ThrowsInvalidOperationException()
     {
         var json = """
-            {"schemaVersion":99,"mode":"deploy","writtenAtUtc":"2026-05-08T00:00:00Z","complete":true,"excludeFieldsByItemType":{},"excludeXmlElementsByType":{},"entries":[]}
+            {"schemaVersion":99,"mode":"replace","writtenAtUtc":"2026-05-08T00:00:00Z","complete":true,"excludeFieldsByItemType":{},"excludeXmlElementsByType":{},"entries":[]}
             """;
 
         var ex = Assert.Throws<InvalidOperationException>(() => AssertSchemaVersionGate(json));
@@ -158,7 +158,7 @@ public class ManifestEntryPolymorphismTests
     public void SchemaVersionGate_MissingField_ThrowsInvalidOperationException()
     {
         var json = """
-            {"mode":"deploy","writtenAtUtc":"2026-05-08T00:00:00Z","complete":true,"excludeFieldsByItemType":{},"excludeXmlElementsByType":{},"entries":[]}
+            {"mode":"replace","writtenAtUtc":"2026-05-08T00:00:00Z","complete":true,"excludeFieldsByItemType":{},"excludeXmlElementsByType":{},"entries":[]}
             """;
 
         var ex = Assert.Throws<InvalidOperationException>(() => AssertSchemaVersionGate(json));

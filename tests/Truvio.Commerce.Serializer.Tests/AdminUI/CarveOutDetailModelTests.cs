@@ -41,7 +41,7 @@ public class CarveOutDetailModelTests : ConfigLoaderValidatorFixtureBase
                 new()
                 {
                     Name = "EcomPayments",
-                    Mode = DeploymentMode.Deploy,
+                    Mode = SerializerMode.Replace,
                     ProviderType = "SqlTable",
                     Table = "EcomPayments",
                     // Column must be on the fixture's validator allowlist.

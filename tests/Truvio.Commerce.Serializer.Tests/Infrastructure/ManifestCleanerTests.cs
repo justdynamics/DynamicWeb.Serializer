@@ -39,7 +39,7 @@ public class ManifestCleanerTests : IDisposable
         var kept = CreateFile("kept.yml");
         var stale = CreateFile("stale.yml");
 
-        var deleted = _cleaner.CleanStale(_tempDir, "deploy", new[] { kept });
+        var deleted = _cleaner.CleanStale(_tempDir, "replace", new[] { kept });
 
         Assert.Equal(1, deleted);
         Assert.True(File.Exists(kept));
@@ -52,7 +52,7 @@ public class ManifestCleanerTests : IDisposable
         var kept1 = CreateFile("a/one.yml");
         var kept2 = CreateFile("b/two.yml");
 
-        var deleted = _cleaner.CleanStale(_tempDir, "deploy", new[] { kept1, kept2 });
+        var deleted = _cleaner.CleanStale(_tempDir, "replace", new[] { kept1, kept2 });
 
         Assert.Equal(0, deleted);
         Assert.True(File.Exists(kept1));
@@ -63,10 +63,10 @@ public class ManifestCleanerTests : IDisposable
     public void CleanStale_PreservesManifestJsonItself()
     {
         var kept = CreateFile("kept.yml");
-        var manifestPath = Path.Combine(_tempDir, "deploy-manifest.json");
-        File.WriteAllText(manifestPath, "{\"mode\":\"deploy\"}");
+        var manifestPath = Path.Combine(_tempDir, "replace-manifest.json");
+        File.WriteAllText(manifestPath, "{\"mode\":\"replace\"}");
 
-        var deleted = _cleaner.CleanStale(_tempDir, "deploy", new[] { kept });
+        var deleted = _cleaner.CleanStale(_tempDir, "replace", new[] { kept });
 
         Assert.Equal(0, deleted);
         Assert.True(File.Exists(manifestPath));
@@ -78,7 +78,7 @@ public class ManifestCleanerTests : IDisposable
         var kept = CreateFile("kept.yml");
         var stale = CreateFile("nested/old/stale.yml");
 
-        _cleaner.CleanStale(_tempDir, "deploy", new[] { kept });
+        _cleaner.CleanStale(_tempDir, "replace", new[] { kept });
 
         Assert.False(File.Exists(stale));
         Assert.False(Directory.Exists(Path.Combine(_tempDir, "nested", "old")));
@@ -90,7 +90,7 @@ public class ManifestCleanerTests : IDisposable
     {
         var missing = Path.Combine(_tempDir, "missing");
 
-        var deleted = _cleaner.CleanStale(missing, "deploy", Array.Empty<string>());
+        var deleted = _cleaner.CleanStale(missing, "replace", Array.Empty<string>());
 
         Assert.Equal(0, deleted);
     }
@@ -103,7 +103,7 @@ public class ManifestCleanerTests : IDisposable
         var strayReadme = CreateFile("README.md", "stray");
         var strayGitkeep = CreateFile(".gitkeep", "stray");
 
-        var deleted = _cleaner.CleanStale(_tempDir, "deploy", new[] { kept });
+        var deleted = _cleaner.CleanStale(_tempDir, "replace", new[] { kept });
 
         Assert.Equal(2, deleted);
         Assert.True(File.Exists(kept));
@@ -117,12 +117,12 @@ public class ManifestCleanerTests : IDisposable
         // Phase 42-02: a leftover {mode}-manifest.json.tmp is the diagnostic signal of a torn prior
         // run. The cleaner MUST skip it during the sweep; the operator needs to see it.
         var stale = CreateFile("stale.yml");
-        var manifestPath = Path.Combine(_tempDir, "deploy-manifest.json");
+        var manifestPath = Path.Combine(_tempDir, "replace-manifest.json");
         var tmpPath = manifestPath + ".tmp";
-        File.WriteAllText(manifestPath, "{\"mode\":\"deploy\"}");
+        File.WriteAllText(manifestPath, "{\"mode\":\"replace\"}");
         File.WriteAllText(tmpPath, "{ TRUNCATED-PARTIAL-JSON-FROM-PRIOR-CRASH");
 
-        var deleted = _cleaner.CleanStale(_tempDir, "deploy", Array.Empty<string>());
+        var deleted = _cleaner.CleanStale(_tempDir, "replace", Array.Empty<string>());
 
         Assert.Equal(1, deleted);
         Assert.False(File.Exists(stale));
@@ -162,7 +162,7 @@ public class ManifestCleanerTests : IDisposable
 
         try
         {
-            _cleaner.CleanStale(modeRoot, "deploy", new[] { innerKept });
+            _cleaner.CleanStale(modeRoot, "replace", new[] { innerKept });
 
             // Outer file must still exist — cleaner must NOT have followed the symlink.
             Assert.True(File.Exists(outerFile), "Cleaner followed a symlink outside modeRoot and deleted an outer file.");

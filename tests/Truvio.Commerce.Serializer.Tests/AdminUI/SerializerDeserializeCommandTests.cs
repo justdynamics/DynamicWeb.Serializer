@@ -17,12 +17,12 @@ namespace Truvio.Commerce.Serializer.Tests.AdminUI;
 public class SerializerDeserializeCommandTests
 {
     [Fact]
-    public void Handle_JsonBodyMode_ParsesSeed()
+    public void Handle_JsonBodyMode_ParsesMerge()
     {
         // D-38-11 baseline: direct JSON-body path. The mode-string parse must succeed
         // (NotEqual Invalid); downstream resolution may still produce Error (no config,
-        // no subfolder), but the mode gate itself cannot reject "seed" as Invalid.
-        var cmd = new SerializerDeserializeCommand { Mode = "seed" };
+        // no subfolder), but the mode gate itself cannot reject "merge" as Invalid.
+        var cmd = new SerializerDeserializeCommand { Mode = "merge" };
         var result = cmd.Handle();
         Assert.NotEqual(CommandResult.ResultType.Invalid, result.Status);
     }
@@ -38,14 +38,26 @@ public class SerializerDeserializeCommandTests
     }
 
     [Theory]
+    [InlineData("deploy")]
+    [InlineData("seed")]
+    public void Handle_LegacyModeName_ReturnsInvalid(string mode)
+    {
+        // The old deploy/seed mode names are no longer accepted — only replace/merge.
+        var cmd = new SerializerDeserializeCommand { Mode = mode };
+        var result = cmd.Handle();
+        Assert.Equal(CommandResult.ResultType.Invalid, result.Status);
+        Assert.Contains("Invalid mode", result.Message ?? string.Empty);
+    }
+
+    [Theory]
     [InlineData("replace")]
     [InlineData("merge")]
     [InlineData("MERGE")]
-    public void Handle_AliasMode_NotRejectedByModeGate(string mode)
+    public void Handle_ValidMode_NotRejectedByModeGate(string mode)
     {
-        // DIST-04: replace/merge are aliases for deploy/seed. The mode gate must accept them
+        // replace/merge are the valid modes. The mode gate must accept them
         // (NotEqual Invalid); downstream resolution may still Error (no config/subfolder), but
-        // the alias itself is never rejected as an invalid mode.
+        // a valid mode is never rejected as an invalid mode.
         var cmd = new SerializerDeserializeCommand { Mode = mode };
         var result = cmd.Handle();
         Assert.NotEqual(CommandResult.ResultType.Invalid, result.Status);

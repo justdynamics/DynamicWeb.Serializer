@@ -8,7 +8,7 @@ namespace Truvio.Commerce.Serializer.Tests.Configuration;
 /// <summary>
 /// Tests for the Phase 40 flat <see cref="SerializerConfiguration"/> shape and the
 /// per-predicate <see cref="ProviderPredicateDefinition.Mode"/> field. Replaces the
-/// section-level Deploy/Seed split (D-01..D-04). No backcompat per project policy.
+/// section-level Replace/Merge split (D-01..D-04). No backcompat per project policy.
 /// </summary>
 public class SerializerConfigurationTests : IDisposable
 {
@@ -32,7 +32,7 @@ public class SerializerConfigurationTests : IDisposable
     // -------------------------------------------------------------------------
 
     [Fact]
-    public void Predicate_DefaultMode_IsDeploy()
+    public void Predicate_DefaultMode_IsReplace()
     {
         var p = new ProviderPredicateDefinition
         {
@@ -42,11 +42,11 @@ public class SerializerConfigurationTests : IDisposable
             Path = "/"
         };
 
-        Assert.Equal(DeploymentMode.Deploy, p.Mode);
+        Assert.Equal(SerializerMode.Replace, p.Mode);
     }
 
     [Fact]
-    public void Predicate_SeedMode_RoundTripsThroughSystemTextJson()
+    public void Predicate_MergeMode_RoundTripsThroughSystemTextJson()
     {
         var p = new ProviderPredicateDefinition
         {
@@ -54,7 +54,7 @@ public class SerializerConfigurationTests : IDisposable
             ProviderType = "Content",
             AreaId = 1,
             Path = "/",
-            Mode = DeploymentMode.Seed
+            Mode = SerializerMode.Merge
         };
 
         var json = JsonSerializer.Serialize(p, new JsonSerializerOptions
@@ -62,7 +62,7 @@ public class SerializerConfigurationTests : IDisposable
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase
         });
 
-        Assert.Contains("\"mode\":\"Seed\"", json);
+        Assert.Contains("\"mode\":\"Merge\"", json);
 
         var roundTripped = JsonSerializer.Deserialize<ProviderPredicateDefinition>(json, new JsonSerializerOptions
         {
@@ -71,11 +71,11 @@ public class SerializerConfigurationTests : IDisposable
         });
 
         Assert.NotNull(roundTripped);
-        Assert.Equal(DeploymentMode.Seed, roundTripped!.Mode);
+        Assert.Equal(SerializerMode.Merge, roundTripped!.Mode);
     }
 
     [Fact]
-    public void Predicate_DeployMode_SerializesAsDeployString()
+    public void Predicate_ReplaceMode_SerializesAsReplaceString()
     {
         var p = new ProviderPredicateDefinition
         {
@@ -83,7 +83,7 @@ public class SerializerConfigurationTests : IDisposable
             ProviderType = "Content",
             AreaId = 1,
             Path = "/",
-            Mode = DeploymentMode.Deploy
+            Mode = SerializerMode.Replace
         };
 
         var json = JsonSerializer.Serialize(p, new JsonSerializerOptions
@@ -91,7 +91,7 @@ public class SerializerConfigurationTests : IDisposable
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase
         });
 
-        Assert.Contains("\"mode\":\"Deploy\"", json);
+        Assert.Contains("\"mode\":\"Replace\"", json);
     }
 
     // -------------------------------------------------------------------------
@@ -108,19 +108,19 @@ public class SerializerConfigurationTests : IDisposable
     }
 
     [Fact]
-    public void Config_Default_DeployOutputSubfolderIsDeploy()
+    public void Config_Default_ReplaceOutputSubfolderIsReplace()
     {
         var config = new SerializerConfiguration { OutputDirectory = "/out" };
 
-        Assert.Equal("deploy", config.DeployOutputSubfolder);
+        Assert.Equal("replace", config.ReplaceOutputSubfolder);
     }
 
     [Fact]
-    public void Config_Default_SeedOutputSubfolderIsSeed()
+    public void Config_Default_MergeOutputSubfolderIsMerge()
     {
         var config = new SerializerConfiguration { OutputDirectory = "/out" };
 
-        Assert.Equal("seed", config.SeedOutputSubfolder);
+        Assert.Equal("merge", config.MergeOutputSubfolder);
     }
 
     [Fact]
@@ -139,43 +139,43 @@ public class SerializerConfigurationTests : IDisposable
     // -------------------------------------------------------------------------
 
     [Fact]
-    public void GetSubfolderForMode_Seed_ReturnsSeedOutputSubfolder()
+    public void GetSubfolderForMode_Merge_ReturnsMergeOutputSubfolder()
     {
         var config = new SerializerConfiguration
         {
             OutputDirectory = "/out",
-            SeedOutputSubfolder = "my-seed"
+            MergeOutputSubfolder = "my-merge"
         };
 
-        Assert.Equal("my-seed", config.GetSubfolderForMode(DeploymentMode.Seed));
+        Assert.Equal("my-merge", config.GetSubfolderForMode(SerializerMode.Merge));
     }
 
     [Fact]
-    public void GetSubfolderForMode_Deploy_ReturnsDeployOutputSubfolder()
+    public void GetSubfolderForMode_Replace_ReturnsReplaceOutputSubfolder()
     {
         var config = new SerializerConfiguration
         {
             OutputDirectory = "/out",
-            DeployOutputSubfolder = "my-deploy"
+            ReplaceOutputSubfolder = "my-replace"
         };
 
-        Assert.Equal("my-deploy", config.GetSubfolderForMode(DeploymentMode.Deploy));
+        Assert.Equal("my-replace", config.GetSubfolderForMode(SerializerMode.Replace));
     }
 
     [Fact]
-    public void GetConflictStrategyForMode_Seed_ReturnsDestinationWins()
+    public void GetConflictStrategyForMode_Merge_ReturnsDestinationWins()
     {
         var config = new SerializerConfiguration { OutputDirectory = "/out" };
 
-        Assert.Equal(ConflictStrategy.DestinationWins, config.GetConflictStrategyForMode(DeploymentMode.Seed));
+        Assert.Equal(ConflictStrategy.DestinationWins, config.GetConflictStrategyForMode(SerializerMode.Merge));
     }
 
     [Fact]
-    public void GetConflictStrategyForMode_Deploy_ReturnsSourceWins()
+    public void GetConflictStrategyForMode_Replace_ReturnsSourceWins()
     {
         var config = new SerializerConfiguration { OutputDirectory = "/out" };
 
-        Assert.Equal(ConflictStrategy.SourceWins, config.GetConflictStrategyForMode(DeploymentMode.Deploy));
+        Assert.Equal(ConflictStrategy.SourceWins, config.GetConflictStrategyForMode(SerializerMode.Replace));
     }
 
     // -------------------------------------------------------------------------
@@ -183,14 +183,14 @@ public class SerializerConfigurationTests : IDisposable
     // -------------------------------------------------------------------------
 
     [Fact]
-    public void EnsureDirectories_CreatesDeployAndSeedSubfolders()
+    public void EnsureDirectories_CreatesReplaceAndMergeSubfolders()
     {
         var config = new SerializerConfiguration { OutputDirectory = "Out_" + Guid.NewGuid().ToString("N")[..8] };
 
         var resolved = config.EnsureDirectories(_tempDir);
 
-        Assert.True(Directory.Exists(Path.Combine(resolved.SerializeRoot, "deploy")));
-        Assert.True(Directory.Exists(Path.Combine(resolved.SerializeRoot, "seed")));
+        Assert.True(Directory.Exists(Path.Combine(resolved.SerializeRoot, "replace")));
+        Assert.True(Directory.Exists(Path.Combine(resolved.SerializeRoot, "merge")));
     }
 
     [Fact]
@@ -199,8 +199,8 @@ public class SerializerConfigurationTests : IDisposable
         var config = new SerializerConfiguration
         {
             OutputDirectory = "Out_" + Guid.NewGuid().ToString("N")[..8],
-            DeployOutputSubfolder = "shipped",
-            SeedOutputSubfolder = "fixtures"
+            ReplaceOutputSubfolder = "shipped",
+            MergeOutputSubfolder = "fixtures"
         };
 
         var resolved = config.EnsureDirectories(_tempDir);
@@ -214,17 +214,17 @@ public class SerializerConfigurationTests : IDisposable
     // -------------------------------------------------------------------------
 
     [Fact]
-    public void Config_HasNo_DeployProperty()
+    public void Config_HasNo_ReplaceProperty()
     {
         var t = typeof(SerializerConfiguration);
-        Assert.Null(t.GetProperty("Deploy"));
+        Assert.Null(t.GetProperty("Replace"));
     }
 
     [Fact]
-    public void Config_HasNo_SeedProperty()
+    public void Config_HasNo_MergeProperty()
     {
         var t = typeof(SerializerConfiguration);
-        Assert.Null(t.GetProperty("Seed"));
+        Assert.Null(t.GetProperty("Merge"));
     }
 
     [Fact]

@@ -32,7 +32,7 @@ public class PredicateCommandTests : ConfigLoaderValidatorFixtureBase
             Directory.Delete(_tempDir, recursive: true);
     }
 
-    private void CreateSeedConfig(List<ProviderPredicateDefinition>? predicates = null)
+    private void CreateMergeConfig(List<ProviderPredicateDefinition>? predicates = null)
     {
         // Phase 40 D-01: flat predicate list with explicit per-predicate Mode.
         var config = new SerializerConfiguration
@@ -40,7 +40,7 @@ public class PredicateCommandTests : ConfigLoaderValidatorFixtureBase
             OutputDirectory = @"\System\Serializer",
             Predicates = predicates ?? new List<ProviderPredicateDefinition>
             {
-                new() { Name = "Default", Mode = DeploymentMode.Deploy, ProviderType = "Content", Path = "/", AreaId = 1, PageId = 10 }
+                new() { Name = "Default", Mode = SerializerMode.Replace, ProviderType = "Content", Path = "/", AreaId = 1, PageId = 10 }
             }
         };
         ConfigWriter.Save(config, _configPath);
@@ -84,9 +84,9 @@ public class PredicateCommandTests : ConfigLoaderValidatorFixtureBase
     [Fact]
     public void Save_DuplicateName_ReturnsInvalid()
     {
-        CreateSeedConfig(new List<ProviderPredicateDefinition>
+        CreateMergeConfig(new List<ProviderPredicateDefinition>
         {
-            new() { Name = "Existing", Mode = DeploymentMode.Deploy, ProviderType = "Content", Path = "/existing", AreaId = 1, PageId = 10 }
+            new() { Name = "Existing", Mode = SerializerMode.Replace, ProviderType = "Content", Path = "/existing", AreaId = 1, PageId = 10 }
         });
 
         var cmd = new SavePredicateCommand
@@ -111,9 +111,9 @@ public class PredicateCommandTests : ConfigLoaderValidatorFixtureBase
     [Fact]
     public void Save_IndexOutOfRange_ReturnsError()
     {
-        CreateSeedConfig(new List<ProviderPredicateDefinition>
+        CreateMergeConfig(new List<ProviderPredicateDefinition>
         {
-            new() { Name = "Only", Mode = DeploymentMode.Deploy, ProviderType = "Content", Path = "/only", AreaId = 1, PageId = 10 }
+            new() { Name = "Only", Mode = SerializerMode.Replace, ProviderType = "Content", Path = "/only", AreaId = 1, PageId = 10 }
         });
 
         var cmd = new SavePredicateCommand
@@ -137,9 +137,9 @@ public class PredicateCommandTests : ConfigLoaderValidatorFixtureBase
     [Fact]
     public void Save_NewPredicate_AppendsToConfig()
     {
-        CreateSeedConfig(new List<ProviderPredicateDefinition>
+        CreateMergeConfig(new List<ProviderPredicateDefinition>
         {
-            new() { Name = "Existing", Mode = DeploymentMode.Deploy, ProviderType = "Content", Path = "/existing", AreaId = 1, PageId = 10 }
+            new() { Name = "Existing", Mode = SerializerMode.Replace, ProviderType = "Content", Path = "/existing", AreaId = 1, PageId = 10 }
         });
 
         var cmd = new SavePredicateCommand
@@ -172,10 +172,10 @@ public class PredicateCommandTests : ConfigLoaderValidatorFixtureBase
     [Fact]
     public void Save_UpdateExisting_ReplacesAtIndex()
     {
-        CreateSeedConfig(new List<ProviderPredicateDefinition>
+        CreateMergeConfig(new List<ProviderPredicateDefinition>
         {
-            new() { Name = "First", Mode = DeploymentMode.Deploy, ProviderType = "Content", Path = "/first", AreaId = 1, PageId = 10 },
-            new() { Name = "Second", Mode = DeploymentMode.Deploy, ProviderType = "Content", Path = "/second", AreaId = 2, PageId = 20 }
+            new() { Name = "First", Mode = SerializerMode.Replace, ProviderType = "Content", Path = "/first", AreaId = 1, PageId = 10 },
+            new() { Name = "Second", Mode = SerializerMode.Replace, ProviderType = "Content", Path = "/second", AreaId = 2, PageId = 20 }
         });
 
         var cmd = new SavePredicateCommand
@@ -209,7 +209,7 @@ public class PredicateCommandTests : ConfigLoaderValidatorFixtureBase
     [Fact]
     public void Save_SqlTable_NewPredicate_PersistsAllFields()
     {
-        CreateSeedConfig(new List<ProviderPredicateDefinition>());
+        CreateMergeConfig(new List<ProviderPredicateDefinition>());
 
         var cmd = new SavePredicateCommand
         {
@@ -243,7 +243,7 @@ public class PredicateCommandTests : ConfigLoaderValidatorFixtureBase
     [Fact]
     public void Save_SqlTable_MissingTable_ReturnsInvalid()
     {
-        CreateSeedConfig(new List<ProviderPredicateDefinition>());
+        CreateMergeConfig(new List<ProviderPredicateDefinition>());
 
         var cmd = new SavePredicateCommand
         {
@@ -266,7 +266,7 @@ public class PredicateCommandTests : ConfigLoaderValidatorFixtureBase
     [Fact]
     public void Save_Content_MissingArea_ReturnsInvalid()
     {
-        CreateSeedConfig(new List<ProviderPredicateDefinition>());
+        CreateMergeConfig(new List<ProviderPredicateDefinition>());
 
         var cmd = new SavePredicateCommand
         {
@@ -290,7 +290,7 @@ public class PredicateCommandTests : ConfigLoaderValidatorFixtureBase
     [Fact]
     public void Save_Content_NewPredicate_PersistsContentFields()
     {
-        CreateSeedConfig(new List<ProviderPredicateDefinition>());
+        CreateMergeConfig(new List<ProviderPredicateDefinition>());
 
         var cmd = new SavePredicateCommand
         {
@@ -324,7 +324,7 @@ public class PredicateCommandTests : ConfigLoaderValidatorFixtureBase
     [Fact]
     public void Save_EmptyProviderType_ReturnsInvalid()
     {
-        CreateSeedConfig(new List<ProviderPredicateDefinition>());
+        CreateMergeConfig(new List<ProviderPredicateDefinition>());
 
         var cmd = new SavePredicateCommand
         {
@@ -346,7 +346,7 @@ public class PredicateCommandTests : ConfigLoaderValidatorFixtureBase
     [Fact]
     public void Save_UnknownProviderType_ReturnsInvalid()
     {
-        CreateSeedConfig(new List<ProviderPredicateDefinition>());
+        CreateMergeConfig(new List<ProviderPredicateDefinition>());
 
         var cmd = new SavePredicateCommand
         {
@@ -368,9 +368,9 @@ public class PredicateCommandTests : ConfigLoaderValidatorFixtureBase
     [Fact]
     public void Save_SqlTable_UpdateExisting_PreservesProviderType()
     {
-        CreateSeedConfig(new List<ProviderPredicateDefinition>
+        CreateMergeConfig(new List<ProviderPredicateDefinition>
         {
-            new() { Name = "Order Flows", Mode = DeploymentMode.Deploy, ProviderType = "SqlTable", Table = "EcomOrderFlow", NameColumn = "OrderFlowName" }
+            new() { Name = "Order Flows", Mode = SerializerMode.Replace, ProviderType = "SqlTable", Table = "EcomOrderFlow", NameColumn = "OrderFlowName" }
         });
 
         // Attempt to tamper ProviderType on update — D-02 should preserve "SqlTable"
@@ -405,7 +405,7 @@ public class PredicateCommandTests : ConfigLoaderValidatorFixtureBase
     [Fact]
     public void Save_Content_NewPredicate_PersistsExcludeFields()
     {
-        CreateSeedConfig(new List<ProviderPredicateDefinition>());
+        CreateMergeConfig(new List<ProviderPredicateDefinition>());
 
         var cmd = new SavePredicateCommand
         {
@@ -439,7 +439,7 @@ public class PredicateCommandTests : ConfigLoaderValidatorFixtureBase
     [Fact]
     public void Save_SqlTable_NewPredicate_PersistsFilteringFields()
     {
-        CreateSeedConfig(new List<ProviderPredicateDefinition>());
+        CreateMergeConfig(new List<ProviderPredicateDefinition>());
 
         var cmd = new SavePredicateCommand
         {
@@ -473,7 +473,7 @@ public class PredicateCommandTests : ConfigLoaderValidatorFixtureBase
     [Fact]
     public void Save_Content_XmlColumnsNotPersisted()
     {
-        CreateSeedConfig(new List<ProviderPredicateDefinition>());
+        CreateMergeConfig(new List<ProviderPredicateDefinition>());
 
         var cmd = new SavePredicateCommand
         {
@@ -504,7 +504,7 @@ public class PredicateCommandTests : ConfigLoaderValidatorFixtureBase
     [Fact]
     public void Save_SqlTable_ExcludeFields_RoundTrips()
     {
-        CreateSeedConfig(new List<ProviderPredicateDefinition>());
+        CreateMergeConfig(new List<ProviderPredicateDefinition>());
 
         var cmd = new SavePredicateCommand
         {
@@ -533,7 +533,7 @@ public class PredicateCommandTests : ConfigLoaderValidatorFixtureBase
     [Fact]
     public void Save_SqlTable_XmlColumns_RoundTrips()
     {
-        CreateSeedConfig(new List<ProviderPredicateDefinition>());
+        CreateMergeConfig(new List<ProviderPredicateDefinition>());
 
         var cmd = new SavePredicateCommand
         {
@@ -561,7 +561,7 @@ public class PredicateCommandTests : ConfigLoaderValidatorFixtureBase
     [Fact]
     public void Save_SqlTable_EmptyFilteringFields_PersistsAsEmptyLists()
     {
-        CreateSeedConfig(new List<ProviderPredicateDefinition>());
+        CreateMergeConfig(new List<ProviderPredicateDefinition>());
 
         var cmd = new SavePredicateCommand
         {
@@ -589,12 +589,12 @@ public class PredicateCommandTests : ConfigLoaderValidatorFixtureBase
     [Fact]
     public void Save_SqlTable_UpdateExisting_PreservesFilteringFields()
     {
-        CreateSeedConfig(new List<ProviderPredicateDefinition>
+        CreateMergeConfig(new List<ProviderPredicateDefinition>
         {
             new()
             {
                 Name = "Updatable",
-                Mode = DeploymentMode.Deploy,
+                Mode = SerializerMode.Replace,
                 ProviderType = "SqlTable",
                 Table = "EcomOrderFlow",
                 ExcludeFields = new List<string> { "Col1" }
@@ -628,7 +628,7 @@ public class PredicateCommandTests : ConfigLoaderValidatorFixtureBase
     [Fact]
     public void Save_Content_ExcludeFields_StillWorksWithNewlines()
     {
-        CreateSeedConfig(new List<ProviderPredicateDefinition>());
+        CreateMergeConfig(new List<ProviderPredicateDefinition>());
 
         var cmd = new SavePredicateCommand
         {
@@ -661,10 +661,10 @@ public class PredicateCommandTests : ConfigLoaderValidatorFixtureBase
     [Fact]
     public void Delete_ValidIndex_RemovesPredicate()
     {
-        CreateSeedConfig(new List<ProviderPredicateDefinition>
+        CreateMergeConfig(new List<ProviderPredicateDefinition>
         {
-            new() { Name = "First", Mode = DeploymentMode.Deploy, ProviderType = "Content", Path = "/first", AreaId = 1, PageId = 10 },
-            new() { Name = "Second", Mode = DeploymentMode.Deploy, ProviderType = "Content", Path = "/second", AreaId = 2, PageId = 20 }
+            new() { Name = "First", Mode = SerializerMode.Replace, ProviderType = "Content", Path = "/first", AreaId = 1, PageId = 10 },
+            new() { Name = "Second", Mode = SerializerMode.Replace, ProviderType = "Content", Path = "/second", AreaId = 2, PageId = 20 }
         });
 
         var cmd = new DeletePredicateCommand
@@ -684,7 +684,7 @@ public class PredicateCommandTests : ConfigLoaderValidatorFixtureBase
     [Fact]
     public void Delete_NegativeIndex_ReturnsError()
     {
-        CreateSeedConfig();
+        CreateMergeConfig();
 
         var cmd = new DeletePredicateCommand
         {
@@ -701,7 +701,7 @@ public class PredicateCommandTests : ConfigLoaderValidatorFixtureBase
     [Fact]
     public void Delete_IndexOutOfRange_ReturnsError()
     {
-        CreateSeedConfig();
+        CreateMergeConfig();
 
         var cmd = new DeletePredicateCommand
         {
@@ -717,9 +717,9 @@ public class PredicateCommandTests : ConfigLoaderValidatorFixtureBase
     [Fact]
     public void Delete_LastPredicate_ResultsInEmptyList()
     {
-        CreateSeedConfig(new List<ProviderPredicateDefinition>
+        CreateMergeConfig(new List<ProviderPredicateDefinition>
         {
-            new() { Name = "Only", Mode = DeploymentMode.Deploy, ProviderType = "Content", Path = "/only", AreaId = 1, PageId = 10 }
+            new() { Name = "Only", Mode = SerializerMode.Replace, ProviderType = "Content", Path = "/only", AreaId = 1, PageId = 10 }
         });
 
         var cmd = new DeletePredicateCommand
@@ -740,9 +740,9 @@ public class PredicateCommandTests : ConfigLoaderValidatorFixtureBase
     // -------------------------------------------------------------------------
 
     [Fact]
-    public void Save_PredicateInDeployMode_AppendsToFlatListWithDeployMode()
+    public void Save_PredicateInReplaceMode_AppendsToFlatListWithReplaceMode()
     {
-        CreateSeedConfig(new List<ProviderPredicateDefinition>());
+        CreateMergeConfig(new List<ProviderPredicateDefinition>());
 
         var cmd = new SavePredicateCommand
         {
@@ -750,8 +750,8 @@ public class PredicateCommandTests : ConfigLoaderValidatorFixtureBase
             Model = new PredicateEditModel
             {
                 Index = -1,
-                Mode = nameof(DeploymentMode.Deploy),  // Phase 41 D-13: string-typed model
-                Name = "Deploy1",
+                Mode = nameof(SerializerMode.Replace),  // Phase 41 D-13: string-typed model
+                Name = "Replace1",
                 ProviderType = "Content",
                 AreaId = 1,
                 PageId = 10
@@ -763,17 +763,17 @@ public class PredicateCommandTests : ConfigLoaderValidatorFixtureBase
         Assert.Equal(CommandResult.ResultType.Ok, result.Status);
         var config = ConfigLoader.Load(_configPath);
         Assert.Single(config.Predicates);
-        Assert.Equal("Deploy1", config.Predicates[0].Name);
-        Assert.Equal(DeploymentMode.Deploy, config.Predicates[0].Mode);
+        Assert.Equal("Replace1", config.Predicates[0].Name);
+        Assert.Equal(SerializerMode.Replace, config.Predicates[0].Mode);
     }
 
     [Fact]
-    public void Save_PredicateInSeedMode_AppendsToFlatListWithSeedMode()
+    public void Save_PredicateInMergeMode_AppendsToFlatListWithMergeMode()
     {
-        // Seed a config with one existing Deploy predicate so we can prove Seed.Save doesn't overwrite Deploy.
-        CreateSeedConfig(new List<ProviderPredicateDefinition>
+        // Merge a config with one existing Replace predicate so we can prove Merge.Save doesn't overwrite Replace.
+        CreateMergeConfig(new List<ProviderPredicateDefinition>
         {
-            new() { Name = "DeployExisting", Mode = DeploymentMode.Deploy, ProviderType = "Content", Path = "/d", AreaId = 1, PageId = 10 }
+            new() { Name = "ReplaceExisting", Mode = SerializerMode.Replace, ProviderType = "Content", Path = "/d", AreaId = 1, PageId = 10 }
         });
 
         var cmd = new SavePredicateCommand
@@ -782,8 +782,8 @@ public class PredicateCommandTests : ConfigLoaderValidatorFixtureBase
             Model = new PredicateEditModel
             {
                 Index = -1,
-                Mode = nameof(DeploymentMode.Seed),  // Phase 41 D-13: string-typed model
-                Name = "Seed1",
+                Mode = nameof(SerializerMode.Merge),  // Phase 41 D-13: string-typed model
+                Name = "Merge1",
                 ProviderType = "Content",
                 AreaId = 1,
                 PageId = 10
@@ -795,12 +795,12 @@ public class PredicateCommandTests : ConfigLoaderValidatorFixtureBase
         Assert.Equal(CommandResult.ResultType.Ok, result.Status);
         var config = ConfigLoader.Load(_configPath);
         Assert.Equal(2, config.Predicates.Count);
-        var deploy = config.Predicates.Where(p => p.Mode == DeploymentMode.Deploy).ToList();
-        var seed = config.Predicates.Where(p => p.Mode == DeploymentMode.Seed).ToList();
-        Assert.Single(deploy);
-        Assert.Equal("DeployExisting", deploy[0].Name);
-        Assert.Single(seed);
-        Assert.Equal("Seed1", seed[0].Name);
+        var replace = config.Predicates.Where(p => p.Mode == SerializerMode.Replace).ToList();
+        var merge = config.Predicates.Where(p => p.Mode == SerializerMode.Merge).ToList();
+        Assert.Single(replace);
+        Assert.Equal("ReplaceExisting", replace[0].Name);
+        Assert.Single(merge);
+        Assert.Equal("Merge1", merge[0].Name);
     }
 
     // -------------------------------------------------------------------------
@@ -810,7 +810,7 @@ public class PredicateCommandTests : ConfigLoaderValidatorFixtureBase
     [Fact]
     public void Save_SqlTable_WhereClauseAndIncludeFields_RoundTrip()
     {
-        CreateSeedConfig(new List<ProviderPredicateDefinition>());
+        CreateMergeConfig(new List<ProviderPredicateDefinition>());
 
         // Validator must be bypassed for this unit test (no live DB). SavePredicateCommand
         // exposes IdentifierValidator / WhereValidator hooks that default to production
@@ -849,7 +849,7 @@ public class PredicateCommandTests : ConfigLoaderValidatorFixtureBase
     [Fact]
     public void Save_InvalidWhereClause_ReturnsInvalid()
     {
-        CreateSeedConfig(new List<ProviderPredicateDefinition>());
+        CreateMergeConfig(new List<ProviderPredicateDefinition>());
 
         var cmd = new SavePredicateCommand
         {
@@ -877,7 +877,7 @@ public class PredicateCommandTests : ConfigLoaderValidatorFixtureBase
     [Fact]
     public void Save_InvalidTableIdentifier_ReturnsInvalid()
     {
-        CreateSeedConfig(new List<ProviderPredicateDefinition>());
+        CreateMergeConfig(new List<ProviderPredicateDefinition>());
 
         var cmd = new SavePredicateCommand
         {
@@ -904,7 +904,7 @@ public class PredicateCommandTests : ConfigLoaderValidatorFixtureBase
     [Fact]
     public void Save_InvalidIncludeFieldIdentifier_ReturnsInvalid()
     {
-        CreateSeedConfig(new List<ProviderPredicateDefinition>());
+        CreateMergeConfig(new List<ProviderPredicateDefinition>());
 
         var cmd = new SavePredicateCommand
         {
@@ -930,20 +930,20 @@ public class PredicateCommandTests : ConfigLoaderValidatorFixtureBase
     }
 
     [Fact]
-    public void Delete_PredicateInSeedMode_RemovesByIndexFromFlatList()
+    public void Delete_PredicateInMergeMode_RemovesByIndexFromFlatList()
     {
-        // Seed a config with one Deploy + one Seed predicate.
-        CreateSeedConfig(new List<ProviderPredicateDefinition>
+        // Merge a config with one Replace + one Merge predicate.
+        CreateMergeConfig(new List<ProviderPredicateDefinition>
         {
-            new() { Name = "DeployExisting", Mode = DeploymentMode.Deploy, ProviderType = "Content", Path = "/d", AreaId = 1, PageId = 10 },
-            new() { Name = "SeedOnly", Mode = DeploymentMode.Seed, ProviderType = "Content", Path = "/d", AreaId = 1, PageId = 10 }
+            new() { Name = "ReplaceExisting", Mode = SerializerMode.Replace, ProviderType = "Content", Path = "/d", AreaId = 1, PageId = 10 },
+            new() { Name = "MergeOnly", Mode = SerializerMode.Merge, ProviderType = "Content", Path = "/d", AreaId = 1, PageId = 10 }
         });
 
         // Phase 40 D-01: delete is index-based on the flat list — caller passes the flat-list index.
         var del = new DeletePredicateCommand
         {
             ConfigPath = _configPath,
-            Index = 1  // SeedOnly is at flat-list index 1
+            Index = 1  // MergeOnly is at flat-list index 1
         };
 
         var result = del.Handle();
@@ -951,8 +951,8 @@ public class PredicateCommandTests : ConfigLoaderValidatorFixtureBase
         Assert.Equal(CommandResult.ResultType.Ok, result.Status);
         var config = ConfigLoader.Load(_configPath);
         Assert.Single(config.Predicates);
-        Assert.Equal("DeployExisting", config.Predicates[0].Name);
-        Assert.Equal(DeploymentMode.Deploy, config.Predicates[0].Mode);
+        Assert.Equal("ReplaceExisting", config.Predicates[0].Name);
+        Assert.Equal(SerializerMode.Replace, config.Predicates[0].Mode);
     }
 
     // -------------------------------------------------------------------------
@@ -983,19 +983,19 @@ public class PredicateCommandTests : ConfigLoaderValidatorFixtureBase
         var attr = modeProp!.GetCustomAttribute<ConfigurablePropertyAttribute>();
         Assert.NotNull(attr);
         var hint = attr!.Hint ?? string.Empty;
-        Assert.Contains("Deploy =", hint);
-        Assert.Contains("Seed =", hint);
+        Assert.Contains("Replace =", hint);
+        Assert.Contains("Merge =", hint);
         Assert.Contains("source-wins", hint);
-        Assert.Contains("field-level merge", hint);
+        Assert.Contains("field-level fill", hint);
     }
 
     [Fact]
-    public void Save_ModeAsString_Deploy_RoundTripsViaQuery_PostPhase41()
+    public void Save_ModeAsString_Replace_RoundTripsViaQuery_PostPhase41()
     {
         // Phase 41 D-13: SavePredicateCommand parses string→enum on save; PredicateByIndexQuery
-        // returns string on hydrate. Round-trip must preserve "Deploy" verbatim.
-        // RED today: Mode is enum-typed so the round-trip yields DeploymentMode.Deploy, not "Deploy".
-        CreateSeedConfig(new List<ProviderPredicateDefinition>());
+        // returns string on hydrate. Round-trip must preserve "Replace" verbatim.
+        // RED today: Mode is enum-typed so the round-trip yields SerializerMode.Replace, not "Replace".
+        CreateMergeConfig(new List<ProviderPredicateDefinition>());
 
         var savedOverride = ConfigPathResolver.TestOverridePath;
         ConfigPathResolver.TestOverridePath = _configPath;
@@ -1005,9 +1005,9 @@ public class PredicateCommandTests : ConfigLoaderValidatorFixtureBase
             // Mode set via reflection to keep this test compilable while the property is still enum-typed.
             var modeProp = typeof(PredicateEditModel).GetProperty("Mode")!;
             if (modeProp.PropertyType == typeof(string))
-                modeProp.SetValue(model, "Deploy");
+                modeProp.SetValue(model, "Replace");
             else
-                modeProp.SetValue(model, Enum.Parse(typeof(DeploymentMode), "Deploy"));
+                modeProp.SetValue(model, Enum.Parse(typeof(SerializerMode), "Replace"));
 
             var saveCmd = new SavePredicateCommand { ConfigPath = _configPath, Model = model };
             var saveResult = saveCmd.Handle();
@@ -1019,8 +1019,8 @@ public class PredicateCommandTests : ConfigLoaderValidatorFixtureBase
             Assert.NotNull(reloaded);
 
             var reloadedMode = modeProp.GetValue(reloaded);
-            // GREEN target: reloadedMode is the string "Deploy". RED today: it's DeploymentMode.Deploy.
-            Assert.Equal("Deploy", reloadedMode);
+            // GREEN target: reloadedMode is the string "Replace". RED today: it's SerializerMode.Replace.
+            Assert.Equal("Replace", reloadedMode);
         }
         finally
         {
@@ -1029,9 +1029,9 @@ public class PredicateCommandTests : ConfigLoaderValidatorFixtureBase
     }
 
     [Fact]
-    public void Save_ModeAsString_Seed_RoundTripsViaQuery_PostPhase41()
+    public void Save_ModeAsString_Merge_RoundTripsViaQuery_PostPhase41()
     {
-        CreateSeedConfig(new List<ProviderPredicateDefinition>());
+        CreateMergeConfig(new List<ProviderPredicateDefinition>());
 
         var savedOverride = ConfigPathResolver.TestOverridePath;
         ConfigPathResolver.TestOverridePath = _configPath;
@@ -1040,9 +1040,9 @@ public class PredicateCommandTests : ConfigLoaderValidatorFixtureBase
             var model = new PredicateEditModel { Index = -1, Name = "Default", ProviderType = "Content", AreaId = 1, PageId = 10 };
             var modeProp = typeof(PredicateEditModel).GetProperty("Mode")!;
             if (modeProp.PropertyType == typeof(string))
-                modeProp.SetValue(model, "Seed");
+                modeProp.SetValue(model, "Merge");
             else
-                modeProp.SetValue(model, Enum.Parse(typeof(DeploymentMode), "Seed"));
+                modeProp.SetValue(model, Enum.Parse(typeof(SerializerMode), "Merge"));
 
             var saveCmd = new SavePredicateCommand { ConfigPath = _configPath, Model = model };
             Assert.Equal(CommandResult.ResultType.Ok, saveCmd.Handle().Status);
@@ -1051,7 +1051,7 @@ public class PredicateCommandTests : ConfigLoaderValidatorFixtureBase
             typeof(PredicateByIndexQuery).GetProperty("Index")!.SetValue(query, 0);
             var reloaded = query.GetModel();
             Assert.NotNull(reloaded);
-            Assert.Equal("Seed", modeProp.GetValue(reloaded));
+            Assert.Equal("Merge", modeProp.GetValue(reloaded));
         }
         finally
         {
@@ -1066,7 +1066,7 @@ public class PredicateCommandTests : ConfigLoaderValidatorFixtureBase
         // with CommandResult.ResultType.Invalid (mirrors ConfigLoader's case-insensitive Enum.TryParse
         // pre-validation). RED today: when Mode is enum, you can't even ASSIGN "BogusMode" — the test
         // proves the post-fix invariant. Skips early until model is string-typed.
-        CreateSeedConfig(new List<ProviderPredicateDefinition>());
+        CreateMergeConfig(new List<ProviderPredicateDefinition>());
         var model = new PredicateEditModel { Index = -1, Name = "Default", ProviderType = "Content", AreaId = 1, PageId = 10 };
         var modeProp = typeof(PredicateEditModel).GetProperty("Mode")!;
         if (modeProp.PropertyType != typeof(string))
@@ -1083,8 +1083,8 @@ public class PredicateCommandTests : ConfigLoaderValidatorFixtureBase
         Assert.Equal(CommandResult.ResultType.Invalid, result.Status);
         Assert.Contains("Mode", result.Message, StringComparison.OrdinalIgnoreCase);
         Assert.True(
-            result.Message.Contains("Deploy", StringComparison.OrdinalIgnoreCase) ||
-            result.Message.Contains("Seed", StringComparison.OrdinalIgnoreCase),
+            result.Message.Contains("Replace", StringComparison.OrdinalIgnoreCase) ||
+            result.Message.Contains("Merge", StringComparison.OrdinalIgnoreCase),
             $"Expected error message to name the valid values; got: {result.Message}");
     }
 
@@ -1100,8 +1100,8 @@ public class PredicateCommandTests : ConfigLoaderValidatorFixtureBase
         Assert.NotNull(editor);
         var select = Assert.IsType<Select>(editor);
         Assert.NotNull(select.Options);
-        Assert.Contains(select.Options!, o => (o.Value as string) == "Deploy" && o.Label == "Deploy");
-        Assert.Contains(select.Options!, o => (o.Value as string) == "Seed" && o.Label == "Seed");
+        Assert.Contains(select.Options!, o => (o.Value as string) == "Replace" && o.Label == "Replace");
+        Assert.Contains(select.Options!, o => (o.Value as string) == "Merge" && o.Label == "Merge");
         // Reject parens-suffix labels explicitly.
         Assert.DoesNotContain(select.Options!, o => o.Label != null && o.Label.Contains("("));
     }

@@ -9,8 +9,8 @@ using Xunit;
 namespace Truvio.Commerce.Serializer.Tests.Providers.SqlTable;
 
 /// <summary>
-/// Phase 39 D-17 (<see href="../../../../.planning/phases/39-seed-mode-field-level-merge-deploy-seed-split-intent-is-fiel/39-02-PLAN.md"/>):
-/// unit coverage for the narrowed-UPDATE path that the SqlTableProvider Seed-merge branch drives.
+/// Phase 39 D-17 (<see href="../../../../.planning/phases/39-merge-mode-field-level-merge-replace-merge-split-intent-is-fiel/39-02-PLAN.md"/>):
+/// unit coverage for the narrowed-UPDATE path that the SqlTableProvider Merge-fill branch drives.
 /// </summary>
 [Trait("Category", "Phase39")]
 public class SqlTableWriterUpdateSubsetTests

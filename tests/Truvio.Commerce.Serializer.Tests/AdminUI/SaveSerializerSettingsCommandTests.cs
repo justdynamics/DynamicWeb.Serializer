@@ -35,7 +35,7 @@ public class SaveSerializerSettingsCommandTests : ConfigLoaderValidatorFixtureBa
             Directory.Delete(_tempDir, recursive: true);
     }
 
-    private void CreateSeedConfig()
+    private void CreateMergeConfig()
     {
         // Phase 40 D-01: flat predicate list with explicit per-predicate Mode.
         var config = new SerializerConfiguration
@@ -43,7 +43,7 @@ public class SaveSerializerSettingsCommandTests : ConfigLoaderValidatorFixtureBa
             OutputDirectory = @"\System\Serializer",
             Predicates = new List<ProviderPredicateDefinition>
             {
-                new() { Name = "Default", Mode = DeploymentMode.Deploy, ProviderType = "Content", Path = "/", AreaId = 1 }
+                new() { Name = "Default", Mode = SerializerMode.Replace, ProviderType = "Content", Path = "/", AreaId = 1 }
             }
         };
         ConfigWriter.Save(config, _configPath);
@@ -111,9 +111,9 @@ public class SaveSerializerSettingsCommandTests : ConfigLoaderValidatorFixtureBa
     [Fact]
     public void Handle_ValidModel_MapsOutputDirectoryToConfig()
     {
-        // Create the output directory and seed config
+        // Create the output directory and merge config
         Directory.CreateDirectory(_outputDir);
-        CreateSeedConfig();
+        CreateMergeConfig();
 
         var model = new SerializerSettingsModel
         {
@@ -132,7 +132,7 @@ public class SaveSerializerSettingsCommandTests : ConfigLoaderValidatorFixtureBa
 
         var reloaded = ConfigLoader.Load(_configPath);
         Assert.Equal(@"\System\Serializer", reloaded.OutputDirectory);
-        Assert.Equal(ConflictStrategy.SourceWins, reloaded.GetConflictStrategyForMode(DeploymentMode.Deploy));
+        Assert.Equal(ConflictStrategy.SourceWins, reloaded.GetConflictStrategyForMode(SerializerMode.Replace));
         Assert.Single(reloaded.Predicates);
     }
 
@@ -145,18 +145,18 @@ public class SaveSerializerSettingsCommandTests : ConfigLoaderValidatorFixtureBa
     {
         Directory.CreateDirectory(_outputDir);
 
-        // Seed a config with mixed-Mode predicates on the flat list.
-        var seedConfig = new SerializerConfiguration
+        // Merge a config with mixed-Mode predicates on the flat list.
+        var mergeConfig = new SerializerConfiguration
         {
             OutputDirectory = @"\System\Serializer",
             Predicates = new List<ProviderPredicateDefinition>
             {
-                new() { Name = "DeployA", Mode = DeploymentMode.Deploy, ProviderType = "Content", Path = "/d", AreaId = 1 },
-                new() { Name = "SeedA", Mode = DeploymentMode.Seed, ProviderType = "Content", Path = "/s", AreaId = 1 },
-                new() { Name = "SeedB", Mode = DeploymentMode.Seed, ProviderType = "SqlTable", Table = "EcomShops" }
+                new() { Name = "ReplaceA", Mode = SerializerMode.Replace, ProviderType = "Content", Path = "/d", AreaId = 1 },
+                new() { Name = "MergeA", Mode = SerializerMode.Merge, ProviderType = "Content", Path = "/s", AreaId = 1 },
+                new() { Name = "MergeB", Mode = SerializerMode.Merge, ProviderType = "SqlTable", Table = "EcomShops" }
             }
         };
-        ConfigWriter.Save(seedConfig, _configPath);
+        ConfigWriter.Save(mergeConfig, _configPath);
 
         // Settings-save should NOT clobber predicates; it only touches OutputDirectory.
         var existingConfig = ConfigLoader.Load(_configPath);
@@ -172,11 +172,11 @@ public class SaveSerializerSettingsCommandTests : ConfigLoaderValidatorFixtureBa
 
         var reloaded = ConfigLoader.Load(_configPath);
         Assert.Equal(3, reloaded.Predicates.Count);
-        Assert.Equal("DeployA", reloaded.Predicates[0].Name);
-        Assert.Equal(DeploymentMode.Deploy, reloaded.Predicates[0].Mode);
-        Assert.Equal("SeedA", reloaded.Predicates[1].Name);
-        Assert.Equal(DeploymentMode.Seed, reloaded.Predicates[1].Mode);
-        Assert.Equal("SeedB", reloaded.Predicates[2].Name);
-        Assert.Equal(DeploymentMode.Seed, reloaded.Predicates[2].Mode);
+        Assert.Equal("ReplaceA", reloaded.Predicates[0].Name);
+        Assert.Equal(SerializerMode.Replace, reloaded.Predicates[0].Mode);
+        Assert.Equal("MergeA", reloaded.Predicates[1].Name);
+        Assert.Equal(SerializerMode.Merge, reloaded.Predicates[1].Mode);
+        Assert.Equal("MergeB", reloaded.Predicates[2].Name);
+        Assert.Equal(SerializerMode.Merge, reloaded.Predicates[2].Mode);
     }
 }

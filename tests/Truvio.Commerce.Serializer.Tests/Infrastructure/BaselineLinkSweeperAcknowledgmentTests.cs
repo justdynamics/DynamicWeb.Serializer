@@ -12,7 +12,7 @@ namespace Truvio.Commerce.Serializer.Tests.Infrastructure;
 ///
 /// Tests drive the <see cref="BaselineLinkSweeper"/> directly and compose with the
 /// post-A.3 filter the <see cref="ContentSerializer"/> now uses (Phase 40 D-01 flat shape):
-///   <c>HashSet&lt;int&gt;(config.Predicates.Where(p =&gt; p.Mode == DeploymentMode.Deploy)
+///   <c>HashSet&lt;int&gt;(config.Predicates.Where(p =&gt; p.Mode == SerializerMode.Replace)
 ///                              .SelectMany(p =&gt; p.AcknowledgedOrphanPageIds))</c>.
 /// This isolates the unit under test from needing a full ContentSerializer.Serialize
 /// end-to-end (which would require IContentStore fake + DW context).
@@ -43,10 +43,10 @@ public class BaselineLinkSweeperAcknowledgmentTests
     }
 
     // Phase 40 D-01 / D-02: flat shape — Predicates is a single list with explicit per-item Mode.
-    // The original fixture put a Deploy-mode Content predicate (carrying the ack list) and zero Seed
+    // The original fixture put a Replace-mode Content predicate (carrying the ack list) and zero Merge
     // predicates. The unit-under-test composition is preserved: `config.Predicates.Where(p =>
-    // p.Mode == DeploymentMode.Deploy).SelectMany(p => p.AcknowledgedOrphanPageIds)` reproduces
-    // the legacy section-level Deploy.Predicates.SelectMany(...) semantics exactly.
+    // p.Mode == SerializerMode.Replace).SelectMany(p => p.AcknowledgedOrphanPageIds)` reproduces
+    // the legacy section-level Replace.Predicates.SelectMany(...) semantics exactly.
     private static SerializerConfiguration ConfigWithPredicateAck(List<int> ackList)
     {
         return new SerializerConfiguration
@@ -56,7 +56,7 @@ public class BaselineLinkSweeperAcknowledgmentTests
             {
                 new() {
                     Name = "Content",
-                    Mode = DeploymentMode.Deploy,
+                    Mode = SerializerMode.Replace,
                     ProviderType = "Content",
                     AreaId = 1,
                     Path = "/",
@@ -85,9 +85,9 @@ public class BaselineLinkSweeperAcknowledgmentTests
         // Compose with the ContentSerializer filter logic (post-A.3): verify
         // that an empty ack list does not filter 9999 out, so the serializer
         // would throw on this sweep result.
-        // Phase 40 D-01: flat list — filter by Mode to preserve the legacy Deploy-only composition.
+        // Phase 40 D-01: flat list — filter by Mode to preserve the legacy Replace-only composition.
         var ack = new HashSet<int>(
-            config.Predicates.Where(p => p.Mode == DeploymentMode.Deploy)
+            config.Predicates.Where(p => p.Mode == SerializerMode.Replace)
                              .SelectMany(p => p.AcknowledgedOrphanPageIds));
         var fatal = sweepResult.Unresolved.Where(u => !ack.Contains(u.UnresolvablePageId)).ToList();
         Assert.Single(fatal); // fails serialize
@@ -106,9 +106,9 @@ public class BaselineLinkSweeperAcknowledgmentTests
         var sweepResult = new BaselineLinkSweeper().Sweep(pages);
         Assert.Single(sweepResult.Unresolved);
 
-        // Phase 40 D-01: flat list — filter by Mode to preserve the legacy Deploy-only composition.
+        // Phase 40 D-01: flat list — filter by Mode to preserve the legacy Replace-only composition.
         var ack = new HashSet<int>(
-            config.Predicates.Where(p => p.Mode == DeploymentMode.Deploy)
+            config.Predicates.Where(p => p.Mode == SerializerMode.Replace)
                              .SelectMany(p => p.AcknowledgedOrphanPageIds));
         var fatal = sweepResult.Unresolved.Where(u => !ack.Contains(u.UnresolvablePageId)).ToList();
         Assert.Empty(fatal); // no fatal unresolved → serialize succeeds
@@ -228,9 +228,9 @@ public class BaselineLinkSweeperAcknowledgmentTests
         var sweepResult = new BaselineLinkSweeper().Sweep(pages);
         Assert.Equal(2, sweepResult.Unresolved.Count);
 
-        // Phase 40 D-01: flat list — filter by Mode to preserve the legacy Deploy-only composition.
+        // Phase 40 D-01: flat list — filter by Mode to preserve the legacy Replace-only composition.
         var ack = new HashSet<int>(
-            config.Predicates.Where(p => p.Mode == DeploymentMode.Deploy)
+            config.Predicates.Where(p => p.Mode == SerializerMode.Replace)
                              .SelectMany(p => p.AcknowledgedOrphanPageIds));
         var fatal = sweepResult.Unresolved.Where(u => !ack.Contains(u.UnresolvablePageId)).ToList();
         Assert.Single(fatal);

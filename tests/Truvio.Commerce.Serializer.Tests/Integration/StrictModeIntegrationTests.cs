@@ -70,7 +70,7 @@ public class StrictModeIntegrationTests
         var result = orchestrator.DeserializeEntries(
             new List<ManifestEntry> { SqlEntry("EcomPayments") },
             modeRoot: "/input",
-            mode: DeploymentMode.Deploy,
+            mode: SerializerMode.Replace,
             strategy: ConflictStrategy.SourceWins,
             log: logs.Add,
             isDryRun: false,
@@ -99,7 +99,7 @@ public class StrictModeIntegrationTests
         var result = orchestrator.DeserializeEntries(
             new List<ManifestEntry> { SqlEntry("EcomPayments") },
             modeRoot: "/input",
-            mode: DeploymentMode.Deploy,
+            mode: SerializerMode.Replace,
             strategy: ConflictStrategy.SourceWins,
             log: logs.Add,
             isDryRun: false,
@@ -125,7 +125,7 @@ public class StrictModeIntegrationTests
         var result = orchestrator.DeserializeEntries(
             new List<ManifestEntry> { SqlEntry("EcomPayments") },
             modeRoot: "/input",
-            mode: DeploymentMode.Deploy,
+            mode: SerializerMode.Replace,
             strategy: ConflictStrategy.SourceWins,
             log: null,
             isDryRun: false,
@@ -172,7 +172,7 @@ public class StrictModeIntegrationTests
         var result = orchestrator.DeserializeEntries(
             new List<ManifestEntry> { SqlEntry("EcomPayments"), contentEntry },
             modeRoot: "/input",
-            mode: DeploymentMode.Deploy,
+            mode: SerializerMode.Replace,
             strategy: ConflictStrategy.SourceWins,
             log: null,
             isDryRun: false,
@@ -201,7 +201,7 @@ public class StrictModeIntegrationTests
         orchestrator.DeserializeEntries(
             new List<ManifestEntry> { SqlEntry("EcomPayments") },
             modeRoot: "/input",
-            mode: DeploymentMode.Deploy,
+            mode: SerializerMode.Replace,
             strategy: ConflictStrategy.SourceWins,
             log: logs.Add,
             isDryRun: false,

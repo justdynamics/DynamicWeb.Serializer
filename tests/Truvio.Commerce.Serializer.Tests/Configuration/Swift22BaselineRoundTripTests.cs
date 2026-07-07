@@ -42,10 +42,10 @@ public class Swift22BaselineRoundTripTests
 
         var config = ConfigLoader.Load(path, identifierValidator: null);
 
-        // 17 Deploy + 9 Seed = 26 total — matches the source file's predicate set.
+        // 17 Replace + 9 Merge = 26 total — matches the source file's predicate set.
         Assert.Equal(26, config.Predicates.Count);
-        Assert.Equal(17, config.Predicates.Count(p => p.Mode == DeploymentMode.Deploy));
-        Assert.Equal(9, config.Predicates.Count(p => p.Mode == DeploymentMode.Seed));
+        Assert.Equal(17, config.Predicates.Count(p => p.Mode == SerializerMode.Replace));
+        Assert.Equal(9, config.Predicates.Count(p => p.Mode == SerializerMode.Merge));
     }
 
     [Fact]
@@ -60,25 +60,25 @@ public class Swift22BaselineRoundTripTests
     }
 
     [Fact]
-    public void Load_Swift22Combined_EcomShops_IsDeploy()
+    public void Load_Swift22Combined_EcomShops_IsReplace()
     {
         var path = GetBaselinePath();
         var config = ConfigLoader.Load(path, identifierValidator: null);
 
         var p = config.Predicates.SingleOrDefault(x => x.Name == "EcomShops");
         Assert.NotNull(p);
-        Assert.Equal(DeploymentMode.Deploy, p!.Mode);
+        Assert.Equal(SerializerMode.Replace, p!.Mode);
     }
 
     [Fact]
-    public void Load_Swift22Combined_EcomGroups_IsSeed()
+    public void Load_Swift22Combined_EcomGroups_IsMerge()
     {
         var path = GetBaselinePath();
         var config = ConfigLoader.Load(path, identifierValidator: null);
 
         var p = config.Predicates.SingleOrDefault(x => x.Name == "EcomGroups");
         Assert.NotNull(p);
-        Assert.Equal(DeploymentMode.Seed, p!.Mode);
+        Assert.Equal(SerializerMode.Merge, p!.Mode);
     }
 
     [Fact]
@@ -87,7 +87,7 @@ public class Swift22BaselineRoundTripTests
         var path = GetBaselinePath();
         var config = ConfigLoader.Load(path, identifierValidator: null);
 
-        Assert.Equal("deploy", config.DeployOutputSubfolder);
-        Assert.Equal("seed", config.SeedOutputSubfolder);
+        Assert.Equal("replace", config.ReplaceOutputSubfolder);
+        Assert.Equal("merge", config.MergeOutputSubfolder);
     }
 }

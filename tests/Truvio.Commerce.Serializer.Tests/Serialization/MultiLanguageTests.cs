@@ -17,7 +17,7 @@ public class MultiLanguageTests
     {
         Name = name,
         ProviderType = "Content",
-        Mode = DeploymentMode.Deploy,
+        Mode = SerializerMode.Replace,
         AreaId = areaId,
         Path = path,
         IncludeLanguageLayers = includeLanguageLayers
@@ -57,7 +57,7 @@ public class MultiLanguageTests
         {
             Assert.Equal("/Shop", p.Path);
             Assert.False(p.IncludeLanguageLayers);
-            Assert.Equal(DeploymentMode.Deploy, p.Mode);
+            Assert.Equal(SerializerMode.Replace, p.Mode);
         });
         Assert.Equal("shop-lang-area-5", expanded[1].Name);
         Assert.Equal("shop-lang-area-9", expanded[2].Name);
