@@ -106,11 +106,10 @@ predicates=1 rows=3.
 Look at the output directory:
 
 ```bash
-ls /path/to/your-dw-host/Files/System/Serializer/SerializeRoot/deploy/
-# EcomOrderFlow/
-#   Default.yml
-#   Quote.yml
-#   ... (one file per row, named by nameColumn)
+ls /path/to/your-dw-host/Files/System/Serializer/SerializeRoot/deploy/_sql/EcomOrderFlow/
+# Default.yml
+# Quote.yml
+# ... (one file per row, named by nameColumn)
 ```
 
 A row file looks like this:
@@ -184,8 +183,8 @@ Two quick checks prove end-to-end fidelity:
      -H "Authorization: Bearer CLD.your-target-api-key"
 
    diff -r \
-     serialize-root/deploy/EcomOrderFlow/ \
-     /path/to/target-dw-host/Files/System/Serializer/SerializeRoot/deploy/EcomOrderFlow/
+     serialize-root/deploy/_sql/EcomOrderFlow/ \
+     /path/to/target-dw-host/Files/System/Serializer/SerializeRoot/deploy/_sql/EcomOrderFlow/
    # empty output = round-trip clean
    ```
 
