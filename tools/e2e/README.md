@@ -59,7 +59,7 @@ pwsh tools/e2e/full-clean-roundtrip.ps1 -SkipBacpacRestore
 | 15 | POST SerializerDeserialize?mode=seed                                 | HTTP 200, zero escalations |
 | 16 | Smoke tool (`Test-BaselineFrontend.ps1`)                             | exit 0 AND non-vacuous (no 'Nothing to test') |
 | 17 | `SELECT COUNT(*) FROM EcomProducts` on both DBs                      | Swift-2.2 = 2051 AND CleanDB = 2051 |
-| 18 | Orphan YAML assertion                                                | `baselines/Swift2.2/_sql/EcomShopGroupRelation/GROUP253$$SHOP19.yml` absent |
+| 18 | Orphan YAML assertion                                                | `SerializeRoot/deploy/_sql/EcomShopGroupRelation/GROUP253$$SHOP19.yml` absent |
 | 19 | Stop both hosts                                                      | clean shutdown via taskkill |
 | 20 | Emit `summary.json` in run dir                                       | `Disposition: CLOSED` |
 
