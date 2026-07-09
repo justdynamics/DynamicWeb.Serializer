@@ -2186,52 +2186,73 @@ public class ContentDeserializer
         }
     }
 
+    /// <summary>
+    /// Rewrites cross-environment internal links inside a serialized item's fields, returning
+    /// ONLY the fields whose value changed. An item's system fields (<see cref="ItemSystemFields"/>
+    /// — <c>Id</c>, <c>ItemInstanceType</c>, <c>Sort</c>, ...) are NEVER resolved: the resolver
+    /// remaps bare numeric page ids source→target, and an item's own numeric <c>Id</c> (its
+    /// primary key) would be rewritten as though it were a page link. Persisting a remapped
+    /// <c>Id</c> makes the subsequent <c>item.Save()</c> write the row under a DIFFERENT id,
+    /// which silently overwrites a neighbouring item's fields (the Title "smear") and orphans
+    /// the original row. This mirrors <see cref="SaveItemFields"/>, which has always excluded
+    /// <see cref="ItemSystemFields"/>.
+    /// </summary>
+    internal static Dictionary<string, object?> ResolveLinkFields(
+        IEnumerable<KeyValuePair<string, object?>> fields,
+        InternalLinkResolver resolver,
+        Func<string, string> locatorForField)
+    {
+        var changed = new Dictionary<string, object?>();
+        foreach (var kvp in fields)
+        {
+            if (ItemSystemFields.Contains(kvp.Key))
+                continue;
+            if (kvp.Value is string strValue && strValue.Length > 0)
+            {
+                resolver.CurrentLocator = locatorForField(kvp.Key);
+                var resolved = resolver.ResolveLinks(strValue);
+                resolver.CurrentLocator = null;
+                if (resolved != strValue)
+                    changed[kvp.Key] = resolved;
+            }
+        }
+        return changed;
+    }
+
     private void ResolveLinksInItemFields(string? itemType, string? itemId, InternalLinkResolver resolver)
     {
         if (string.IsNullOrEmpty(itemType) || string.IsNullOrEmpty(itemId))
             return;
 
-        var item = Services.Items.GetItem(itemType, itemId);
+        // Read a FRESH (uncached) copy from the database rather than Services.Items.GetItem.
+        // GetItem serves Dynamicweb's 15-minute item cache, which — during a bulk deserialize
+        // that adds a language-paired page — can hand back a STALE/aliased Item whose fields
+        // belong to a neighbouring id. The old code round-tripped that cached snapshot back to
+        // disk (SerializeTo -> DeserializeFrom -> Save), overwriting the correct row with the
+        // stale one: the silent Title "smear" and the orphaned items. Reading straight from the
+        // repository (SelectById bypasses the cache) guarantees we rewrite links on the row's
+        // real content, and the Save afterwards evicts the poisoned cache entry for this id.
+        var repository = Dynamicweb.Content.Items.ItemManager.Storage.Open(itemType);
+        var item = repository.SelectById(itemId);
         if (item == null)
             return;
 
         var fields = new Dictionary<string, object?>();
         item.SerializeTo(fields);
 
-        bool anyChanged = false;
-        var updatedFields = new Dictionary<string, object?>();
+        // Only the fields whose links actually changed are written back — never re-persist the
+        // full snapshot (keeps the write minimal and side-effect free). System fields (Id, Sort,
+        // ...) are excluded so item identity is never rewritten (see ResolveLinkFields).
+        var changedFields = ResolveLinkFields(fields, resolver, key => $"item|{itemType}|{itemId}|{key}");
 
-        foreach (var kvp in fields)
-        {
-            if (kvp.Value is string strValue && strValue.Length > 0)
-            {
-                resolver.CurrentLocator = $"item|{itemType}|{itemId}|{kvp.Key}";
-                var resolved = resolver.ResolveLinks(strValue);
-                resolver.CurrentLocator = null;
-                if (resolved != strValue)
-                {
-                    updatedFields[kvp.Key] = resolved;
-                    anyChanged = true;
-                }
-                else
-                {
-                    updatedFields[kvp.Key] = kvp.Value;
-                }
-            }
-            else
-            {
-                updatedFields[kvp.Key] = kvp.Value;
-            }
-        }
-
-        if (anyChanged)
+        if (changedFields.Count > 0)
         {
             if (_isDryRun)
             {
                 Log($"[DRY-RUN] Would resolve links in {itemType}/{itemId}");
                 return;
             }
-            item.DeserializeFrom(updatedFields);
+            item.DeserializeFrom(changedFields);
             using (var itemSaveContext = new Dynamicweb.Content.Items.ItemContext())
                 item.Save(itemSaveContext);
         }
@@ -2249,40 +2270,18 @@ public class ContentDeserializer
         var fields = new Dictionary<string, object?>();
         propItem.SerializeTo(fields);
 
-        bool anyChanged = false;
-        var updatedFields = new Dictionary<string, object?>();
+        // Same identity-safe resolution as ResolveLinksInItemFields: system fields (Id, ...) are
+        // never resolved, so the property item's key can't be remapped and corrupt a neighbour.
+        var changedFields = ResolveLinkFields(fields, resolver, key => $"propitem|{page.ID}|{key}");
 
-        foreach (var kvp in fields)
-        {
-            if (kvp.Value is string strValue && strValue.Length > 0)
-            {
-                resolver.CurrentLocator = $"propitem|{page.ID}|{kvp.Key}";
-                var resolved = resolver.ResolveLinks(strValue);
-                resolver.CurrentLocator = null;
-                if (resolved != strValue)
-                {
-                    updatedFields[kvp.Key] = resolved;
-                    anyChanged = true;
-                }
-                else
-                {
-                    updatedFields[kvp.Key] = kvp.Value;
-                }
-            }
-            else
-            {
-                updatedFields[kvp.Key] = kvp.Value;
-            }
-        }
-
-        if (anyChanged)
+        if (changedFields.Count > 0)
         {
             if (_isDryRun)
             {
                 Log($"[DRY-RUN] Would resolve links in PropertyItem of page {page.UniqueId}");
                 return;
             }
-            propItem.DeserializeFrom(updatedFields);
+            propItem.DeserializeFrom(changedFields);
             using (var propItemContext = new Dynamicweb.Content.Items.ItemContext())
             propItem.Save(propItemContext);
         }
