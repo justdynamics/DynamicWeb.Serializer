@@ -204,6 +204,16 @@ false-positive rate on ordinary numeric fields (sort orders, widths) is
 too high for a pre-commit gate. The deserialize-time resolver is
 precise because it checks membership in the map.
 
+**Item identity is never resolved.** The raw-numeric short-circuit means an
+item's own numeric `Id` (its primary key) would be rewritten if that id
+happened to match a source page id — which then persists the item under a
+*different* row on save, silently overwriting a neighbouring item and orphaning
+the original. `ContentDeserializer.ResolveLinkFields` therefore excludes every
+`ItemSystemFields` entry (`Id`, `ItemInstanceType`, `Sort`,
+`GlobalRecordPageGuid`, `MasterParagraphGuid`) from resolution — the same
+carve-out `SaveItemFields` applies. Only content fields are ever link-rewritten;
+system fields carry identity, not links.
+
 ## ButtonEditor SelectedValue JSON
 
 DW's `ButtonEditor` serializes its value as a JSON blob embedded in an
