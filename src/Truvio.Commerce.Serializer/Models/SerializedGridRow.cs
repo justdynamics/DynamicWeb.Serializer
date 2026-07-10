@@ -18,5 +18,6 @@ public record SerializedGridRow
     public string? VerticalAlignment { get; init; }
     public string? FlexibleColumns { get; init; }
     public Dictionary<string, object> Fields { get; init; } = new();
+    public List<SerializedPermission> Permissions { get; init; } = new();
     public List<SerializedGridColumn> Columns { get; init; } = new();
 }

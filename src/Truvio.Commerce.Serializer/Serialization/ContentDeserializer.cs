@@ -966,7 +966,7 @@ public class ContentDeserializer
 
             ctx.Created++;
             Log($"CREATED page {dto.PageUniqueId} -> ID={saved.ID}");
-            _permissionMapper.ApplyPermissions(saved.ID, dto.Permissions);
+            _permissionMapper.ApplyPermissions(saved.ID, "Page", dto.Permissions);
             return saved.ID;
         }
         else
@@ -1067,7 +1067,7 @@ public class ContentDeserializer
 
             ctx.Updated++;
             Log($"UPDATED page {dto.PageUniqueId} (ID={existingId})");
-            _permissionMapper.ApplyPermissions(existingId, dto.Permissions);
+            _permissionMapper.ApplyPermissions(existingId, "Page", dto.Permissions);
             return existingId;
         }
     }

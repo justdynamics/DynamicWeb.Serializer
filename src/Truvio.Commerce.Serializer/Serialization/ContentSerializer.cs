@@ -386,7 +386,7 @@ public class ContentSerializer
                 serializedChildren.Add(serializedChild);
         }
 
-        var permissions = _permissionMapper.MapPermissions(page.ID);
+        var permissions = _permissionMapper.MapPermissions(page.ID, "Page");
         return _mapper.MapPage(page, serializedGridRows, serializedChildren, permissions, excludeFields, excludeXmlElements,
             _configuration.ExcludeFieldsByItemType, _configuration.ExcludeXmlElementsByType);
     }
