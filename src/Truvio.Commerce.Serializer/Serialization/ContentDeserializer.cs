@@ -205,6 +205,21 @@ public class ContentDeserializer
         int totalFailed = result.Failed;
         var allErrors = new List<string>(result.Errors);
 
+        // Deferred permissions (groups-after-content ordering trap): a tile/page permission that
+        // references a group not yet on target was applied with an interim Anonymous=None deny and
+        // its full intended list recorded on the mapper. Persist those to the mode-root ledger so
+        // the orchestrator's end-of-run pass re-applies them once the group-creating predicates
+        // have executed. Mirrors the DeferredLinkLedger.Append modeRoot derivation below.
+        if (!_isDryRun && _permissionMapper.PendingDeferrals.Count > 0)
+        {
+            var permModeRoot = Path.GetDirectoryName(_contentRoot.TrimEnd('/', '\\'));
+            if (permModeRoot is not null)
+            {
+                DeferredPermissionLedger.Append(permModeRoot, _permissionMapper.PendingDeferrals);
+                Log($"Deferred {_permissionMapper.PendingDeferrals.Count} permission set(s) to end-of-run re-apply (group(s) not yet on target at content-write time).");
+            }
+        }
+
         // Phase 2: Resolve internal links using a CROSS-AREA map
         // Read ALL area directories from the content root to build a complete source→target map
         // (ContentProvider calls us per-area, but links reference pages across areas)

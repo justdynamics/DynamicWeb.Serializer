@@ -433,6 +433,16 @@ public class SerializerOrchestrator
             }
         }
 
+        // Deferred permissions (groups-after-content ordering trap): the LINK-02 pass forces
+        // Content entries ahead of the SqlTable predicate that creates the customer user groups,
+        // so a tile/page permission referencing a group was applied with an interim Anonymous=None
+        // deny and recorded to the ledger. Every entry — including the group-creating predicate —
+        // has now run, so re-apply the recorded permission sets against a fresh group cache. Runs
+        // for all modes; an empty ledger (no deferrals — e.g. groups pre-seeded, or no group
+        // permissions in the YAML) is a no-op.
+        if (!isDryRun && providerFilter is null)
+            Serialization.DeferredPermissionLedger.Finalize(modeRoot, wrappedLog);
+
         // Area ITEM fields are replace-owned but may reference pages that only arrive in the
         // merge pass (chrome bindings, legal-page links) — the replace pass leaves those as
         // source ids. Now that both modes' pages are on target, finalize them by re-writing

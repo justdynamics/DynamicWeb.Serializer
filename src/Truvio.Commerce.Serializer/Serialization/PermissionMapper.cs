@@ -24,6 +24,15 @@ public class PermissionMapper
     private readonly Action<string>? _log;
     private Dictionary<string, int>? _groupNameCache;
 
+    /// <summary>
+    /// Entities whose permission set could not be applied cleanly because a referenced group did
+    /// not exist on target at content-write time (the groups-after-content ordering trap). The
+    /// FULL intended list is recorded per entity so the end-of-run deferred pass
+    /// (<see cref="DeferredPermissionLedger.Finalize"/>) can re-apply it against a fresh group
+    /// cache once the group-creating predicates have run. The caller flushes this to the ledger.
+    /// </summary>
+    public List<DeferredPermissionRecord> PendingDeferrals { get; } = new();
+
     public PermissionMapper(Action<string>? log = null)
     {
         _log = log;
@@ -133,12 +142,17 @@ public class PermissionMapper
             }
         }
 
-        // Safety fallback: if any group was unresolvable, deny Anonymous access
+        // Safety fallback: if any group was unresolvable, deny Anonymous access AND record the
+        // entity's full intended list for the end-of-run deferred re-apply. The Anonymous=None
+        // deny is the safe interim state while the run continues; the deferred pass re-applies
+        // the complete list once the group-creating predicates have executed (its clear-loop
+        // then wipes this interim deny and converges on the intended state — LRN-rowperm-03).
         if (anyGroupUnresolvable)
         {
             var fallbackIdentifier = new PermissionEntityIdentifier(entityId.ToString(), entityName);
             permissionService.SetPermission("Anonymous", fallbackIdentifier, PermissionLevel.None);
-            Log($"Group '{lastUnresolvableGroup}' not found on target. Setting Anonymous=None on {entityName.ToLowerInvariant()} {entityId} as safety fallback.");
+            Log($"Group '{lastUnresolvableGroup}' not found on target. Setting Anonymous=None on {entityName.ToLowerInvariant()} {entityId} as safety fallback (deferred for re-apply after group creation).");
+            PendingDeferrals.Add(new DeferredPermissionRecord(entityId, entityName, permissions));
         }
     }
 
