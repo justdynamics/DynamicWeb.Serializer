@@ -100,6 +100,70 @@ public class YamlRoundTripTests
     }
 
     [Fact]
+    public void Yaml_RoundTrips_GridRowWithPermissions()
+    {
+        var row = ContentTreeBuilder.BuildGridRowWithPermissions();
+
+        var yaml = _serializer.Serialize(row);
+        var result = _deserializer.Deserialize<SerializedGridRow>(yaml);
+
+        Assert.Equal(2, result.Permissions.Count);
+
+        Assert.Equal("AuthenticatedFrontend", result.Permissions[0].Owner);
+        Assert.Equal("role", result.Permissions[0].OwnerType);
+        Assert.Equal("read", result.Permissions[0].Level);
+        Assert.Equal(4, result.Permissions[0].LevelValue);
+
+        Assert.Equal("Editors", result.Permissions[1].Owner);
+        Assert.Equal("group", result.Permissions[1].OwnerType);
+        Assert.Equal("1325", result.Permissions[1].OwnerId);
+        Assert.Equal("edit", result.Permissions[1].Level);
+        Assert.Equal(20, result.Permissions[1].LevelValue);
+    }
+
+    [Fact]
+    public void Yaml_RoundTrips_ParagraphWithPermissions_IncludingSubName()
+    {
+        var para = ContentTreeBuilder.BuildParagraphWithPermissions();
+
+        var yaml = _serializer.Serialize(para);
+        var result = _deserializer.Deserialize<SerializedParagraph>(yaml);
+
+        Assert.Equal(2, result.Permissions.Count);
+
+        Assert.Equal("Anonymous", result.Permissions[0].Owner);
+        Assert.Equal("Paragraph", result.Permissions[0].SubName);
+        Assert.Equal("none", result.Permissions[0].Level);
+
+        Assert.Equal("AuthenticatedFrontend", result.Permissions[1].Owner);
+        Assert.Null(result.Permissions[1].SubName);
+    }
+
+    [Fact]
+    public void Yaml_OmitsSubName_WhenNull()
+    {
+        var para = new SerializedParagraph
+        {
+            ParagraphUniqueId = Guid.NewGuid(),
+            SortOrder = 1,
+            Permissions = new List<SerializedPermission>
+            {
+                new SerializedPermission
+                {
+                    Owner = "AuthenticatedFrontend",
+                    OwnerType = "role",
+                    Level = "read",
+                    LevelValue = 4
+                }
+            }
+        };
+
+        var yaml = _serializer.Serialize(para);
+
+        Assert.DoesNotContain("subName", yaml);
+    }
+
+    [Fact]
     public void Yaml_RoundTrips_PageWithSourcePageId()
     {
         var page = ContentTreeBuilder.BuildSinglePage("Test") with { SourcePageId = 42 };

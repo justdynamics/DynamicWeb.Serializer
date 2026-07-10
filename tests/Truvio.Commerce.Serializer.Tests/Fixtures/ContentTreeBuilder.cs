@@ -158,6 +158,71 @@ public static class ContentTreeBuilder
     }
 
     /// <summary>
+    /// Builds a grid row carrying explicit permissions: a role entry and a group entry.
+    /// </summary>
+    public static SerializedGridRow BuildGridRowWithPermissions()
+    {
+        return new SerializedGridRow
+        {
+            Id = Guid.NewGuid(),
+            SortOrder = 1,
+            Permissions = new List<SerializedPermission>
+            {
+                new SerializedPermission
+                {
+                    Owner = "AuthenticatedFrontend",
+                    OwnerType = "role",
+                    OwnerId = null,
+                    Level = "read",
+                    LevelValue = 4
+                },
+                new SerializedPermission
+                {
+                    Owner = "Editors",
+                    OwnerType = "group",
+                    OwnerId = "1325",
+                    Level = "edit",
+                    LevelValue = 20
+                }
+            }
+        };
+    }
+
+    /// <summary>
+    /// Builds a paragraph carrying explicit permissions, including one scoped entry
+    /// that carries a subName (a rule targeting all paragraphs on the page).
+    /// </summary>
+    public static SerializedParagraph BuildParagraphWithPermissions()
+    {
+        return new SerializedParagraph
+        {
+            ParagraphUniqueId = Guid.NewGuid(),
+            SortOrder = 1,
+            ItemType = "ContentModule",
+            Permissions = new List<SerializedPermission>
+            {
+                new SerializedPermission
+                {
+                    Owner = "Anonymous",
+                    OwnerType = "role",
+                    OwnerId = null,
+                    SubName = "Paragraph",
+                    Level = "none",
+                    LevelValue = 1
+                },
+                new SerializedPermission
+                {
+                    Owner = "AuthenticatedFrontend",
+                    OwnerType = "role",
+                    OwnerId = null,
+                    Level = "read",
+                    LevelValue = 4
+                }
+            }
+        };
+    }
+
+    /// <summary>
     /// Builds a multi-column tree with 2 columns for testing column round-trip.
     /// Area "Test Area"
     ///   Page "Multi-Column Page" (1 grid row, 2 columns)

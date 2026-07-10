@@ -84,6 +84,34 @@ public class ContentDeserializerMergeModeTests
         Assert.Contains("Permissions NOT applied on Merge", ContentDeserializerSource);
     }
 
+    [Fact]
+    public void MergeMode_Permissions_BypassMarker_PresentForPageRowAndParagraph()
+    {
+        // The Merge-bypass marker guards the UPDATE path of every permission-carrying
+        // entity: page, grid row, and paragraph.
+        Assert.True(
+            CountOccurrences(ContentDeserializerSource, "Permissions NOT applied on Merge") >= 3,
+            "Expected the Merge-bypass marker on the page, grid row, and paragraph update paths.");
+    }
+
+    [Fact]
+    public void MergeMode_GridRowPermissionApply_GuardedByDestinationWins()
+    {
+        // The grid-row UPDATE apply sits immediately behind the DestinationWins guard.
+        Assert.Contains(
+            "DestinationWins) _permissionMapper.ApplyPermissions(existingGridRowId, \"GridRow\", dto.Permissions)",
+            NormalizeWhitespace(ContentDeserializerSource));
+    }
+
+    [Fact]
+    public void MergeMode_ParagraphPermissionApply_GuardedByDestinationWins()
+    {
+        // The paragraph UPDATE apply sits immediately behind the DestinationWins guard.
+        Assert.Contains(
+            "DestinationWins) _permissionMapper.ApplyPermissions(existingParagraphId, \"Paragraph\", dto.Permissions)",
+            NormalizeWhitespace(ContentDeserializerSource));
+    }
+
     // -----------------------------------------------------------------------
     // D-08 / D-14: MergePredicate contract consumed by ContentDeserializer.
     // -----------------------------------------------------------------------
@@ -343,6 +371,9 @@ public class ContentDeserializerMergeModeTests
         left = (int)args[2]!;
         return (int)result!;
     }
+
+    private static string NormalizeWhitespace(string source) =>
+        System.Text.RegularExpressions.Regex.Replace(source, @"\s+", " ");
 
     private static int CountOccurrences(string haystack, string needle)
     {

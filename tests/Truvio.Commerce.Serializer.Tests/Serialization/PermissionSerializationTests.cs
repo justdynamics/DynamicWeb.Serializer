@@ -85,4 +85,35 @@ public class PermissionSerializationTests
 
         Assert.DoesNotContain("permissions", yaml);
     }
+
+    [Fact]
+    public void Yaml_GridRowWithoutPermissions_HasNoPermissionsKey()
+    {
+        var row = new SerializedGridRow { Id = Guid.NewGuid(), SortOrder = 1 };
+
+        var yaml = _serializer.Serialize(row);
+
+        Assert.DoesNotContain("permissions", yaml);
+    }
+
+    [Fact]
+    public void Yaml_ParagraphWithoutPermissions_HasNoPermissionsKey()
+    {
+        var para = new SerializedParagraph { ParagraphUniqueId = Guid.NewGuid(), SortOrder = 1 };
+
+        var yaml = _serializer.Serialize(para);
+
+        Assert.DoesNotContain("permissions", yaml);
+    }
+
+    [Fact]
+    public void Yaml_PermissionWithSubName_ContainsSubName()
+    {
+        var para = ContentTreeBuilder.BuildParagraphWithPermissions();
+
+        var yaml = _serializer.Serialize(para);
+
+        Assert.Contains("subName", yaml);
+        Assert.Contains("Paragraph", yaml);
+    }
 }
