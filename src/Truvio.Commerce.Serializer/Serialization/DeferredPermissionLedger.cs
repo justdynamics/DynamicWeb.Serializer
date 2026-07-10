@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Dynamicweb.Security.UserManagement;
 using Truvio.Commerce.Serializer.Models;
 
 namespace Truvio.Commerce.Serializer.Serialization;
@@ -82,6 +83,14 @@ public static class DeferredPermissionLedger
     {
         var records = Read(modeRoot);
         if (records.Count == 0) return;
+
+        // The group-creating predicate (AccessUser SqlTable) inserted the groups via raw SQL,
+        // which does NOT invalidate DW's in-memory user-group cache (loaded at host startup, when
+        // the groups did not yet exist). Without clearing it, GetGroups() still returns the stale
+        // set and the re-apply skips the very groups it is meant to restore. Clear it once so the
+        // fresh mapper below resolves the just-created groups by name.
+        try { UserManagementServices.UserGroups.ClearCache(); }
+        catch (Exception ex) { log?.Invoke($"WARNING: user-group cache clear before deferred permission re-apply failed: {ex.Message}"); }
 
         var mapper = new PermissionMapper(log);
         int reapplied = 0;
