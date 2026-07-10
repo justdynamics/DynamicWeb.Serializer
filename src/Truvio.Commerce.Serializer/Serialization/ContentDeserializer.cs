@@ -1128,6 +1128,8 @@ public class ContentDeserializer
             if (_isDryRun)
             {
                 Log($"[DRY-RUN] CREATE grid row {dto.Id} (sort={dto.SortOrder}) on page {pageId}");
+                if (dto.Permissions.Count > 0)
+                    Log($"[DRY-RUN] Would apply {dto.Permissions.Count} permission(s) to grid row {dto.Id}");
                 ctx.Created++;
                 return -1;
             }
@@ -1190,6 +1192,7 @@ public class ContentDeserializer
             var newGridRowId = saved.ID;
             ctx.Created++;
             Log($"CREATED grid row {dto.Id} -> ID={newGridRowId} on page {pageId}");
+            _permissionMapper.ApplyPermissions(newGridRowId, "GridRow", dto.Permissions);
             return newGridRowId;
         }
         else
@@ -1210,6 +1213,8 @@ public class ContentDeserializer
                     Log($"[DRY-RUN] SKIP grid row {dto.Id} (ID={existingGridRowId}) (unchanged)");
                     ctx.Skipped++;
                 }
+                if (_conflictStrategy != ConflictStrategy.DestinationWins && dto.Permissions.Count > 0)
+                    Log($"[DRY-RUN] Would apply {dto.Permissions.Count} permission(s) to grid row {dto.Id}");
                 return existingGridRowId;
             }
 
@@ -1246,6 +1251,10 @@ public class ContentDeserializer
 
             ctx.Updated++;
             Log($"UPDATED grid row {dto.Id} (ID={existingGridRowId})");
+            // Permissions NOT applied on Merge UPDATE.
+            // (Intentionally absent on the DestinationWins path: no ApplyPermissions call there.)
+            if (_conflictStrategy != ConflictStrategy.DestinationWins)
+                _permissionMapper.ApplyPermissions(existingGridRowId, "GridRow", dto.Permissions);
             return existingGridRowId;
         }
     }
@@ -1293,6 +1302,8 @@ public class ContentDeserializer
                 Log($"[DRY-RUN] CREATE paragraph {dto.ParagraphUniqueId} (sort={dto.SortOrder}, type={dto.ItemType}) on page {pageId}");
                 foreach (var f in dto.Fields)
                     Log($"  set {f.Key} = '{f.Value}'");
+                if (dto.Permissions.Count > 0)
+                    Log($"[DRY-RUN] Would apply {dto.Permissions.Count} permission(s) to paragraph {dto.ParagraphUniqueId}");
                 ctx.Created++;
                 return;
             }
@@ -1355,6 +1366,12 @@ public class ContentDeserializer
                 }
                 if (needsResave)
                     Services.Paragraphs.SaveParagraph(saved);
+
+                _permissionMapper.ApplyPermissions(saved.ID, "Paragraph", dto.Permissions);
+            }
+            else if (dto.Permissions.Count > 0)
+            {
+                Log($"WARNING: could not re-query inserted paragraph {dto.ParagraphUniqueId} — permissions not applied");
             }
 
             ctx.Created++;
@@ -1403,6 +1420,10 @@ public class ContentDeserializer
                     dto.ItemType)
                 : ctx.ExcludeFields;
             SaveItemFields(existingForUpdate.ItemType, existingForUpdate.ItemId, dto.Fields, paraUpdateExclude);
+            // Permissions NOT applied on Merge UPDATE.
+            // (Intentionally absent on the DestinationWins path: no ApplyPermissions call there.)
+            if (_conflictStrategy != ConflictStrategy.DestinationWins)
+                _permissionMapper.ApplyPermissions(existingParagraphId, "Paragraph", dto.Permissions);
             ctx.Updated++;
             Log($"UPDATED paragraph {dto.ParagraphUniqueId} (ID={existingParagraphId})");
         }
@@ -2385,6 +2406,9 @@ public class ContentDeserializer
             if (currentVal != newVal)
                 diffs.Add($"Fields[{kvp.Key}]: '{currentVal}' -> '{newVal}'");
         }
+
+        if (_conflictStrategy != ConflictStrategy.DestinationWins && dto.Permissions.Count > 0)
+            diffs.Add($"Would apply {dto.Permissions.Count} permission(s)");
 
         if (diffs.Count == 0)
         {
