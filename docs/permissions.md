@@ -1,9 +1,9 @@
 # Permissions
 
-The serializer preserves explicit page permissions through the serialize /
-deserialize round-trip, using name-based group resolution and a safety
-fallback that prevents accidental public exposure of pages whose group is
-missing on target.
+The serializer preserves explicit permissions on **pages, grid rows, and
+paragraphs** through the serialize / deserialize round-trip, using name-based
+group resolution and a safety fallback that prevents accidental public
+exposure of an entity whose group is missing on target.
 
 ## Table of contents
 
@@ -11,28 +11,40 @@ missing on target.
 - [The YAML shape](#the-yaml-shape)
 - [How permissions are restored](#how-permissions-are-restored)
 - [The safety fallback](#the-safety-fallback)
+- [Frontend visibility](#frontend-visibility)
 - [Permission logging](#permission-logging)
 - [Pre-create groups on target](#pre-create-groups-on-target)
 - [Role vs group resolution](#role-vs-group-resolution)
 
 ## What gets serialized
 
-Truvio.Commerce.Serializer serializes **explicit** page permissions only.
-Pages that inherit from their parent (no explicit overrides) have no
-`permissions` section in their YAML and are left alone on deserialize.
+Truvio.Commerce.Serializer serializes **explicit** permissions on pages,
+grid rows, and paragraphs. An entity that carries no explicit override has
+no `permissions` section in its YAML and is left alone on deserialize.
+
+Permission evaluation on target is inheritance-based: a paragraph inherits
+from its grid row, a grid row from its page, a page from its parent pages
+and area. That inheritance chain stays DW-driven — the serializer captures
+only the explicit overrides at each level, exactly the rows a target needs
+to reproduce the same effective permissions.
 
 Each explicit permission entry captures:
 
 - **Owner** — the role or group name (e.g. `Anonymous`, `Marketing Team`).
-- **Owner type** — `Role` or `Group`.
-- **Permission level** — one of `None`, `Read`, `Edit`, `Create`, `Delete`, `All`.
+- **Owner type** — `role` or `group`.
+- **Permission level** — one of `none`, `read`, `edit`, `create`, `delete`, `all`.
+- **SubName** — an optional scope qualifier (see below); absent for the
+  common case.
 
 Inherited permissions, default permissions, and the role system's
 built-in implicit rules are all driven by the same DW machinery on
 target — the serializer does not replicate them because they are not
-per-page overrides.
+explicit overrides.
 
 ## The YAML shape
+
+A page, a grid row, and a paragraph each carry the same `permissions` list
+shape. On a page:
 
 ```yaml
 permissions:
@@ -47,7 +59,27 @@ permissions:
   - owner: Marketing Team
     ownerType: group
     level: edit
-    levelValue: 8
+    levelValue: 20
+```
+
+On a grid row (nested under the row, before its `columns`):
+
+```yaml
+permissions:
+  - owner: AuthenticatedFrontend
+    ownerType: role
+    level: read
+    levelValue: 4
+```
+
+On a paragraph (nested under the paragraph):
+
+```yaml
+permissions:
+  - owner: Anonymous
+    ownerType: role
+    level: none
+    levelValue: 1
 ```
 
 `level` is the enum name; `levelValue` is the numeric value stored in
@@ -55,47 +87,76 @@ the DW permissions table. Both are emitted for readability — the
 deserializer uses `level` as authoritative and ignores `levelValue`
 mismatches.
 
+### Scoped rules (`subName`)
+
+A permission may carry a `subName` that scopes it to a sub-entity. DW uses
+this for rules such as "all paragraphs on this page", stored on the page
+identifier with a `Paragraph` sub-name:
+
+```yaml
+permissions:
+  - owner: Anonymous
+    ownerType: role
+    subName: Paragraph
+    level: none
+    levelValue: 1
+```
+
+`subName` is omitted whenever the rule is unscoped, which is the common
+case. It round-trips verbatim so a scoped rule is restored at exactly the
+scope it was authored, never widened to the whole entity.
+
 ## How permissions are restored
 
-Deserialization uses a **source-wins** model. For every page with a
-`permissions` section in YAML:
+Deserialization uses a **source-wins** (Replace) model. For every entity
+with a `permissions` section in YAML:
 
-1. **Existing explicit permissions on the target page are cleared first.**
-   The serialized list is the complete source of truth — adding entries
-   to the target without removing the old ones would drift over time.
+1. **Existing explicit permissions on the target entity are removed first.**
+   The serialized list is the complete source of truth; each existing
+   explicit row is deleted so the target ends with exactly the entries the
+   YAML describes and no residual denies drift in over successive runs.
 2. **Each entry is resolved.** Roles resolve by name directly. Groups
    resolve by name against the target's user-group table (case-insensitive).
-3. **Resolved entries are applied.** The target's DW permission machinery
-   writes the resulting (owner-type, owner-id, level) triple.
+3. **Resolved entries are applied** at their exact identifier, including any
+   `subName` scope. The target's DW permission machinery writes the
+   resulting (owner-id, level) row.
 
-Pages without a `permissions` section in YAML are untouched. This
-preserves inherited permissions and pages whose explicit permissions
-pre-date the baseline adoption.
+In **Merge** mode the serializer never touches permissions on an existing
+entity — the target's permissions are left exactly as they are.
+
+Entities without a `permissions` section in YAML are untouched in either
+mode. This preserves inherited permissions and any explicit permissions
+added directly on the target.
 
 ## The safety fallback
 
 If a group permission references a user group that does **not** exist on
-the target environment, the serializer applies a defensive fallback:
+the target environment, the serializer applies a defensive fallback on the
+entity being restored (page, grid row, or paragraph):
 
 1. The group permission is **skipped** — without a matching group ID, the
    permission cannot be written.
-2. **`Anonymous` access is set to `None`** on that page. This prevents
-   accidental public exposure of a page that was meant to be
+2. **`Anonymous` access is set to `None`** on that same entity. This
+   prevents accidental public exposure of content that was meant to be
    group-restricted.
-3. The fallback is **logged** as a warning:
+3. The fallback is **logged** as a warning naming the entity.
 
-   ```
-   WARNING: Permission fallback — group 'Marketing Team' not found on target;
-            Anonymous set to None on page {GUID} to prevent exposure
-   ```
+The page, grid row, or paragraph stays locked down to anonymous users while
+the deserialize completes; an operator can create the group and
+re-deserialize afterwards.
 
-Under strict mode, the warning escalates. Under lenient mode, the page
-stays locked down to anonymous users while the deserialize completes; an
-operator can create the group and re-deserialize afterwards.
-
-The fallback is deliberately conservative. A page that loses its intended
+The fallback is deliberately conservative. An entity that loses its intended
 group permissions is broken either way; falling back to "deny anonymous"
 means the broken state is private rather than accidentally public.
+
+## Frontend visibility
+
+Grid row and paragraph permissions are frontend visibility controls, not
+admin-only metadata. DW hides a grid row or paragraph from any visitor who
+lacks `Read` on it when rendering the page. Round-tripping these permissions
+therefore preserves the exact frontend visibility rules across
+environments — a paragraph set to `Anonymous = None` on the source stays
+hidden from anonymous visitors on the target.
 
 ## Permission logging
 

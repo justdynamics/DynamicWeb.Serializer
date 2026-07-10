@@ -78,6 +78,57 @@ public class DtoTests
     }
 
     [Fact]
+    public void SerializedGridRow_Permissions_DefaultsToEmptyList()
+    {
+        var row = new SerializedGridRow
+        {
+            Id = Guid.NewGuid(),
+            SortOrder = 1
+        };
+        Assert.NotNull(row.Permissions);
+        Assert.Empty(row.Permissions);
+    }
+
+    [Fact]
+    public void SerializedParagraph_Permissions_DefaultsToEmptyList()
+    {
+        var para = new SerializedParagraph
+        {
+            ParagraphUniqueId = Guid.NewGuid(),
+            SortOrder = 1
+        };
+        Assert.NotNull(para.Permissions);
+        Assert.Empty(para.Permissions);
+    }
+
+    [Fact]
+    public void SerializedPermission_SubName_DefaultsToNull()
+    {
+        var perm = new SerializedPermission
+        {
+            Owner = "Anonymous",
+            OwnerType = "role",
+            Level = "none",
+            LevelValue = 1
+        };
+        Assert.Null(perm.SubName);
+    }
+
+    [Fact]
+    public void SerializedPermission_SubName_CanBeSet()
+    {
+        var perm = new SerializedPermission
+        {
+            Owner = "Anonymous",
+            OwnerType = "role",
+            SubName = "Paragraph",
+            Level = "none",
+            LevelValue = 1
+        };
+        Assert.Equal("Paragraph", perm.SubName);
+    }
+
+    [Fact]
     public void SerializedPermission_CanBeConstructed()
     {
         var perm = new SerializedPermission

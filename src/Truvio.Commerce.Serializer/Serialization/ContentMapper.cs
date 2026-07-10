@@ -164,7 +164,8 @@ public class ContentMapper
     /// <summary>
     /// Maps a DW GridRow to a SerializedGridRow DTO.
     /// </summary>
-    public SerializedGridRow MapGridRow(GridRow gridRow, List<SerializedGridColumn> columns)
+    public SerializedGridRow MapGridRow(GridRow gridRow, List<SerializedGridColumn> columns,
+        List<SerializedPermission> permissions)
     {
         var fields = new Dictionary<string, object>();
         if (!string.IsNullOrEmpty(gridRow.ItemType) && !string.IsNullOrEmpty(gridRow.ItemId))
@@ -200,6 +201,7 @@ public class ContentMapper
             VerticalAlignment = gridRow.VerticalAlignment.ToString(),
             FlexibleColumns = gridRow.FlexibleColumns,
             Fields = fields,
+            Permissions = permissions,
             Columns = columns
         };
     }
@@ -209,6 +211,7 @@ public class ContentMapper
     /// Registers the paragraph with the ReferenceResolver and resolves known reference fields to GUIDs.
     /// </summary>
     public SerializedParagraph MapParagraph(Paragraph paragraph,
+        List<SerializedPermission> permissions,
         IReadOnlySet<string>? excludeFields = null, IReadOnlyList<string>? excludeXmlElements = null,
         IReadOnlyDictionary<string, List<string>>? excludeFieldsByItemType = null,
         IReadOnlyDictionary<string, List<string>>? excludeXmlElementsByType = null)
@@ -262,7 +265,8 @@ public class ContentMapper
             ColorSchemeId = paragraph.ColorSchemeId,
             ModuleSystemName = paragraph.ModuleSystemName,
             ModuleSettings = ApplyXmlElementFilter(XmlFormatter.PrettyPrint(paragraph.ModuleSettings), effectiveXmlExclusions),
-            Fields = fields
+            Fields = fields,
+            Permissions = permissions
         };
     }
 
@@ -271,6 +275,7 @@ public class ContentMapper
     /// Returns a single empty column if no paragraphs are provided.
     /// </summary>
     public List<SerializedGridColumn> BuildColumns(IEnumerable<Paragraph> paragraphs,
+        Func<int, List<SerializedPermission>> permissionResolver,
         IReadOnlySet<string>? excludeFields = null, IReadOnlyList<string>? excludeXmlElements = null,
         IReadOnlyDictionary<string, List<string>>? excludeFieldsByItemType = null,
         IReadOnlyDictionary<string, List<string>>? excludeXmlElementsByType = null)
@@ -293,7 +298,7 @@ public class ContentMapper
                 Id = g.Key,
                 Width = 0, // Column width not available from Paragraph; GridRow definition has this
                 Paragraphs = g.OrderBy(p => p.Sort)
-                              .Select(p => MapParagraph(p, excludeFields, excludeXmlElements, excludeFieldsByItemType, excludeXmlElementsByType) with { ColumnId = g.Key })
+                              .Select(p => MapParagraph(p, permissionResolver(p.ID), excludeFields, excludeXmlElements, excludeFieldsByItemType, excludeXmlElementsByType) with { ColumnId = g.Key })
                               .ToList()
             })
             .ToList();

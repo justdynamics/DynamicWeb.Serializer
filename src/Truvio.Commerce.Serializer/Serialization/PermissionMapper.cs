@@ -5,7 +5,8 @@ using Dynamicweb.Security.UserManagement;
 namespace Truvio.Commerce.Serializer.Serialization;
 
 /// <summary>
-/// Maps Truvio Commerce page permissions to/from SerializedPermission DTOs.
+/// Maps Truvio Commerce content entity (page, grid row, or paragraph) permissions to/from
+/// SerializedPermission DTOs.
 /// Serialization: resolves role names directly and group names via AccessUser lookup.
 /// Deserialization: restores permissions by role name, resolves groups by name on target,
 /// and applies a safety fallback (Anonymous=None) when groups are missing.
@@ -22,6 +23,15 @@ public class PermissionMapper
 
     private readonly Action<string>? _log;
     private Dictionary<string, int>? _groupNameCache;
+
+    /// <summary>
+    /// Entities whose permission set could not be applied cleanly because a referenced group did
+    /// not exist on target at content-write time (the groups-after-content ordering trap). The
+    /// FULL intended list is recorded per entity so the end-of-run deferred pass
+    /// (<see cref="DeferredPermissionLedger.Finalize"/>) can re-apply it against a fresh group
+    /// cache once the group-creating predicates have run. The caller flushes this to the ledger.
+    /// </summary>
+    public List<DeferredPermissionRecord> PendingDeferrals { get; } = new();
 
     public PermissionMapper(Action<string>? log = null)
     {
@@ -69,27 +79,28 @@ public class PermissionMapper
     // -------------------------------------------------------------------------
 
     /// <summary>
-    /// Restores permissions on a page from serialized data.
+    /// Restores permissions on a content entity from serialized data.
     /// Roles are matched by name directly. Groups are resolved by name on the target.
     /// If any group is unresolvable, Anonymous is set to None as a safety fallback.
     /// </summary>
-    public void ApplyPermissions(int pageId, List<SerializedPermission> permissions)
+    public void ApplyPermissions(int entityId, string entityName, List<SerializedPermission> permissions)
     {
         if (permissions == null || permissions.Count == 0)
             return;
 
         var permissionService = new PermissionService();
-        var identifier = new PermissionEntityIdentifier(pageId.ToString(), "Page");
 
-        // Clear existing explicit permissions (source-wins model)
-        var query = new PermissionQuery { Key = pageId.ToString(), Name = "Page" };
+        // Clear existing explicit permissions (source-wins model). Each queried Permission
+        // carries its own exact identifier (SubName included); remove it outright so no
+        // explicit-deny rows linger to drift into future serializations.
+        var query = new PermissionQuery { Key = entityId.ToString(), Name = entityName };
         var existing = permissionService.GetPermissionsByQuery(query);
         foreach (var perm in existing)
         {
-            permissionService.SetPermission(perm.OwnerId, identifier, PermissionLevel.None);
+            permissionService.RemovePermission(perm.OwnerId, perm.Identifier);
         }
 
-        // Build group name cache lazily (reused across pages in same run)
+        // Build group name cache lazily (reused across entities in same run)
         var groupCache = BuildGroupNameCache();
 
         bool anyGroupUnresolvable = false;
@@ -108,17 +119,19 @@ public class PermissionMapper
                 level = (PermissionLevel)perm.LevelValue;
             }
 
+            var identifier = new PermissionEntityIdentifier(entityId.ToString(), entityName, perm.SubName ?? string.Empty);
+
             if (string.Equals(perm.OwnerType, "role", StringComparison.OrdinalIgnoreCase))
             {
                 permissionService.SetPermission(perm.Owner, identifier, level);
-                Log($"Applied {perm.Owner} = {perm.Level} on page {pageId}");
+                Log($"Applied {perm.Owner} = {perm.Level} on {entityName.ToLowerInvariant()} {entityId}");
             }
             else if (string.Equals(perm.OwnerType, "group", StringComparison.OrdinalIgnoreCase))
             {
                 if (groupCache.TryGetValue(perm.Owner, out var groupId))
                 {
                     permissionService.SetPermission(groupId.ToString(), identifier, level);
-                    Log($"Applied {perm.Owner} (group ID={groupId}) = {perm.Level} on page {pageId}");
+                    Log($"Applied {perm.Owner} (group ID={groupId}) = {perm.Level} on {entityName.ToLowerInvariant()} {entityId}");
                 }
                 else
                 {
@@ -129,11 +142,17 @@ public class PermissionMapper
             }
         }
 
-        // Safety fallback: if any group was unresolvable, deny Anonymous access
+        // Safety fallback: if any group was unresolvable, deny Anonymous access AND record the
+        // entity's full intended list for the end-of-run deferred re-apply. The Anonymous=None
+        // deny is the safe interim state while the run continues; the deferred pass re-applies
+        // the complete list once the group-creating predicates have executed (its clear-loop
+        // then wipes this interim deny and converges on the intended state — LRN-rowperm-03).
         if (anyGroupUnresolvable)
         {
-            permissionService.SetPermission("Anonymous", identifier, PermissionLevel.None);
-            Log($"Group '{lastUnresolvableGroup}' not found on target. Setting Anonymous=None on page {pageId} as safety fallback.");
+            var fallbackIdentifier = new PermissionEntityIdentifier(entityId.ToString(), entityName);
+            permissionService.SetPermission("Anonymous", fallbackIdentifier, PermissionLevel.None);
+            Log($"Group '{lastUnresolvableGroup}' not found on target. Setting Anonymous=None on {entityName.ToLowerInvariant()} {entityId} as safety fallback (deferred for re-apply after group creation).");
+            PendingDeferrals.Add(new DeferredPermissionRecord(entityId, entityName, permissions));
         }
     }
 
@@ -161,16 +180,16 @@ public class PermissionMapper
     }
 
     /// <summary>
-    /// Queries DW PermissionService for explicit page permissions and maps them to DTOs.
+    /// Queries DW PermissionService for explicit permissions on a content entity and maps them to DTOs.
     /// Returns an empty list if no explicit permissions are set.
     /// </summary>
-    public List<SerializedPermission> MapPermissions(int pageId)
+    public List<SerializedPermission> MapPermissions(int entityId, string entityName)
     {
         var permissionService = new PermissionService();
         var query = new PermissionQuery
         {
-            Key = pageId.ToString(),
-            Name = "Page"
+            Key = entityId.ToString(),
+            Name = entityName
         };
 
         var permissions = permissionService.GetPermissionsByQuery(query);
@@ -179,6 +198,7 @@ public class PermissionMapper
         foreach (var permission in permissions)
         {
             var ownerId = permission.OwnerId;
+            var subName = string.IsNullOrEmpty(permission.SubName) ? null : permission.SubName;
 
             if (IsRole(ownerId))
             {
@@ -187,6 +207,7 @@ public class PermissionMapper
                     Owner = ownerId,
                     OwnerType = "role",
                     OwnerId = null,
+                    SubName = subName,
                     Level = GetLevelName(permission.Level),
                     LevelValue = (int)permission.Level
                 });
@@ -214,13 +235,14 @@ public class PermissionMapper
                     Owner = ownerName,
                     OwnerType = "group",
                     OwnerId = ownerId,
+                    SubName = subName,
                     Level = GetLevelName(permission.Level),
                     LevelValue = (int)permission.Level
                 });
             }
         }
 
-        Log($"Page {pageId}: {result.Count} permission(s) mapped");
+        Log($"{entityName} {entityId}: {result.Count} permission(s) mapped");
         return result;
     }
 }

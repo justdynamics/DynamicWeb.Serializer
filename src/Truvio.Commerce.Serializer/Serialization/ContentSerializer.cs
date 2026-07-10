@@ -366,9 +366,12 @@ public class ContentSerializer
                 .Where(p => p.GridRowId == gridRow.ID)
                 .ToList();
 
-            var columns = _mapper.BuildColumns(rowParagraphs, excludeFields, excludeXmlElements,
+            var columns = _mapper.BuildColumns(rowParagraphs,
+                p => _permissionMapper.MapPermissions(p, "Paragraph"),
+                excludeFields, excludeXmlElements,
                 _configuration.ExcludeFieldsByItemType, _configuration.ExcludeXmlElementsByType);
-            var serializedGridRow = _mapper.MapGridRow(gridRow, columns) with { SortOrder = i + 1 };
+            var rowPermissions = _permissionMapper.MapPermissions(gridRow.ID, "GridRow");
+            var serializedGridRow = _mapper.MapGridRow(gridRow, columns, rowPermissions) with { SortOrder = i + 1 };
             serializedGridRows.Add(serializedGridRow);
         }
 
@@ -386,7 +389,7 @@ public class ContentSerializer
                 serializedChildren.Add(serializedChild);
         }
 
-        var permissions = _permissionMapper.MapPermissions(page.ID);
+        var permissions = _permissionMapper.MapPermissions(page.ID, "Page");
         return _mapper.MapPage(page, serializedGridRows, serializedChildren, permissions, excludeFields, excludeXmlElements,
             _configuration.ExcludeFieldsByItemType, _configuration.ExcludeXmlElementsByType);
     }

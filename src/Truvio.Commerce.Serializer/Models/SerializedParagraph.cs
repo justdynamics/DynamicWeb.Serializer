@@ -17,4 +17,5 @@ public record SerializedParagraph
     public string? CreatedBy { get; init; }
     public string? UpdatedBy { get; init; }
     public int? ColumnId { get; init; }
+    public List<SerializedPermission> Permissions { get; init; } = new();
 }

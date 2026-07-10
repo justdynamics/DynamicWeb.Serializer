@@ -205,6 +205,21 @@ public class ContentDeserializer
         int totalFailed = result.Failed;
         var allErrors = new List<string>(result.Errors);
 
+        // Deferred permissions (groups-after-content ordering trap): a tile/page permission that
+        // references a group not yet on target was applied with an interim Anonymous=None deny and
+        // its full intended list recorded on the mapper. Persist those to the mode-root ledger so
+        // the orchestrator's end-of-run pass re-applies them once the group-creating predicates
+        // have executed. Mirrors the DeferredLinkLedger.Append modeRoot derivation below.
+        if (!_isDryRun && _permissionMapper.PendingDeferrals.Count > 0)
+        {
+            var permModeRoot = Path.GetDirectoryName(_contentRoot.TrimEnd('/', '\\'));
+            if (permModeRoot is not null)
+            {
+                DeferredPermissionLedger.Append(permModeRoot, _permissionMapper.PendingDeferrals);
+                Log($"Deferred {_permissionMapper.PendingDeferrals.Count} permission set(s) to end-of-run re-apply (group(s) not yet on target at content-write time).");
+            }
+        }
+
         // Phase 2: Resolve internal links using a CROSS-AREA map
         // Read ALL area directories from the content root to build a complete source→target map
         // (ContentProvider calls us per-area, but links reference pages across areas)
@@ -966,7 +981,7 @@ public class ContentDeserializer
 
             ctx.Created++;
             Log($"CREATED page {dto.PageUniqueId} -> ID={saved.ID}");
-            _permissionMapper.ApplyPermissions(saved.ID, dto.Permissions);
+            _permissionMapper.ApplyPermissions(saved.ID, "Page", dto.Permissions);
             return saved.ID;
         }
         else
@@ -1067,7 +1082,7 @@ public class ContentDeserializer
 
             ctx.Updated++;
             Log($"UPDATED page {dto.PageUniqueId} (ID={existingId})");
-            _permissionMapper.ApplyPermissions(existingId, dto.Permissions);
+            _permissionMapper.ApplyPermissions(existingId, "Page", dto.Permissions);
             return existingId;
         }
     }
@@ -1128,6 +1143,8 @@ public class ContentDeserializer
             if (_isDryRun)
             {
                 Log($"[DRY-RUN] CREATE grid row {dto.Id} (sort={dto.SortOrder}) on page {pageId}");
+                if (dto.Permissions.Count > 0)
+                    Log($"[DRY-RUN] Would apply {dto.Permissions.Count} permission(s) to grid row {dto.Id}");
                 ctx.Created++;
                 return -1;
             }
@@ -1190,6 +1207,7 @@ public class ContentDeserializer
             var newGridRowId = saved.ID;
             ctx.Created++;
             Log($"CREATED grid row {dto.Id} -> ID={newGridRowId} on page {pageId}");
+            _permissionMapper.ApplyPermissions(newGridRowId, "GridRow", dto.Permissions);
             return newGridRowId;
         }
         else
@@ -1210,6 +1228,8 @@ public class ContentDeserializer
                     Log($"[DRY-RUN] SKIP grid row {dto.Id} (ID={existingGridRowId}) (unchanged)");
                     ctx.Skipped++;
                 }
+                if (_conflictStrategy != ConflictStrategy.DestinationWins && dto.Permissions.Count > 0)
+                    Log($"[DRY-RUN] Would apply {dto.Permissions.Count} permission(s) to grid row {dto.Id}");
                 return existingGridRowId;
             }
 
@@ -1246,6 +1266,10 @@ public class ContentDeserializer
 
             ctx.Updated++;
             Log($"UPDATED grid row {dto.Id} (ID={existingGridRowId})");
+            // Permissions NOT applied on Merge UPDATE.
+            // (Intentionally absent on the DestinationWins path: no ApplyPermissions call there.)
+            if (_conflictStrategy != ConflictStrategy.DestinationWins)
+                _permissionMapper.ApplyPermissions(existingGridRowId, "GridRow", dto.Permissions);
             return existingGridRowId;
         }
     }
@@ -1293,6 +1317,8 @@ public class ContentDeserializer
                 Log($"[DRY-RUN] CREATE paragraph {dto.ParagraphUniqueId} (sort={dto.SortOrder}, type={dto.ItemType}) on page {pageId}");
                 foreach (var f in dto.Fields)
                     Log($"  set {f.Key} = '{f.Value}'");
+                if (dto.Permissions.Count > 0)
+                    Log($"[DRY-RUN] Would apply {dto.Permissions.Count} permission(s) to paragraph {dto.ParagraphUniqueId}");
                 ctx.Created++;
                 return;
             }
@@ -1355,6 +1381,12 @@ public class ContentDeserializer
                 }
                 if (needsResave)
                     Services.Paragraphs.SaveParagraph(saved);
+
+                _permissionMapper.ApplyPermissions(saved.ID, "Paragraph", dto.Permissions);
+            }
+            else if (dto.Permissions.Count > 0)
+            {
+                Log($"WARNING: could not re-query inserted paragraph {dto.ParagraphUniqueId} — permissions not applied");
             }
 
             ctx.Created++;
@@ -1403,6 +1435,10 @@ public class ContentDeserializer
                     dto.ItemType)
                 : ctx.ExcludeFields;
             SaveItemFields(existingForUpdate.ItemType, existingForUpdate.ItemId, dto.Fields, paraUpdateExclude);
+            // Permissions NOT applied on Merge UPDATE.
+            // (Intentionally absent on the DestinationWins path: no ApplyPermissions call there.)
+            if (_conflictStrategy != ConflictStrategy.DestinationWins)
+                _permissionMapper.ApplyPermissions(existingParagraphId, "Paragraph", dto.Permissions);
             ctx.Updated++;
             Log($"UPDATED paragraph {dto.ParagraphUniqueId} (ID={existingParagraphId})");
         }
@@ -2385,6 +2421,9 @@ public class ContentDeserializer
             if (currentVal != newVal)
                 diffs.Add($"Fields[{kvp.Key}]: '{currentVal}' -> '{newVal}'");
         }
+
+        if (_conflictStrategy != ConflictStrategy.DestinationWins && dto.Permissions.Count > 0)
+            diffs.Add($"Would apply {dto.Permissions.Count} permission(s)");
 
         if (diffs.Count == 0)
         {
