@@ -216,7 +216,7 @@ key derived from the primary key if `nameColumn` is unset).
   SEO meta, SSL mode, visibility, URL inheritance), item-type field values,
   property-field values (Icon, SubmenuType), explicit permissions.
 - Grid rows: layout settings (top/bottom spacing, container width, visual
-  properties), item-type XML content.
+  properties), item-type XML content, explicit permissions.
 - Paragraphs: content, item-type field values, column attribution, permissions.
 - Areas: area metadata, area item-type fields (header/footer/master page
   connections).
