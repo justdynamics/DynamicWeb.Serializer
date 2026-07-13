@@ -1067,7 +1067,7 @@
       "pageId": 0,
       "excludes": [],
       "serviceCaches": [],
-      "schemaSync": null
+      "schemaSync": "EcomProductFields"
     },
     {
       "name": "EcomProductFieldTranslation",

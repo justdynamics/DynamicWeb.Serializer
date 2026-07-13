@@ -640,6 +640,111 @@ public class SerializerOrchestratorTests
         mockSchemaSync.Verify(s => s.SyncSchema(It.IsAny<Action<string>?>()), Times.Never);
     }
 
+    // === LRN-hosted-publish-01: column-backed product-field schema sync ===
+
+    private static (Mock<ISerializationProvider> Provider, ProviderRegistry Registry) OkSqlProviderRegistry(string tableName)
+    {
+        var sqlProvider = new Mock<ISerializationProvider>();
+        sqlProvider.Setup(p => p.ProviderType).Returns("SqlTable");
+        sqlProvider.Setup(p => p.Deserialize(It.IsAny<ManifestEntry>(), It.IsAny<string>(), It.IsAny<Action<string>?>(), It.IsAny<bool>(), It.IsAny<ConflictStrategy>(), It.IsAny<Truvio.Commerce.Serializer.Serialization.InternalLinkResolver?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>()))
+            .Returns(new ProviderDeserializeResult { Created = 2, TableName = tableName });
+
+        var registry = new ProviderRegistry();
+        registry.Register(sqlProvider.Object);
+        return (sqlProvider, registry);
+    }
+
+    private static Mock<EcomProductFieldSchemaSync> MockProductFieldSync()
+        => new(MockBehavior.Loose, new object[] { new Mock<ISqlExecutor>().Object });
+
+    [Fact]
+    public void DeserializeAll_RunsProductFieldSchemaSync_ForEcomProductFieldTable_WithoutMarker()
+    {
+        // The shipped config that surfaced the bug had NO schemaSync marker — the table name
+        // alone must trigger the sync so those payloads are protected.
+        var entry = new SqlTableEntry
+        {
+            EntryId = "sql/EcomProductField",
+            Files = Array.Empty<string>(),
+            Table = "EcomProductField"
+        };
+        var (_, registry) = OkSqlProviderRegistry("EcomProductField");
+        var mockSync = MockProductFieldSync();
+
+        var orchestrator = new SerializerOrchestrator(registry, ecomProductFieldSchemaSync: mockSync.Object);
+        orchestrator.DeserializeEntries(
+            new List<ManifestEntry> { entry }, "/input", SerializerMode.Replace,
+            ConflictStrategy.SourceWins, log: null, isDryRun: false, providerFilter: null,
+            escalator: null, excludeFieldsByItemType: null, excludeXmlElementsByType: null);
+
+        mockSync.Verify(s => s.SyncSchema(It.IsAny<Action<string>?>()), Times.Once);
+        mockSync.Verify(s => s.WarnMissingColumns(It.IsAny<Action<string>?>()), Times.Once);
+    }
+
+    [Fact]
+    public void DeserializeAll_RunsProductFieldSchemaSync_ForEcomProductFieldsMarker()
+    {
+        var entry = new SqlTableEntry
+        {
+            EntryId = "sql/EcomProductField",
+            Files = Array.Empty<string>(),
+            Table = "EcomProductField",
+            SchemaSync = "EcomProductFields"
+        };
+        var (_, registry) = OkSqlProviderRegistry("EcomProductField");
+        var mockSync = MockProductFieldSync();
+
+        var orchestrator = new SerializerOrchestrator(registry, ecomProductFieldSchemaSync: mockSync.Object);
+        orchestrator.DeserializeEntries(
+            new List<ManifestEntry> { entry }, "/input", SerializerMode.Replace,
+            ConflictStrategy.SourceWins, log: null, isDryRun: false, providerFilter: null,
+            escalator: null, excludeFieldsByItemType: null, excludeXmlElementsByType: null);
+
+        mockSync.Verify(s => s.SyncSchema(It.IsAny<Action<string>?>()), Times.Once);
+    }
+
+    [Fact]
+    public void DeserializeAll_DryRun_DoesNotRunProductFieldSchemaSync()
+    {
+        var entry = new SqlTableEntry
+        {
+            EntryId = "sql/EcomProductField",
+            Files = Array.Empty<string>(),
+            Table = "EcomProductField"
+        };
+        var (_, registry) = OkSqlProviderRegistry("EcomProductField");
+        var mockSync = MockProductFieldSync();
+
+        var orchestrator = new SerializerOrchestrator(registry, ecomProductFieldSchemaSync: mockSync.Object);
+        orchestrator.DeserializeEntries(
+            new List<ManifestEntry> { entry }, "/input", SerializerMode.Replace,
+            ConflictStrategy.SourceWins, log: null, isDryRun: true, providerFilter: null,
+            escalator: null, excludeFieldsByItemType: null, excludeXmlElementsByType: null);
+
+        mockSync.Verify(s => s.SyncSchema(It.IsAny<Action<string>?>()), Times.Never);
+    }
+
+    [Fact]
+    public void DeserializeAll_UnrelatedTable_DoesNotRunProductFieldSchemaSync()
+    {
+        var entry = new SqlTableEntry
+        {
+            EntryId = "sql/EcomOrderFlow",
+            Files = Array.Empty<string>(),
+            Table = "EcomOrderFlow"
+        };
+        var (_, registry) = OkSqlProviderRegistry("EcomOrderFlow");
+        var mockSync = MockProductFieldSync();
+
+        var orchestrator = new SerializerOrchestrator(registry, ecomProductFieldSchemaSync: mockSync.Object);
+        orchestrator.DeserializeEntries(
+            new List<ManifestEntry> { entry }, "/input", SerializerMode.Replace,
+            ConflictStrategy.SourceWins, log: null, isDryRun: false, providerFilter: null,
+            escalator: null, excludeFieldsByItemType: null, excludeXmlElementsByType: null);
+
+        mockSync.Verify(s => s.SyncSchema(It.IsAny<Action<string>?>()), Times.Never);
+    }
+
     [Fact]
     [Trait("Category", "Phase15")]
     public void DeserializeAll_CacheInvalidationFailure_LoggedButDoesNotBlockOtherEntries()
