@@ -1566,9 +1566,14 @@ public class ContentDeserializer
             return;
         }
 
-        var contentFields = fields
+        // Authored payload fields (present in the YAML), minus system fields. Captured before
+        // the null-out pass so the derive-on-save repair (below) compares only against values
+        // the payload actually asserted.
+        var authoredFields = fields
             .Where(kvp => !ItemSystemFields.Contains(kvp.Key))
             .ToDictionary(kvp => kvp.Key, kvp => (object?)kvp.Value);
+
+        var contentFields = new Dictionary<string, object?>(authoredFields);
 
         // Source-wins: null out item fields not present in the serialized data.
         // Without this, stale target values (e.g. invalid button data) survive sync.
@@ -1589,6 +1594,47 @@ public class ContentDeserializer
         itemEntry.DeserializeFrom(contentFields);
         using (var itemSaveContext = new Dynamicweb.Content.Items.ItemContext())
             itemEntry.Save(itemSaveContext);
+
+        // Derive-on-save repair (LRN-hosted-publish-05): the platform recomputes some fields on
+        // save (e.g. Swift LogoWidth from the image's intrinsic size), overwriting the authored
+        // value in the same save. Re-read and re-write any authored non-empty field whose
+        // persisted value diverged. Skipped on dry-run (no save happened).
+        if (!_isDryRun)
+            RepairDerivedItemFields(itemType, itemId, authoredFields);
+    }
+
+    /// <summary>
+    /// Post-write verify/repair pass for item/paragraph content fields (LRN-hosted-publish-05).
+    /// Re-reads the just-saved item and, for every authored non-empty field whose persisted
+    /// value differs from the authored value, re-writes the authored value in a second save.
+    /// The decision logic is in <see cref="DerivedFieldRepair.Compute"/>; this method supplies
+    /// the DB read + second save. No-op when nothing diverged.
+    /// </summary>
+    private void RepairDerivedItemFields(string itemType, string itemId, IReadOnlyDictionary<string, object?> authoredFields)
+    {
+        if (authoredFields.Count == 0)
+            return;
+
+        var saved = Services.Items.GetItem(itemType, itemId);
+        if (saved == null)
+            return;
+
+        var savedNames = new HashSet<string>(saved.Names);
+        var persisted = new Dictionary<string, object?>();
+        foreach (var key in authoredFields.Keys)
+            persisted[key] = savedNames.Contains(key) ? saved[key] : null;
+
+        var repairs = DerivedFieldRepair.Compute(authoredFields, persisted);
+        if (repairs.Count == 0)
+            return;
+
+        saved.DeserializeFrom(repairs);
+        using (var repairContext = new Dynamicweb.Content.Items.ItemContext())
+            saved.Save(repairContext);
+
+        foreach (var repair in repairs)
+            Log($"Derive-on-save repair: {itemType} id={itemId} field '{repair.Key}' re-written to " +
+                $"authored value '{repair.Value}' (platform had overwritten it on save).");
     }
 
     // -------------------------------------------------------------------------

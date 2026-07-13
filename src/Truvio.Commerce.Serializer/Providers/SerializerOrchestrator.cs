@@ -19,6 +19,7 @@ public class SerializerOrchestrator
     private readonly FkDependencyResolver? _fkResolver;
     private readonly CacheInvalidator? _cacheInvalidator;
     private readonly EcomGroupFieldSchemaSync? _ecomSchemaSync;
+    private readonly EcomProductFieldSchemaSync? _ecomProductFieldSchemaSync;
     private readonly ManifestWriter _manifestWriter;
 
     public SerializerOrchestrator(
@@ -26,12 +27,14 @@ public class SerializerOrchestrator
         FkDependencyResolver? fkResolver = null,
         CacheInvalidator? cacheInvalidator = null,
         EcomGroupFieldSchemaSync? ecomSchemaSync = null,
-        ManifestWriter? manifestWriter = null)
+        ManifestWriter? manifestWriter = null,
+        EcomProductFieldSchemaSync? ecomProductFieldSchemaSync = null)
     {
         _registry = registry ?? throw new ArgumentNullException(nameof(registry));
         _fkResolver = fkResolver;
         _cacheInvalidator = cacheInvalidator;
         _ecomSchemaSync = ecomSchemaSync;
+        _ecomProductFieldSchemaSync = ecomProductFieldSchemaSync;
         // Phase 43 / DESER-01: ManifestWriter is needed by the manifest-driven DeserializeAll
         // signature. Defaulting to a fresh instance keeps the legacy DeserializeAll(predicates, ...)
         // overload (which doesn't read the manifest) callable without explicit wiring.
@@ -429,6 +432,33 @@ public class SerializerOrchestrator
                 catch (Exception ex)
                 {
                     wrappedLog($"WARNING: Schema sync failed for entry '{entry.EntryId}': {ex.Message}");
+                }
+            }
+
+            // Column-backed product-field schema sync (LRN-hosted-publish-01). EcomProductField
+            // definition rows are column-backed on EcomProducts; deserializing them without
+            // creating the columns breaks every product read and silently zeroes index builds.
+            // Run the sync right after the EcomProductField entry writes so the columns exist
+            // BEFORE the EcomProducts entry (ordered later) writes its rows. Triggered by the
+            // schemaSync="EcomProductFields" marker OR the table name, so a config that predates
+            // the marker (the exact shape that surfaced the bug) is still protected. After the
+            // sync, warn (strict: escalate via WrapLogWithEscalator) if any definition still
+            // lacks a backing column.
+            if (!isDryRun && _ecomProductFieldSchemaSync != null
+                && entry is SqlTableEntry sqlEntryProductSync
+                && (string.Equals(sqlEntryProductSync.SchemaSync, "EcomProductFields", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(sqlEntryProductSync.Table, "EcomProductField", StringComparison.OrdinalIgnoreCase))
+                && !result.HasErrors)
+            {
+                try
+                {
+                    wrappedLog($"Running product-field schema sync for {entry.EntryId}...");
+                    _ecomProductFieldSchemaSync.SyncSchema(wrappedLog);
+                    _ecomProductFieldSchemaSync.WarnMissingColumns(wrappedLog);
+                }
+                catch (Exception ex)
+                {
+                    wrappedLog($"WARNING: Product-field schema sync failed for entry '{entry.EntryId}': {ex.Message}");
                 }
             }
         }

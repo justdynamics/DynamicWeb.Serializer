@@ -1,4 +1,5 @@
 using System.Data;
+using Truvio.Commerce.Serializer.AdminUI.Commands;
 using Truvio.Commerce.Serializer.Configuration;
 using Truvio.Commerce.Serializer.Infrastructure;
 using Truvio.Commerce.Serializer.Models;
@@ -6,6 +7,7 @@ using Truvio.Commerce.Serializer.Providers;
 using Truvio.Commerce.Serializer.Providers.SqlTable;
 using Truvio.Commerce.Serializer.Reporting;
 using Dynamicweb.Data;
+using Dynamicweb.CoreUI.Data;
 using Moq;
 using Xunit;
 
@@ -638,6 +640,172 @@ public class SerializerOrchestratorTests
             escalator: null, excludeFieldsByItemType: null, excludeXmlElementsByType: null);
 
         mockSchemaSync.Verify(s => s.SyncSchema(It.IsAny<Action<string>?>()), Times.Never);
+    }
+
+    // === LRN-hosted-publish-01: column-backed product-field schema sync ===
+
+    private static (Mock<ISerializationProvider> Provider, ProviderRegistry Registry) OkSqlProviderRegistry(string tableName)
+    {
+        var sqlProvider = new Mock<ISerializationProvider>();
+        sqlProvider.Setup(p => p.ProviderType).Returns("SqlTable");
+        sqlProvider.Setup(p => p.Deserialize(It.IsAny<ManifestEntry>(), It.IsAny<string>(), It.IsAny<Action<string>?>(), It.IsAny<bool>(), It.IsAny<ConflictStrategy>(), It.IsAny<Truvio.Commerce.Serializer.Serialization.InternalLinkResolver?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>()))
+            .Returns(new ProviderDeserializeResult { Created = 2, TableName = tableName });
+
+        var registry = new ProviderRegistry();
+        registry.Register(sqlProvider.Object);
+        return (sqlProvider, registry);
+    }
+
+    private static Mock<EcomProductFieldSchemaSync> MockProductFieldSync()
+        => new(MockBehavior.Loose, new object[] { new Mock<ISqlExecutor>().Object });
+
+    [Fact]
+    public void DeserializeAll_RunsProductFieldSchemaSync_ForEcomProductFieldTable_WithoutMarker()
+    {
+        // The shipped config that surfaced the bug had NO schemaSync marker — the table name
+        // alone must trigger the sync so those payloads are protected.
+        var entry = new SqlTableEntry
+        {
+            EntryId = "sql/EcomProductField",
+            Files = Array.Empty<string>(),
+            Table = "EcomProductField"
+        };
+        var (_, registry) = OkSqlProviderRegistry("EcomProductField");
+        var mockSync = MockProductFieldSync();
+
+        var orchestrator = new SerializerOrchestrator(registry, ecomProductFieldSchemaSync: mockSync.Object);
+        orchestrator.DeserializeEntries(
+            new List<ManifestEntry> { entry }, "/input", SerializerMode.Replace,
+            ConflictStrategy.SourceWins, log: null, isDryRun: false, providerFilter: null,
+            escalator: null, excludeFieldsByItemType: null, excludeXmlElementsByType: null);
+
+        mockSync.Verify(s => s.SyncSchema(It.IsAny<Action<string>?>()), Times.Once);
+        mockSync.Verify(s => s.WarnMissingColumns(It.IsAny<Action<string>?>()), Times.Once);
+    }
+
+    [Fact]
+    public void DeserializeAll_RunsProductFieldSchemaSync_ForEcomProductFieldsMarker()
+    {
+        var entry = new SqlTableEntry
+        {
+            EntryId = "sql/EcomProductField",
+            Files = Array.Empty<string>(),
+            Table = "EcomProductField",
+            SchemaSync = "EcomProductFields"
+        };
+        var (_, registry) = OkSqlProviderRegistry("EcomProductField");
+        var mockSync = MockProductFieldSync();
+
+        var orchestrator = new SerializerOrchestrator(registry, ecomProductFieldSchemaSync: mockSync.Object);
+        orchestrator.DeserializeEntries(
+            new List<ManifestEntry> { entry }, "/input", SerializerMode.Replace,
+            ConflictStrategy.SourceWins, log: null, isDryRun: false, providerFilter: null,
+            escalator: null, excludeFieldsByItemType: null, excludeXmlElementsByType: null);
+
+        mockSync.Verify(s => s.SyncSchema(It.IsAny<Action<string>?>()), Times.Once);
+    }
+
+    [Fact]
+    public void DeserializeAll_DryRun_DoesNotRunProductFieldSchemaSync()
+    {
+        var entry = new SqlTableEntry
+        {
+            EntryId = "sql/EcomProductField",
+            Files = Array.Empty<string>(),
+            Table = "EcomProductField"
+        };
+        var (_, registry) = OkSqlProviderRegistry("EcomProductField");
+        var mockSync = MockProductFieldSync();
+
+        var orchestrator = new SerializerOrchestrator(registry, ecomProductFieldSchemaSync: mockSync.Object);
+        orchestrator.DeserializeEntries(
+            new List<ManifestEntry> { entry }, "/input", SerializerMode.Replace,
+            ConflictStrategy.SourceWins, log: null, isDryRun: true, providerFilter: null,
+            escalator: null, excludeFieldsByItemType: null, excludeXmlElementsByType: null);
+
+        mockSync.Verify(s => s.SyncSchema(It.IsAny<Action<string>?>()), Times.Never);
+    }
+
+    [Fact]
+    public void DeserializeAll_UnrelatedTable_DoesNotRunProductFieldSchemaSync()
+    {
+        var entry = new SqlTableEntry
+        {
+            EntryId = "sql/EcomOrderFlow",
+            Files = Array.Empty<string>(),
+            Table = "EcomOrderFlow"
+        };
+        var (_, registry) = OkSqlProviderRegistry("EcomOrderFlow");
+        var mockSync = MockProductFieldSync();
+
+        var orchestrator = new SerializerOrchestrator(registry, ecomProductFieldSchemaSync: mockSync.Object);
+        orchestrator.DeserializeEntries(
+            new List<ManifestEntry> { entry }, "/input", SerializerMode.Replace,
+            ConflictStrategy.SourceWins, log: null, isDryRun: false, providerFilter: null,
+            escalator: null, excludeFieldsByItemType: null, excludeXmlElementsByType: null);
+
+        mockSync.Verify(s => s.SyncSchema(It.IsAny<Action<string>?>()), Times.Never);
+    }
+
+    // === LRN-sapporo-02: clean fragment-only merge must report status ok ===
+
+    [Fact]
+    public void DeserializeEntries_CleanFragmentMerge_ContentAndSql_ZeroFailed_EmptyErrors_IsNotError()
+    {
+        // Reproduces the LRN-sapporo-02 shape observed on 0.8.0-beta: a fragment-only merge
+        // with content + sql entries, 0 failed, empty Errors — which returned status="error"
+        // with an empty Errors list. Status must derive from failed>0 || Errors.Any().
+        //
+        // The root-cause hypothesis named a content entry reporting all-zero counts as a
+        // non-success sentinel, so the content entry here returns 0/0/0/0 with no errors.
+        var contentEntry = new ContentEntry
+        {
+            EntryId = "content/area-1",
+            Files = Array.Empty<string>(),
+            AreaId = 1,
+            AreaName = "Fragment",
+            Path = "/",
+            PageId = 0
+        };
+        var sqlEntry = new SqlTableEntry
+        {
+            EntryId = "sql/EcomProductConfiguratorGroups",
+            Files = Array.Empty<string>(),
+            Table = "EcomProductConfiguratorGroups"
+        };
+
+        var contentProvider = new Mock<ISerializationProvider>();
+        contentProvider.Setup(p => p.ProviderType).Returns("Content");
+        contentProvider.Setup(p => p.Deserialize(It.IsAny<ManifestEntry>(), It.IsAny<string>(), It.IsAny<Action<string>?>(), It.IsAny<bool>(), It.IsAny<ConflictStrategy>(), It.IsAny<Truvio.Commerce.Serializer.Serialization.InternalLinkResolver?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>()))
+            .Returns(new ProviderDeserializeResult { Created = 0, Updated = 0, Skipped = 0, Failed = 0, TableName = "Content" });
+
+        var sqlProvider = new Mock<ISerializationProvider>();
+        sqlProvider.Setup(p => p.ProviderType).Returns("SqlTable");
+        sqlProvider.Setup(p => p.Deserialize(It.IsAny<ManifestEntry>(), It.IsAny<string>(), It.IsAny<Action<string>?>(), It.IsAny<bool>(), It.IsAny<ConflictStrategy>(), It.IsAny<Truvio.Commerce.Serializer.Serialization.InternalLinkResolver?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>()))
+            .Returns(new ProviderDeserializeResult { Created = 10, Updated = 0, Skipped = 0, Failed = 0, TableName = "EcomProductConfiguratorGroups" });
+
+        var registry = new ProviderRegistry();
+        registry.Register(contentProvider.Object);
+        registry.Register(sqlProvider.Object);
+
+        var orchestrator = new SerializerOrchestrator(registry);
+        var result = orchestrator.DeserializeEntries(
+            new List<ManifestEntry> { contentEntry, sqlEntry }, "/input", SerializerMode.Merge,
+            ConflictStrategy.DestinationWins, log: null, isDryRun: false, providerFilter: null,
+            escalator: null, excludeFieldsByItemType: null, excludeXmlElementsByType: null);
+
+        // Aggregation invariants: 0 failed, no run-level errors, so HasErrors is false.
+        Assert.Equal(0, result.EntryOutcomes.Sum(o => o.Counts.Failed));
+        Assert.Empty(result.Errors);
+        Assert.False(result.HasErrors);
+        Assert.DoesNotContain(result.EntryOutcomes, o => o.Status == EntryStatus.Failed);
+
+        // The clean run's summary must NOT carry a trailing "Errors:" fragment (the 0.8.0 shape).
+        Assert.DoesNotContain("Errors:", result.Summary);
+
+        // The HTTP status mapped from this result must be Ok, not Error.
+        var mapped = SerializerDeserializeCommand.InvokeMapStatusForTest(result);
+        Assert.Equal(CommandResult.ResultType.Ok, mapped.Status);
     }
 
     [Fact]

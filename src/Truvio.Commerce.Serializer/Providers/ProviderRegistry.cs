@@ -67,6 +67,8 @@ public class ProviderRegistry
         var fkResolver = new FkDependencyResolver(sqlExecutor);
         var cacheInvalidator = new CacheInvalidator();
         var ecomSchemaSync = new EcomGroupFieldSchemaSync(sqlExecutor);
-        return new SerializerOrchestrator(registry, fkResolver, cacheInvalidator, ecomSchemaSync);
+        var ecomProductFieldSchemaSync = new EcomProductFieldSchemaSync(sqlExecutor);
+        return new SerializerOrchestrator(registry, fkResolver, cacheInvalidator, ecomSchemaSync,
+            ecomProductFieldSchemaSync: ecomProductFieldSchemaSync);
     }
 }
