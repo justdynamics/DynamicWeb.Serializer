@@ -246,6 +246,28 @@ public class SqlTableProvider : SerializationProviderBase
         var yamlRows = _fileStore.ReadAllRows(inputRoot, metadata.TableName).ToList();
         Log($"Deserializing {yamlRows.Count} rows into {metadata.TableName} (isDryRun={isDryRun})", log);
 
+        // LRN-hosted-publish-10: identity-PK relation tables. Auto-ids are environment-local —
+        // matching/inserting by the payload's explicit auto-id collides with the target's own
+        // rows and the relation rows silently never land (the customer-visible casualty was
+        // add-to-cart, refused because the variant combination didn't exist). For known relation
+        // tables, switch row identity to the NATURAL KEY and strip the identity column from the
+        // payload rows so the target assigns its own auto-id. Guarded by the live schema (see
+        // IdentityPkRelationTables.GetNaturalKey) — when the guards don't hold, legacy behavior
+        // is preserved and the collision WARNING below covers the gap.
+        var identityOnlyPk = IdentityPkRelationTables.IsIdentityOnlyPk(metadata);
+        var naturalKey = IdentityPkRelationTables.GetNaturalKey(metadata);
+        if (naturalKey != null)
+        {
+            Log(
+                $"  [{metadata.TableName}] identity-PK relation table — matching rows by natural key " +
+                $"({string.Join(", ", naturalKey)}); payload auto-ids are ignored and the target assigns its own.",
+                log);
+            foreach (var row in yamlRows)
+                foreach (var identityCol in metadata.IdentityColumns)
+                    row.Remove(identityCol);
+            metadata = metadata with { KeyColumns = naturalKey.ToList() };
+        }
+
         // Phase 37-02: unified schema-drift + type coercion via TargetSchemaCache.
         // Target columns absent from the live target schema are stripped from each row
         // before composing MERGE SQL (prevents "Invalid column name" on cross-environment syncs);
@@ -351,6 +373,8 @@ public class SqlTableProvider : SerializationProviderBase
                 existingRowsByIdentity[identity] = existingRow;
             }
 
+            int autoIdCollisions = 0;
+
             foreach (var yamlRow in yamlRows)
             {
                 var identity = _tableReader.GenerateRowIdentity(yamlRow, metadata);
@@ -363,6 +387,30 @@ public class SqlTableProvider : SerializationProviderBase
                     skipped++;
                     Log($"  Skipped {identity} (unchanged)", log);
                     continue;
+                }
+
+                // LRN-hosted-publish-10 (warn path): an identity-PK relation table WITHOUT a
+                // natural-key mapping is about to bind this row by its environment-local auto-id,
+                // and the target already has a DIFFERENT row under that auto-id (checksum differs
+                // — the identical case skipped above). This is the silent class that zeroed
+                // add-to-cart: the write hits an unrelated row or never lands, and the run still
+                // reports 0 failed. WARNING prefix rides the orchestrator's strict-mode escalator.
+                if (identityOnlyPk && naturalKey == null
+                    && string.IsNullOrEmpty(metadata.NameColumn)
+                    && IdentityPkRelationTables.LooksLikeRelationTable(metadata.TableName)
+                    && existingChecksums.ContainsKey(identity))
+                {
+                    autoIdCollisions++;
+                    if (autoIdCollisions == 1)
+                    {
+                        Log(
+                            $"  WARNING: [{metadata.TableName}] auto-id collision: payload row auto-id " +
+                            $"'{identity}' matches an existing target row with different content. Auto-ids " +
+                            "are environment-local — this write binds by auto-id and may hit an unrelated " +
+                            "row or silently never land (LRN-hosted-publish-10). Add the table to " +
+                            "IdentityPkRelationTables to match by natural key instead.",
+                            log);
+                    }
                 }
 
                 // Merge mode: field-level fill. When identity matches an existing
@@ -490,6 +538,9 @@ public class SqlTableProvider : SerializationProviderBase
 
                 Log($"  {outcome} {identity}", log);
             }
+
+            if (autoIdCollisions > 1)
+                Log($"  [{metadata.TableName}] {autoIdCollisions} auto-id collision row(s) total (first one warned above).", log);
         }
 
         // Re-enable FK constraints
