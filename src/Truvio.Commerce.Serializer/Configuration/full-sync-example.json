@@ -846,6 +846,34 @@
       "schemaSync": null
     },
     {
+      "name": "EcomOrderLines",
+      "mode": "Replace",
+      "providerType": "SqlTable",
+      "table": "EcomOrderLines",
+      "nameColumn": null,
+      "compareColumns": null,
+      "areaId": 0,
+      "path": "",
+      "pageId": 0,
+      "excludes": [],
+      "serviceCaches": [],
+      "schemaSync": null
+    },
+    {
+      "name": "EcomOrders",
+      "mode": "Replace",
+      "providerType": "SqlTable",
+      "table": "EcomOrders",
+      "nameColumn": null,
+      "compareColumns": null,
+      "areaId": 0,
+      "path": "",
+      "pageId": 0,
+      "excludes": [],
+      "serviceCaches": [],
+      "schemaSync": null
+    },
+    {
       "name": "EcomOrderStateRules",
       "mode": "Replace",
       "providerType": "SqlTable",
