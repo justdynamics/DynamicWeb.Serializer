@@ -80,4 +80,23 @@ public static class PackageAccess
             return false;
         }
     }
+
+    /// <summary>
+    /// Access check for the bulk SerializeRoot upload (<see cref="Commands.SerializerUploadRootCommand"/>).
+    /// There is no target area — the zip expands into the engine-owned
+    /// <c>Files/System/Serializer/SerializeRoot/&lt;mode&gt;/</c> path — so this gates on the
+    /// upload FUNCTION grant only (same level the Upload Package function uses). Fails CLOSED.
+    /// </summary>
+    public static bool CanUploadRoot()
+    {
+        try
+        {
+            return new PackagePermissionEntity(PackagePermissionEntity.UploadKey)
+                       .GetPermission().HasPermission(PermissionLevel.Read);
+        }
+        catch
+        {
+            return false;
+        }
+    }
 }
