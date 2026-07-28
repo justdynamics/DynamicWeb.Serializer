@@ -1512,6 +1512,9 @@ public class ContentDeserializer
         if (contentFields.Count == 0)
             return;
 
+        // Engine issue #6: ButtonData binds only as an object — same reshape as SaveItemFields.
+        ButtonDataFieldLookup.Apply(propItem.SystemName, contentFields, _log);
+
         propItem.DeserializeFrom(contentFields);
         using (var propItemContext = new Dynamicweb.Content.Items.ItemContext())
             propItem.Save(propItemContext);
@@ -1591,6 +1594,12 @@ public class ContentDeserializer
         if (contentFields.Count == 0)
             return;
 
+        // Engine issue #6: ButtonData binds only as an object. Reshape the round-tripped JSON
+        // string (and the null a source-wins clear produces) BEFORE the write, or the save
+        // silently no-ops and the stale target button survives.
+        var buttonDataFields = ButtonDataFieldLookup.For(itemType, _log);
+        ButtonDataFieldLookup.Apply(itemType, contentFields, _log);
+
         itemEntry.DeserializeFrom(contentFields);
         using (var itemSaveContext = new Dynamicweb.Content.Items.ItemContext())
             itemEntry.Save(itemSaveContext);
@@ -1599,9 +1608,21 @@ public class ContentDeserializer
         // save (e.g. Swift LogoWidth from the image's intrinsic size), overwriting the authored
         // value in the same save. Re-read and re-write any authored non-empty field whose
         // persisted value diverged. Skipped on dry-run (no save happened).
+        //
+        // ButtonData fields are excluded: the repair compares string projections, and a
+        // structured value never projects back to its authored JSON string, so every run would
+        // "repair" it — re-writing the string shape that issue #6 exists to avoid.
         if (!_isDryRun)
-            RepairDerivedItemFields(itemType, itemId, authoredFields);
+        {
+            var repairCandidates = buttonDataFields.Count == 0
+                ? authoredFields
+                : authoredFields
+                    .Where(kvp => !buttonDataFields.Contains(kvp.Key))
+                    .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+            RepairDerivedItemFields(itemType, itemId, repairCandidates);
+        }
     }
+
 
     /// <summary>
     /// Post-write verify/repair pass for item/paragraph content fields (LRN-hosted-publish-05).
@@ -1891,6 +1912,7 @@ public class ContentDeserializer
         itemEntry.SerializeTo(currentDict);
 
         int filled = 0;
+        var filledFields = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var kvp in yamlFields)
         {
             if (ItemSystemFields.Contains(kvp.Key)) continue;
@@ -1900,6 +1922,7 @@ public class ContentDeserializer
             if (MergePredicate.IsUnsetForMerge(currentVal?.ToString()))
             {
                 currentDict[kvp.Key] = kvp.Value;   // overlay filled onto current (Pitfall 7)
+                filledFields.Add(kvp.Key);
                 filled++;
             }
             else
@@ -1909,6 +1932,11 @@ public class ContentDeserializer
         }
 
         if (filled == 0) return 0;
+
+        // Engine issue #6: same object-shape requirement as SaveItemFields, scoped to the
+        // entries this merge actually filled — untouched entries keep the value the target
+        // already holds.
+        ButtonDataFieldLookup.Apply(itemType, currentDict, _log, onlyFields: filledFields);
 
         itemEntry.DeserializeFrom(currentDict);
         using (var itemSaveContext = new Dynamicweb.Content.Items.ItemContext())
@@ -1945,6 +1973,7 @@ public class ContentDeserializer
         propItem.SerializeTo(currentDict);
 
         int filled = 0;
+        var filledFields = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var kvp in propertyFields)
         {
             if (ItemSystemFields.Contains(kvp.Key)) continue;
@@ -1954,6 +1983,7 @@ public class ContentDeserializer
             if (MergePredicate.IsUnsetForMerge(currentVal?.ToString()))
             {
                 currentDict[kvp.Key] = kvp.Value;
+                filledFields.Add(kvp.Key);
                 filled++;
             }
             else
@@ -1963,6 +1993,9 @@ public class ContentDeserializer
         }
 
         if (filled == 0) return 0;
+
+        // Engine issue #6: reshape only the entries this merge filled.
+        ButtonDataFieldLookup.Apply(propItem.SystemName, currentDict, _log, onlyFields: filledFields);
 
         propItem.DeserializeFrom(currentDict);
         using (var propItemContext = new Dynamicweb.Content.Items.ItemContext())
@@ -2334,6 +2367,11 @@ public class ContentDeserializer
                 Log($"[DRY-RUN] Would resolve links in {itemType}/{itemId}");
                 return;
             }
+            // Engine issue #6: the resolver rewrites "SelectedValue": "N" INSIDE ButtonData JSON,
+            // so a resolved button comes back here as a string. Writing that string back binds
+            // to nothing and the remap is silently lost — reshape it first.
+            ButtonDataFieldLookup.Apply(itemType, changedFields, _log);
+
             item.DeserializeFrom(changedFields);
             using (var itemSaveContext = new Dynamicweb.Content.Items.ItemContext())
                 item.Save(itemSaveContext);
@@ -2363,6 +2401,9 @@ public class ContentDeserializer
                 Log($"[DRY-RUN] Would resolve links in PropertyItem of page {page.UniqueId}");
                 return;
             }
+            // Engine issue #6: same object-shape requirement as ResolveLinksInItemFields.
+            ButtonDataFieldLookup.Apply(propItem.SystemName, changedFields, _log);
+
             propItem.DeserializeFrom(changedFields);
             using (var propItemContext = new Dynamicweb.Content.Items.ItemContext())
             propItem.Save(propItemContext);

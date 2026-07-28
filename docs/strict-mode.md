@@ -11,6 +11,7 @@ fails the pipeline and blocks promotion.
 - [What escalates](#what-escalates)
 - [Entry-point defaults](#entry-point-defaults)
 - [Override precedence](#override-precedence)
+- [Quarantining a warning class](#quarantining-a-warning-class)
 - [What a failing run looks like](#what-a-failing-run-looks-like)
 - [Adding a new cache service](#adding-a-new-cache-service)
 - [Known limits](#known-limits)
@@ -111,6 +112,54 @@ Two useful patterns:
 - **"Default behavior but force strict for this pipeline run."** Leave
   `config.strictMode: null` (or omit the field). Pipelines pass
   `?strictMode=true` on every call; the admin UI stays lenient by default.
+
+## Quarantining a warning class
+
+Strict mode is deliberately blunt: any escalated warning fails the run.
+For one class — **unresolvable links** — that bluntness is out of
+proportion. An internal link whose target page is not on target is
+cosmetic on the one row that carries it; the row still deserializes.
+Failing the pass on it turns a single bad link into a total content
+outage for every row the pass wrote.
+
+A run may therefore **quarantine** that class. Quarantined warnings are:
+
+- logged exactly as before (the emitting call site is unchanged),
+- collected into a `QUARANTINED:` block at end of run listing each one,
+- surfaced on `OrchestratorResult.QuarantinedWarnings` and appended to
+  the command's result message,
+- **excluded** from `AssertNoWarnings()` — they do not fail the pass.
+
+Quarantine is opt-in and off by default: a pipeline that asks for strict
+mode keeps failing on every class unless it names one to quarantine.
+Every other class (missing templates, schema drift, FK orphans, cache
+failures) still fails the run regardless.
+
+```bash
+curl -f -X POST \
+  "https://host/Admin/Api/SerializerDeserialize?mode=merge&strictMode=true&quarantineUnresolvableLinks=true"
+```
+
+Or via the JSON body: `{"Mode":"merge","StrictMode":true,"QuarantineUnresolvableLinks":true}`.
+
+The classes and their matching text live in `StrictModeWarningClass`:
+
+| Class constant | Matches |
+|----------------|---------|
+| `unresolvable-link` | `Unresolvable page ID N in link`, `Unresolvable paragraph ID N in anchor link` |
+
+A quarantined run looks like this:
+
+```
+[content/area-1] Succeeded: 283 created, 0 updated
+QUARANTINED: 1 warning(s) were quarantined per-item and did NOT fail this pass (strict-mode quarantine is active for their class):
+  -   WARNING: Unresolvable page ID 83 in link
+```
+
+Treat the block as a work item, not as a pass: fix the source data (see
+[`link-resolution.md`](link-resolution.md)) or acknowledge the id via the
+predicate's `acknowledgedOrphanPageIds`. Quarantine buys the run; it does
+not fix the link.
 
 ## What a failing run looks like
 
@@ -223,10 +272,18 @@ referenceable from `serviceCaches` in config.
   clause validation, service-cache resolution, and JSON shape checks fail
   immediately at `ConfigLoader.Load()`, regardless of `strictMode`. Those
   errors are always fatal.
-- **No per-warning-class toggles.** Strict mode is all-or-nothing. You
-  cannot say "escalate link warnings but not template warnings." If you
-  need finer control, either clean the source (the intended fix) or run
-  lenient and post-process the log.
+- **One quarantinable class.** Per-class control exists only for
+  `unresolvable-link` (see
+  [Quarantining a warning class](#quarantining-a-warning-class)). Every
+  other class is all-or-nothing: you cannot say "escalate link warnings
+  but not template warnings." If you need finer control, either clean the
+  source (the intended fix) or run lenient and post-process the log.
+- **Links still serialize as raw ids.** Quarantine bounds the blast
+  radius of an unresolvable link; it does not make links portable. Link
+  fields that store a raw source page id remain non-remappable across
+  environments. Serializing links as GUID-based refs (like every other
+  page reference in the trees) is the real fix and is a serialized-format
+  change — tracked separately.
 
 ## See also
 

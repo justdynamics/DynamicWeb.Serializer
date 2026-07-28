@@ -153,6 +153,57 @@ public class TemplateAssetManifestTests : IDisposable
     }
 
     [Fact]
+    public void Validate_EmailGridRowDefinition_ResolvesFromEmailRegistry()
+    {
+        // Engine issue #4: email pages carry row definitions in Grid/Email/RowDefinitions;
+        // resolving only against Grid/Page/RowDefinitions reported a legitimate email row
+        // ("1ColumnEmail") as missing and refused the whole strict run.
+        var filesRoot = Path.Combine(_tempRoot, "Files");
+        var designDir = Path.Combine(filesRoot, "Templates", "Designs", "Swift-v2");
+        var emailRowDefDir = Path.Combine(designDir, "Grid", "Email", "RowDefinitions");
+        Directory.CreateDirectory(emailRowDefDir);
+        File.WriteAllText(Path.Combine(emailRowDefDir, "1ColumnEmail.json"), "{}");
+
+        var refs = new List<TemplateReference>
+        {
+            new() { Kind = "grid-row", Path = "1ColumnEmail", ReferencedBy = new() { "/Emails/Order confirmation" } }
+        };
+
+        var escalated = new List<string>();
+        var escalator = new StrictModeEscalator(strict: true, log: escalated.Add);
+
+        var missing = new TemplateAssetManifest().Validate(filesRoot, refs, escalator);
+
+        Assert.Equal(0, missing);
+        Assert.Empty(escalated);
+    }
+
+    [Fact]
+    public void Validate_GridRowInNoRegistry_StillEscalates()
+    {
+        // Regression guard for the widened lookup (engine issue #4): consulting every
+        // Grid/<registry>/RowDefinitions folder must not degrade into "always found".
+        var filesRoot = Path.Combine(_tempRoot, "Files");
+        var designDir = Path.Combine(filesRoot, "Templates", "Designs", "Swift-v2");
+        Directory.CreateDirectory(Path.Combine(designDir, "Grid", "Page", "RowDefinitions"));
+        Directory.CreateDirectory(Path.Combine(designDir, "Grid", "Email", "RowDefinitions"));
+
+        var refs = new List<TemplateReference>
+        {
+            new() { Kind = "grid-row", Path = "NotInAnyRegistry", ReferencedBy = new() { "/Page1" } }
+        };
+
+        var escalated = new List<string>();
+        var escalator = new StrictModeEscalator(strict: true, log: escalated.Add);
+
+        var missing = new TemplateAssetManifest().Validate(filesRoot, refs, escalator);
+
+        Assert.Equal(1, missing);
+        Assert.Single(escalated);
+        Assert.Contains("NotInAnyRegistry", escalated[0]);
+    }
+
+    [Fact]
     public void Validate_ReferencedByListIsTruncatedAt5()
     {
         var filesRoot = Path.Combine(_tempRoot, "Files");

@@ -241,6 +241,82 @@ public class SerializerOrchestratorTests
     }
 
     // -------------------------------------------------------------------------
+    // Strict-mode quarantine (engine issue #5): one unresolvable link must not roll
+    // back a pass that wrote otherwise-clean rows.
+    // -------------------------------------------------------------------------
+
+    /// <summary>
+    /// Re-point the Content provider stub so its Deserialize emits <paramref name="warning"/>
+    /// through the orchestrator's wrapped log before returning a clean result — the shape of
+    /// an entry that wrote its rows and logged one recoverable warning on the way.
+    /// </summary>
+    private void StubContentProviderWarning(string warning)
+    {
+        _contentProvider.Setup(p => p.Deserialize(It.IsAny<ManifestEntry>(), It.IsAny<string>(), It.IsAny<Action<string>?>(), It.IsAny<bool>(), It.IsAny<ConflictStrategy>(), It.IsAny<Truvio.Commerce.Serializer.Serialization.InternalLinkResolver?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>(), It.IsAny<IReadOnlyDictionary<string, List<string>>?>()))
+            .Callback((ManifestEntry _, string _, Action<string>? log, bool _, ConflictStrategy _,
+                       Truvio.Commerce.Serializer.Serialization.InternalLinkResolver? _,
+                       IReadOnlyDictionary<string, List<string>>? _,
+                       IReadOnlyDictionary<string, List<string>>? _) => log?.Invoke(warning))
+            .Returns(new ProviderDeserializeResult { Created = 283, TableName = "Content" });
+    }
+
+    [Fact]
+    public void DeserializeEntries_UnresolvableLink_NotQuarantined_FailsTheRun()
+    {
+        // Pre-issue-#5 behavior, retained as the default: the whole pass fails.
+        StubContentProviderWarning("  WARNING: Unresolvable page ID 83 in link");
+        var escalator = new StrictModeEscalator(strict: true, log: null);
+
+        var result = _orchestrator.DeserializeEntries(
+            new List<ManifestEntry> { ContentEntry1 }, "/input", SerializerMode.Replace,
+            ConflictStrategy.SourceWins, log: null, isDryRun: false, providerFilter: null,
+            escalator: escalator, excludeFieldsByItemType: null, excludeXmlElementsByType: null);
+
+        Assert.True(result.HasErrors);
+        Assert.Empty(result.QuarantinedWarnings);
+    }
+
+    [Fact]
+    public void DeserializeEntries_QuarantinedUnresolvableLink_KeepsThePassGreen()
+    {
+        StubContentProviderWarning("  WARNING: Unresolvable page ID 83 in link");
+        var escalator = new StrictModeEscalator(
+            strict: true, log: null,
+            quarantinedClasses: new HashSet<string> { StrictModeWarningClass.UnresolvableLink });
+
+        var logs = new List<string>();
+        var result = _orchestrator.DeserializeEntries(
+            new List<ManifestEntry> { ContentEntry1 }, "/input", SerializerMode.Replace,
+            ConflictStrategy.SourceWins, log: logs.Add, isDryRun: false, providerFilter: null,
+            escalator: escalator, excludeFieldsByItemType: null, excludeXmlElementsByType: null);
+
+        // The 283 clean rows survive; the orphan link is reported, not fatal.
+        Assert.False(result.HasErrors);
+        Assert.Empty(result.Errors);
+        Assert.Single(result.QuarantinedWarnings);
+        Assert.Contains("Unresolvable page ID 83", result.QuarantinedWarnings[0]);
+        Assert.Contains(logs, l => l.StartsWith("QUARANTINED:"));
+        Assert.Contains("Quarantined: 1", result.Summary);
+    }
+
+    [Fact]
+    public void DeserializeEntries_QuarantineActive_OtherWarningStillFailsTheRun()
+    {
+        StubContentProviderWarning("WARNING: source column [T].[C] not present on target schema — skipping");
+        var escalator = new StrictModeEscalator(
+            strict: true, log: null,
+            quarantinedClasses: new HashSet<string> { StrictModeWarningClass.UnresolvableLink });
+
+        var result = _orchestrator.DeserializeEntries(
+            new List<ManifestEntry> { ContentEntry1 }, "/input", SerializerMode.Replace,
+            ConflictStrategy.SourceWins, log: null, isDryRun: false, providerFilter: null,
+            escalator: escalator, excludeFieldsByItemType: null, excludeXmlElementsByType: null);
+
+        Assert.True(result.HasErrors);
+        Assert.Empty(result.QuarantinedWarnings);
+    }
+
+    // -------------------------------------------------------------------------
     // OrchestratorResult tests — unchanged (test the surviving aggregate surface)
     // -------------------------------------------------------------------------
 

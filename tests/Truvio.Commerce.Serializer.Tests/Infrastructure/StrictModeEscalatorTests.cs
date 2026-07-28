@@ -133,6 +133,135 @@ public class StrictModeEscalatorTests
     }
 
     // -------------------------------------------------------------------------
+    // Per-class quarantine (engine issue #5)
+    // -------------------------------------------------------------------------
+
+    [Fact]
+    public void Classify_UnresolvablePageIdWarning_IsUnresolvableLink()
+    {
+        Assert.Equal(
+            StrictModeWarningClass.UnresolvableLink,
+            StrictModeWarningClass.Classify("  WARNING: Unresolvable page ID 83 in link"));
+    }
+
+    [Fact]
+    public void Classify_UnresolvableParagraphIdWarning_IsUnresolvableLink()
+    {
+        Assert.Equal(
+            StrictModeWarningClass.UnresolvableLink,
+            StrictModeWarningClass.Classify("  WARNING: Unresolvable paragraph ID 4711 in anchor link"));
+    }
+
+    [Fact]
+    public void Classify_UnrelatedWarning_IsNull()
+    {
+        Assert.Null(StrictModeWarningClass.Classify(
+            "WARNING: source column [EcomProducts].[X] not present on target schema — skipping"));
+    }
+
+    [Fact]
+    public void Quarantine_NotConfigured_UnresolvableLinkStillFailsTheRun()
+    {
+        // Default behavior is unchanged: without an explicit quarantine the link warning
+        // fails the pass exactly as before.
+        var escalator = new StrictModeEscalator(strict: true, log: null);
+        escalator.Escalate("WARNING: Unresolvable page ID 83 in link");
+
+        Assert.Equal(1, escalator.WarningCount);
+        Assert.Equal(0, escalator.QuarantinedCount);
+        Assert.Throws<CumulativeStrictModeException>(() => escalator.AssertNoWarnings());
+    }
+
+    [Fact]
+    public void Quarantine_UnresolvableLink_DoesNotFailTheRun()
+    {
+        var logs = new List<string>();
+        var escalator = new StrictModeEscalator(
+            strict: true, log: logs.Add,
+            quarantinedClasses: new HashSet<string> { StrictModeWarningClass.UnresolvableLink });
+
+        escalator.Escalate("WARNING: Unresolvable page ID 83 in link");
+
+        Assert.Equal(0, escalator.WarningCount);
+        Assert.Equal(1, escalator.QuarantinedCount);
+        Assert.Contains("Unresolvable page ID 83", escalator.QuarantinedWarnings[0]);
+        escalator.AssertNoWarnings();  // no throw — the other 283 rows survive
+    }
+
+    [Fact]
+    public void Quarantine_UnresolvableLink_StillLogsLoudly()
+    {
+        var logs = new List<string>();
+        var escalator = new StrictModeEscalator(
+            strict: true, log: logs.Add,
+            quarantinedClasses: new HashSet<string> { StrictModeWarningClass.UnresolvableLink });
+
+        escalator.Escalate("WARNING: Unresolvable page ID 83 in link");
+
+        Assert.Single(logs);
+        Assert.Contains("Unresolvable page ID 83", logs[0]);
+    }
+
+    [Fact]
+    public void Quarantine_OtherWarningClass_StillFailsTheRun()
+    {
+        var escalator = new StrictModeEscalator(
+            strict: true, log: null,
+            quarantinedClasses: new HashSet<string> { StrictModeWarningClass.UnresolvableLink });
+
+        escalator.Escalate("WARNING: Unresolvable page ID 83 in link");
+        escalator.Escalate("WARNING: template missing on page 'X'");
+
+        Assert.Equal(1, escalator.WarningCount);
+        Assert.Equal(1, escalator.QuarantinedCount);
+        var ex = Assert.Throws<CumulativeStrictModeException>(() => escalator.AssertNoWarnings());
+        Assert.Single(ex.Warnings);
+        Assert.Contains("template missing", ex.Warnings[0]);
+    }
+
+    [Fact]
+    public void Quarantine_RecordOnly_RoutesToQuarantineToo()
+    {
+        // The orchestrator's log wrapper captures WARNING lines via RecordOnly — quarantine
+        // must apply on that path as well, otherwise the wrapper re-fails the run.
+        var escalator = new StrictModeEscalator(
+            strict: true, log: null,
+            quarantinedClasses: new HashSet<string> { StrictModeWarningClass.UnresolvableLink });
+
+        escalator.RecordOnly("  WARNING: Unresolvable page ID 83 in link");
+
+        Assert.Equal(0, escalator.WarningCount);
+        Assert.Equal(1, escalator.QuarantinedCount);
+        escalator.AssertNoWarnings();  // no throw
+    }
+
+    [Fact]
+    public void Quarantine_Lenient_RecordsNothing()
+    {
+        var escalator = new StrictModeEscalator(
+            strict: false, log: null,
+            quarantinedClasses: new HashSet<string> { StrictModeWarningClass.UnresolvableLink });
+
+        escalator.Escalate("WARNING: Unresolvable page ID 83 in link");
+
+        Assert.Equal(0, escalator.WarningCount);
+        Assert.Equal(0, escalator.QuarantinedCount);
+    }
+
+    [Fact]
+    public void Quarantine_CapsRecordedWarningsAt10000()
+    {
+        var escalator = new StrictModeEscalator(
+            strict: true, log: null,
+            quarantinedClasses: new HashSet<string> { StrictModeWarningClass.UnresolvableLink });
+
+        for (var i = 0; i < 10_050; i++)
+            escalator.Escalate($"WARNING: Unresolvable page ID {i} in link");
+
+        Assert.Equal(10_000, escalator.QuarantinedCount);
+    }
+
+    // -------------------------------------------------------------------------
     // StrictModeResolver — entry-point-aware defaults
     // -------------------------------------------------------------------------
 
