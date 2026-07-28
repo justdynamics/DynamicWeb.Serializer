@@ -233,11 +233,25 @@ ls Files/Templates/Designs/Swift/<Template>.cshtml
 ls Files/System/ItemTypes/<ItemType>.xml
 ```
 
+Grid-row definitions live in a per-grid-type registry under the design
+package. Page grids use `Grid/Page/RowDefinitions/`; email pages use
+`Grid/Email/RowDefinitions/`. The serialized grid row records only its
+`definitionId`, so validation probes the page registry first and then
+every other `Grid/<registry>/RowDefinitions/` folder in every deployed
+design:
+
+```bash
+ls Files/Templates/Designs/*/Grid/*/RowDefinitions/<DefinitionId>.json
+```
+
 If the template is missing, deploy it. If it should not exist
 (legitimate stale reference), clean the source:
 `tools/swift22-cleanup/05-null-stale-template-refs.sql` is the
-reference fix for three known-stale Swift 2.2 templates
-(`1ColumnEmail`, `2ColumnsEmail`, `Swift-v2_PageNoLayout.cshtml`).
+reference fix for the known-stale Swift 2.2 template
+(`Swift-v2_PageNoLayout.cshtml`). Note that the email row definitions
+(`1ColumnEmail`, `2ColumnsEmail`) are **not** stale — they are
+legitimate email-grid rows that older engine builds mis-reported
+because only `Grid/Page/RowDefinitions/` was consulted (engine issue #4).
 
 ### Could not re-enable FK constraints for [T]
 

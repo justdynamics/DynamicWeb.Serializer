@@ -121,6 +121,10 @@ public class TemplateAssetManifest
 
         var designsDir = Path.Combine(filesRoot, "Templates", "Designs");
 
+        // Enumerated once per call and reused across every grid-row reference — a manifest
+        // may carry thousands of them and the registry set is fixed for the duration.
+        List<string>? gridRowRegistries = null;
+
         foreach (var r in references)
         {
             if (!IsPathSafe(r.Path))
@@ -134,8 +138,8 @@ public class TemplateAssetManifest
             bool found = r.Kind switch
             {
                 "page-layout" => FindInAnyDesign(designsDir, r.Path),
-                "grid-row" => FindInAnyDesign(designsDir,
-                    Path.Combine("Grid", "Page", "RowDefinitions", $"{r.Path}.json")),
+                "grid-row" => FindGridRowDefinition(
+                    designsDir, r.Path, gridRowRegistries ??= CollectGridRowRegistries(designsDir)),
                 "item-type" => File.Exists(
                     Path.Combine(filesRoot, "System", "Items", $"ItemType_{r.Path}.xml")),
                 _ => false
@@ -147,6 +151,59 @@ public class TemplateAssetManifest
 
         return missing;
     }
+
+    /// <summary>
+    /// Grid-row definitions live in a per-grid-type registry: page grids in
+    /// <c>Grid/Page/RowDefinitions/</c>, email pages in <c>Grid/Email/RowDefinitions/</c>.
+    /// A serialized grid row carries only its <c>definitionId</c> — never the registry it was
+    /// authored in — so a reference resolves against the page registry first (the common case)
+    /// and then against every other registry found in the design packages. Resolving against
+    /// the page registry alone made strict mode refuse legitimate email rows such as
+    /// <c>1ColumnEmail</c> and abort the whole run (engine issue #4).
+    /// </summary>
+    private static bool FindGridRowDefinition(
+        string designsDir, string definitionId, List<string> registryDirs)
+    {
+        var fileName = $"{definitionId}.json";
+        foreach (var registryDir in registryDirs)
+        {
+            if (File.Exists(Path.Combine(registryDir, fileName)))
+                return true;
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// Every <c>&lt;design&gt;/Grid/&lt;registry&gt;/RowDefinitions</c> directory under
+    /// <paramref name="designsDir"/>, page registries first so the common case short-circuits
+    /// on the first probe. Returns an empty list when no design packages are deployed.
+    /// </summary>
+    private static List<string> CollectGridRowRegistries(string designsDir)
+    {
+        var registries = new List<string>();
+        if (!Directory.Exists(designsDir)) return registries;
+
+        foreach (var designDir in Directory.EnumerateDirectories(designsDir))
+        {
+            var gridDir = Path.Combine(designDir, "Grid");
+            if (!Directory.Exists(gridDir)) continue;
+
+            foreach (var gridTypeDir in Directory.EnumerateDirectories(gridDir))
+            {
+                var rowDefDir = Path.Combine(gridTypeDir, "RowDefinitions");
+                if (Directory.Exists(rowDefDir))
+                    registries.Add(rowDefDir);
+            }
+        }
+
+        return registries
+            .OrderByDescending(d => string.Equals(
+                Path.GetFileName(Path.GetDirectoryName(d)), PageGridRegistry, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+    }
+
+    /// <summary>Registry name probed first — the page grid, which carries almost every row.</summary>
+    private const string PageGridRegistry = "Page";
 
     private static bool FindInAnyDesign(string designsDir, string relativePath)
     {
