@@ -110,6 +110,9 @@ public static class DeferredLinkLedger
                 var replaced = ReplaceSourceId(s, record.SourceId, targetId);
                 if (replaced == s) return false;
                 fields[parts[3]] = replaced;
+                // Engine issue #6: a rewritten ButtonData value comes back as a string; writing
+                // it back as one binds to nothing and the deferred remap is silently dropped.
+                ButtonDataFieldLookup.Apply(item.SystemName, fields);
                 item.DeserializeFrom(fields);
                 using (var ctx = new Dynamicweb.Content.Items.ItemContext())
                     item.Save(ctx);
@@ -126,6 +129,7 @@ public static class DeferredLinkLedger
                 var replaced = ReplaceSourceId(s, record.SourceId, targetId);
                 if (replaced == s) return false;
                 fields[parts[2]] = replaced;
+                ButtonDataFieldLookup.Apply(propItem.SystemName, fields);
                 propItem.DeserializeFrom(fields);
                 using (var ctx = new Dynamicweb.Content.Items.ItemContext())
                     propItem.Save(ctx);

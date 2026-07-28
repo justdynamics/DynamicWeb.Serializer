@@ -358,6 +358,44 @@ is a fidelity bug in one of these classes:
   XML column, either add the surrounding element to
   `excludeXmlElements` or accept the noise.
 
+### A button (ButtonData) field did not change on target
+
+The ButtonData editor (`Dynamicweb.Content.Items.Editors.ButtonEditor`)
+round-trips its value out as a JSON **string**, but binds it back only as
+an **object**. Writing the read-back string — or an empty string to clear
+the button — fails model binding and the save **silently no-ops**: no
+error, the prior target value stays.
+
+The engine therefore reshapes every ButtonData-typed field before the
+write (`ButtonDataNormalizer`):
+
+- the round-tripped JSON string becomes the object it describes,
+- a cleared field (null / empty — the shape source-wins produces for a
+  field the payload does not assert) becomes a blank-membered object
+  `{SelectedValue:"", Label:"", Link:"", LinkType:"page", Style:"primary"}`,
+  which is what actually clears the button.
+
+Which fields are ButtonData-typed comes from item-type metadata
+(`ButtonDataFieldLookup`). If that lookup cannot read the item type, the
+log carries:
+
+```
+Could not read field metadata for item type 'X' (...) — ButtonData fields are written unreshaped.
+```
+
+and the pre-fix string write happens — i.e. the button may again no-op.
+Confirm the item type's XML is deployed to `Files/System/Items/` and that
+the replace pass ran before the content that references it.
+
+A ButtonData value the normalizer cannot parse (not JSON, a JSON array)
+is written untouched and logged:
+
+```
+ButtonData field 'FirstButton' holds an unrecognised value shape — written as-is (it may not bind on the target).
+```
+
+Fix the source value rather than the target.
+
 ### EcomProducts count dropped during serialize
 
 If source has 2051 rows and YAML has 582, you're hitting the
