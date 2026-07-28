@@ -494,10 +494,25 @@ public class SerializerOrchestrator
             wrappedLog($"ERROR: {ex.Message}");
         }
 
+        // Engine issue #5: quarantined warnings did NOT fail the run, but they must never be
+        // silent — they are reported as their own end-of-run block and carried on the result.
+        // Snapshot the list: the lines go back through wrappedLog, and the "  - " indent keeps
+        // the wrapper's WARNING-prefix capture from re-recording them.
+        var quarantined = escalator.QuarantinedWarnings.ToList();
+        if (quarantined.Count > 0)
+        {
+            wrappedLog(
+                $"QUARANTINED: {quarantined.Count} warning(s) were quarantined per-item and did " +
+                "NOT fail this pass (strict-mode quarantine is active for their class):");
+            foreach (var q in quarantined)
+                wrappedLog($"  - {q}");
+        }
+
         return new OrchestratorResult
         {
             EntryOutcomes = entryOutcomes,
-            Errors = errors
+            Errors = errors,
+            QuarantinedWarnings = quarantined
         };
     }
 
@@ -639,6 +654,14 @@ public record OrchestratorResult
     public List<string> Errors { get; init; } = new();
 
     /// <summary>
+    /// Engine issue #5: warnings whose class was quarantined for this run — reported loudly
+    /// but deliberately excluded from <see cref="Errors"/> / <see cref="HasErrors"/> so one
+    /// unresolvable link no longer fails a pass that wrote hundreds of clean rows. Empty
+    /// unless the caller opted a class into quarantine.
+    /// </summary>
+    public List<string> QuarantinedWarnings { get; init; } = new();
+
+    /// <summary>
     /// Stale files deleted by <see cref="ManifestCleaner"/> during post-serialize cleanup
     /// (Phase 37-01 Task 2). Zero when no cleaner was wired or no stale files were found.
     /// </summary>
@@ -687,6 +710,9 @@ public record OrchestratorResult
 
             if (Errors.Count > 0)
                 parts.Add($"Errors: {Errors.Count}");
+
+            if (QuarantinedWarnings.Count > 0)
+                parts.Add($"Quarantined: {QuarantinedWarnings.Count}");
 
             return string.Join(". ", parts);
         }

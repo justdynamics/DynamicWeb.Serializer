@@ -29,6 +29,16 @@ public sealed class SerializerDeserializeCommand : CommandBase
     public bool? StrictMode { get; set; }
 
     /// <summary>
+    /// Engine issue #5: quarantine the unresolvable-link warning class instead of failing the
+    /// pass on it. One orphan link used to abort a run that had written hundreds of clean rows;
+    /// with this on, such a link is reported as a QUARANTINED end-of-run block (and on
+    /// <see cref="OrchestratorResult.QuarantinedWarnings"/>) while every other warning class
+    /// still fails the run. Default false — a "strict" gate stays strict unless asked.
+    /// Also honored via query string: ?quarantineUnresolvableLinks=true.
+    /// </summary>
+    public bool QuarantineUnresolvableLinks { get; set; }
+
+    /// <summary>
     /// Phase 37-04: internal flag set by admin-UI action buttons to flip the entry-point
     /// default to AdminUi (lenient). API/CLI callers leave this false so they get the
     /// default-strict behavior. Not serialised to Management API.
@@ -100,6 +110,17 @@ public sealed class SerializerDeserializeCommand : CommandBase
             }
         }
 
+        // Same query-string fallback for the issue-#5 quarantine knob
+        // (?quarantineUnresolvableLinks=true), D-38-11 precedent.
+        if (!QuarantineUnresolvableLinks)
+        {
+            var quarantineFromQuery = Dynamicweb.Context.Current?.Request?["quarantineUnresolvableLinks"];
+            if (!string.IsNullOrEmpty(quarantineFromQuery) && bool.TryParse(quarantineFromQuery, out var quarantineQ))
+            {
+                QuarantineUnresolvableLinks = quarantineQ;
+            }
+        }
+
         // Same query-string fallback for dry-run (?dryRun=true), D-38-11 precedent.
         if (!IsDryRun)
         {
@@ -156,7 +177,15 @@ public sealed class SerializerDeserializeCommand : CommandBase
                 var strict = StrictModeResolver.Resolve(entryPoint, configValue: null, requestValue: StrictMode);
                 Log($"=== Strict mode: {strict} (entry-point: {entryPoint}) ===");
 
-                var escalator = new StrictModeEscalator(strict, Log);
+                // Engine issue #5: opt-in per-class quarantine. Empty set = pre-issue-#5
+                // behavior (every warning class fails the run).
+                var quarantinedClasses = QuarantineUnresolvableLinks
+                    ? new HashSet<string>(StringComparer.OrdinalIgnoreCase) { StrictModeWarningClass.UnresolvableLink }
+                    : null;
+                if (QuarantineUnresolvableLinks)
+                    Log($"=== Quarantined warning classes: {StrictModeWarningClass.UnresolvableLink} ===");
+
+                var escalator = new StrictModeEscalator(strict, Log, quarantinedClasses);
 
                 // Phase 43 / DESER-01: orchestrator reads the manifest itself; no predicates parameter.
                 // The envelope's by-ItemType exclusion maps are consulted by the orchestrator (per
@@ -207,6 +236,9 @@ public sealed class SerializerDeserializeCommand : CommandBase
                     : $"[{serializerMode}] {result.Summary}";
                 if (result.HasErrors)
                     message += $" Errors: {string.Join("; ", result.Errors)}";
+                if (result.QuarantinedWarnings.Count > 0)
+                    message += $" Quarantined (reported, did not fail the run): " +
+                               string.Join("; ", result.QuarantinedWarnings);
 
                 // D-38-12: HTTP status is driven by result.HasErrors. Zero-error result maps to Ok
                 // regardless of Message content. Phase 43 / REPORT-04 / SC-3: HasErrors now aggregates
