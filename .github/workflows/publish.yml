@@ -35,8 +35,12 @@ jobs:
       - name: Test
         run: dotnet test tests/Truvio.Commerce.Serializer.Tests --configuration Release
 
+      # Packed against the verified minimum platform version so the DW app store offers the
+      # package to every host from 10.17.5 up (a package pinned higher than the host's DW
+      # version is filtered out of "Available apps"). Floor verified by compile probes and a
+      # full unit-test run; below 10.17.5 the Alert/AlertType admin-UI APIs are missing.
       - name: Pack
-        run: dotnet pack src/Truvio.Commerce.Serializer/Truvio.Commerce.Serializer.csproj --configuration Release --output artifacts
+        run: dotnet pack src/Truvio.Commerce.Serializer/Truvio.Commerce.Serializer.csproj --configuration Release -p:DynamicwebVersion=10.17.5 --output artifacts
 
       # Exchanges the GitHub OIDC token for a short-lived nuget.org API key.
       - name: NuGet login (trusted publishing)
