@@ -1,0 +1,38 @@
+name: Bug report
+description: Something in the Truvio Commerce Serializer does not behave as expected
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: input
+    id: dw-version
+    attributes:
+      label: Dynamicweb version
+      placeholder: "10.28.1"
+    validations:
+      required: true
+  - type: input
+    id: app-version
+    attributes:
+      label: Serializer version
+      placeholder: "0.9.1-beta"
+    validations:
+      required: true
+  - type: dropdown
+    id: operation
+    attributes:
+      label: Operation
+      options:
+        - Serialize
+        - Deserialize
+        - Package download/upload
+        - Admin UI screens
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you do, what did you expect, what happened instead? Log Viewer output helps a lot.
+    validations:
+      required: true
