@@ -57,6 +57,7 @@ sources, with the text the log emits:
 | `SerializerOrchestrator` | `WARNING: Cache invalidation failed for predicate '...': ...` (service throws during `ClearCache`) |
 | `SerializerOrchestrator` | `WARNING: Predicate '...' declares N service cache(s) but no CacheInvalidator is wired — caches will NOT be cleared` |
 | `SerializerOrchestrator` | `WARNING: Schema sync failed for predicate '...': ...` |
+| `ContentDeserializer` | `Warning: Area with ID N not found. Skipping entry '...'` (the entry's target area is absent AND the serialized area carries no properties to create it from — matched case-insensitively like every other `WARNING` line). An absent area that DOES carry properties is created by a real run and reported as `[DRY-RUN] CREATE area N` by a dry run, so it never reaches this warning in either. |
 | `ContentDeserializer` | `WARNING: Could not create area Item: ...` |
 | `ContentDeserializer` | `WARNING: GridRow Item creation failed: ...` |
 | `ContentDeserializer` | `WARNING: Could not load PropertyItem for page {GUID}` (dangling `PagePropertyItemId`) |
