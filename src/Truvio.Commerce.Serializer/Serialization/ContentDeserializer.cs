@@ -538,6 +538,34 @@ public class ContentDeserializer
     }
 
     // -------------------------------------------------------------------------
+    // Missing-area decision (AREA-04 dry-run parity)
+    // -------------------------------------------------------------------------
+
+    /// <summary>
+    /// Decides what to do about a Content entry whose target area is not on the target,
+    /// for BOTH run kinds, in one place.
+    ///
+    /// <para>
+    /// The dry run exists to report what the real run would do. When the two disagreed, the
+    /// dry run logged <c>Warning: Area with ID {n} not found. Skipping entry</c> for content
+    /// the real run deserialized cleanly, strict mode escalated that warning, and a gate
+    /// using the dry run as its go/no-go signal failed on a correct composition.
+    /// </para>
+    ///
+    /// <para>
+    /// The parity invariant this encodes: the dry run simulates a create exactly when the
+    /// real run performs one, and skips exactly when the real run also cannot create. The
+    /// area's serialized property count is the only input that decides it, so the two
+    /// answers cannot drift apart.
+    /// </para>
+    /// </summary>
+    internal static MissingAreaAction ResolveMissingAreaAction(bool isDryRun, int areaPropertyCount)
+    {
+        if (areaPropertyCount <= 0) return MissingAreaAction.Skip;
+        return isDryRun ? MissingAreaAction.SimulateCreate : MissingAreaAction.Create;
+    }
+
+    // -------------------------------------------------------------------------
     // Entry-level processing (Phase 44 / D-04: ContentEntry-typed)
     // -------------------------------------------------------------------------
 
@@ -550,11 +578,40 @@ public class ContentDeserializer
             ? new HashSet<string>(_entry.ExcludeFields, StringComparer.OrdinalIgnoreCase)
             : null;
 
+        // Set when the dry run stands in for an area the real run would have created, so the
+        // walk below never queries the live tree for an area id that is not there yet.
+        var simulatedArea = false;
+
         var targetArea = Services.Areas.GetArea(entry.AreaId);
         if (targetArea == null)
         {
+            // AREA-04 dry-run parity: the dry run has to REPORT what the real run would do,
+            // and the real run creates this area. Skipping the entry here instead made the
+            // dry run log "Warning: Area with ID {n} not found. Skipping entry" for content
+            // a real run deserializes cleanly, and strict mode escalated that warning into
+            // an HTTP 400 — so a gate whose dry run is its go/no-go signal failed on a
+            // composition that was correct.
+            //
+            // Simulate instead: announce the create, then FALL THROUGH into the normal walk
+            // with targetArea still null. That is safe and is the point — every write below
+            // is already behind !_isDryRun, and each page resolves through pageGuidCache,
+            // which GetPagesByAreaID returns empty for a missing area, so every page and
+            // grid row reports as a [DRY-RUN] CREATE. Exactly the real run's outcome, with
+            // zero DB writes.
+            //
+            // Both answers come from ResolveMissingAreaAction so the two runs cannot drift
+            // apart again: an area with no serialized properties is one the real run cannot
+            // create either, and there the dry run keeps the warning and the skip. Parity
+            // means matching both answers, not only the happy one.
+            var missingAreaAction = ResolveMissingAreaAction(_isDryRun, area.Properties.Count);
+
+            if (missingAreaAction == MissingAreaAction.SimulateCreate)
+            {
+                Log($"[DRY-RUN] CREATE area {entry.AreaId} ('{area.Name}') — would create from YAML data; continuing as if it existed");
+                simulatedArea = true;
+            }
             // AREA-04: Create the area if it doesn't exist on target
-            if (!_isDryRun && area.Properties.Count > 0)
+            else if (missingAreaAction == MissingAreaAction.Create)
             {
                 Log($"Area with ID {entry.AreaId} not found. Creating from YAML data.");
                 try
@@ -599,8 +656,13 @@ public class ContentDeserializer
         // ecom language exist on target before pages are written.
         ValidateLanguageLayerArea(entry.AreaId, area.Properties);
 
-        // Pre-build page GUID cache for the entire area (avoids per-item full table scans)
-        var allPages = Services.Pages.GetPagesByAreaID(entry.AreaId);
+        // Pre-build page GUID cache for the entire area (avoids per-item full table scans).
+        // A simulated area holds no pages by construction — asking the live tree for the
+        // pages of an area id that does not exist would be a query about nothing, so the
+        // cache starts empty and every page below reports as a [DRY-RUN] CREATE.
+        IEnumerable<Page> allPages = simulatedArea
+            ? Array.Empty<Page>()
+            : Services.Pages.GetPagesByAreaID(entry.AreaId);
         var pageGuidCache = allPages
             .Where(p => p.UniqueId != Guid.Empty)
             .ToDictionary(p => p.UniqueId, p => p.ID);
@@ -2523,4 +2585,27 @@ public class ContentDeserializer
             ctx.Updated++;
         }
     }
+}
+
+/// <summary>
+/// What a Content entry does when its target area is not on the target (AREA-04).
+/// One enum for both run kinds so the dry run and the real run answer the same question
+/// with the same code — see <see cref="ContentDeserializer.ResolveMissingAreaAction"/>.
+/// </summary>
+internal enum MissingAreaAction
+{
+    /// <summary>Real run: create the area from the serialized YAML, then write into it.</summary>
+    Create,
+
+    /// <summary>
+    /// Dry run: report the create the real run would perform and continue the walk as if the
+    /// area existed. Zero DB writes; every page below reports as a [DRY-RUN] CREATE.
+    /// </summary>
+    SimulateCreate,
+
+    /// <summary>
+    /// Neither run can create the area (no serialized properties to create it from). Warn
+    /// and skip the entry — the same answer in both runs.
+    /// </summary>
+    Skip
 }
